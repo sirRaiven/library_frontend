@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+Global html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f8fafc;
+}

@@ -1,7 +1,6 @@
+<script setup lang="ts">
+await navigateTo('/librarian/dashboard')
+</script>
+
 <template>
-  <div>Library Management System</div>
 </template>
-
-<script lang="ts" setup></script>
-
-<style></style>
