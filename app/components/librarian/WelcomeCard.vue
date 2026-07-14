@@ -7,7 +7,7 @@
         class="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-medium"
       >
         <UIcon name="i-lucide-shield-check" class="w-3.5 h-3.5" />
-        Librarian Operational Portal
+        Librarian Dashboard
       </div>
 
       <div>
