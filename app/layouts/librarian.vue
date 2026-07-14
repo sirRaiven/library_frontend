@@ -2,9 +2,19 @@
 import type { NavigationMenuItem } from "@nuxt/ui";
 
 const open = ref(true);
+const isLogoutModalOpen = ref(false); // Modal state
+const username = ref('librarian_01'); // Temporary username
 
 const route = useRoute();
 const colorMode = useColorMode();
+const router = useRouter();
+const roleCookie = useCookie('user-role');
+
+const handleLogout = () => {
+  roleCookie.value = null; // Clear auth
+  isLogoutModalOpen.value = false;
+  router.push('/'); // Redirect to login
+};
 
 const navItems: NavigationMenuItem[][] = [
 [

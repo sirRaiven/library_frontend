@@ -53,7 +53,7 @@ const columns = [
         </p>
       </div>
 
-      <div class="relative z-10 w-full md:w-auto flex-shrink-0">
+      <div class="relative z-10 w-full md:w-auto">
         <UButton
           color="white"
           variant="solid"
