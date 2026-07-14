@@ -14,7 +14,6 @@ const navItems: NavigationMenuItem[][] = [
     to: "/librarian/dashboard"
   }
 ],
-
 [
   {
     label: "Library",
@@ -31,7 +30,6 @@ const navItems: NavigationMenuItem[][] = [
     to: "/librarian/categories"
   }
 ],
-
 [
   {
     label: "Circulation",
@@ -40,12 +38,12 @@ const navItems: NavigationMenuItem[][] = [
   {
     label: "Borrow Books",
     icon: "i-lucide-book-up",
-    to: "/librarian/borrowing"
+    to: "/librarian/borrow" // Updated from /borrowing
   },
   {
     label: "Return Books",
     icon: "i-lucide-book-down",
-    to: "/librarian/returning"
+    to: "/librarian/return" // Updated from /returning
   },
   {
     label: "Reservations",
@@ -53,7 +51,6 @@ const navItems: NavigationMenuItem[][] = [
     to: "/librarian/reservations"
   }
 ],
-
 [
   {
     label: "People",
@@ -70,7 +67,6 @@ const navItems: NavigationMenuItem[][] = [
     to: "/librarian/faculty"
   }
 ],
-
 [
   {
     label: "Monitoring",
