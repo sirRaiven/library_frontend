@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from "@nuxt/ui";
 
-const { isSidebarOpen, toggleSidebar } = useLayoutState();
+const open = ref(true);
+
 const route = useRoute();
 const colorMode = useColorMode();
 
@@ -12,132 +13,182 @@ const navItems: NavigationMenuItem[] = [
     to: "/librarian/dashboard",
   },
   {
-    label: "Book Catalog",
+    label: "Books",
     icon: "i-lucide-book-open",
-    to: "/librarian/catalog",
+    to: "/librarian/books",
   },
   {
-    label: "Circulation",
-    icon: "i-lucide-arrow-left-right",
-    to: "/librarian/circulation",
+    label: "Borrowing",
+    icon: "i-lucide-book-up",
+    to: "/librarian/borrowing",
   },
-  { label: "Patron Records", icon: "i-lucide-users", to: "/librarian/patrons" },
+  {
+    label: "Returning",
+    icon: "i-lucide-book-down",
+    to: "/librarian/returning",
+  },
+  {
+    label: "Reservations",
+    icon: "i-lucide-calendar-check-2",
+    to: "/librarian/reservations",
+  },
+  {
+    label: "Reports",
+    icon: "i-lucide-chart-column",
+    to: "/librarian/reports",
+  },
+  {
+    label: "Notifications",
+    icon: "i-lucide-bell",
+    to: "/librarian/notifications",
+  },
 ];
 </script>
 
 <template>
-  <!-- Main layout background flips based on theme -->
-  <div
-    class="flex h-screen w-full bg-neutral-50 dark:bg-neutral-950 transition-colors duration-200"
-  >
-    <!-- Sidebar -->
-    <!-- 1. Removed hardcoded bg-slate-900. Added dark:bg-neutral-900 -->
-    <!-- 2. Added border-neutral-200/dark:border-neutral-800 for the border -->
+  <div class="flex h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
+
+    <!-- Added `class="group"` so children can react to the collapsed state -->
     <USidebar
-      v-model:open="isSidebarOpen"
+      v-model:open="open"
       collapsible="icon"
       side="left"
-      class="bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 z-50"
-      :ui="{ container: 'h-full flex flex-col justify-between p-4' }"
+      class="group border-r border-neutral-200 dark:border-neutral-800"
+      :ui="{
+        container: 'h-full flex flex-col justify-between p-0'
+      }"
     >
+      <!-- Header -->
       <template #header>
-        <div class="flex items-center gap-3 px-1 h-10 overflow-hidden">
+        <div class="flex items-center gap-3">
           <div
-            class="w-8 h-8 rounded bg-emerald-500 flex items-center justify-center text-white font-bold shrink-0"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white"
           >
-            <UIcon name="i-lucide-book" class="w-5 h-5" />
+            <UIcon
+              name="i-lucide-library-big"
+              class="size-5 shrink-0"
+            />
           </div>
-          <!-- Using group-data attribute for smooth hiding -->
+
+          <!-- Optimized: Replaced laggy width transitions with instant hide -->
           <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
-            <span
-              class="block font-semibold text-sm leading-tight text-neutral-900 dark:text-white"
-              >Library System</span
-            >
-            <span
-              class="block text-[10px] text-neutral-500 dark:text-neutral-400"
-              >Dynamic Management</span
-            >
+            <h1 class="text-sm font-bold text-neutral-900 dark:text-white">
+              SNCBT Library
+            </h1>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400">
+              Management System
+            </p>
           </div>
         </div>
       </template>
 
+      <!-- Navigation -->
       <UNavigationMenu
         :items="navItems"
         orientation="vertical"
         :ui="{
           root: 'w-full',
-          link: 'p-2.5 my-0.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors font-medium text-sm',
-          linkLeadingIcon: 'w-5 h-5 shrink-0',
+          link: 'my-1 rounded-xl px-2.5 py-2.5 font-medium transition-colors',
+          linkLeadingIcon: 'size-6',
+          linkLabel: 'truncate group-data-[collapsible=icon]:hidden'
         }"
       />
 
+      <!-- Footer -->
       <template #footer>
-        <div
-          class="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-3 flex items-center w-full overflow-hidden"
-        >
-          <div
-            class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0"
-          >
-            <UIcon name="i-lucide-user" class="w-4 h-4" />
-          </div>
-          <div
-            class="ml-3 group-data-[collapsible=icon]:hidden whitespace-nowrap"
-          >
-            <span
-              class="block text-sm font-medium text-neutral-900 dark:text-white truncate"
-              >librarian_01</span
-            >
-            <span
-              class="block text-[10px] text-neutral-500 dark:text-neutral-400 truncate"
-              >Head Librarian</span
-            >
+        <div class="flex items-center gap-3 rounded-xl bg-neutral-100 p-2.5 dark:bg-neutral-800">
+          <UAvatar
+            alt="Librarian"
+            class="shrink-0"
+          />
+
+          <!-- Optimized: Replaced laggy width transitions with instant hide -->
+          <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
+            <p class="text-sm font-semibold text-neutral-900 dark:text-white">
+              librarian_01
+            </p>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400">
+              Head Librarian
+            </p>
           </div>
         </div>
       </template>
     </USidebar>
 
-    <!-- Main Viewport -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <!-- Header background and borders now adapt to theme -->
+    <!-- Content Wrapper -->
+    <div
+      class="
+        flex-1
+        flex
+        flex-col
+        min-w-0
+        overflow-hidden
+        lg:peer-data-[variant=inset]:my-4
+        lg:peer-data-[variant=inset]:mr-4
+        peer-data-[variant=inset]:rounded-2xl
+        peer-data-[variant=inset]:shadow-sm
+        peer-data-[variant=inset]:ring
+        peer-data-[variant=inset]:ring-neutral-200
+        dark:peer-data-[variant=inset]:ring-neutral-800
+        bg-white dark:bg-neutral-900
+        transition-colors
+      "
+    >
+      <!-- Topbar -->
       <header
-        class="h-16 shrink-0 flex items-center justify-between px-6 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 transition-colors"
+        class="flex h-16 shrink-0 items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-6 transition-colors"
       >
         <div class="flex items-center gap-4">
           <UButton
-            icon="i-lucide-panel-left"
+            :icon="open ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left-open'"
             color="neutral"
             variant="ghost"
-            @click="toggleSidebar"
-            class="text-neutral-600 dark:text-neutral-400"
+            @click="() => { open = !open }"
+            class="text-neutral-500 dark:text-neutral-400"
           />
-          <h2
-            class="text-sm font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider truncate"
-          >
-            {{ route.meta.title || "Library Management System" }}
-          </h2>
+
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white truncate tracking-tight">
+              {{ route.meta.title || "Dashboard" }}
+            </h2>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400">
+              Library Management System
+            </p>
+          </div>
         </div>
 
         <div class="flex items-center gap-3">
+          <UInput
+            icon="i-lucide-search"
+            placeholder="Search..."
+            class="w-72 hidden md:block"
+            :ui="{ base: 'bg-neutral-50 dark:bg-neutral-950' }"
+          />
+
           <UButton
-            :icon="
-              colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'
-            "
+            icon="i-lucide-bell"
             color="neutral"
             variant="ghost"
-            square
-            @click="
-              () => {
-                colorMode.preference =
-                  colorMode.value === 'dark' ? 'light' : 'dark';
-              }
-            "
+            class="text-neutral-500 dark:text-neutral-400"
           />
+
+          <UButton
+            :icon="colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
+            color="neutral"
+            variant="ghost"
+            @click="() => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark' }"
+            class="text-neutral-500 dark:text-neutral-400"
+          />
+
+          <UAvatar alt="Librarian" size="sm" class="ml-2 ring-2 ring-neutral-100 dark:ring-neutral-800" />
         </div>
       </header>
 
-      <div class="flex-1 p-8 overflow-y-auto">
+      <!-- Main Page Slot -->
+      <main class="flex-1 overflow-auto p-8 bg-white dark:bg-neutral-900 transition-colors">
         <slot />
-      </div>
+      </main>
+
     </div>
   </div>
 </template>
