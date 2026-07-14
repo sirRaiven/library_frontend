@@ -12,15 +12,15 @@ definePageMeta({
 
 const stats = [
   {
-    label: "Total Books",
+    label: "Books Available",
     value: "14,088",
-    description: "Cataloged operational items",
+    description: "Available for borrowing",
     icon: "i-lucide-library",
   },
   {
-    label: "Active Loans",
+    label: "Books Borrowed",
     value: "2,113",
-    description: "Books currently active out-of-hand",
+    description: "Currewntly borrowed",
     icon: "i-lucide-book-up",
   },
   {
@@ -31,33 +31,33 @@ const stats = [
     isAlert: true,
   },
   {
-    label: "Pending Holds",
+    label: "Reservations",
     value: "14",
-    description: "Awaiting patron pick-up queues",
+    description: "Awaiting for pickup",
     icon: "i-lucide-clock",
   },
 ];
 
 const quickActions = [
   {
-    title: "Issue Book File",
-    description: "Process a new resource loan transaction assignment sequence.",
+    title: "Borrow Book",
+    description: "Scan a borrower ID and book barcode.",
     icon: "i-lucide-book-up",
     action: "primary",
   },
   {
-    title: "Return Entry Sync",
-    description: "Process collection return sequences and settle fine ledgers.",
+    title: "Return Book",
+    description: "Process returned books.",
     icon: "i-lucide-book-down",
   },
   {
-    title: "Patron Index Profile",
-    description: "Modify and verify library memberships and status indicators.",
+    title: "Register Student",
+    description: "Register a new book and print its barcode.",
     icon: "i-lucide-users",
   },
   {
-    title: "Cataloging Engine",
-    description: "Register new bibliographic metadata or resource records.",
+    title: "Add New Book",
+    description: "Create a student library account and barcode.",
     icon: "i-lucide-book-plus",
   },
 ];
@@ -81,12 +81,12 @@ const quickActions = [
         <div class="w-full">
           <div class="mb-5">
             <h3 class="font-bold text-slate-800 dark:text-white tracking-tight">
-              Quick Action Framework
+              Quick Actions
             </h3>
             <p
               class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5"
             >
-              Trigger common circulation procedures efficiently.
+            Start common library tasks.
             </p>
           </div>
 

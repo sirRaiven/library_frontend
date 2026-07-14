@@ -6,12 +6,12 @@
       <h3
         class="font-bold text-slate-800 dark:text-white tracking-tight transition-colors"
       >
-        Circulation Workflow
+        Borrowing Process
       </h3>
       <p
         class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 transition-colors"
       >
-        Recommended process for issuing books.
+      Complete borrowing in three easy steps.
       </p>
     </div>
 
@@ -30,12 +30,12 @@
           <h4
             class="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight transition-colors"
           >
-            Scan Patron ID
+          Scan Student or Faculty ID
           </h4>
           <p
             class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 transition-colors"
           >
-            Verify member standing and borrowing limits.
+          Use the library card or employee ID.
           </p>
         </div>
       </div>
@@ -50,12 +50,12 @@
           <h4
             class="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight transition-colors"
           >
-            Scan Book Barcode
+          Scan Book Barcode
           </h4>
           <p
             class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 transition-colors"
           >
-            Append system catalog items to current active session.
+          Scan one or more books.
           </p>
         </div>
       </div>
@@ -70,12 +70,12 @@
           <h4
             class="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight transition-colors"
           >
-            Confirm & Release
+          Confirm Borrowing
           </h4>
           <p
             class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 transition-colors"
           >
-            Commit adjustments to database logs and dispatch item.
+          Review and save the transaction.
           </p>
         </div>
       </div>

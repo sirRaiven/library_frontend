@@ -14,13 +14,13 @@
         <h2
           class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight transition-colors"
         >
-          Welcome to your Library System
+        Welcome Back!
         </h2>
         <p
           class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl leading-relaxed transition-colors"
         >
-          Manage book circulation, design catalogs, monitor borrowing history,
-          and oversee library operations in one secure dashboard.
+        Manage your library with faster borrowing,
+easy barcode scanning, and real-time activity tracking.
         </p>
       </div>
 
@@ -29,7 +29,7 @@
           class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm shadow-emerald-200 dark:shadow-none"
         >
           <UIcon name="i-lucide-plus" class="w-4 h-4" />
-          Issue Book
+          Borrow Book
         </button>
         <button
           class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
@@ -38,25 +38,25 @@
             name="i-lucide-external-link"
             class="w-4 h-4 text-slate-400 dark:text-slate-500"
           />
-          Public OPAC
+          Return Book
         </button>
       </div>
     </div>
 
     <div
-      class="hidden lg:flex flex-col items-center justify-center p-6 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 min-w-[220px] z-10 transition-colors"
+    class="hidden lg:flex flex-col items-center justify-center p-6 bg-neutral-50/50 dark:bg-neutral-800/50 rounded-2xl border border-neutral-100 dark:border-neutral-700 min-w-[220px] z-10 transition-colors"
     >
-      <div
-        class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white mb-3 shadow-md shadow-emerald-200 dark:shadow-none"
-      >
-        <UIcon name="i-lucide-refresh-cw" class="w-6 h-6 animate-spin-slow" />
-      </div>
-      <span class="text-sm font-bold text-slate-800 dark:text-slate-100"
-        >System Status</span
-      >
-      <span class="text-xs text-slate-400 text-center mt-1 leading-normal"
-        >Ready for circulation<br />& catalog processing</span
-      >
+    <div
+      class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white mb-3 shadow-md shadow-emerald-200 dark:shadow-none"
+    >
+      <UIcon name="i-lucide-scan-line" class="w-6 h-6 animate-pulse-slow" />
+    </div>
+    <span class="text-sm font-bold text-neutral-800 dark:text-neutral-100"
+      >Scanner Active</span
+    >
+    <span class="text-xs text-neutral-400 text-center mt-1 leading-normal"
+      >System ready for barcode<br />scanning</span
+    >
     </div>
   </div>
 </template>

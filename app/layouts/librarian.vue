@@ -6,43 +6,88 @@ const open = ref(true);
 const route = useRoute();
 const colorMode = useColorMode();
 
-const navItems: NavigationMenuItem[] = [
+const navItems: NavigationMenuItem[][] = [
+[
   {
     label: "Dashboard",
     icon: "i-lucide-layout-dashboard",
-    to: "/librarian/dashboard",
+    to: "/librarian/dashboard"
+  }
+],
+
+[
+  {
+    label: "Library",
+    type: "label"
   },
   {
     label: "Books",
     icon: "i-lucide-book-open",
-    to: "/librarian/books",
+    to: "/librarian/books"
   },
   {
-    label: "Borrowing",
+    label: "Categories",
+    icon: "i-lucide-folder-open",
+    to: "/librarian/categories"
+  }
+],
+
+[
+  {
+    label: "Circulation",
+    type: "label"
+  },
+  {
+    label: "Borrow Books",
     icon: "i-lucide-book-up",
-    to: "/librarian/borrowing",
+    to: "/librarian/borrowing"
   },
   {
-    label: "Returning",
+    label: "Return Books",
     icon: "i-lucide-book-down",
-    to: "/librarian/returning",
+    to: "/librarian/returning"
   },
   {
     label: "Reservations",
-    icon: "i-lucide-calendar-check-2",
-    to: "/librarian/reservations",
+    icon: "i-lucide-calendar-check",
+    to: "/librarian/reservations"
+  }
+],
+
+[
+  {
+    label: "People",
+    type: "label"
+  },
+  {
+    label: "Students",
+    icon: "i-lucide-graduation-cap",
+    to: "/librarian/students"
+  },
+  {
+    label: "Faculty",
+    icon: "i-lucide-briefcase",
+    to: "/librarian/faculty"
+  }
+],
+
+[
+  {
+    label: "Monitoring",
+    type: "label"
   },
   {
     label: "Reports",
     icon: "i-lucide-chart-column",
-    to: "/librarian/reports",
+    to: "/librarian/reports"
   },
   {
     label: "Notifications",
     icon: "i-lucide-bell",
-    to: "/librarian/notifications",
-  },
-];
+    to: "/librarian/notifications"
+  }
+]
+]
 </script>
 
 <template>
@@ -90,7 +135,7 @@ const navItems: NavigationMenuItem[] = [
           root: 'w-full',
           link: 'my-1 rounded-xl px-2.5 py-2.5 font-medium transition-colors',
           linkLeadingIcon: 'size-6',
-          linkLabel: 'truncate group-data-[collapsible=icon]:hidden'
+          linkLabel: 'truncate group-data-[collapsible=icon]:hidden transition-all',
         }"
       />
 
@@ -101,8 +146,6 @@ const navItems: NavigationMenuItem[] = [
             alt="Librarian"
             class="shrink-0"
           />
-
-          <!-- Optimized: Replaced laggy width transitions with instant hide -->
           <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
             <p class="text-sm font-semibold text-neutral-900 dark:text-white">
               librarian_01
