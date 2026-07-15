@@ -45,7 +45,7 @@ const handleScan = () => {
     </div>
 
     <div
-      class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800"
+      class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-emerald-100 dark:border-slate-800"
     >
       <!-- Dedicated Scanner Input Area -->
       <div class="max-w-md mx-auto mb-8 text-center">

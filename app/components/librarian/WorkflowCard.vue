@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 h-full transition-colors"
+    class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-md border border-emerald-100 dark:border-slate-800 h-full transition-colors"
   >
     <div class="mb-5">
       <h3

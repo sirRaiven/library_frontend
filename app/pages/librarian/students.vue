@@ -58,15 +58,15 @@ const columns = [
           placeholder="Search by name or barcode..."
           color="white"
         />
-        <UButton color="emerald" icon="i-lucide-user-plus"
-          >Register Student</UButton
+        <UButton color="emerald" icon="i-lucide-user-plus" class="w-full md:w-auto text-slate-900 font-bold border border-emerald-100 hover:bg-emerald-100 hover:text-emerald-400 transition-colors">
+         Register Student</UButton
         >
       </div>
     </div>
 
     <!-- Data Table -->
     <div
-      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 overflow-hidden transition-colors"
+      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-md border border-emerald-100 dark:border-emerald-200 overflow-hidden transition-colors"
     >
       <UTable
         :rows="students"

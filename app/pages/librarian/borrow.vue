@@ -75,11 +75,11 @@ const confirmTransaction = () => {
       <!-- Left Column: Scanner & Instructions -->
       <div class="lg:col-span-1 space-y-6">
         <div
-          class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800"
+          class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-md border border-emerald-100 dark:border-slate-800"
         >
           <div class="flex items-center gap-3 mb-4">
             <div
-              class="w-10 h-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-600 dark:text-emerald-400"
+              class="w-10 h-10  bg-emerald-50 dark:bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-600 dark:text-emerald-400"
             >
               <UIcon name="i-lucide-scan-line" class="w-5 h-5" />
             </div>

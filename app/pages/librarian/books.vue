@@ -52,16 +52,19 @@ const columns = [
       </div>
       <div class="flex gap-3">
         <UInput
+        class="hover:shadow-md hover:shadow-emerald-500/10 transition-all duration-300 ease-out"
           icon="i-lucide-search"
           placeholder="Search title or ISBN..."
           color="white"
         />
-        <UButton color="emerald" icon="i-lucide-plus">Add New Title</UButton>
+        <UButton color="emerald" icon="i-lucide-plus" class="w-full md:w-auto text-slate-900 font-bold border border-emerald-100 hover:bg-emerald-100 hover:text-emerald-400 transition-colors">
+          Add New Title
+        </UButton>
       </div>
     </div>
 
     <div
-      class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"
+      class="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-emerald-100 dark:border-emerald-200"
     >
       <UTable :rows="books" :columns="columns">
         <template #title-data="{ row }">

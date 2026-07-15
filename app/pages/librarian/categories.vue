@@ -85,16 +85,16 @@ const columns = [
           icon="i-lucide-search"
           placeholder="Search categories..."
           color="white"
+          class="hover:shadow-md hover:shadow-emerald-500/10 transition-all duration-300 ease-out"
         />
-        <UButton color="emerald" icon="i-lucide-folder-plus"
-          >New Category</UButton
+        <UButton color="emerald" icon="i-lucide-folder-plus" class="w-full md:w-auto text-slate-900 font-bold border border-emerald-100 hover:bg-emerald-100 hover:text-emerald-400 transition-colors">New Category</UButton
         >
       </div>
     </div>
 
     <!-- Data Table -->
     <div
-      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 overflow-hidden transition-colors"
+      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-md border border-emerald-100 dark:border-emerald-200 overflow-hidden transition-colors"
     >
       <UTable
         :rows="categories"

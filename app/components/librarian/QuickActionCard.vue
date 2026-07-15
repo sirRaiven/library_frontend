@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
   <button
-    class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition-all duration-300 ease-out transform hover:-translate-y-1 hover:border-emerald-500 hover:bg-emerald-500/10 hover:shadow-lg hover:shadow-emerald-500/10 text-left w-full group"
+    class="flex items-center gap-4 p-4 rounded-xl border border-emerald-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition-all duration-300 ease-out transform hover:-translate-y-1 hover:border-emerald-500 hover:bg-emerald-500/10 hover:shadow-lg hover:shadow-emerald-500/10 text-left w-full group"
   >
     <!-- Icon Container -->
     <div

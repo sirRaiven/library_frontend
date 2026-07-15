@@ -76,7 +76,7 @@ const quickActions = [
     <!-- Content Control Hub Grid Split -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div
-        class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between transition-colors"
+        class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-md border border-emerald-100 dark:border-slate-800 flex flex-col justify-between transition-colors"
       >
         <div class="w-full">
           <div class="mb-5">

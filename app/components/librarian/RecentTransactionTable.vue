@@ -102,6 +102,7 @@ const columns: TableColumn<typeof transactions.value[number]>[] = [
 
 <template>
   <UCard
+  class="shadow-md shadow-emerald-100 dark:shadow-none border border-emerald-100 dark:border-slate-800 rounded-2xl flex flex-col h-full transition-colors"
     :ui="{
       body: 'p-0'
     }"

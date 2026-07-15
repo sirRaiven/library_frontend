@@ -17,89 +17,88 @@ const handleLogout = () => {
 };
 
 const navItems: NavigationMenuItem[][] = [
-[
-  {
-    label: "Dashboard",
-    icon: "i-lucide-layout-dashboard",
-    to: "/librarian/dashboard"
-  }
-],
-[
-  {
-    label: "Library",
-    type: "label"
-  },
-  {
-    label: "Books",
-    icon: "i-lucide-book-open",
-    to: "/librarian/books"
-  },
-  {
-    label: "Categories",
-    icon: "i-lucide-folder-open",
-    to: "/librarian/categories"
-  }
-],
-[
-  {
-    label: "Circulation",
-    type: "label"
-  },
-  {
-    label: "Borrow Books",
-    icon: "i-lucide-book-up",
-    to: "/librarian/borrow" // Updated from /borrowing
-  },
-  {
-    label: "Return Books",
-    icon: "i-lucide-book-down",
-    to: "/librarian/return" // Updated from /returning
-  },
-  {
-    label: "Reservations",
-    icon: "i-lucide-calendar-check",
-    to: "/librarian/reservations"
-  }
-],
-[
-  {
-    label: "People",
-    type: "label"
-  },
-  {
-    label: "Students",
-    icon: "i-lucide-graduation-cap",
-    to: "/librarian/students"
-  },
-  {
-    label: "Faculty",
-    icon: "i-lucide-briefcase",
-    to: "/librarian/faculty"
-  }
-],
-[
-  {
-    label: "Monitoring",
-    type: "label"
-  },
-  {
-    label: "Reports",
-    icon: "i-lucide-chart-column",
-    to: "/librarian/reports"
-  },
-  {
-    label: "Notifications",
-    icon: "i-lucide-bell",
-    to: "/librarian/notifications"
-  }
-]
+  [
+    {
+      label: "Dashboard",
+      icon: "i-lucide-layout-dashboard",
+      to: "/librarian/dashboard"
+    }
+  ],
+  [
+    {
+      label: "Library",
+      type: "label"
+    },
+    {
+      label: "Books",
+      icon: "i-lucide-book-open",
+      to: "/librarian/books"
+    },
+    {
+      label: "Categories",
+      icon: "i-lucide-folder-open",
+      to: "/librarian/categories"
+    }
+  ],
+  [
+    {
+      label: "Circulation",
+      type: "label"
+    },
+    {
+      label: "Borrow Books",
+      icon: "i-lucide-book-up",
+      to: "/librarian/borrow"
+    },
+    {
+      label: "Return Books",
+      icon: "i-lucide-book-down",
+      to: "/librarian/return"
+    },
+    {
+      label: "Reservations",
+      icon: "i-lucide-calendar-check",
+      to: "/librarian/reservations"
+    }
+  ],
+  [
+    {
+      label: "People",
+      type: "label"
+    },
+    {
+      label: "Students",
+      icon: "i-lucide-graduation-cap",
+      to: "/librarian/students"
+    },
+    {
+      label: "Faculty",
+      icon: "i-lucide-briefcase",
+      to: "/librarian/faculty"
+    }
+  ],
+  [
+    {
+      label: "Monitoring",
+      type: "label"
+    },
+    {
+      label: "Reports",
+      icon: "i-lucide-chart-column",
+      to: "/librarian/reports"
+    },
+    {
+      label: "Notifications",
+      icon: "i-lucide-bell",
+      to: "/librarian/notifications"
+    }
+  ]
 ]
 </script>
 
 <template>
   <div class="flex h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
 
-    <!-- Added `class="group"` so children can react to the collapsed state -->
     <USidebar
       v-model:open="open"
       collapsible="icon"
@@ -121,7 +120,6 @@ const navItems: NavigationMenuItem[][] = [
             />
           </div>
 
-          <!-- Optimized: Replaced laggy width transitions with instant hide -->
           <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
             <h1 class="text-sm font-bold text-neutral-900 dark:text-white">
               SNCBT Library
@@ -147,22 +145,94 @@ const navItems: NavigationMenuItem[][] = [
 
       <!-- Footer -->
       <template #footer>
-        <div class="flex items-center gap-3 rounded-xl bg-neutral-100 p-2.5 dark:bg-neutral-800">
-          <UAvatar
-            alt="Librarian"
-            class="shrink-0"
-          />
-          <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
-            <p class="text-sm font-semibold text-neutral-900 dark:text-white">
-              librarian_01
-            </p>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400">
-              Head Librarian
-            </p>
+        <div class="p-3 rounded-2xl bg-neutral-100 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800/60 flex flex-col gap-3 transition-all">
+          
+          <!-- User Profile -->
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 cursor-pointer" @click="open ? null : (isLogoutModalOpen = true)">
+              <UIcon name="i-lucide-user" class="w-5 h-5" />
+            </div>
+            
+            <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
+              <p class="text-sm font-bold text-neutral-900 dark:text-white">
+                {{ username }}
+              </p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                Head Librarian
+              </p>
+            </div>
           </div>
+
+          <!-- Sign Out Button -->
+          <UButton
+            label="Logout"
+            icon="i-lucide-log-out"
+            color="error"
+            variant="soft"
+            block
+            class="group-data-[collapsible=icon]:hidden justify-center font-medium"
+            @click="() => {isLogoutModalOpen = true}"
+          />
         </div>
       </template>
     </USidebar>
+
+    <!-- Logout Modal with #content slot -->
+    <UModal v-model:open="isLogoutModalOpen" :ui="{ content: 'sm:max-w-md' }">
+      <template #content>
+        <div class="p-8 flex flex-col items-center text-center">
+          
+          <!-- Large Floating Red Icon -->
+          <div class="w-16 h-16 rounded-2xl bg-error text-white flex items-center justify-center shadow-xl shadow-error/30 mb-5 mt-2">
+            <UIcon name="i-lucide-log-out" class="w-8 h-8" />
+          </div>
+
+          <!-- Typography -->
+          <h3 class="text-xl font-bold text-neutral-900 dark:text-white mb-2 tracking-tight">Logout Session?</h3>
+          <p class="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+            You are about to sign out from the <span class="font-bold text-neutral-900 dark:text-white">SNCBT Library</span>.<br>
+            You can login again anytime.
+          </p>
+
+          <!-- Embedded Profile Card -->
+          <div class="w-full flex items-center gap-3 p-4 mt-6 rounded-xl border border-emerald-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-left">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <UIcon name="i-lucide-user" class="w-5 h-5" />
+            </div>
+            <div>
+              <p class="text-sm font-bold text-neutral-900 dark:text-white">
+                {{ username }}
+              </p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                Head Librarian
+              </p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3 w-full mt-6">
+            <UButton
+              label="Logout"
+              variant="soft"
+              icon="i-lucide-log-out"
+              color="error"
+              size="lg"
+              block
+              class="flex-1 justify-center font-semibold"
+              @click="handleLogout"
+            />
+            <UButton
+              label="Stay Logged In"
+              color="error"
+              size="lg"
+              block
+              class="flex-1 justify-center font-semibold shadow-md shadow-red-500/20"
+              @click="() => { isLogoutModalOpen = false }"
+            />
+          </div>
+        </div>
+      </template>
+    </UModal>
 
     <!-- Content Wrapper -->
     <div
@@ -237,7 +307,6 @@ const navItems: NavigationMenuItem[][] = [
       <main class="flex-1 overflow-auto p-8 bg-white dark:bg-neutral-900 transition-colors">
         <slot />
       </main>
-
     </div>
   </div>
 </template>

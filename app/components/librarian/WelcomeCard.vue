@@ -1,20 +1,20 @@
 <template>
   <div
-    class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-800 flex justify-between items-center relative overflow-hidden transition-colors"
+    class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-md border border-emerald-100 dark:border-slate-800 flex justify-between items-center relative overflow-hidden transition-colors backdrop-blur-xl"
   >
     <div class="space-y-4 z-10">
       <div
         class="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-medium"
       >
         <UIcon name="i-lucide-shield-check" class="w-3.5 h-3.5" />
-        Librarian Dashboard
+        Librarian Management Portal
       </div>
 
       <div>
         <h2
           class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight transition-colors"
         >
-        Welcome Back!
+        Welcome to your Library Management System
         </h2>
         <p
           class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl leading-relaxed transition-colors"
@@ -26,13 +26,13 @@ easy barcode scanning, and real-time activity tracking.
 
       <div class="flex gap-3 pt-2">
         <button
-          class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm shadow-emerald-200 dark:shadow-none"
+          class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-2xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm shadow-emerald-100 dark:shadow-none"
         >
           <UIcon name="i-lucide-plus" class="w-4 h-4" />
           Borrow Book
         </button>
         <button
-          class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+          class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-2xl text-sm font-medium transition-colors flex items-center gap-2"
         >
           <UIcon
             name="i-lucide-external-link"
@@ -44,10 +44,10 @@ easy barcode scanning, and real-time activity tracking.
     </div>
 
     <div
-    class="hidden lg:flex flex-col items-center justify-center p-6 bg-neutral-50/50 dark:bg-neutral-800/50 rounded-2xl border border-neutral-100 dark:border-neutral-700 min-w-[220px] z-10 transition-colors"
+    class="hidden lg:flex flex-col shadow-md items-center justify-center p-6 bg-neutral-50/50 dark:bg-neutral-800/50 rounded-2xl border border-emerald-100 dark:border-neutral-700 min-w-55 z-10 transition-colors"
     >
     <div
-      class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white mb-3 shadow-md shadow-emerald-200 dark:shadow-none"
+      class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white mb-3 shadow-sm shadow-emerald-100 dark:shadow-none"
     >
       <UIcon name="i-lucide-scan-line" class="w-6 h-6 animate-pulse-slow" />
     </div>

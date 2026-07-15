@@ -132,11 +132,6 @@ const handleLogin = async () => {
           </div>
         </form>
       </UCard>
-
-      <!-- Footer Help -->
-      <p class="text-center text-xs text-neutral-400 mt-8">
-        Secure Access Provided by SNCBT IT Department
-      </p>
     </div>
   </div>
 </template>

@@ -68,7 +68,7 @@ const markAllRead = () => {
     </div>
 
     <div
-      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 overflow-hidden"
+      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-emerald-100 dark:border-emerald-200 overflow-hidden"
     >
       <div v-if="notifications.length === 0" class="p-12 text-center">
         <UIcon
@@ -78,7 +78,7 @@ const markAllRead = () => {
         <p class="text-neutral-500">You're all caught up!</p>
       </div>
 
-      <ul v-else class="divide-y divide-neutral-100 dark:divide-neutral-800">
+      <ul v-else class="divide-y divide-emerald-100 dark:divide-emerald-200">
         <li
           v-for="notification in notifications"
           :key="notification.id"

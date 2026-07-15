@@ -53,7 +53,7 @@ const reportTypes = [
       <!-- Report Generator Generator -->
       <div class="lg:col-span-1 space-y-6">
         <div
-          class="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-sm border border-neutral-100 dark:border-neutral-800"
+          class="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-sm border border-emerald-100 dark:border-emerald-200"
         >
           <h3 class="font-bold text-neutral-900 dark:text-white mb-4">
             Generate New Report
@@ -84,7 +84,7 @@ const reportTypes = [
               />
             </UFormGroup>
 
-            <UButton color="emerald" block icon="i-lucide-file-bar-chart-2">
+            <UButton color="emerald" block icon="i-lucide-file-bar-chart-2" class="w-full mt-2 text-slate-900 font-bold border border-emerald-100 hover:bg-emerald-100 hover:text-emerald-400 transition-colors">
               Generate Report
             </UButton>
           </div>
@@ -94,17 +94,17 @@ const reportTypes = [
       <!-- Generated Reports Archive -->
       <div class="lg:col-span-2">
         <div
-          class="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 overflow-hidden"
+          class="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-emerald-100 dark:border-emerald-200 overflow-hidden"
         >
           <div
-            class="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800"
+            class="px-6 py-4 border-b border-emerald-100 dark:border-emerald-200"
           >
             <h3 class="font-bold text-neutral-900 dark:text-white">
               Recent Exports
             </h3>
           </div>
 
-          <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <ul class="divide-y divide-emerald-100 dark:divide-emerald-200">
             <li
               v-for="report in generatedReports"
               :key="report.id"
@@ -143,6 +143,7 @@ const reportTypes = [
                   color="gray"
                   variant="ghost"
                   icon="i-lucide-download"
+                  class="text-slate-900 font-bold border border-slate-200 hover:bg-slate-200 transition-colors"
                 />
               </div>
             </li>

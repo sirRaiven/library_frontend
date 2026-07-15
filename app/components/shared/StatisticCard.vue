@@ -10,7 +10,7 @@ defineProps<{
 
 <template>
   <div
-    class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex items-start justify-between transition-colors"
+    class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-md border border-emerald-100 dark:border-slate-800 flex items-start justify-between transition-all duration-300 ease-out transform hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200 dark:hover:shadow-none"
   >
     <div class="space-y-1">
       <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">

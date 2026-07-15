@@ -37,7 +37,7 @@ const columns = [
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- Top Action Area for New Reservations -->
     <div
-      class="bg-emerald-500 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative"
+      class="bg-emerald-400 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative"
     >
       <!-- Decorative Background Icon -->
       <UIcon
@@ -59,7 +59,7 @@ const columns = [
           variant="solid"
           size="lg"
           icon="i-lucide-plus"
-          class="w-full md:w-auto text-emerald-600 font-bold"
+          class="w-full md:w-auto text-slate-100 font-bold border border-emerald-100 hover:bg-emerald-50 hover:text-emerald-400 transition-colors"
         >
           Start Reservation Workflow
         </UButton>
@@ -68,10 +68,10 @@ const columns = [
 
     <!-- Active Reservations Ledger -->
     <div
-      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 overflow-hidden transition-colors"
+      class="bg-white dark:bg-neutral-900 rounded-2xl shadow-md border border-emerald-100 dark:border-emerald-200 overflow-hidden transition-colors"
     >
       <div
-        class="p-5 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-center"
+        class="p-5 border-b border-emerald-100 dark:border-emerald-200 flex justify-between items-center"
       >
         <h3 class="font-bold text-neutral-900 dark:text-white">Active Queue</h3>
         <UInput
