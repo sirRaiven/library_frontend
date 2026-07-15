@@ -75,6 +75,11 @@ const navItems: NavigationMenuItem[][] = [
       label: "Faculty",
       icon: "i-lucide-briefcase",
       to: "/librarian/faculty"
+    },
+    {
+      label: "Memberships",
+      icon: "i-lucide-id-card",
+      to: "/librarian/memberships"
     }
   ],
   [
@@ -218,7 +223,7 @@ const navItems: NavigationMenuItem[][] = [
               color="error"
               size="lg"
               block
-              class="flex-1 justify-center font-semibold"
+              class="flex-1 justify-center font-semibold rounded-2xl"
               @click="handleLogout"
             />
             <UButton
@@ -226,7 +231,7 @@ const navItems: NavigationMenuItem[][] = [
               color="error"
               size="lg"
               block
-              class="flex-1 justify-center font-semibold shadow-md shadow-red-500/20"
+              class="flex-1 justify-center font-semibold shadow-md shadow-error/20 rounded-2xl"
               @click="() => { isLogoutModalOpen = false }"
             />
           </div>
