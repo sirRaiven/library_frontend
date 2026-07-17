@@ -17,87 +17,107 @@ const handleLogout = () => {
 };
 
 const navItems: NavigationMenuItem[][] = [
-  [
-    {
-      label: "Dashboard",
-      icon: "i-lucide-layout-dashboard",
-      to: "/librarian/dashboard"
-    }
-  ],
-  [
-    {
-      label: "Library",
-      type: "label"
-    },
-    {
-      label: "Books",
-      icon: "i-lucide-book-open",
-      to: "/librarian/books"
-    },
-    {
-      label: "Categories",
-      icon: "i-lucide-folder-open",
-      to: "/librarian/categories"
-    }
-  ],
-  [
-    {
-      label: "Circulation",
-      type: "label"
-    },
-    {
-      label: "Borrow Books",
-      icon: "i-lucide-book-up",
-      to: "/librarian/borrow"
-    },
-    {
-      label: "Return Books",
-      icon: "i-lucide-book-down",
-      to: "/librarian/return"
-    },
-    {
-      label: "Reservations",
-      icon: "i-lucide-calendar-check",
-      to: "/librarian/reservations"
-    }
-  ],
-  [
-    {
-      label: "People",
-      type: "label"
-    },
-    {
-      label: "Students",
-      icon: "i-lucide-graduation-cap",
-      to: "/librarian/students"
-    },
-    {
-      label: "Faculty",
-      icon: "i-lucide-briefcase",
-      to: "/librarian/faculty"
-    },
-    {
-      label: "Memberships",
-      icon: "i-lucide-id-card",
-      to: "/librarian/memberships"
-    }
-  ],
-  [
-    {
-      label: "Monitoring",
-      type: "label"
-    },
-    {
-      label: "Reports",
-      icon: "i-lucide-chart-column",
-      to: "/librarian/reports"
-    },
-    {
-      label: "Notifications",
-      icon: "i-lucide-bell",
-      to: "/librarian/notifications"
-    }
-  ]
+[
+  {
+    label: "Dashboard",
+    icon: "i-lucide-layout-dashboard",
+    to: "/librarian/dashboard"
+  }
+],
+
+// ==========================
+// LIBRARY COLLECTION
+// ==========================
+
+[
+  {
+    label: "Library Collection",
+    type: "label"
+  },
+  {
+    label: "Books",
+    icon: "i-lucide-book-open",
+    to: "/librarian/books"
+  },
+  {
+    label: "Book Categories",
+    icon: "i-lucide-folder-open",
+    to: "/librarian/categories"
+  }
+],
+
+// ==========================
+// LIBRARY SERVICES
+// ==========================
+
+[
+  {
+    label: "Library Services",
+    type: "label"
+  },
+  {
+    label: "Borrow Books",
+    icon: "i-lucide-book-up",
+    to: "/librarian/borrow"
+  },
+  {
+    label: "Return Books",
+    icon: "i-lucide-book-down",
+    to: "/librarian/return"
+  },
+  {
+    label: "Reservations",
+    icon: "i-lucide-calendar-check",
+    to: "/librarian/reservations"
+  }
+],
+
+// ==========================
+// LIBRARY MEMBERS
+// ==========================
+
+[
+  {
+    label: "Library Members",
+    type: "label"
+  },
+  {
+    label: "Students",
+    icon: "i-lucide-graduation-cap",
+    to: "/librarian/students"
+  },
+  {
+    label: "Faculty",
+    icon: "i-lucide-briefcase",
+    to: "/librarian/faculty"
+  },
+  {
+    label: "Library Cards",
+    icon: "i-lucide-id-card",
+    to: "/librarian/memberships"
+  }
+],
+
+// ==========================
+// REPORTS
+// ==========================
+
+[
+  {
+    label: "Reports & Monitoring",
+    type: "label"
+  },
+  {
+    label: "Reports",
+    icon: "i-lucide-chart-column",
+    to: "/librarian/reports"
+  },
+  {
+    label: "Notifications",
+    icon: "i-lucide-bell",
+    to: "/librarian/notifications"
+  }
+]
 ]
 </script>
 
