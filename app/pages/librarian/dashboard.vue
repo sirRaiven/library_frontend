@@ -52,12 +52,12 @@ const quickActions = [
   },
   {
     title: "Register Student",
-    description: "Register a new book and print its barcode.",
+    description: "Create a student library account and barcode.",
     icon: "i-lucide-users",
   },
   {
     title: "Add New Book",
-    description: "Create a student library account and barcode.",
+    description: "Register a new book and print its barcode.",
     icon: "i-lucide-book-plus",
   },
 ];
