@@ -529,7 +529,7 @@ async function printImportedBarcodes(): Promise<void> {
         </template>
 
         <div class="overflow-x-auto">
-          <table class="min-w-[1100px] w-full text-left text-sm">
+          <table class="min-w-275 w-full text-left text-sm">
             <thead>
               <tr class="border-b border-default bg-elevated/60">
                 <th class="px-3 py-3">Row</th>
