@@ -1,38 +1,102 @@
 <script setup lang="ts">
-// Ensure this page uses the blank default layout, not the librarian sidebar
-definePageMeta({
-  layout: 'default',
-  title: 'Sign In'
-})
+import type {
+  FormError,
+  FormSubmitEvent,
+} from "@nuxt/ui";
 
-const colorMode = useColorMode()
-const router = useRouter()
-const roleCookie = useCookie('user-role') // Mocking authentication state
-
-const username = ref('')
-const password = ref('')
-const isLoggingIn = ref(false)
-const showPassword = ref(false)
-
-// TEMPORARY DEVELOPMENT CREDENTIALS
-const TEMP_CREDENTIALS = {
-  username: 'admin',
-  password: 'Admin123'
+interface LoginForm {
+  identifier: string;
+  password: string;
 }
 
-const handleLogin = async () => {
+definePageMeta({
+  layout: "default",
+  title: "Sign In",
+});
+
+const route = useRoute();
+const colorMode = useColorMode();
+const auth = useAuth();
+
+const form = reactive<LoginForm>({
+  identifier: "",
+  password: "",
+});
+
+const showPassword = ref(false);
+const isLoggingIn = ref(false);
+const loginError = ref("");
+
+function validate(
+  state: Partial<LoginForm>,
+): FormError[] {
+  const errors: FormError[] = [];
+
+  if (!state.identifier?.trim()) {
+    errors.push({
+      name: "identifier",
+      message: "Email or username is required.",
+    });
+  }
+
+  if (!state.password) {
+    errors.push({
+      name: "password",
+      message: "Password is required.",
+    });
+  }
+
+  return errors;
+}
+
+async function handleLogin(
+  event: FormSubmitEvent<LoginForm>,
+) {
+  if (isLoggingIn.value) {
+    return;
+  }
+
+  loginError.value = "";
   isLoggingIn.value = true;
 
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+  try {
+    await auth.login(
+      event.data.identifier,
+      event.data.password,
+    );
 
-  // Check against hardcoded credentials
-  if (username.value === TEMP_CREDENTIALS.username && password.value === TEMP_CREDENTIALS.password) {
-    roleCookie.value = 'librarian'; // Set session cookie for RBAC
-    await router.push('/librarian/dashboard');
-  } else {
+    if (
+      auth.role.value !== "librarian" &&
+      auth.role.value !== "student" &&
+      auth.role.value !== "faculty"
+    ) {
+      const returnedRole =
+        auth.user.value?.role?.name ??
+        auth.user.value?.role?.type ??
+        "None";
+
+      auth.clearSession();
+
+      loginError.value =
+        `Your Strapi account returned the role "${returnedRole}". ` +
+        "Assign the account to Librarian, Student, or Faculty.";
+
+      return;
+    }
+
+    const requestedRedirect =
+      typeof route.query.redirect === "string" &&
+      route.query.redirect.startsWith("/")
+        ? route.query.redirect
+        : null;
+
+    await navigateTo(
+      requestedRedirect ?? auth.homeRoute.value,
+    );
+  } catch (error) {
+    loginError.value = auth.getErrorMessage(error);
+  } finally {
     isLoggingIn.value = false;
-    alert(`Invalid credentials. Use: ${TEMP_CREDENTIALS.username} / ${TEMP_CREDENTIALS.password}`);
   }
 }
 </script>
@@ -60,7 +124,7 @@ const handleLogin = async () => {
         <!-- Header Section (With subtle gradient background) -->
         <div class="bg-[linear-gradient(180deg,rgba(16,185,129,0.05)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(16,185,129,0.05)_0%,rgba(23,23,23,0)_100%)] pt-12 pb-8 px-8 flex flex-col items-center text-center border-b border-neutral-100 dark:border-neutral-800">
           
-          <div class="w-16 h-16 rounded-[1.25rem] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-6">
+          <div class="w-16 h-16 rounded-[1.25rem] bg-linear-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-6">
             <UIcon name="i-lucide-library-big" class="w-8 h-8" />
           </div>
           
@@ -74,47 +138,81 @@ const handleLogin = async () => {
 
         <!-- Form Section -->
         <div class="p-8">
-          <form @submit.prevent="handleLogin" class="space-y-5">
+          <UForm :validate="validate" :state="form" @submit="handleLogin" class="space-y-5">
                       
-            <UFormField label="Email or Username" :ui="{ label: 'text-sm font-semibold text-neutral-700 dark:text-neutral-300' }">
-              <UInput
-                v-model="username"
-                icon="i-lucide-user"
-                placeholder="Enter email or username"
-                size="lg"
-                color="neutral"
-                variant="outline"
-                class="w-full"
-                :ui="{ base: 'h-12 rounded-xl' }"
-                autofocus
-              />
+          <UFormField
+          name="identifier"
+          label="Email or Username"
+          :ui="{
+            label:
+              'text-sm font-semibold text-neutral-700 dark:text-neutral-300',
+          }"
+          >
+          <UInput
+            v-model="form.identifier"
+            icon="i-lucide-user"
+            placeholder="Enter email or username"
+            autocomplete="username"
+            size="lg"
+            color="neutral"
+            variant="outline"
+            class="w-full"
+            :ui="{ base: 'h-12 rounded-xl' }"
+            autofocus
+          />
+          </UFormField>
+
+            <UFormField
+            name="password"
+            label="Password"
+            :ui="{
+              label:
+                'text-sm font-semibold text-neutral-700 dark:text-neutral-300',
+            }"
+            >
+            <UInput
+              v-model="form.password"
+              :type="showPassword ? 'text' : 'password'"
+              icon="i-lucide-lock"
+              placeholder="Enter password"
+              autocomplete="current-password"
+              size="lg"
+              color="neutral"
+              variant="outline"
+              class="w-full"
+              :ui="{ base: 'h-12 rounded-xl' }"
+            >
+              <template #trailing>
+                <UButton
+                  type="button"
+                  :icon="
+                    showPassword
+                      ? 'i-lucide-eye-off'
+                      : 'i-lucide-eye'
+                  "
+                  :aria-label="
+                    showPassword
+                      ? 'Hide password'
+                      : 'Show password'
+                  "
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  square
+                  @click="() => { showPassword = !showPassword; }"
+                />
+              </template>
+            </UInput>
             </UFormField>
 
-            <UFormField label="Password" :ui="{ label: 'text-sm font-semibold text-neutral-700 dark:text-neutral-300' }">
-              <UInput
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                icon="i-lucide-lock"
-                placeholder="Enter password"
-                size="lg"
-                color="neutral"
-                variant="outline"
-                class="w-full"
-                :ui="{ base: 'h-12 rounded-xl' }"
-              >
-                <template #trailing>
-                  <UButton
-                    :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                    color="neutral"
-                    variant="link"
-                    size="sm"
-                    :padded="false"
-                    @click="() => { showPassword = !showPassword }"
-                    class="text-neutral-400 hover:text-neutral-600 pointer-events-auto"
-                  />
-                </template>
-              </UInput>
-            </UFormField>
+            <UAlert
+              v-if="loginError"
+              color="error"
+              variant="soft"
+              icon="i-lucide-circle-alert"
+              title="Unable to sign in"
+              :description="loginError"
+            />
 
             <!-- Sign In Button -->
             <div class="pt-2">
@@ -138,7 +236,7 @@ const handleLogin = async () => {
               </span>
             </div>
 
-          </form>
+          </UForm>
         </div>
       </div>
       
