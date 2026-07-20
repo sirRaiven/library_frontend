@@ -13,6 +13,7 @@ type BookStatus = "Active" | "Archived";
 type CopyCondition = "New" | "Good" | "Fair" | "Damaged";
 
 interface BookRegistrationForm {
+  inventoryDate: number;
   title: string;
   author: string;
   isbn: string;
@@ -23,6 +24,7 @@ interface BookRegistrationForm {
   description: string;
   recordStatus: BookStatus;
   quantity: number;
+  price: number;
   shelfLocation: string;
   condition: CopyCondition;
   remarks: string;
@@ -33,11 +35,14 @@ interface RegisteredBook {
   documentId?: string;
   title: string;
   author: string;
+  category?: string;
+  call_number?: string;
 }
 
 interface RegisteredCopy {
   id?: number;
   documentId?: string;
+  accession_number?: string;
   control_number: string;
 }
 
@@ -51,18 +56,16 @@ interface RegistrationResponse {
 const auth = useAuth();
 const toast = useToast();
 
+const currentYear = new Date().getFullYear();
+
 const categories = [
-  "General Reference",
-  "Computer Science",
-  "Information Technology",
-  "Business",
-  "Education",
-  "Engineering",
-  "Literature",
-  "History",
-  "Science",
-  "Mathematics",
-  "Others",
+  "Filipiniana",
+  "Reference",
+  "Computer Program",
+  "Health Care",
+  "Business Administration",
+  "Hospitality & Tourism Management",
+  "Criminal Justice Education",
 ];
 
 const conditions: CopyCondition[] = [
@@ -73,6 +76,7 @@ const conditions: CopyCondition[] = [
 ];
 
 const form = reactive<BookRegistrationForm>({
+  inventoryDate: currentYear,
   title: "",
   author: "",
   isbn: "",
@@ -83,12 +87,24 @@ const form = reactive<BookRegistrationForm>({
   description: "",
   recordStatus: "Active",
   quantity: 1,
-  shelfLocation: "",
+  price: 0,
+  shelfLocation: "General Circulation",
   condition: "Good",
   remarks: "",
 });
 
 const isSubmitting = ref(false);
+
+const callNumber = computed(() =>
+  form.category || "Assigned from category",
+);
+
+const formattedPrice = computed(() =>
+  new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+  }).format(Number(form.price) || 0),
+);
 
 const isReadyToRegister = computed(
   () =>
@@ -98,16 +114,23 @@ const isReadyToRegister = computed(
         form.category &&
         form.shelfLocation.trim(),
     ) &&
+    Number.isInteger(Number(form.inventoryDate)) &&
+    Number(form.inventoryDate) >= 1900 &&
     Number.isInteger(Number(form.quantity)) &&
-    Number(form.quantity) > 0,
+    Number(form.quantity) > 0 &&
+    Number(form.price) >= 0,
 );
 
 const registrationSummary = computed(() => ({
   title: form.title.trim() || "Untitled book",
   author: form.author.trim() || "Author not entered",
+  category: form.category || "Not selected",
+  callNumber: callNumber.value,
+  inventoryDate: form.inventoryDate,
   quantity: Number(form.quantity) || 0,
-  shelf: form.shelfLocation.trim() || "Not assigned",
+  shelf: form.shelfLocation,
   condition: form.condition,
+  price: formattedPrice.value,
 }));
 
 function getHttpStatus(error: unknown): number | undefined {
@@ -130,6 +153,19 @@ function validate(
   state: Partial<BookRegistrationForm>,
 ): FormError[] {
   const errors: FormError[] = [];
+
+  const inventoryDate = Number(state.inventoryDate);
+
+  if (
+    !Number.isInteger(inventoryDate) ||
+    inventoryDate < 1900 ||
+    inventoryDate > currentYear + 1
+  ) {
+    errors.push({
+      name: "inventoryDate",
+      message: "Enter a valid inventory year.",
+    });
+  }
 
   if (!state.title?.trim()) {
     errors.push({
@@ -166,6 +202,15 @@ function validate(
     });
   }
 
+  const price = Number(state.price);
+
+  if (!Number.isFinite(price) || price < 0) {
+    errors.push({
+      name: "price",
+      message: "Enter a valid price. Use 0 for donated books.",
+    });
+  }
+
   if (!state.shelfLocation?.trim()) {
     errors.push({
       name: "shelfLocation",
@@ -173,17 +218,17 @@ function validate(
     });
   }
 
-  const rawYear = state.copyrightYear;
+  const copyrightYear = state.copyrightYear;
 
   if (
-    rawYear !== undefined &&
-    (!Number.isInteger(Number(rawYear)) ||
-      Number(rawYear) < 1000 ||
-      Number(rawYear) > new Date().getFullYear() + 1)
+    copyrightYear !== undefined &&
+    (!Number.isInteger(Number(copyrightYear)) ||
+      Number(copyrightYear) < 1000 ||
+      Number(copyrightYear) > currentYear + 1)
   ) {
     errors.push({
       name: "copyrightYear",
-      message: "Enter a valid publication year.",
+      message: "Enter a valid copyright year.",
     });
   }
 
@@ -212,6 +257,11 @@ async function submitRegistration(
                 author: form.author.trim(),
                 isbn: form.isbn.trim() || null,
                 category: form.category,
+
+                // The call number is automatically copied from
+                // the selected category to reduce librarian input.
+                call_number: form.category,
+
                 publisher:
                   form.publisher.trim() || null,
                 edition: form.edition.trim() || null,
@@ -221,8 +271,16 @@ async function submitRegistration(
                   form.description.trim() || null,
                 record_status: form.recordStatus,
               },
+
               copies: {
                 quantity: Number(form.quantity),
+
+                // These values are applied to every physical copy
+                // created in this registration batch.
+                inventory_date: Number(
+                  form.inventoryDate,
+                ),
+                price: Number(form.price),
                 shelf_location:
                   form.shelfLocation.trim(),
                 condition: form.condition,
@@ -249,7 +307,7 @@ async function submitRegistration(
         response.data.copies.length === 1
           ? "copy was"
           : "copies were"
-      } created with unique control numbers.`,
+      } created with unique accession numbers and barcodes.`,
       color: "success",
       icon: "i-lucide-circle-check-big",
     });
@@ -322,7 +380,7 @@ async function submitRegistration(
             color="neutral"
             variant="ghost"
             square
-            aria-label="Back to book catalog"
+            aria-label="Back to library collection"
           />
 
           <div>
@@ -339,21 +397,21 @@ async function submitRegistration(
                 color="success"
                 variant="soft"
               >
-                Barcodes generated automatically
+                Accession numbers generated automatically
               </UBadge>
             </div>
 
-            <p class="mt-1 text-sm text-muted">
-              Enter the title once, specify the number
-              of copies, and the system will create a
-              unique control number for every copy.
+            <p class="mt-1 max-w-3xl text-sm text-muted">
+              Enter the book information once. The system
+              will create every physical copy, assign its
+              accession number, and generate its barcode.
             </p>
           </div>
         </div>
 
         <UButton
           to="/librarian/books"
-          label="View Catalog"
+          label="View Collection"
           icon="i-lucide-library"
           color="neutral"
           variant="outline"
@@ -364,9 +422,9 @@ async function submitRegistration(
       <UAlert
         color="info"
         variant="soft"
-        icon="i-lucide-scan-barcode"
-        title="One registration creates the complete inventory record"
-        description="After saving, you will be taken directly to the book record where all generated barcodes can be viewed, downloaded, and printed."
+        icon="i-lucide-wand-sparkles"
+        title="Designed to reduce repetitive encoding"
+        description="The call number is copied from the selected category, the shelf defaults to General Circulation, and all accession numbers are assigned automatically."
       />
 
       <UForm
@@ -392,11 +450,11 @@ async function submitRegistration(
                   <h2
                     class="font-semibold text-highlighted"
                   >
-                    Book information
+                    Catalog information
                   </h2>
                   <p class="text-sm text-muted">
-                    Required information for the catalog
-                    record.
+                    Fields based on the institution's
+                    existing inventory record.
                   </p>
                 </div>
               </div>
@@ -404,8 +462,36 @@ async function submitRegistration(
 
             <div class="grid gap-5 md:grid-cols-2">
               <UFormField
+                name="inventoryDate"
+                label="Inventory date"
+                description="Inventory year for this registration batch."
+                required
+              >
+                <UInputNumber
+                  v-model="form.inventoryDate"
+                  :min="1900"
+                  :max="currentYear + 1"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Accession number"
+                description="Assigned automatically to every physical copy."
+              >
+                <UInput
+                  model-value="Generated after registration"
+                  icon="i-lucide-hash"
+                  size="lg"
+                  readonly
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
                 name="title"
-                label="Book title"
+                label="Title"
                 required
                 class="md:col-span-2"
               >
@@ -437,6 +523,7 @@ async function submitRegistration(
               <UFormField
                 name="category"
                 label="Category"
+                description="This value is also used as the call number."
                 required
               >
                 <USelect
@@ -450,16 +537,29 @@ async function submitRegistration(
               </UFormField>
 
               <UFormField
-                name="isbn"
-                label="ISBN"
-                hint="Optional"
+                label="Call number"
+                description="Automatically copied from category."
               >
                 <UInput
-                  v-model="form.isbn"
-                  icon="i-lucide-hash"
-                  placeholder="ISBN-10 or ISBN-13"
+                  :model-value="callNumber"
+                  icon="i-lucide-library"
                   size="lg"
-                  autocomplete="off"
+                  readonly
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                name="copyrightYear"
+                label="Copyright date"
+                hint="Optional"
+              >
+                <UInputNumber
+                  v-model="form.copyrightYear"
+                  :min="1000"
+                  :max="currentYear + 1"
+                  placeholder="e.g., 2026"
+                  size="lg"
                   class="w-full"
                 />
               </UFormField>
@@ -478,6 +578,35 @@ async function submitRegistration(
                   class="w-full"
                 />
               </UFormField>
+
+              <UFormField
+                name="edition"
+                label="Edition"
+                hint="Optional"
+              >
+                <UInput
+                  v-model="form.edition"
+                  placeholder="e.g., 4th Edition"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                name="price"
+                label="Price"
+                description="Enter 0.00 for donated books."
+                required
+              >
+                <UInputNumber
+                  v-model="form.price"
+                  :min="0"
+                  :step="0.01"
+                  icon="i-lucide-philippine-peso"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
             </div>
 
             <details
@@ -491,7 +620,7 @@ async function submitRegistration(
                     name="i-lucide-list-plus"
                     class="size-4 text-muted"
                   />
-                  Additional bibliographic details
+                  Optional catalog details
                 </span>
 
                 <UIcon
@@ -504,27 +633,14 @@ async function submitRegistration(
                 class="grid gap-5 border-t border-default p-4 md:grid-cols-2"
               >
                 <UFormField
-                  name="edition"
-                  label="Edition"
+                  name="isbn"
+                  label="ISBN"
+                  hint="Optional"
                 >
                   <UInput
-                    v-model="form.edition"
-                    placeholder="e.g., 4th Edition"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField
-                  name="copyrightYear"
-                  label="Publication year"
-                >
-                  <UInputNumber
-                    v-model="form.copyrightYear"
-                    :min="1000"
-                    :max="
-                      new Date().getFullYear() + 1
-                    "
-                    placeholder="e.g., 2026"
+                    v-model="form.isbn"
+                    icon="i-lucide-barcode"
+                    placeholder="ISBN-10 or ISBN-13"
                     class="w-full"
                   />
                 </UFormField>
@@ -565,8 +681,8 @@ async function submitRegistration(
                     Physical copies
                   </h2>
                   <p class="text-sm text-muted">
-                    These settings are applied to all
-                    copies in this registration batch.
+                    These settings are applied to every
+                    copy created in this batch.
                   </p>
                 </div>
               </div>
@@ -576,8 +692,8 @@ async function submitRegistration(
               <UFormField
                 name="quantity"
                 label="Number of copies"
+                description="Each copy receives a unique accession number and barcode."
                 required
-                description="Each copy receives its own control number."
               >
                 <UInputNumber
                   v-model="form.quantity"
@@ -591,14 +707,14 @@ async function submitRegistration(
               <UFormField
                 name="shelfLocation"
                 label="Shelf location"
+                description="Default location for this collection."
                 required
               >
                 <UInput
                   v-model="form.shelfLocation"
                   icon="i-lucide-map-pin"
-                  placeholder="e.g., CS-A-01"
                   size="lg"
-                  autocomplete="off"
+                  readonly
                   class="w-full"
                 />
               </UFormField>
@@ -625,7 +741,7 @@ async function submitRegistration(
               >
                 <UTextarea
                   v-model="form.remarks"
-                  placeholder="Donor, supplier, acquisition batch, or other notes"
+                  placeholder="Donor, supplier, purchase order, acquisition batch, or other notes"
                   :rows="3"
                   autoresize
                   class="w-full"
@@ -645,8 +761,7 @@ async function submitRegistration(
                   Registration summary
                 </h2>
                 <p class="mt-1 text-sm text-muted">
-                  Review the required information before
-                  saving.
+                  Review the record before saving.
                 </p>
               </div>
             </template>
@@ -672,12 +787,58 @@ async function submitRegistration(
                   class="flex items-center justify-between gap-4"
                 >
                   <dt class="text-muted">
-                    Physical copies
+                    Inventory date
+                  </dt>
+                  <dd class="font-semibold text-highlighted">
+                    {{ registrationSummary.inventoryDate }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex items-center justify-between gap-4"
+                >
+                  <dt class="text-muted">
+                    Category
                   </dt>
                   <dd
-                    class="font-semibold text-highlighted"
+                    class="max-w-44 text-right font-semibold text-highlighted"
                   >
+                    {{ registrationSummary.category }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex items-center justify-between gap-4"
+                >
+                  <dt class="text-muted">
+                    Call number
+                  </dt>
+                  <dd
+                    class="max-w-44 text-right font-semibold text-highlighted"
+                  >
+                    {{ registrationSummary.callNumber }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex items-center justify-between gap-4"
+                >
+                  <dt class="text-muted">
+                    Physical copies
+                  </dt>
+                  <dd class="font-semibold text-highlighted">
                     {{ registrationSummary.quantity }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex items-center justify-between gap-4"
+                >
+                  <dt class="text-muted">
+                    Price per copy
+                  </dt>
+                  <dd class="font-semibold text-highlighted">
+                    {{ registrationSummary.price }}
                   </dd>
                 </div>
 
@@ -688,7 +849,7 @@ async function submitRegistration(
                     Shelf
                   </dt>
                   <dd
-                    class="truncate font-semibold text-highlighted"
+                    class="max-w-44 text-right font-semibold text-highlighted"
                   >
                     {{ registrationSummary.shelf }}
                   </dd>
@@ -721,18 +882,20 @@ async function submitRegistration(
                   />
 
                   <p>
-                    The system will generate
+                    The system will create
                     <strong>
-                      {{
-                        registrationSummary.quantity
-                      }}
+                      {{ registrationSummary.quantity }}
                     </strong>
-                    unique barcode{{
+                    accession number{{
                       registrationSummary.quantity === 1
                         ? ""
                         : "s"
                     }}
-                    after registration.
+                    and matching barcode{{
+                      registrationSummary.quantity === 1
+                        ? ""
+                        : "s"
+                    }}.
                   </p>
                 </div>
               </div>

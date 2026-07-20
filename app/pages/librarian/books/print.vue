@@ -303,26 +303,6 @@ watch(
           :key="`${item.controlNumber}-${index}`"
           class="barcode-label"
         >
-          <div class="label-header">
-            <p class="institution-name">
-              SNCBT LIBRARY
-            </p>
-
-            <p class="book-title">
-              {{
-                item.title ||
-                "Library Book"
-              }}
-            </p>
-
-            <p
-              v-if="item.author"
-              class="book-author"
-            >
-              {{ item.author }}
-            </p>
-          </div>
-
           <div class="barcode-area">
             <svg
               :ref="
@@ -337,19 +317,6 @@ watch(
               :aria-label="`Barcode for ${item.controlNumber}`"
             />
           </div>
-
-          <div class="label-footer">
-            <span
-              v-if="item.shelfLocation"
-            >
-              Shelf:
-              {{ item.shelfLocation }}
-            </span>
-
-            <span v-else>
-              Property of SNCBT Library
-            </span>
-          </div>
         </article>
       </section>
     </main>
@@ -360,17 +327,16 @@ watch(
 .labels-grid {
   display: grid;
   grid-template-columns:
-    repeat(auto-fit, minmax(310px, 1fr));
+  repeat(auto-fit, minmax(310px, 1fr));
   gap: 16px;
 }
 
 .barcode-label {
   display: flex;
-  min-height: 180px;
+  min-height: 80px;
   break-inside: avoid;
   flex-direction: column;
   justify-content: space-between;
-  overflow: hidden;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   background: #ffffff;
@@ -413,7 +379,6 @@ watch(
   min-height: 84px;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
 
 .barcode-svg {
@@ -465,7 +430,7 @@ watch(
   }
 
   .barcode-label {
-    min-height: 42mm !important;
+    min-height: 12mm !important;
     border: 0.25mm solid #94a3b8 !important;
     border-radius: 2mm !important;
     padding: 3mm !important;
