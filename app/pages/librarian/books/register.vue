@@ -3,6 +3,7 @@ import type {
   FormError,
   FormSubmitEvent,
 } from "@nuxt/ui";
+import { useAuth } from "~/composables/useAuth";
 
 definePageMeta({
   layout: "librarian",
@@ -25,7 +26,6 @@ interface BookRegistrationForm {
   recordStatus: BookStatus;
   quantity: number;
   price: number;
-  shelfLocation: string;
   condition: CopyCondition;
   remarks: string;
 }
@@ -88,7 +88,6 @@ const form = reactive<BookRegistrationForm>({
   recordStatus: "Active",
   quantity: 1,
   price: 0,
-  shelfLocation: "General Circulation",
   condition: "Good",
   remarks: "",
 });
@@ -111,8 +110,7 @@ const isReadyToRegister = computed(
     Boolean(
       form.title.trim() &&
         form.author.trim() &&
-        form.category &&
-        form.shelfLocation.trim(),
+        form.category,
     ) &&
     Number.isInteger(Number(form.inventoryDate)) &&
     Number(form.inventoryDate) >= 1900 &&
@@ -128,7 +126,7 @@ const registrationSummary = computed(() => ({
   callNumber: callNumber.value,
   inventoryDate: form.inventoryDate,
   quantity: Number(form.quantity) || 0,
-  shelf: form.shelfLocation,
+  shelf: form.category || "Not selected",
   condition: form.condition,
   price: formattedPrice.value,
 }));
@@ -211,13 +209,6 @@ function validate(
     });
   }
 
-  if (!state.shelfLocation?.trim()) {
-    errors.push({
-      name: "shelfLocation",
-      message: "Shelf location is required.",
-    });
-  }
-
   const copyrightYear = state.copyrightYear;
 
   if (
@@ -281,8 +272,7 @@ async function submitRegistration(
                   form.inventoryDate,
                 ),
                 price: Number(form.price),
-                shelf_location:
-                  form.shelfLocation.trim(),
+                shelf_location: form.category,
                 condition: form.condition,
                 remarks: form.remarks.trim() || null,
               },
@@ -424,7 +414,7 @@ async function submitRegistration(
         variant="soft"
         icon="i-lucide-wand-sparkles"
         title="Designed to reduce repetitive encoding"
-        description="The call number is copied from the selected category, the shelf defaults to General Circulation, and all accession numbers are assigned automatically."
+        description="The selected category is automatically used as the call number and shelf location, while every physical copy receives its own accession number and barcode."
       />
 
       <UForm
@@ -705,13 +695,14 @@ async function submitRegistration(
               </UFormField>
 
               <UFormField
-                name="shelfLocation"
                 label="Shelf location"
-                description="Default location for this collection."
-                required
+                description="Automatically copied from the selected category."
               >
                 <UInput
-                  v-model="form.shelfLocation"
+                  :model-value="
+                    form.category ||
+                    'Select a category first'
+                  "
                   icon="i-lucide-map-pin"
                   size="lg"
                   readonly

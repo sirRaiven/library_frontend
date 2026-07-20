@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import type { InventoryExportRow } from "~/composables/useLibraryInventoryExcel";
+import { useLibraryInventoryExcel } from "~/composables/useLibraryInventoryExcel";
+import { useBarcodePrintQueue } from "~/composables/useBarcodePrintQueue";
+import { useAuth } from "~/composables/useAuth";
 definePageMeta({
   layout: "librarian",
   title: "Library Collection",
@@ -50,6 +54,13 @@ interface BooksResponse {
   };
 }
 
+interface ExportInventoryResponse {
+  data: InventoryExportRow[];
+  meta?: {
+    total?: number;
+  };
+}
+
 interface CatalogBook extends BookRecord {
   copies: BookCopy[];
   totalCopies: number;
@@ -60,6 +71,7 @@ interface CatalogBook extends BookRecord {
 const auth = useAuth();
 const toast = useToast();
 const printQueue = useBarcodePrintQueue();
+const inventoryExcel = useLibraryInventoryExcel();
 
 const search = ref("");
 const selectedCategory = ref("All Categories");
@@ -67,6 +79,7 @@ const page = ref(1);
 const pageSize = 12;
 
 const isLoading = ref(true);
+const isExporting = ref(false);
 const loadError = ref("");
 const books = ref<CatalogBook[]>([]);
 const totalBooks = ref(0);
@@ -74,17 +87,13 @@ const pageCount = ref(1);
 
 const categoryItems = [
   "All Categories",
-  "General Reference",
-  "Computer Science",
-  "Information Technology",
-  "Business",
-  "Education",
-  "Engineering",
-  "Literature",
-  "History",
-  "Science",
-  "Mathematics",
-  "Others",
+  "Filipiniana",
+  "Reference",
+  "Computer Program",
+  "Health Care",
+  "Business Administration",
+  "Hospitality & Tourism Management",
+  "Criminal Justice Education",
 ];
 
 const copiesOnPage = computed(() =>
@@ -312,6 +321,59 @@ async function printAllCopies(
   );
 }
 
+async function exportInventory(): Promise<void> {
+  if (isExporting.value) {
+    return;
+  }
+
+  isExporting.value = true;
+
+  try {
+    const response =
+      await auth.authFetch<ExportInventoryResponse>(
+        "/api/books/export-inventory",
+        {
+          method: "GET",
+        },
+      );
+
+    await inventoryExcel.downloadInventoryExport(
+      response.data,
+    );
+
+    toast.add({
+      title: "Inventory exported",
+      description: `${response.data.length} physical ${
+        response.data.length === 1 ? "copy was" : "copies were"
+      } written to the Excel file.`,
+      color: "success",
+      icon: "i-lucide-file-check-2",
+    });
+  } catch (error) {
+    if (getHttpStatus(error) === 401) {
+      auth.clearSession();
+
+      await navigateTo({
+        path: "/",
+        query: {
+          redirect: "/librarian/books",
+        },
+      });
+
+      return;
+    }
+
+    toast.add({
+      title: "Export failed",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-file-x-2",
+    });
+  } finally {
+    isExporting.value = false;
+  }
+}
+
 function clearFilters() {
   search.value = "";
   selectedCategory.value =
@@ -384,13 +446,30 @@ onBeforeUnmount(() => {
           </div>
 
           <p class="mt-1 text-sm text-muted">
-            Search the catalog, open a book record,
-            and manage its physical copies and
-            barcodes from one place.
+            Register books manually or import existing Excel records, then
+            manage physical copies, accession numbers, and barcodes from one
+            place.
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
+          <UButton
+            to="/librarian/books/import"
+            label="Import Excel"
+            icon="i-lucide-file-up"
+            color="neutral"
+            variant="outline"
+          />
+
+          <UButton
+            label="Export Excel"
+            icon="i-lucide-file-down"
+            color="neutral"
+            variant="outline"
+            :loading="isExporting"
+            @click="exportInventory"
+          />
+
           <UButton
             to="/librarian/books/copies"
             label="Physical Copies"
