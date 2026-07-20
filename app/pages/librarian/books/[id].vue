@@ -843,16 +843,6 @@ onMounted(() => {
                   :control-number="
                     copy.control_number
                   "
-                  :title="book.title"
-                  :author="book.author"
-                  :shelf-location="
-                    copy.shelf_location ?? ''
-                  "
-                  :status="copy.copy_status"
-                  :condition="
-                    copy.condition ??
-                    'Not specified'
-                  "
                 />
 
                 <p
