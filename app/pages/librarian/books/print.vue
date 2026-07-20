@@ -1,162 +1,477 @@
+<script setup lang="ts">
+import type {
+  ComponentPublicInstance,
+} from "vue";
+
+definePageMeta({
+  layout: false,
+  title: "Print Barcode Labels",
+});
+
+const route = useRoute();
+const printQueue =
+  useBarcodePrintQueue();
+
+const barcodeElements =
+  new Map<number, SVGSVGElement>();
+
+const isRendering = ref(false);
+const renderError = ref("");
+
+const printItems = computed(
+  () => printQueue.items.value,
+);
+
+function setBarcodeRef(
+  element:
+    | Element
+    | ComponentPublicInstance
+    | null,
+  index: number,
+) {
+  if (element instanceof SVGSVGElement) {
+    barcodeElements.set(index, element);
+  } else {
+    barcodeElements.delete(index);
+  }
+}
+
+function loadLegacyQuery() {
+  if (
+    printQueue.items.value.length > 0 ||
+    typeof route.query.barcodes !==
+      "string"
+  ) {
+    return;
+  }
+
+  const values = route.query.barcodes
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (values.length === 0) {
+    return;
+  }
+
+  printQueue.setPrintQueue(
+    values.map((controlNumber) => ({
+      controlNumber,
+      title:
+        typeof route.query.title ===
+        "string"
+          ? route.query.title
+          : "Library Book",
+      author:
+        typeof route.query.author ===
+        "string"
+          ? route.query.author
+          : "",
+      shelfLocation:
+        typeof route.query.shelf ===
+        "string"
+          ? route.query.shelf
+          : "",
+    })),
+    "/librarian/books",
+  );
+}
+
+async function renderBarcodes() {
+  if (!import.meta.client) {
+    return;
+  }
+
+  renderError.value = "";
+  isRendering.value = true;
+
+  try {
+    await nextTick();
+
+    const barcodeModule =
+      await import("jsbarcode");
+
+    const JsBarcode =
+      barcodeModule.default;
+
+    printItems.value.forEach(
+      (item, index) => {
+        const element =
+          barcodeElements.get(index);
+
+        if (!element) {
+          return;
+        }
+
+        JsBarcode(
+          element,
+          item.controlNumber,
+          {
+            format: "CODE128",
+            width: 1.6,
+            height: 52,
+            displayValue: true,
+            font: "Arial",
+            fontSize: 13,
+            fontOptions: "bold",
+            textMargin: 5,
+            margin: 0,
+            background: "#ffffff",
+            lineColor: "#111827",
+          },
+        );
+      },
+    );
+  } catch (error) {
+    console.error(
+      "Unable to render print barcodes:",
+      error,
+    );
+
+    renderError.value =
+      "The barcode labels could not be generated. Return to the book record and try again.";
+  } finally {
+    isRendering.value = false;
+  }
+}
+
+async function goBack() {
+  await navigateTo(
+    printQueue.sourceRoute.value ||
+      "/librarian/books",
+  );
+}
+
+function triggerPrint() {
+  if (
+    !import.meta.client ||
+    printItems.value.length === 0 ||
+    isRendering.value ||
+    renderError.value
+  ) {
+    return;
+  }
+
+  window.print();
+}
+
+onMounted(async () => {
+  printQueue.restorePrintQueue();
+  loadLegacyQuery();
+  await renderBarcodes();
+});
+
+watch(
+  () =>
+    printItems.value.map(
+      (item) => item.controlNumber,
+    ),
+  async () => {
+    await renderBarcodes();
+  },
+);
+</script>
+
 <template>
-  <div class="print-container">
-    <!-- Non-printable control bar -->
-    <div
-      class="no-print p-4 bg-gray-100 flex items-center justify-between border-b border-gray-200"
+  <div
+    class="min-h-screen bg-slate-100 text-slate-950"
+  >
+    <header
+      class="no-print sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur"
     >
-      <UButton icon="i-heroicons-arrow-left" variant="outline" @click="goBack">
-        Back to Registration
-      </UButton>
-      <div class="text-sm font-medium text-gray-600">
-        Ready to print: <strong>{{ barcodes.length }}</strong> labels
-      </div>
-      <UButton icon="i-heroicons-printer" color="primary" @click="triggerPrint">
-        Print Labels
-      </UButton>
-    </div>
+      <div
+        class="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <UButton
+            label="Back"
+            icon="i-lucide-arrow-left"
+            color="neutral"
+            variant="outline"
+            @click="goBack"
+          />
 
-    <!-- Print Labels Grid -->
-    <div class="labels-grid">
-      <div v-for="barcode in barcodes" :key="barcode" class="label-card">
-        <div class="library-header">STATE UNIVERSITY LIBRARY</div>
-
-        <div class="barcode-wrapper">
-          <canvas :id="`canvas-${barcode}`" class="barcode-canvas"></canvas>
-          <div class="fallback-barcode-text" v-if="!hasJsBarcode">
-            {{ barcode }}
+          <div>
+            <h1
+              class="font-semibold text-slate-950"
+            >
+              Barcode Label Preview
+            </h1>
+            <p
+              class="text-sm text-slate-500"
+            >
+              {{ printItems.length }}
+              {{
+                printItems.length === 1
+                  ? "label"
+                  : "labels"
+              }}
+              ready
+            </p>
           </div>
         </div>
 
-        <div class="label-footer">Keep this label clean and dry</div>
+        <div class="flex flex-wrap gap-2">
+          <UButton
+            label="Print Labels"
+            icon="i-lucide-printer"
+            color="primary"
+            size="lg"
+            :loading="isRendering"
+            :disabled="
+              printItems.length === 0 ||
+              Boolean(renderError)
+            "
+            @click="triggerPrint"
+          />
+        </div>
       </div>
-    </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl p-4 sm:p-6">
+      <UAlert
+        v-if="renderError"
+        class="no-print mb-5"
+        color="error"
+        variant="soft"
+        icon="i-lucide-circle-alert"
+        title="Unable to prepare the labels"
+        :description="renderError"
+      />
+
+      <div
+        v-if="isRendering"
+        class="no-print flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-10 text-slate-500"
+      >
+        <UIcon
+          name="i-lucide-loader-circle"
+          class="size-6 animate-spin"
+        />
+        Preparing barcode labels
+      </div>
+
+      <div
+        v-if="
+          !isRendering &&
+          printItems.length === 0
+        "
+        class="no-print flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center"
+      >
+        <div
+          class="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"
+        >
+          <UIcon
+            name="i-lucide-scan-barcode"
+            class="size-7"
+          />
+        </div>
+
+        <h2
+          class="mt-4 font-semibold text-slate-950"
+        >
+          No barcode labels selected
+        </h2>
+
+        <p
+          class="mt-1 max-w-md text-sm text-slate-500"
+        >
+          Return to a book record or the physical
+          copies directory and select the labels you
+          want to print.
+        </p>
+
+        <UButton
+          label="Back to Library Collection"
+          icon="i-lucide-arrow-left"
+          color="neutral"
+          variant="outline"
+          class="mt-5"
+          @click="goBack"
+        />
+      </div>
+
+      <section
+        v-show="
+          !isRendering &&
+          printItems.length > 0
+        "
+        class="labels-grid"
+        aria-label="Barcode labels"
+      >
+        <article
+          v-for="(item, index) in printItems"
+          :key="`${item.controlNumber}-${index}`"
+          class="barcode-label"
+        >
+          <div class="label-header">
+            <p class="institution-name">
+              SNCBT LIBRARY
+            </p>
+
+            <p class="book-title">
+              {{
+                item.title ||
+                "Library Book"
+              }}
+            </p>
+
+            <p
+              v-if="item.author"
+              class="book-author"
+            >
+              {{ item.author }}
+            </p>
+          </div>
+
+          <div class="barcode-area">
+            <svg
+              :ref="
+                (element) =>
+                  setBarcodeRef(
+                    element,
+                    index,
+                  )
+              "
+              class="barcode-svg"
+              role="img"
+              :aria-label="`Barcode for ${item.controlNumber}`"
+            />
+          </div>
+
+          <div class="label-footer">
+            <span
+              v-if="item.shelfLocation"
+            >
+              Shelf:
+              {{ item.shelfLocation }}
+            </span>
+
+            <span v-else>
+              Property of SNCBT Library
+            </span>
+          </div>
+        </article>
+      </section>
+    </main>
   </div>
 </template>
 
-<script setup>
-import { computed, onMounted, ref, nextTick } from "vue";
-import { useRoute, useRouter } from "vue-router";
-
-definePageMeta({ layout: false }); // Keep this to disable the app shell during print
-
-const route = useRoute();
-const router = useRouter();
-const hasJsBarcode = ref(false);
-
-const barcodes = computed(() =>
-  route.query.barcodes ? route.query.barcodes.split(",") : [],
-);
-
-const goBack = () => router.back();
-const triggerPrint = () => window.print();
-
-onMounted(async () => {
-  await nextTick();
-  const script = document.createElement("script");
-  script.src =
-    "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js";
-  script.onload = () => {
-    hasJsBarcode.value = true;
-    barcodes.value.forEach((barcode) => {
-      try {
-        window.JsBarcode(`#canvas-${barcode}`, barcode, {
-          format: "CODE128",
-          width: 2,
-          height: 50,
-          displayValue: true,
-          fontSize: 14,
-          margin: 10,
-        });
-      } catch (e) {
-        console.error("Barcode fail", e);
-      }
-    });
-    setTimeout(() => window.print(), 800);
-  };
-  document.head.appendChild(script);
-});
-</script>
-
 <style scoped>
-.print-container {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
 .labels-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  padding: 20px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fit, minmax(310px, 1fr));
+  gap: 16px;
 }
 
-.label-card {
-  width: 320px;
-  height: 180px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.barcode-label {
   display: flex;
+  min-height: 180px;
+  break-inside: avoid;
   flex-direction: column;
   justify-content: space-between;
-  padding: 12px;
-  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px;
+  color: #0f172a;
   text-align: center;
 }
 
-.library-header {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #333;
-  border-bottom: 1px double #ccc;
-  padding-bottom: 4px;
+.label-header {
+  min-height: 54px;
 }
-.barcode-wrapper {
-  flex-grow: 1;
+
+.institution-name {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.book-title {
+  margin-top: 4px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-author {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barcode-area {
   display: flex;
-  flex-direction: column;
+  min-height: 84px;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
-.barcode-canvas {
+
+.barcode-svg {
   max-width: 100%;
   height: auto;
 }
-.fallback-barcode-text {
-  font-family: monospace;
-  font-size: 14px;
-  font-weight: bold;
-  letter-spacing: 2px;
-}
+
 .label-footer {
+  display: flex;
+  min-height: 22px;
+  align-items: flex-end;
+  justify-content: center;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 6px;
+  color: #475569;
   font-size: 9px;
-  color: #666;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  :global(html),
+  :global(body) {
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
   .no-print {
     display: none !important;
   }
-  body,
-  .print-container {
-    background: white !important;
-    padding: 0 !important;
+
+  main {
+    width: auto !important;
+    max-width: none !important;
     margin: 0 !important;
-  }
-  .labels-grid {
     padding: 0 !important;
-    gap: 0 !important;
-    display: block !important;
   }
-  .label-card {
-    border: none !important;
-    page-break-after: always;
-    margin: 0 auto !important;
-    width: 100% !important;
-    height: 100vh !important;
-    justify-content: space-around;
+
+  .labels-grid {
+    display: grid !important;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+    gap: 5mm !important;
+  }
+
+  .barcode-label {
+    min-height: 42mm !important;
+    border: 0.25mm solid #94a3b8 !important;
+    border-radius: 2mm !important;
+    padding: 3mm !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 </style>

@@ -225,13 +225,13 @@ export function useAuth() {
 
     const currentUser = normalizeUser(response);
 
-    if (!currentUser.role) {
-      throw createError({
-        statusCode: 403,
-        statusMessage:
-          "Strapi did not return the user's role. In the Librarian role permissions, enable Users & Permissions Plugin → User → me and Role → find, then confirm that this user is assigned to the Librarian role.",
-      });
-    }
+    // if (!currentUser.role) {
+    //   throw createError({
+    //     statusCode: 403,
+    //     statusMessage:
+    //       "Strapi did not return the user's role. In the Librarian role permissions, enable Users & Permissions Plugin → User → me and Role → find, then confirm that this user is assigned to the Librarian role.",
+    //   });
+    // }
 
     return currentUser;
   }

@@ -1,247 +1,807 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
-
 definePageMeta({
   layout: "librarian",
-  title: "Books Catalog",
+  title: "Library Collection",
 });
 
-const router = useRouter();
+type CopyStatus =
+  | "Available"
+  | "Borrowed"
+  | "Reserved"
+  | "Damaged"
+  | "Lost"
+  | "Archived";
+
+interface BookCopy {
+  id?: number;
+  documentId?: string;
+  control_number: string;
+  shelf_location?: string | null;
+  copy_status: CopyStatus;
+  condition?: string | null;
+}
+
+interface BookRecord {
+  id?: number;
+  documentId?: string;
+  title: string;
+  author: string;
+  isbn?: string | null;
+  category?: string | null;
+  publisher?: string | null;
+  edition?: string | null;
+  copyright_year?: number | null;
+  record_status?: "Active" | "Archived";
+  createdAt?: string;
+  book_copies?: BookCopy[] | {
+    data?: BookCopy[];
+  };
+}
+
+interface BooksResponse {
+  data: BookRecord[];
+  meta?: {
+    pagination?: {
+      page: number;
+      pageSize: number;
+      pageCount: number;
+      total: number;
+    };
+  };
+}
+
+interface CatalogBook extends BookRecord {
+  copies: BookCopy[];
+  totalCopies: number;
+  availableCopies: number;
+  attentionCopies: number;
+}
+
+const auth = useAuth();
+const toast = useToast();
+const printQueue = useBarcodePrintQueue();
 
 const search = ref("");
-const selectedCategory = ref("");
+const selectedCategory = ref("All Categories");
+const page = ref(1);
+const pageSize = 12;
 
-// Updated to include categories relevant to the system's mock data
-const categories = [
+const isLoading = ref(true);
+const loadError = ref("");
+const books = ref<CatalogBook[]>([]);
+const totalBooks = ref(0);
+const pageCount = ref(1);
+
+const categoryItems = [
+  "All Categories",
+  "General Reference",
   "Computer Science",
-  "Programming",
-  "Database",
-  "Networking",
-  "Technology",
-  "Embedded Systems",
-  "General Education",
+  "Information Technology",
+  "Business",
+  "Education",
+  "Engineering",
+  "Literature",
+  "History",
+  "Science",
+  "Mathematics",
+  "Others",
 ];
 
-const books = ref([
-  {
-    id: 1,
-    cover: "",
-    title: "Systems Analysis and Design",
-    author: "Kenneth Kendall",
-    isbn: "978-0133023442",
-    category: "Technology",
-    publisher: "Pearson",
-    copies: 10,
-    available: 8,
-  },
-  {
-    id: 2,
-    cover: "",
-    title: "Introduction to Arduino Automation",
-    author: "Jane Doe",
-    isbn: "978-3161484100",
-    category: "Embedded Systems",
-    publisher: "Maker Press",
-    copies: 6,
-    available: 6,
-  },
-  {
-    id: 3,
-    cover: "",
-    title: "Modern Network Management Principles",
-    author: "Richard Stevens",
-    isbn: "978-0131433511",
-    category: "Networking",
-    publisher: "Addison-Wesley",
-    copies: 5,
-    available: 0,
-  },
-]);
+const copiesOnPage = computed(() =>
+  books.value.reduce(
+    (total, book) => total + book.totalCopies,
+    0,
+  ),
+);
 
-const filteredBooks = computed(() => {
-  return books.value.filter((book) => {
-    const keyword =
-      book.title.toLowerCase().includes(search.value.toLowerCase()) ||
-      book.author.toLowerCase().includes(search.value.toLowerCase()) ||
-      book.isbn.includes(search.value);
+const availableOnPage = computed(() =>
+  books.value.reduce(
+    (total, book) =>
+      total + book.availableCopies,
+    0,
+  ),
+);
 
-    const category =
-      !selectedCategory.value || book.category === selectedCategory.value;
+const attentionOnPage = computed(() =>
+  books.value.reduce(
+    (total, book) =>
+      total + book.attentionCopies,
+    0,
+  ),
+);
 
-    return keyword && category;
-  });
+function getHttpStatus(error: unknown): number | undefined {
+  const fetchError = error as {
+    status?: number;
+    statusCode?: number;
+    response?: {
+      status?: number;
+    };
+  };
+
+  return (
+    fetchError.response?.status ??
+    fetchError.statusCode ??
+    fetchError.status
+  );
+}
+
+function normalizeCopies(
+  relation: BookRecord["book_copies"],
+): BookCopy[] {
+  if (Array.isArray(relation)) {
+    return relation;
+  }
+
+  if (
+    relation &&
+    Array.isArray(relation.data)
+  ) {
+    return relation.data;
+  }
+
+  return [];
+}
+
+function normalizeBook(
+  book: BookRecord,
+): CatalogBook {
+  const copies = normalizeCopies(
+    book.book_copies,
+  );
+
+  const availableCopies = copies.filter(
+    (copy) =>
+      copy.copy_status === "Available",
+  ).length;
+
+  const attentionCopies = copies.filter(
+    (copy) =>
+      copy.copy_status === "Damaged" ||
+      copy.copy_status === "Lost",
+  ).length;
+
+  return {
+    ...book,
+    copies,
+    totalCopies: copies.length,
+    availableCopies,
+    attentionCopies,
+  };
+}
+
+function buildQuery(): Record<string, unknown> {
+  const query: Record<string, unknown> = {
+    "sort[0]": "createdAt:desc",
+    "pagination[page]": page.value,
+    "pagination[pageSize]": pageSize,
+    "populate[book_copies][fields][0]":
+      "control_number",
+    "populate[book_copies][fields][1]":
+      "shelf_location",
+    "populate[book_copies][fields][2]":
+      "copy_status",
+    "populate[book_copies][fields][3]":
+      "condition",
+  };
+
+  const keyword = search.value.trim();
+
+  if (keyword) {
+    query[
+      "filters[$or][0][title][$containsi]"
+    ] = keyword;
+    query[
+      "filters[$or][1][author][$containsi]"
+    ] = keyword;
+    query[
+      "filters[$or][2][isbn][$containsi]"
+    ] = keyword;
+  }
+
+  if (
+    selectedCategory.value !==
+    "All Categories"
+  ) {
+    query["filters[category][$eq]"] =
+      selectedCategory.value;
+  }
+
+  return query;
+}
+
+async function loadBooks() {
+  isLoading.value = true;
+  loadError.value = "";
+
+  try {
+    const response =
+      await auth.authFetch<BooksResponse>(
+        "/api/books",
+        {
+          method: "GET",
+          query: buildQuery(),
+        },
+      );
+
+    books.value = response.data.map(
+      normalizeBook,
+    );
+
+    const pagination =
+      response.meta?.pagination;
+
+    totalBooks.value =
+      pagination?.total ??
+      response.data.length;
+
+    pageCount.value =
+      pagination?.pageCount ?? 1;
+  } catch (error) {
+    if (getHttpStatus(error) === 401) {
+      auth.clearSession();
+
+      await navigateTo({
+        path: "/",
+        query: {
+          redirect: "/librarian/books",
+        },
+      });
+
+      return;
+    }
+
+    loadError.value =
+      auth.getErrorMessage(error);
+
+    toast.add({
+      title: "Unable to load books",
+      description: loadError.value,
+      color: "error",
+      icon: "i-lucide-circle-x",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+function bookRoute(book: CatalogBook) {
+  const identifier =
+    book.documentId ?? book.id;
+
+  return identifier
+    ? `/librarian/books/${identifier}`
+    : "/librarian/books";
+}
+
+async function openBook(
+  book: CatalogBook,
+): Promise<void> {
+  await navigateTo(bookRoute(book));
+}
+
+async function printAllCopies(
+  book: CatalogBook,
+) {
+  if (book.copies.length === 0) {
+    toast.add({
+      title: "No barcode labels",
+      description:
+        "This book does not have any physical copies.",
+      color: "warning",
+      icon: "i-lucide-printer",
+    });
+
+    return;
+  }
+
+  printQueue.setPrintQueue(
+    book.copies.map((copy) => ({
+      controlNumber:
+        copy.control_number,
+      title: book.title,
+      author: book.author,
+      shelfLocation:
+        copy.shelf_location ?? "",
+    })),
+    bookRoute(book),
+  );
+
+  await navigateTo(
+    "/librarian/books/print",
+  );
+}
+
+function clearFilters() {
+  search.value = "";
+  selectedCategory.value =
+    "All Categories";
+  page.value = 1;
+}
+
+let searchTimer:
+  | ReturnType<typeof setTimeout>
+  | undefined;
+
+watch(search, () => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+
+  searchTimer = setTimeout(() => {
+    page.value = 1;
+    void loadBooks();
+  }, 350);
 });
 
-const openBook = (book: any) => {
-  router.push(`/librarian/books/${book.id}`);
-};
+watch(selectedCategory, () => {
+  page.value = 1;
+  void loadBooks();
+});
 
-const registerBook = () => {
-  router.push("/librarian/books/register");
-};
+watch(page, () => {
+  void loadBooks();
+});
 
-const manageCopies = (book: any) => {
-  router.push({
-    path: "/librarian/books/copies",
-    query: {
-      id: book.id,
-    },
-  });
-};
+onMounted(() => {
+  void loadBooks();
+});
+
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+});
 </script>
 
 <template>
-  <UContainer class="py-8 space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col lg:flex-row justify-between gap-4">
-      <div>
-        <h1 class="text-3xl font-bold">Books Catalog</h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Browse and manage all registered book titles.
-        </p>
-      </div>
-
-      <UButton icon="i-lucide-plus" color="primary" @click="registerBook">
-        Register Book
-      </UButton>
-    </div>
-
-    <!-- Filters -->
-    <UCard>
-      <div class="grid lg:grid-cols-4 gap-4">
-        <UInput
-          v-model="search"
-          icon="i-lucide-search"
-          placeholder="Search title, author or ISBN"
-          class="lg:col-span-3"
-        />
-
-        <!-- Note: Nuxt UI v4 uses :options instead of :items -->
-        <USelect
-          v-model="selectedCategory"
-          :options="categories"
-          placeholder="All Categories"
-        />
-      </div>
-    </UCard>
-
-    <!-- Summary -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <UCard :ui="{ body: 'py-4 sm:p-6' }">
-        <div class="text-center">
-          <div class="text-3xl font-bold">
-            {{ books.length }}
-          </div>
-          <div class="text-sm text-gray-500 font-medium mt-1">Book Titles</div>
-        </div>
-      </UCard>
-
-      <UCard :ui="{ body: 'py-4 sm:p-6' }">
-        <div class="text-center">
-          <div class="text-3xl font-bold">
-            {{ books.reduce((a, b) => a + b.copies, 0) }}
-          </div>
-          <div class="text-sm text-gray-500 font-medium mt-1">
-            Physical Copies
-          </div>
-        </div>
-      </UCard>
-
-      <UCard :ui="{ body: 'py-4 sm:p-6' }">
-        <div class="text-center">
-          <div class="text-3xl font-bold text-green-600">
-            {{ books.reduce((a, b) => a + b.available, 0) }}
-          </div>
-          <div class="text-sm text-gray-500 font-medium mt-1">Available</div>
-        </div>
-      </UCard>
-
-      <UCard :ui="{ body: 'py-4 sm:p-6' }">
-        <div class="text-center">
-          <div class="text-3xl font-bold text-orange-600">
-            {{ books.reduce((a, b) => a + (b.copies - b.available), 0) }}
-          </div>
-          <div class="text-sm text-gray-500 font-medium mt-1">Borrowed</div>
-        </div>
-      </UCard>
-    </div>
-
-    <!-- Books Grid -->
-    <div class="grid xl:grid-cols-2 gap-5">
-      <UCard
-        v-for="book in filteredBooks"
-        :key="book.id"
-        class="flex flex-col h-full"
+  <UContainer class="py-6 sm:py-8">
+    <div class="space-y-6">
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
       >
-        <div class="flex gap-5">
-          <!-- Cover Placeholder -->
+        <div>
           <div
-            class="w-28 h-36 shrink-0 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200"
+            class="flex flex-wrap items-center gap-2"
           >
-            <UIcon name="i-lucide-book" class="w-10 h-10 text-gray-400" />
+            <h1
+              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
+            >
+              Library Collection
+            </h1>
+
+            <UBadge
+              color="neutral"
+              variant="soft"
+            >
+              {{ totalBooks }} book
+              {{
+                totalBooks === 1
+                  ? "title"
+                  : "titles"
+              }}
+            </UBadge>
           </div>
 
-          <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-lg truncate" :title="book.title">
-              {{ book.title }}
-            </h3>
-            <p class="text-gray-500 text-sm truncate">
-              {{ book.author }}
-            </p>
+          <p class="mt-1 text-sm text-muted">
+            Search the catalog, open a book record,
+            and manage its physical copies and
+            barcodes from one place.
+          </p>
+        </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-y-2 text-sm">
-              <div class="text-gray-500">ISBN</div>
-              <div class="font-semibold">{{ book.isbn }}</div>
+        <div class="flex flex-wrap gap-2">
+          <UButton
+            to="/librarian/books/copies"
+            label="Physical Copies"
+            icon="i-lucide-book-copy"
+            color="neutral"
+            variant="outline"
+          />
 
-              <div class="text-gray-500 self-center">Category</div>
-              <div>
-                <UBadge color="primary" variant="subtle" size="sm">
-                  {{ book.category }}
+          <UButton
+            to="/librarian/books/register"
+            label="Register Book"
+            icon="i-lucide-plus"
+            color="success"
+          />
+        </div>
+      </div>
+
+      <UCard>
+        <div
+          class="grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem_auto]"
+        >
+          <UInput
+            v-model="search"
+            icon="i-lucide-search"
+            placeholder="Search title, author, or ISBN"
+            size="lg"
+            class="w-full"
+          />
+
+          <USelect
+            v-model="selectedCategory"
+            :items="categoryItems"
+            icon="i-lucide-tags"
+            size="lg"
+            class="w-full"
+          />
+
+          <UButton
+            label="Refresh"
+            icon="i-lucide-refresh-cw"
+            color="neutral"
+            variant="outline"
+            size="lg"
+            :loading="isLoading"
+            @click="loadBooks"
+          />
+        </div>
+      </UCard>
+
+      <div
+        class="grid grid-cols-2 gap-3 lg:grid-cols-4"
+      >
+        <UCard>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+            >
+              <UIcon
+                name="i-lucide-library"
+                class="size-5"
+              />
+            </div>
+
+            <div>
+              <p
+                class="text-2xl font-bold text-highlighted"
+              >
+                {{ totalBooks }}
+              </p>
+              <p class="text-xs text-muted">
+                Book titles
+              </p>
+            </div>
+          </div>
+        </UCard>
+
+        <UCard>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info"
+            >
+              <UIcon
+                name="i-lucide-book-copy"
+                class="size-5"
+              />
+            </div>
+
+            <div>
+              <p
+                class="text-2xl font-bold text-highlighted"
+              >
+                {{ copiesOnPage }}
+              </p>
+              <p class="text-xs text-muted">
+                Copies shown
+              </p>
+            </div>
+          </div>
+        </UCard>
+
+        <UCard>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success"
+            >
+              <UIcon
+                name="i-lucide-circle-check"
+                class="size-5"
+              />
+            </div>
+
+            <div>
+              <p
+                class="text-2xl font-bold text-success"
+              >
+                {{ availableOnPage }}
+              </p>
+              <p class="text-xs text-muted">
+                Available shown
+              </p>
+            </div>
+          </div>
+        </UCard>
+
+        <UCard>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning"
+            >
+              <UIcon
+                name="i-lucide-triangle-alert"
+                class="size-5"
+              />
+            </div>
+
+            <div>
+              <p
+                class="text-2xl font-bold text-warning"
+              >
+                {{ attentionOnPage }}
+              </p>
+              <p class="text-xs text-muted">
+                Need attention
+              </p>
+            </div>
+          </div>
+        </UCard>
+      </div>
+
+      <UAlert
+        v-if="loadError"
+        color="error"
+        variant="soft"
+        icon="i-lucide-circle-alert"
+        title="The catalog could not be loaded"
+        :description="loadError"
+        :actions="[
+          {
+            label: 'Try again',
+            color: 'error',
+            variant: 'outline',
+            onClick: loadBooks,
+          },
+        ]"
+      />
+
+      <div
+        v-if="isLoading"
+        class="grid gap-4 xl:grid-cols-2"
+      >
+        <UCard
+          v-for="item in 6"
+          :key="item"
+        >
+          <div class="flex gap-4">
+            <USkeleton
+              class="h-32 w-24 shrink-0 rounded-xl"
+            />
+
+            <div class="flex-1 space-y-3">
+              <USkeleton class="h-5 w-3/4" />
+              <USkeleton class="h-4 w-1/2" />
+              <USkeleton class="h-16 w-full" />
+              <USkeleton class="h-9 w-40" />
+            </div>
+          </div>
+        </UCard>
+      </div>
+
+      <div
+        v-else-if="books.length > 0"
+        class="grid gap-4 xl:grid-cols-2"
+      >
+        <UCard
+          v-for="book in books"
+          :key="book.documentId ?? book.id"
+          class="group"
+        >
+          <div
+            class="flex flex-col gap-5 sm:flex-row"
+          >
+            <button
+              type="button"
+              class="flex h-36 w-full shrink-0 items-center justify-center rounded-2xl border border-default bg-elevated transition-colors hover:bg-accented sm:w-28"
+              :aria-label="`Open ${book.title}`"
+              @click="openBook(book)"
+            >
+              <UIcon
+                name="i-lucide-book-open"
+                class="size-10 text-muted transition-transform group-hover:scale-105"
+              />
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <div
+                class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+              >
+                <button
+                  type="button"
+                  class="min-w-0 text-left"
+                  @click="openBook(book)"
+                >
+                  <h2
+                    class="line-clamp-2 text-lg font-semibold text-highlighted hover:text-primary"
+                  >
+                    {{ book.title }}
+                  </h2>
+
+                  <p
+                    class="mt-1 truncate text-sm text-muted"
+                  >
+                    {{ book.author }}
+                  </p>
+                </button>
+
+                <UBadge
+                  :color="
+                    book.record_status ===
+                    'Archived'
+                      ? 'neutral'
+                      : 'success'
+                  "
+                  variant="soft"
+                  class="self-start"
+                >
+                  {{
+                    book.record_status ??
+                    "Active"
+                  }}
                 </UBadge>
               </div>
 
-              <div class="text-gray-500">Publisher</div>
-              <div class="font-semibold truncate" :title="book.publisher">
-                {{ book.publisher }}
+              <div
+                class="mt-4 grid gap-2 text-sm sm:grid-cols-2"
+              >
+                <div>
+                  <p class="text-xs text-muted">
+                    ISBN
+                  </p>
+                  <p
+                    class="truncate font-medium text-highlighted"
+                  >
+                    {{ book.isbn || "Not provided" }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs text-muted">
+                    Category
+                  </p>
+                  <p
+                    class="truncate font-medium text-highlighted"
+                  >
+                    {{
+                      book.category ||
+                      "Uncategorized"
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="mt-4 flex flex-wrap gap-2"
+              >
+                <UBadge
+                  color="neutral"
+                  variant="soft"
+                >
+                  {{ book.totalCopies }} total
+                </UBadge>
+
+                <UBadge
+                  :color="
+                    book.availableCopies > 0
+                      ? 'success'
+                      : 'warning'
+                  "
+                  variant="soft"
+                >
+                  {{ book.availableCopies }}
+                  available
+                </UBadge>
+
+                <UBadge
+                  v-if="
+                    book.attentionCopies > 0
+                  "
+                  color="error"
+                  variant="soft"
+                >
+                  {{ book.attentionCopies }}
+                  need attention
+                </UBadge>
+              </div>
+
+              <div
+                class="mt-5 flex flex-wrap gap-2"
+              >
+                <UButton
+                  label="Open Record"
+                  icon="i-lucide-arrow-right"
+                  trailing
+                  color="primary"
+                  variant="soft"
+                  @click="openBook(book)"
+                />
+
+                <UButton
+                  label="Print All Labels"
+                  icon="i-lucide-printer"
+                  color="neutral"
+                  variant="ghost"
+                  :disabled="
+                    book.totalCopies === 0
+                  "
+                  @click="printAllCopies(book)"
+                />
               </div>
             </div>
+          </div>
+        </UCard>
+      </div>
 
-            <!-- Tags -->
-            <div class="flex gap-3 mt-5">
-              <UBadge color="neutral" variant="solid">
-                {{ book.copies }} Total Copies
-              </UBadge>
-              <UBadge
-                :color="book.available > 0 ? 'success' : 'error'"
-                variant="subtle"
-              >
-                {{ book.available }} Available
-              </UBadge>
-            </div>
+      <UCard v-else>
+        <div
+          class="flex flex-col items-center px-4 py-12 text-center"
+        >
+          <div
+            class="flex size-14 items-center justify-center rounded-2xl bg-elevated text-muted"
+          >
+            <UIcon
+              name="i-lucide-book-open"
+              class="size-7"
+            />
+          </div>
 
-            <!-- Actions -->
-            <div class="flex gap-2 mt-6">
-              <UButton
-                icon="i-lucide-eye"
-                variant="outline"
-                @click="openBook(book)"
-              >
-                Details
-              </UButton>
+          <h2
+            class="mt-4 font-semibold text-highlighted"
+          >
+            No books found
+          </h2>
 
-              <UButton
-                color="neutral"
-                variant="ghost"
-                icon="i-lucide-book-copy"
-                @click="manageCopies(book)"
-              >
-                Manage Copies
-              </UButton>
-            </div>
+          <p
+            class="mt-1 max-w-md text-sm text-muted"
+          >
+            Change the search filters or register a
+            new book to begin building the library
+            collection.
+          </p>
+
+          <div
+            class="mt-5 flex flex-wrap justify-center gap-2"
+          >
+            <UButton
+              v-if="
+                search ||
+                selectedCategory !==
+                  'All Categories'
+              "
+              label="Clear Filters"
+              color="neutral"
+              variant="outline"
+              @click="clearFilters"
+            />
+
+            <UButton
+              to="/librarian/books/register"
+              label="Register Book"
+              icon="i-lucide-plus"
+              color="success"
+            />
           </div>
         </div>
       </UCard>
+
+      <div
+        v-if="pageCount > 1"
+        class="flex flex-col gap-3 rounded-xl border border-default bg-default p-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p class="text-sm text-muted">
+          Page {{ page }} of {{ pageCount }}
+        </p>
+
+        <UPagination
+          v-model:page="page"
+          :total="totalBooks"
+          :items-per-page="pageSize"
+          show-edges
+          :sibling-count="1"
+        />
+      </div>
     </div>
   </UContainer>
 </template>
