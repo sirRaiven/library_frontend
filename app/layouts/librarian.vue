@@ -1,337 +1,848 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from "@nuxt/ui";
+import type {
+  DropdownMenuItem,
+  NavigationMenuItem,
+} from "@nuxt/ui";
 
-const open = ref(true);
-const isLogoutModalOpen = ref(false); // Modal state
-const username = ref('librarian_01'); // Temporary username
+interface StrapiPaginationResponse {
+  meta?: {
+    pagination?: {
+      total?: number;
+    };
+  };
+}
 
 const route = useRoute();
-const colorMode = useColorMode();
-const router = useRouter();
-const roleCookie = useCookie('user-role');
+const auth = useAuth();
+const toast = useToast();
 
-const handleLogout = () => {
-  roleCookie.value = null; // Clear auth
-  isLogoutModalOpen.value = false;
-  router.push('/'); // Redirect to login
-};
+const sidebarOpen = ref(false);
+const sidebarCollapsed = ref(false);
+const isLogoutModalOpen = ref(false);
+const isLoggingOut = ref(false);
+const globalSearch = ref("");
+const unreadNotifications = ref(0);
 
-const navItems: NavigationMenuItem[][] = [
-[
-  {
-    label: "Dashboard",
-    icon: "i-lucide-layout-dashboard",
-    to: "/librarian/dashboard"
+const userName = computed(
+  () => auth.user.value?.username || "Librarian",
+);
+
+const userEmail = computed(
+  () =>
+    auth.user.value?.email ||
+    "Library staff account",
+);
+
+const userInitials = computed(() => {
+  const parts = userName.value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return (
+    parts
+      .slice(0, 2)
+      .map((part) =>
+        part.charAt(0).toUpperCase(),
+      )
+      .join("") || "L"
+  );
+});
+
+const pageTitle = computed(
+  () =>
+    String(
+      route.meta.title ||
+        getPageInformation().title,
+    ),
+);
+
+const pageIcon = computed(
+  () => getPageInformation().icon,
+);
+
+function getPageInformation(): {
+  title: string;
+  icon: string;
+} {
+  const path = route.path;
+
+  if (
+    path === "/librarian/dashboard" ||
+    path === "/librarian"
+  ) {
+    return {
+      title: "Dashboard",
+      icon: "i-lucide-layout-dashboard",
+    };
   }
-],
 
-// ==========================
-// LIBRARY COLLECTION
-// ==========================
-
-[
-  {
-    label: "Library Collection",
-    type: "label"
-  },
-  {
-    label: "Books",
-    icon: "i-lucide-book-open",
-    to: "/librarian/books"
-  },
-  {
-    label: "Book Categories",
-    icon: "i-lucide-folder-open",
-    to: "/librarian/categories"
+  if (path.startsWith("/librarian/books")) {
+    return {
+      title: "Library Collection",
+      icon: "i-lucide-books",
+    };
   }
-],
 
-// ==========================
-// LIBRARY SERVICES
-// ==========================
-
-[
-  {
-    label: "Library Services",
-    type: "label"
-  },
-  {
-    label: "Borrow Books",
-    icon: "i-lucide-book-up",
-    to: "/librarian/borrow"
-  },
-  {
-    label: "Return Books",
-    icon: "i-lucide-book-down",
-    to: "/librarian/return"
-  },
-  {
-    label: "Reservations",
-    icon: "i-lucide-calendar-check",
-    to: "/librarian/reservations"
+  if (path.startsWith("/librarian/borrow")) {
+    return {
+      title: "Borrow Books",
+      icon: "i-lucide-book-up",
+    };
   }
-],
 
-// ==========================
-// LIBRARY MEMBERS
-// ==========================
-
-[
-  {
-    label: "Library Members",
-    type: "label"
-  },
-  {
-    label: "Students",
-    icon: "i-lucide-graduation-cap",
-    to: "/librarian/students"
-  },
-  {
-    label: "Faculty",
-    icon: "i-lucide-briefcase",
-    to: "/librarian/faculty"
-  },
-  {
-    label: "Library Cards",
-    icon: "i-lucide-id-card",
-    to: "/librarian/memberships"
+  if (path.startsWith("/librarian/return")) {
+    return {
+      title: "Return Books",
+      icon: "i-lucide-book-down",
+    };
   }
-],
 
-// ==========================
-// REPORTS
-// ==========================
-
-[
-  {
-    label: "Reports & Monitoring",
-    type: "label"
-  },
-  {
-    label: "Reports",
-    icon: "i-lucide-chart-column",
-    to: "/librarian/reports"
-  },
-  {
-    label: "Notifications",
-    icon: "i-lucide-bell",
-    to: "/librarian/notifications"
+  if (
+    path.startsWith(
+      "/librarian/reservations",
+    )
+  ) {
+    return {
+      title: "Reservations",
+      icon: "i-lucide-calendar-check-2",
+    };
   }
-]
-]
+
+  if (path.startsWith("/librarian/students")) {
+    return {
+      title: "Students",
+      icon: "i-lucide-graduation-cap",
+    };
+  }
+
+  if (path.startsWith("/librarian/faculty")) {
+    return {
+      title: "Faculty",
+      icon: "i-lucide-briefcase-business",
+    };
+  }
+
+  if (
+    path.startsWith(
+      "/librarian/memberships",
+    )
+  ) {
+    return {
+      title: "Library Cards",
+      icon: "i-lucide-id-card",
+    };
+  }
+
+  if (path.startsWith("/librarian/reports")) {
+    return {
+      title: "Reports",
+      icon: "i-lucide-chart-no-axes-combined",
+    };
+  }
+
+  if (
+    path.startsWith(
+      "/librarian/notifications",
+    )
+  ) {
+    return {
+      title: "Notifications",
+      icon: "i-lucide-bell",
+    };
+  }
+
+  return {
+    title: "Librarian Portal",
+    icon: "i-lucide-library-big",
+  };
+}
+
+function isRouteActive(
+  path: string,
+  exact = false,
+): boolean {
+  return exact
+    ? route.path === path
+    : route.path === path ||
+        route.path.startsWith(`${path}/`);
+}
+
+function isBooksCatalogActive(): boolean {
+  const utilityPages = [
+    "/librarian/books/register",
+    "/librarian/books/import",
+    "/librarian/books/copies",
+    "/librarian/books/print",
+  ];
+
+  return (
+    route.path.startsWith("/librarian/books") &&
+    !utilityPages.some(
+      (path) =>
+        route.path === path ||
+        route.path.startsWith(`${path}/`),
+    )
+  );
+}
+
+const navigationItems =
+  computed<NavigationMenuItem[][]>(() => [
+    [
+      {
+        label: "Dashboard",
+        icon: "i-lucide-layout-dashboard",
+        to: "/librarian/dashboard",
+        active: isRouteActive(
+          "/librarian/dashboard",
+          true,
+        ),
+      },
+    ],
+    [
+      {
+        label: "Library Collection",
+        type: "label",
+      },
+      {
+        label: "Books",
+        icon: "i-lucide-books",
+        to: "/librarian/books",
+        active: isBooksCatalogActive(),
+      },
+      {
+        label: "Register Book",
+        icon: "i-lucide-book-plus",
+        to: "/librarian/books/register",
+        active: isRouteActive(
+          "/librarian/books/register",
+        ),
+      },
+      {
+        label: "Import Inventory",
+        icon: "i-lucide-file-up",
+        to: "/librarian/books/import",
+        active: isRouteActive(
+          "/librarian/books/import",
+        ),
+      },
+      {
+        label: "Physical Copies",
+        icon: "i-lucide-copy",
+        to: "/librarian/books/copies",
+        active: isRouteActive(
+          "/librarian/books/copies",
+        ),
+      },
+    ],
+    [
+      {
+        label: "Library Services",
+        type: "label",
+      },
+      {
+        label: "Borrow Books",
+        icon: "i-lucide-book-up",
+        to: "/librarian/borrow",
+        active: isRouteActive(
+          "/librarian/borrow",
+        ),
+      },
+      {
+        label: "Return Books",
+        icon: "i-lucide-book-down",
+        to: "/librarian/return",
+        active: isRouteActive(
+          "/librarian/return",
+        ),
+      },
+      {
+        label: "Reservations",
+        icon: "i-lucide-calendar-check-2",
+        to: "/librarian/reservations",
+        active: isRouteActive(
+          "/librarian/reservations",
+        ),
+      },
+    ],
+    [
+      {
+        label: "Library Members",
+        type: "label",
+      },
+      {
+        label: "Students",
+        icon: "i-lucide-graduation-cap",
+        to: "/librarian/students",
+        active: isRouteActive(
+          "/librarian/students",
+        ),
+      },
+      {
+        label: "Faculty",
+        icon: "i-lucide-briefcase-business",
+        to: "/librarian/faculty",
+        active: isRouteActive(
+          "/librarian/faculty",
+        ),
+      },
+      {
+        label: "Library Cards",
+        icon: "i-lucide-id-card",
+        to: "/librarian/memberships",
+        active: isRouteActive(
+          "/librarian/memberships",
+        ),
+      },
+    ],
+    [
+      {
+        label: "Reports & Monitoring",
+        type: "label",
+      },
+      {
+        label: "Reports",
+        icon:
+          "i-lucide-chart-no-axes-combined",
+        to: "/librarian/reports",
+        active: isRouteActive(
+          "/librarian/reports",
+        ),
+      },
+      {
+        label: "Notifications",
+        icon: "i-lucide-bell",
+        to: "/librarian/notifications",
+        active: isRouteActive(
+          "/librarian/notifications",
+        ),
+        badge:
+          unreadNotifications.value > 0
+            ? String(
+                Math.min(
+                  unreadNotifications.value,
+                  99,
+                ),
+              )
+            : undefined,
+      },
+    ],
+  ]);
+
+const accountMenuItems =
+  computed<DropdownMenuItem[][]>(() => [
+    [
+      {
+        label: userName.value,
+        type: "label",
+      },
+      {
+        label: "Dashboard",
+        icon: "i-lucide-layout-dashboard",
+        to: "/librarian/dashboard",
+      },
+      {
+        label: "Notifications",
+        icon: "i-lucide-bell",
+        to: "/librarian/notifications",
+        badge:
+          unreadNotifications.value > 0
+            ? String(
+                Math.min(
+                  unreadNotifications.value,
+                  99,
+                ),
+              )
+            : undefined,
+      },
+    ],
+    [
+      {
+        label: "Sign out",
+        icon: "i-lucide-log-out",
+        color: "error",
+        onSelect() {
+          isLogoutModalOpen.value = true;
+        },
+      },
+    ],
+  ]);
+
+async function submitGlobalSearch() {
+  const search = globalSearch.value.trim();
+
+  if (!search) {
+    return;
+  }
+
+  await navigateTo({
+    path: "/librarian/books",
+    query: {
+      search,
+    },
+  });
+
+  globalSearch.value = "";
+}
+
+async function loadUnreadNotifications() {
+  try {
+    const response =
+      await auth.authFetch<StrapiPaginationResponse>(
+        "/api/notifications",
+        {
+          method: "GET",
+          query: {
+            "filters[is_read][$eq]": false,
+            "pagination[page]": 1,
+            "pagination[pageSize]": 1,
+          },
+        },
+      );
+
+    unreadNotifications.value =
+      response.meta?.pagination?.total ?? 0;
+  } catch {
+    unreadNotifications.value = 0;
+  }
+}
+
+async function handleLogout() {
+  if (isLoggingOut.value) {
+    return;
+  }
+
+  isLoggingOut.value = true;
+
+  try {
+    await auth.logout();
+
+    isLogoutModalOpen.value = false;
+
+    toast.add({
+      title: "Signed out",
+      description:
+        "Your librarian session has been closed.",
+      color: "success",
+      icon: "i-lucide-circle-check",
+    });
+
+    await navigateTo("/", {
+      replace: true,
+    });
+  } catch (error) {
+    toast.add({
+      title: "Unable to sign out",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    isLoggingOut.value = false;
+  }
+}
+
+onMounted(() => {
+  void loadUnreadNotifications();
+});
+
+watch(
+  () => route.fullPath,
+  () => {
+    // Close the mobile sidebar after navigation.
+    sidebarOpen.value = false;
+
+    if (
+      route.path.startsWith(
+        "/librarian/notifications",
+      )
+    ) {
+      void loadUnreadNotifications();
+    }
+  },
+);
 </script>
 
 <template>
-  <div class="flex h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
-
-    <USidebar
-      v-model:open="open"
-      collapsible="icon"
-      side="left"
-      class="group border-r border-neutral-200 dark:border-neutral-800"
+  <UDashboardGroup
+    storage="local"
+    storage-key="sncbt-librarian-dashboard"
+    class="min-h-dvh bg-default text-default"
+  >
+    <UDashboardSidebar
+      v-model:open="sidebarOpen"
+      v-model:collapsed="sidebarCollapsed"
+      collapsible
+      resizable
+      :min-size="16"
+      :default-size="20"
+      :max-size="26"
+      mode="slideover"
       :ui="{
-        container: 'h-full flex flex-col justify-between p-0'
+        root:
+          'bg-default border-e border-default transition-colors duration-200',
+        header:
+          'border-b border-default bg-default/95 backdrop-blur',
+        body: 'gap-3 py-4',
+        footer:
+          'border-t border-default bg-default/95 py-3 backdrop-blur',
       }"
     >
-      <!-- Header -->
-      <template #header>
-        <div class="flex items-center gap-3">
+      <template #header="{ collapsed }">
+        <NuxtLink
+          to="/librarian/dashboard"
+          class="flex min-w-0 flex-1 items-center gap-3 rounded-xl outline-none ring-primary focus-visible:ring-2"
+          aria-label="Open librarian dashboard"
+        >
           <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white"
+            class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success text-white shadow-sm shadow-success/25"
           >
             <UIcon
               name="i-lucide-library-big"
-              class="size-5 shrink-0"
+              class="size-5"
             />
           </div>
 
-          <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
-            <h1 class="text-sm font-bold text-neutral-900 dark:text-white">
+          <div
+            v-if="!collapsed"
+            class="min-w-0 flex-1"
+          >
+            <p
+              class="truncate text-sm font-bold text-highlighted"
+            >
               SNCBT Library
-            </h1>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400">
+            </p>
+            <p class="truncate text-xs text-muted">
               Management System
             </p>
           </div>
-        </div>
+        </NuxtLink>
       </template>
 
-      <!-- Navigation -->
-      <UNavigationMenu
-        :items="navItems"
-        orientation="vertical"
-        :ui="{
-          root: 'w-full',
-          link: 'my-1 rounded-xl px-2.5 py-2.5 font-medium transition-colors',
-          linkLeadingIcon: 'size-6',
-          linkLabel: 'truncate group-data-[collapsible=icon]:hidden transition-all',
-        }"
-      />
-
-      <!-- Footer -->
-      <template #footer>
-        <div class="p-3 rounded-2xl bg-neutral-100 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800/60 flex flex-col gap-3 transition-all">
-          
-          <!-- User Profile -->
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 cursor-pointer" @click="open ? null : (isLogoutModalOpen = true)">
-              <UIcon name="i-lucide-user" class="w-5 h-5" />
-            </div>
-            
-            <div class="group-data-[collapsible=icon]:hidden whitespace-nowrap">
-              <p class="text-sm font-bold text-neutral-900 dark:text-white">
-                {{ username }}
-              </p>
-              <p class="text-xs text-neutral-500 dark:text-neutral-400">
-                Head Librarian
-              </p>
-            </div>
-          </div>
-
-          <!-- Sign Out Button -->
+      <template #default="{ collapsed }">
+        <UTooltip
+          :text="
+            collapsed
+              ? 'Expand sidebar'
+              : 'Collapse sidebar'
+          "
+          :disabled="!collapsed"
+        >
           <UButton
-            label="Logout"
-            icon="i-lucide-log-out"
-            color="error"
+            :label="
+              collapsed
+                ? undefined
+                : 'Collapse sidebar'
+            "
+            :icon="
+              collapsed
+                ? 'i-lucide-panel-left-open'
+                : 'i-lucide-panel-left-close'
+            "
+            color="neutral"
             variant="soft"
             block
-            class="group-data-[collapsible=icon]:hidden justify-center font-medium"
-            @click="() => {isLogoutModalOpen = true}"
+            :square="collapsed"
+            :aria-label="
+              collapsed
+                ? 'Expand sidebar'
+                : 'Collapse sidebar'
+            "
+            class="shrink-0 justify-center"
+            @click="
+              sidebarCollapsed =
+                !sidebarCollapsed
+            "
           />
-        </div>
-      </template>
-    </USidebar>
+        </UTooltip>
 
-    <!-- Logout Modal with #content slot -->
-    <UModal v-model:open="isLogoutModalOpen" :ui="{ content: 'sm:max-w-md' }">
-      <template #content>
-        <div class="p-8 flex flex-col items-center text-center">
-          
-          <!-- Large Floating Red Icon -->
-          <div class="w-16 h-16 rounded-2xl bg-error text-white flex items-center justify-center shadow-xl shadow-error/30 mb-5 mt-2">
-            <UIcon name="i-lucide-log-out" class="w-8 h-8" />
-          </div>
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="navigationItems"
+          orientation="vertical"
+          tooltip
+          popover
+          highlight
+          color="success"
+          variant="pill"
+          class="min-h-0 flex-1 overflow-y-auto"
+          :ui="{
+            link: 'rounded-xl',
+            linkLeadingIcon: 'size-5',
+            linkLabel: 'font-medium',
+          }"
+        />
 
-          <!-- Typography -->
-          <h3 class="text-xl font-bold text-neutral-900 dark:text-white mb-2 tracking-tight">Logout Session?</h3>
-          <p class="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
-            You are about to sign out from the <span class="font-bold text-neutral-900 dark:text-white">SNCBT Library</span>.<br>
-            You can login again anytime.
-          </p>
-
-          <!-- Embedded Profile Card -->
-          <div class="w-full flex items-center gap-3 p-4 mt-6 rounded-xl border border-emerald-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-left">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <UIcon name="i-lucide-user" class="w-5 h-5" />
+        <div
+          v-if="!collapsed"
+          class="mt-auto rounded-xl border border-success/20 bg-success/5 p-3"
+        >
+          <div class="flex items-start gap-3">
+            <div
+              class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"
+            >
+              <UIcon
+                name="i-lucide-shield-check"
+                class="size-4"
+              />
             </div>
-            <div>
-              <p class="text-sm font-bold text-neutral-900 dark:text-white">
-                {{ username }}
+
+            <div class="min-w-0">
+              <p
+                class="text-xs font-semibold text-highlighted"
+              >
+                Secure librarian access
               </p>
-              <p class="text-xs text-neutral-500 dark:text-neutral-400">
-                Head Librarian
+              <p
+                class="mt-0.5 text-xs leading-relaxed text-muted"
+              >
+                Protected by Strapi authentication
+                and role permissions.
               </p>
             </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex gap-3 w-full mt-6">
-            <UButton
-              label="Logout"
-              variant="soft"
-              icon="i-lucide-log-out"
-              color="error"
-              size="lg"
-              block
-              class="flex-1 justify-center font-semibold rounded-2xl"
-              @click="handleLogout"
-            />
-            <UButton
-              label="Stay Logged In"
-              color="error"
-              size="lg"
-              block
-              class="flex-1 justify-center font-semibold shadow-md shadow-error/20 rounded-2xl"
-              @click="() => { isLogoutModalOpen = false }"
-            />
           </div>
         </div>
       </template>
-    </UModal>
 
-    <!-- Content Wrapper -->
-    <div
-      class="
-        flex-1
-        flex
-        flex-col
-        min-w-0
-        overflow-hidden
-        lg:peer-data-[variant=inset]:my-4
-        lg:peer-data-[variant=inset]:mr-4
-        peer-data-[variant=inset]:rounded-2xl
-        peer-data-[variant=inset]:shadow-sm
-        peer-data-[variant=inset]:ring
-        peer-data-[variant=inset]:ring-neutral-200
-        dark:peer-data-[variant=inset]:ring-neutral-800
-        bg-white dark:bg-neutral-900
-        transition-colors
-      "
-    >
-      <!-- Topbar -->
-      <header
-        class="flex h-16 shrink-0 items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-6 transition-colors"
-      >
-        <div class="flex items-center gap-4">
+      <template #footer="{ collapsed }">
+        <UDropdownMenu
+          :items="accountMenuItems"
+          :content="{
+            align: 'start',
+            side: 'top',
+            sideOffset: 8,
+          }"
+          :ui="{
+            content: 'w-64',
+          }"
+        >
           <UButton
-            :icon="open ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left-open'"
             color="neutral"
             variant="ghost"
-            @click="() => { open = !open }"
-            class="text-neutral-500 dark:text-neutral-400"
+            :block="!collapsed"
+            :square="collapsed"
+            class="w-full"
+            :ui="{
+              base: collapsed
+                ? 'justify-center'
+                : 'justify-start',
+            }"
+          >
+            <UAvatar
+              :alt="userName"
+              :text="userInitials"
+              size="sm"
+              class="shrink-0"
+            />
+
+            <div
+              v-if="!collapsed"
+              class="min-w-0 flex-1 text-left"
+            >
+              <p
+                class="truncate text-sm font-semibold text-highlighted"
+              >
+                {{ userName }}
+              </p>
+              <p class="truncate text-xs text-muted">
+                {{ userEmail }}
+              </p>
+            </div>
+
+            <UIcon
+              v-if="!collapsed"
+              name="i-lucide-chevrons-up-down"
+              class="size-4 shrink-0 text-dimmed"
+            />
+          </UButton>
+        </UDropdownMenu>
+      </template>
+    </UDashboardSidebar>
+
+    <UDashboardPanel
+      id="librarian-main"
+      :ui="{
+        root: 'bg-default',
+        body: 'p-0 sm:p-0',
+      }"
+    >
+      <template #header>
+        <UDashboardNavbar
+          :title="pageTitle"
+          :icon="pageIcon"
+          toggle-side="left"
+          :toggle="{
+            color: 'neutral',
+            variant: 'ghost',
+            icon: 'i-lucide-menu',
+          }"
+          :ui="{
+            root:
+              'border-b border-default bg-default/90 backdrop-blur transition-colors duration-200',
+          }"
+        >
+          <template #right>
+            <form
+              class="hidden w-72 lg:block"
+              @submit.prevent="submitGlobalSearch"
+            >
+              <UInput
+                v-model="globalSearch"
+                icon="i-lucide-search"
+                placeholder="Search the book collection"
+                autocomplete="off"
+                class="w-full"
+              />
+            </form>
+
+            <div class="relative">
+              <UButton
+                to="/librarian/notifications"
+                icon="i-lucide-bell"
+                color="neutral"
+                variant="ghost"
+                square
+                aria-label="Open notifications"
+              />
+
+              <span
+                v-if="unreadNotifications > 0"
+                class="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-bold leading-4 text-white"
+              >
+                {{
+                  unreadNotifications > 99
+                    ? "99+"
+                    : unreadNotifications
+                }}
+              </span>
+            </div>
+
+            <UColorModeButton
+              color="neutral"
+              variant="ghost"
+            />
+
+            <UDropdownMenu
+              :items="accountMenuItems"
+              :content="{
+                align: 'end',
+                sideOffset: 8,
+              }"
+              :ui="{
+                content: 'w-64',
+              }"
+            >
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                aria-label="Open account menu"
+              >
+                <UAvatar
+                  :alt="userName"
+                  :text="userInitials"
+                  size="sm"
+                />
+              </UButton>
+            </UDropdownMenu>
+          </template>
+        </UDashboardNavbar>
+      </template>
+
+      <template #body>
+        <main
+          class="min-h-[calc(100dvh-var(--ui-header-height))] bg-muted/40 text-default transition-colors duration-200 dark:bg-default"
+        >
+          <div
+            class="mx-auto w-full max-w-[1600px]"
+          >
+            <slot />
+          </div>
+        </main>
+      </template>
+    </UDashboardPanel>
+  </UDashboardGroup>
+
+  <UModal
+    v-model:open="isLogoutModalOpen"
+    :dismissible="!isLoggingOut"
+    :ui="{
+      content: 'sm:max-w-md',
+    }"
+  >
+    <template #content>
+      <div class="bg-default p-6 sm:p-8">
+        <div
+          class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-error/10 text-error"
+        >
+          <UIcon
+            name="i-lucide-log-out"
+            class="size-7"
+          />
+        </div>
+
+        <div class="mt-5 text-center">
+          <h2
+            class="text-xl font-bold text-highlighted"
+          >
+            Sign out of SNCBT Library?
+          </h2>
+          <p
+            class="mt-2 text-sm leading-relaxed text-muted"
+          >
+            Your current librarian session will be
+            closed. You will need to sign in again to
+            access protected records.
+          </p>
+        </div>
+
+        <div
+          class="mt-6 flex items-center gap-3 rounded-xl border border-default bg-elevated p-4"
+        >
+          <UAvatar
+            :alt="userName"
+            :text="userInitials"
+            size="md"
           />
 
-          <div>
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white truncate tracking-tight">
-              {{ route.meta.title || "Dashboard" }}
-            </h2>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400">
-              Library Management System
+          <div class="min-w-0">
+            <p
+              class="truncate text-sm font-semibold text-highlighted"
+            >
+              {{ userName }}
+            </p>
+            <p class="truncate text-xs text-muted">
+              {{ userEmail }}
             </p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <UInput
-            icon="i-lucide-search"
-            placeholder="Search..."
-            class="w-72 hidden md:block"
-            :ui="{ base: 'bg-neutral-50 dark:bg-neutral-950' }"
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row"
+        >
+          <UButton
+            label="Cancel"
+            color="neutral"
+            variant="outline"
+            size="lg"
+            block
+            :disabled="isLoggingOut"
+            @click="
+              isLogoutModalOpen = false
+            "
           />
 
           <UButton
-            icon="i-lucide-bell"
-            color="neutral"
-            variant="ghost"
-            class="text-neutral-500 dark:text-neutral-400"
+            label="Sign Out"
+            icon="i-lucide-log-out"
+            color="error"
+            size="lg"
+            block
+            :loading="isLoggingOut"
+            @click="handleLogout"
           />
-
-          <UButton
-            :icon="colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
-            color="neutral"
-            variant="ghost"
-            @click="() => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark' }"
-            class="text-neutral-500 dark:text-neutral-400"
-          />
-
-          <UAvatar alt="Librarian" size="sm" class="ml-2 ring-2 ring-neutral-100 dark:ring-neutral-800" />
         </div>
-      </header>
-
-      <!-- Main Page Slot -->
-      <main class="flex-1 overflow-auto p-8 bg-white dark:bg-neutral-900 transition-colors">
-        <slot />
-      </main>
-    </div>
-  </div>
+      </div>
+    </template>
+  </UModal>
 </template>

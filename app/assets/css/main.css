@@ -1,10 +1,45 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-Global html {
-  scroll-behavior: smooth;
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  html {
+    min-height: 100%;
+    scroll-behavior: smooth;
+    background-color: var(--ui-bg);
+  }
+
+  body {
+    min-height: 100dvh;
+    margin: 0;
+    background-color: var(--ui-bg);
+    color: var(--ui-text);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    transition:
+      background-color 180ms ease,
+      color 180ms ease;
+  }
+
+  #__nuxt {
+    min-height: 100dvh;
+    background-color: var(--ui-bg);
+    color: var(--ui-text);
+  }
 }
 
-body {
-  background: #f8fafc;
+::selection {
+  background-color:
+    color-mix(
+      in srgb,
+      var(--ui-primary) 24%,
+      transparent
+    );
 }

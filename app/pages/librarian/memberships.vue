@@ -230,7 +230,7 @@ const submitRegistration = async () => {
     <USlideover v-model="isRegistrationOpen">
       <template #content>
         <div
-          class="flex flex-col h-full bg-white dark:bg-neutral-900 w-full sm:w-[450px]"
+          class="flex flex-col h-full bg-white dark:bg-neutral-900 w-full sm:w-112.5"
         >
           <!-- Slideover Header -->
           <div
