@@ -119,6 +119,10 @@ const isReadyToRegister = computed(
     Number(form.price) >= 0,
 );
 
+const barcodeFormatPreview = computed(
+  () => `LIB-${form.inventoryDate}-####`,
+);
+
 const registrationSummary = computed(() => ({
   title: form.title.trim() || "Untitled book",
   author: form.author.trim() || "Author not entered",
@@ -394,7 +398,8 @@ async function submitRegistration(
             <p class="mt-1 max-w-3xl text-sm text-muted">
               Enter the book information once. The system
               will create every physical copy, assign its
-              accession number, and generate its barcode.
+              accession number, and generate a barcode in the format
+              LIB-{Inventory Year}-{Accession Number}.
             </p>
           </div>
         </div>
@@ -414,7 +419,7 @@ async function submitRegistration(
         variant="soft"
         icon="i-lucide-wand-sparkles"
         title="Designed to reduce repetitive encoding"
-        description="The selected category is automatically used as the call number and shelf location, while every physical copy receives its own accession number and barcode."
+        description="The selected category is automatically used as the call number and shelf location. Every copy receives an accession number and a barcode such as LIB-2026-0001."
       />
 
       <UForm
@@ -808,6 +813,17 @@ async function submitRegistration(
                     class="max-w-44 text-right font-semibold text-highlighted"
                   >
                     {{ registrationSummary.callNumber }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex items-center justify-between gap-4"
+                >
+                  <dt class="text-muted">
+                    Barcode format
+                  </dt>
+                  <dd class="font-mono font-semibold text-highlighted">
+                    {{ barcodeFormatPreview }}
                   </dd>
                 </div>
 

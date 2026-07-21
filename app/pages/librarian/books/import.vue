@@ -28,6 +28,7 @@ interface ImportResult {
   summary: {
     received: number;
     valid: number;
+    requestedCopies: number;
     createdBooks: number;
     createdCopies: number;
     skippedDuplicates: number;
@@ -62,6 +63,13 @@ const createdBooks = ref(0);
 
 const previewRows = computed(() =>
   parsedRows.value.slice(0, 15),
+);
+
+const requestedCopies = computed(() =>
+  parsedRows.value.reduce(
+    (total, row) => total + row.number_of_copies,
+    0,
+  ),
 );
 
 const hasParsedFile = computed(
@@ -163,7 +171,10 @@ async function handleFileSelection(
         title: "Excel file is ready",
         description: `${parsed.rows.length} inventory ${
           parsed.rows.length === 1 ? "row was" : "rows were"
-        } validated.`,
+        } validated for ${parsed.rows.reduce(
+          (total, row) => total + row.number_of_copies,
+          0,
+        )} physical copies.`,
         color: "success",
         icon: "i-lucide-file-check-2",
       });
@@ -310,9 +321,9 @@ async function printImportedBarcodes(): Promise<void> {
               Import Existing Inventory
             </h1>
             <p class="mt-1 max-w-3xl text-sm text-muted">
-              Upload the institution's existing Excel record. Each row becomes
-              one physical copy, and its accession number automatically becomes
-              the barcode value.
+              Upload the institution's existing Excel record. Each row can
+              register one book title with multiple physical copies, consecutive
+              accession numbers, and automatically generated barcode values.
             </p>
           </div>
         </div>
@@ -340,7 +351,7 @@ async function printImportedBarcodes(): Promise<void> {
         variant="soft"
         icon="i-lucide-info"
         title="Excel import rules"
-        description="One row represents one physical copy. Call Number is used as Category and Shelf Location. Existing accession numbers are preserved; blank accession numbers are generated automatically."
+        description="One row represents one book title. Number of Copies creates all physical copies in one step. Accession Number is the starting value; leave it blank for automatic numbering. Call Number is also used as Category and Shelf Location."
       />
 
       <UCard v-if="importedCopies.length === 0">
@@ -369,8 +380,9 @@ async function printImportedBarcodes(): Promise<void> {
               Select the library inventory workbook
             </h2>
             <p class="mx-auto mt-2 max-w-xl text-sm text-muted">
-              Use an <strong>.xlsx</strong> file with the required nine headers.
-              The older .xls format is not accepted.
+              Use an <strong>.xlsx</strong> file with the updated ten-column
+              template. Older files without Number of Copies are still accepted
+              and default to one copy per row.
             </p>
 
             <div class="mt-5 flex flex-wrap justify-center gap-2">
@@ -416,9 +428,16 @@ async function printImportedBarcodes(): Promise<void> {
 
           <div class="space-y-3">
             <div class="rounded-xl border border-default p-4">
-              <p class="text-sm text-muted">Valid rows</p>
+              <p class="text-sm text-muted">Valid book rows</p>
               <p class="mt-1 text-3xl font-bold text-highlighted">
                 {{ parsedRows.length }}
+              </p>
+            </div>
+
+            <div class="rounded-xl border border-default p-4">
+              <p class="text-sm text-muted">Copies to create</p>
+              <p class="mt-1 text-3xl font-bold text-success">
+                {{ requestedCopies }}
               </p>
             </div>
 
@@ -529,12 +548,13 @@ async function printImportedBarcodes(): Promise<void> {
         </template>
 
         <div class="overflow-x-auto">
-          <table class="min-w-275 w-full text-left text-sm">
+          <table class="min-w-[1220px] w-full text-left text-sm">
             <thead>
               <tr class="border-b border-default bg-elevated/60">
                 <th class="px-3 py-3">Row</th>
                 <th class="px-3 py-3">Inventory</th>
-                <th class="px-3 py-3">Accession</th>
+                <th class="px-3 py-3">Starting Accession</th>
+                <th class="px-3 py-3 text-center">Copies</th>
                 <th class="px-3 py-3">Call No. / Shelf</th>
                 <th class="px-3 py-3">Title</th>
                 <th class="px-3 py-3">Author</th>
@@ -554,6 +574,9 @@ async function printImportedBarcodes(): Promise<void> {
                 <td class="px-3 py-3">{{ row.inventory_date }}</td>
                 <td class="px-3 py-3 font-mono font-semibold">
                   {{ row.accession_number || "Auto" }}
+                </td>
+                <td class="px-3 py-3 text-center font-semibold">
+                  {{ row.number_of_copies }}
                 </td>
                 <td class="px-3 py-3">{{ row.call_number }}</td>
                 <td class="px-3 py-3 font-medium text-highlighted">

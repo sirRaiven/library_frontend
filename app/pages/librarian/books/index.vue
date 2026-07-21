@@ -19,6 +19,7 @@ type CopyStatus =
 interface BookCopy {
   id?: number;
   documentId?: string;
+  accession_number?: string | null;
   control_number: string;
   shelf_location?: string | null;
   copy_status: CopyStatus;
@@ -185,12 +186,14 @@ function buildQuery(): Record<string, unknown> {
     "pagination[page]": page.value,
     "pagination[pageSize]": pageSize,
     "populate[book_copies][fields][0]":
-      "control_number",
+      "accession_number",
     "populate[book_copies][fields][1]":
-      "shelf_location",
+      "control_number",
     "populate[book_copies][fields][2]":
-      "copy_status",
+      "shelf_location",
     "populate[book_copies][fields][3]":
+      "copy_status",
+    "populate[book_copies][fields][4]":
       "condition",
   };
 
@@ -280,6 +283,15 @@ function bookRoute(book: CatalogBook) {
 
   return identifier
     ? `/librarian/books/${identifier}`
+    : "/librarian/books";
+}
+
+function editBookRoute(book: CatalogBook) {
+  const identifier =
+    book.documentId ?? book.id;
+
+  return identifier
+    ? `/librarian/books/${identifier}/edit`
     : "/librarian/books";
 }
 
@@ -795,6 +807,14 @@ onBeforeUnmount(() => {
                   color="primary"
                   variant="soft"
                   @click="openBook(book)"
+                />
+
+                <UButton
+                  :to="editBookRoute(book)"
+                  label="Edit Book"
+                  icon="i-lucide-pencil"
+                  color="neutral"
+                  variant="outline"
                 />
 
                 <UButton
