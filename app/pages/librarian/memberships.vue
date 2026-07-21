@@ -1,444 +1,350 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: "librarian",
-  title: "Library Memberships",
+import type { MembershipListItem, StudentMember } from "~/composables/useLibraryMembers";
+import type { TableColumn } from "@nuxt/ui";
+import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
+
+definePageMeta({ layout: "librarian", title: "Library Cards" });
+
+const route = useRoute();
+const members = useLibraryMembers();
+const auth = useAuth();
+const toast = useToast();
+
+const barcode = ref("");
+const scannedStudent = ref<StudentMember | null>(null);
+const canRenew = ref(false);
+const lookupReason = ref<string | null>(null);
+const lookupLoading = ref(false);
+const renewing = ref(false);
+
+const memberships = ref<MembershipListItem[]>([]);
+const search = ref("");
+const statusFilter = ref("All");
+const semesterFilter = ref("All");
+const academicYearFilter = ref("");
+const page = ref(1);
+const pageSize = 10;
+const loading = ref(false);
+
+const pagination = reactive({ page: 1, pageSize, pageCount: 1, total: 0 });
+const summary = reactive({ totalMemberships: 0, active: 0, expired: 0, suspended: 0 });
+
+function currentAcademicYear() {
+  const date = new Date();
+  const year = date.getFullYear();
+  return date.getMonth() + 1 >= 6
+    ? `${year}-${year + 1}`
+    : `${year - 1}-${year}`;
+}
+
+function currentSemester() {
+  const month = new Date().getMonth() + 1;
+  if (month >= 6) return "First Semester";
+  if (month <= 4) return "Second Semester";
+  return "Summer";
+}
+
+function defaultExpiry() {
+  const date = new Date();
+  date.setMonth(date.getMonth() + 5);
+  return date.toISOString().slice(0, 10);
+}
+
+const renewal = reactive({
+  academicYear: currentAcademicYear(),
+  semester: currentSemester(),
+  issuedDate: new Date().toISOString().slice(0, 10),
+  expiryDate: defaultExpiry(),
+  enrollmentVerified: false,
+  enrollmentReference: "",
+  remarks: "",
 });
 
-// State for the slideover and form
-const isRegistrationOpen = ref(false);
-const searchQuery = ref("");
-const isSearching = ref(false);
+const statusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
+const semesterItems = ["All", "First Semester", "Second Semester", "Summer"];
+const renewalSemesters = semesterItems.slice(1);
 
-// Template ref for autofocusing the barcode field
-const barcodeInputRef = ref<any>(null);
-
-// Form State
-const state = reactive({
-  studentId: "",
-  semester: "1st",
-  academicYear: "2026-2027",
-  barcode: "",
-});
-
-const semesters = ["1st", "2nd", "Summer"];
-
-// Mock Summary Stats (matching dashboard design system)
-const summaryStats = [
-  {
-    label: "Total Memberships",
-    value: "4,208",
-    desc: "Registered library users",
-    icon: "i-lucide-users",
-    colorClass: "text-blue-600 dark:text-blue-400",
-    bgClass: "bg-blue-50 dark:bg-blue-900/20",
-  },
-  {
-    label: "Active This Term",
-    value: "3,115",
-    desc: "Currently enrolled and verified",
-    icon: "i-lucide-user-check",
-    colorClass: "text-emerald-600 dark:text-emerald-400",
-    bgClass: "bg-emerald-50 dark:bg-emerald-900/20",
-  },
-  {
-    label: "Requires Renewal",
-    value: "84",
-    desc: "Expired or pending validation",
-    icon: "i-lucide-alert-circle",
-    colorClass: "text-error-600 dark:text-error-400",
-    bgClass: "bg-error-50 dark:bg-error-900/20",
-  },
+const columns: TableColumn<MembershipListItem>[] = [
+  { id: "student", header: "Student" },
+  { id: "term", header: "Academic Term" },
+  { id: "validity", header: "Validity" },
+  { accessorKey: "status", header: "Status" },
+  { id: "verified", header: "Verified By" },
 ];
 
-// Mock search result for demonstration
-const verifiedStudent = ref<{
-  student_no: string;
-  name: string;
-  course: string;
-  status: string;
-} | null>(null);
+const cards = computed(() => [
+  { label: "Membership Records", value: summary.totalMemberships, icon: "i-lucide-id-card" },
+  { label: "Active", value: summary.active, icon: "i-lucide-badge-check" },
+  { label: "Expired", value: summary.expired, icon: "i-lucide-clock-alert" },
+  { label: "Suspended", value: summary.suspended, icon: "i-lucide-shield-alert" },
+]);
 
-const handleSearch = async () => {
-  if (!searchQuery.value) return;
-  isSearching.value = true;
+function statusColor(value?: string | null) {
+  if (value === "Active") return "success";
+  if (value === "Suspended") return "warning";
+  return "error";
+}
 
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 600));
+async function lookupCard() {
+  if (!barcode.value.trim()) return;
+  lookupLoading.value = true;
+  try {
+    const response = await members.lookupStudentCard(barcode.value);
+    scannedStudent.value = response.data.student;
+    canRenew.value = response.data.canRenew;
+    lookupReason.value = response.data.reason;
+  } catch (error) {
+    scannedStudent.value = null;
+    canRenew.value = false;
+    toast.add({ title: "Card not found", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+  } finally {
+    lookupLoading.value = false;
+  }
+}
 
-  verifiedStudent.value = {
-    student_no: searchQuery.value,
-    name: "Juan Dela Cruz",
-    course: "BS Information Technology - 3rd Year",
-    status: "Enrolled",
-  };
-  state.studentId = searchQuery.value;
-  isSearching.value = false;
-};
+async function renewMembership() {
+  if (!scannedStudent.value) return;
+  if (!renewal.enrollmentVerified) {
+    toast.add({
+      title: "Enrollment verification required",
+      description: "Confirm that the student submitted a current enrollment document.",
+      color: "warning",
+      icon: "i-lucide-file-check-2",
+    });
+    return;
+  }
 
-watch(verifiedStudent, async (newVal) => {
-  if (newVal) {
-    await nextTick();
-    const inputEl =
-      barcodeInputRef.value?.$el?.querySelector("input") ||
-      barcodeInputRef.value?.inputRef;
-    if (inputEl) {
-      inputEl.focus();
-    } else {
-      barcodeInputRef.value?.focus?.();
-    }
+  renewing.value = true;
+  try {
+    const response = await members.renewMembership({
+      barcode: scannedStudent.value.barcode,
+      ...renewal,
+    });
+    scannedStudent.value = response.data.student;
+    toast.add({
+      title: "Membership renewed",
+      description: `${response.data.student.fullName} is active for ${response.data.membership.semester}, ${response.data.membership.academicYear}.`,
+      color: "success",
+      icon: "i-lucide-circle-check",
+    });
+    renewal.enrollmentVerified = false;
+    renewal.enrollmentReference = "";
+    renewal.remarks = "";
+    await loadMemberships();
+  } catch (error) {
+    toast.add({ title: "Renewal failed", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+  } finally {
+    renewing.value = false;
+  }
+}
+
+function clearScanner() {
+  barcode.value = "";
+  scannedStudent.value = null;
+  canRenew.value = false;
+  lookupReason.value = null;
+}
+
+async function loadMemberships() {
+  loading.value = true;
+  try {
+    const response = await members.listMemberships({
+      search: search.value.trim(),
+      status: statusFilter.value,
+      semester: semesterFilter.value,
+      academicYear: academicYearFilter.value.trim(),
+      page: page.value,
+      pageSize,
+    });
+    memberships.value = response.data;
+    Object.assign(pagination, response.meta.pagination);
+    Object.assign(summary, response.meta.summary);
+  } catch (error) {
+    toast.add({ title: "Unable to load memberships", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+  } finally {
+    loading.value = false;
+  }
+}
+
+let timer: ReturnType<typeof setTimeout> | undefined;
+watch(search, () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    page.value = 1;
+    void loadMemberships();
+  }, 350);
+});
+watch([statusFilter, semesterFilter], () => {
+  page.value = 1;
+  void loadMemberships();
+});
+watch(page, () => void loadMemberships());
+
+onMounted(async () => {
+  await loadMemberships();
+  if (typeof route.query.barcode === "string") {
+    barcode.value = route.query.barcode;
+    await lookupCard();
   }
 });
-
-const generateBarcode = () => {
-  const year = new Date().getFullYear();
-  const sequence = Math.floor(10000 + Math.random() * 90000);
-  state.barcode = `LIB-${year}-${sequence}`;
-};
-
-const submitRegistration = async () => {
-  console.log("Registering:", state);
-  isRegistrationOpen.value = false;
-  verifiedStudent.value = null;
-  searchQuery.value = "";
-  state.barcode = "";
-};
 </script>
 
 <template>
-  <div class="h-full flex flex-col gap-6">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-      <div>
-        <h1
-          class="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight"
-        >
-          Library Memberships
-        </h1>
-        <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1 max-w-xl">
-          Manage student and faculty library cards, track active semesters, and
-          issue new barcode credentials.
-        </p>
-      </div>
-
-      <UButton
-        icon="i-lucide-plus"
-        color="success"
-        size="lg"
-        class="font-semibold shadow-sm rounded-xl px-5"
-        @click="
-          () => {
-            isRegistrationOpen = true;
-          }
-        "
-      >
-        Register Member
-      </UButton>
-    </div>
-
-    <!-- Stats Row (Matches Dashboard Design) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div
-        v-for="stat in summaryStats"
-        :key="stat.label"
-        class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex items-start justify-between shadow-sm transition-shadow hover:shadow-md"
-      >
+  <UContainer class="py-6 sm:py-8">
+    <div class="mx-auto max-w-[1500px] space-y-6">
+      <div class="flex items-start gap-3">
+        <div class="flex size-11 items-center justify-center rounded-2xl bg-success/10 text-success">
+          <UIcon name="i-lucide-id-card" class="size-6" />
+        </div>
         <div>
-          <p
-            class="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1"
-          >
-            {{ stat.label }}
-          </p>
-          <h3
-            class="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight mb-1"
-          >
-            {{ stat.value }}
-          </h3>
-          <p class="text-xs text-neutral-500 dark:text-neutral-400">
-            {{ stat.desc }}
-          </p>
-        </div>
-        <div
-          :class="[
-            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-            stat.bgClass,
-            stat.colorClass,
-          ]"
-        >
-          <UIcon :name="stat.icon" class="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Data Table Container -->
-    <div
-      class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm flex flex-col flex-1 overflow-hidden"
-    >
-      <!-- Toolbar -->
-      <div
-        class="flex flex-col sm:flex-row items-center justify-between p-5 border-b border-neutral-100 dark:border-neutral-800 gap-4 bg-neutral-50/50 dark:bg-neutral-900/50"
-      >
-        <UInput
-          icon="i-lucide-search"
-          placeholder="Search members by name, ID, or barcode..."
-          class="w-full sm:w-80"
-          :ui="{ base: 'bg-white dark:bg-neutral-950 shadow-sm' }"
-        />
-        <div class="flex items-center gap-3 w-full sm:w-auto">
-          <USelect
-            :options="semesters"
-            placeholder="Semester"
-            class="w-full sm:w-32"
-            :ui="{ base: 'bg-white dark:bg-neutral-950 shadow-sm' }"
-          />
-          <USelect
-            :options="['Active', 'Expired', 'Suspended']"
-            placeholder="Status"
-            class="w-full sm:w-32"
-            :ui="{ base: 'bg-white dark:bg-neutral-950 shadow-sm' }"
-          />
-          <UButton
-            color="neutral"
-            variant="soft"
-            icon="i-lucide-filter"
-            class="shrink-0"
-          />
+          <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">Student Membership Renewal</h1>
+          <p class="mt-1 max-w-3xl text-sm text-muted">Scan the permanent library-card barcode, verify the new-semester enrollment copy, and renew without re-entering the student profile.</p>
         </div>
       </div>
 
-      <!-- Placeholder for UTable -->
-      <div
-        class="flex-1 p-12 flex flex-col items-center justify-center text-center"
-      >
-        <div
-          class="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-2xl flex items-center justify-center mb-4 text-neutral-400"
-        >
-          <UIcon name="i-lucide-users" class="w-8 h-8" />
-        </div>
-        <h3
-          class="text-base font-semibold text-neutral-900 dark:text-white mb-1"
-        >
-          No members found
-        </h3>
-        <p class="text-sm text-neutral-500 max-w-sm">
-          Membership table records will render here. Adjust your filters or
-          register a new member to see data.
-        </p>
-      </div>
-    </div>
-
-    <!-- Registration Slideover -->
-    <USlideover v-model="isRegistrationOpen">
-      <template #content>
-        <div
-          class="flex flex-col h-full bg-white dark:bg-neutral-900 w-full sm:w-112.5"
-        >
-          <!-- Slideover Header -->
-          <div
-            class="p-6 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/80 dark:bg-neutral-950/80 backdrop-blur-sm"
-          >
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <UCard v-for="card in cards" :key="card.label">
+          <div class="flex items-start justify-between">
             <div>
-              <h2
-                class="text-lg font-bold text-neutral-900 dark:text-white tracking-tight"
-              >
-                New Registration
-              </h2>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">
-                Activate library access for the current term.
-              </p>
+              <p class="text-sm font-medium text-muted">{{ card.label }}</p>
+              <p class="mt-2 text-3xl font-bold text-highlighted">{{ card.value }}</p>
             </div>
-            <UButton
-              icon="i-lucide-x"
-              color="neutral"
-              variant="ghost"
-              class="rounded-full"
-              @click="
-                () => {
-                  isRegistrationOpen = false;
-                }
-              "
-            />
+            <div class="flex size-11 items-center justify-center rounded-xl bg-elevated text-success">
+              <UIcon :name="card.icon" class="size-5" />
+            </div>
           </div>
+        </UCard>
+      </div>
 
-          <!-- Slideover Body -->
-          <div class="flex-1 overflow-y-auto p-6 space-y-8">
-            <!-- Step 1: Search Student -->
-            <section>
-              <div class="flex items-center gap-3 mb-4">
-                <span
-                  class="flex items-center justify-center w-7 h-7 rounded-lg bg-success/10 text-success font-bold text-xs border border-success/20"
-                >
-                  1
-                </span>
-                <h3
-                  class="text-sm font-bold text-neutral-900 dark:text-white uppercase tracking-wider"
-                >
-                  Find Record
-                </h3>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+        <UCard>
+          <template #header>
+            <div class="flex items-center gap-3">
+              <div class="flex size-10 items-center justify-center rounded-xl bg-success/10 text-success">
+                <UIcon name="i-lucide-scan-barcode" class="size-5" />
               </div>
-
-              <div class="flex gap-2">
-                <UInput
-                  v-model="searchQuery"
-                  placeholder="Enter ID No. (e.g. 2023-0001)"
-                  icon="i-lucide-user-search"
-                  class="flex-1"
-                  @keyup.enter="handleSearch"
-                />
-                <UButton
-                  color="neutral"
-                  variant="soft"
-                  :loading="isSearching"
-                  @click="handleSearch"
-                >
-                  Search
-                </UButton>
+              <div>
+                <h2 class="font-semibold text-highlighted">Scan Library Card</h2>
+                <p class="text-sm text-muted">Barcode scanners can submit by pressing Enter.</p>
               </div>
+            </div>
+          </template>
 
-              <!-- Verification Card -->
-              <div
-                v-if="verifiedStudent"
-                class="mt-4 p-4 rounded-xl border border-success/30 bg-success/5 dark:bg-success/10 transition-all shadow-sm"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <p class="font-bold text-neutral-900 dark:text-white">
-                    {{ verifiedStudent.name }}
-                  </p>
-                  <UBadge
-                    color="success"
-                    variant="soft"
-                    size="sm"
-                    class="rounded-md"
-                  >
-                    {{ verifiedStudent.status }}
-                  </UBadge>
+          <form class="flex flex-col gap-3 sm:flex-row" @submit.prevent="lookupCard">
+            <UInput v-model="barcode" icon="i-lucide-scan-barcode" placeholder="Scan barcode, card number, or student number" autocomplete="off" size="xl" autofocus class="flex-1" />
+            <UButton type="submit" label="Find Student" icon="i-lucide-search" color="success" size="xl" :loading="lookupLoading" />
+          </form>
+
+          <div v-if="scannedStudent" class="mt-6 grid gap-6 lg:grid-cols-2">
+            <StudentLibraryCard :student="scannedStudent" :membership="scannedStudent.membership" :show-actions="false" />
+
+            <div class="space-y-4">
+              <div class="rounded-2xl border border-default bg-elevated/50 p-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="font-semibold text-highlighted">{{ scannedStudent.fullName }}</p>
+                    <p class="mt-1 text-sm text-muted">{{ scannedStudent.studentNo }} • {{ scannedStudent.course }}</p>
+                  </div>
+                  <UBadge :color="statusColor(scannedStudent.membership?.status)" variant="soft">{{ scannedStudent.membership?.status ?? "Expired" }}</UBadge>
                 </div>
-                <p
-                  class="text-sm text-neutral-600 dark:text-neutral-400 mb-1 flex items-center gap-2"
-                >
-                  <UIcon
-                    name="i-lucide-fingerprint"
-                    class="w-4 h-4 opacity-70"
-                  />
-                  {{ verifiedStudent.student_no }}
-                </p>
-                <p
-                  class="text-sm text-neutral-600 dark:text-neutral-400 flex items-center gap-2"
-                >
-                  <UIcon
-                    name="i-lucide-graduation-cap"
-                    class="w-4 h-4 opacity-70"
-                  />
-                  {{ verifiedStudent.course }}
-                </p>
-              </div>
-            </section>
-
-            <!-- Step 2: Term Configuration -->
-            <section
-              :class="{
-                'opacity-50 pointer-events-none grayscale transition-all':
-                  !verifiedStudent,
-              }"
-            >
-              <div class="flex items-center gap-3 mb-4">
-                <span
-                  class="flex items-center justify-center w-7 h-7 rounded-lg bg-success/10 text-success font-bold text-xs border border-success/20"
-                >
-                  2
-                </span>
-                <h3
-                  class="text-sm font-bold text-neutral-900 dark:text-white uppercase tracking-wider"
-                >
-                  Membership Term
-                </h3>
               </div>
 
-              <div
-                class="grid grid-cols-2 gap-4 bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-xl border border-neutral-100 dark:border-neutral-800"
-              >
-                <UFormField label="Academic Year">
-                  <UInput
-                    v-model="state.academicYear"
-                    class="bg-white dark:bg-neutral-900"
-                  />
-                </UFormField>
-                <UFormField label="Semester">
-                  <USelect
-                    v-model="state.semester"
-                    :options="semesters"
-                    class="w-full bg-white dark:bg-neutral-900"
-                  />
-                </UFormField>
-              </div>
-            </section>
+              <UAlert v-if="!canRenew" color="error" variant="soft" icon="i-lucide-circle-alert" title="Renewal unavailable" :description="lookupReason ?? 'This student cannot be renewed.'" />
 
-            <!-- Step 3: Barcode Assignment -->
-            <section
-              :class="{
-                'opacity-50 pointer-events-none grayscale transition-all':
-                  !verifiedStudent,
-              }"
-            >
-              <div class="flex items-center gap-3 mb-4">
-                <span
-                  class="flex items-center justify-center w-7 h-7 rounded-lg bg-success/10 text-success font-bold text-xs border border-success/20"
-                >
-                  3
-                </span>
-                <h3
-                  class="text-sm font-bold text-neutral-900 dark:text-white uppercase tracking-wider"
-                >
-                  Assign Credentials
-                </h3>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <UFormField label="Academic Year" required><UInput v-model="renewal.academicYear" class="w-full" /></UFormField>
+                <UFormField label="Semester" required><USelect v-model="renewal.semester" :items="renewalSemesters" class="w-full" /></UFormField>
+                <UFormField label="Issued Date" required><UInput v-model="renewal.issuedDate" type="date" class="w-full" /></UFormField>
+                <UFormField label="Valid Until" required><UInput v-model="renewal.expiryDate" type="date" class="w-full" /></UFormField>
+                <UFormField label="Enrollment Reference" class="sm:col-span-2"><UInput v-model="renewal.enrollmentReference" class="w-full" /></UFormField>
+                <UFormField label="Remarks" class="sm:col-span-2"><UTextarea v-model="renewal.remarks" :rows="2" class="w-full" /></UFormField>
               </div>
 
-              <UFormField>
-                <div class="flex gap-2">
-                  <UInput
-                    ref="barcodeInputRef"
-                    v-model="state.barcode"
-                    placeholder="Scan physical card or generate..."
-                    icon="i-lucide-barcode"
-                    class="flex-1"
-                    size="lg"
-                  />
-                  <UButton
-                    color="neutral"
-                    variant="soft"
-                    icon="i-lucide-sparkles"
-                    size="lg"
-                    @click="generateBarcode"
-                  >
-                    Auto
-                  </UButton>
-                </div>
-                <p class="text-xs text-neutral-500 mt-3 leading-relaxed">
-                  Focus the input field and scan the physical library card to
-                  link it, or click Auto to generate a system-only digital
-                  barcode.
-                </p>
-              </UFormField>
-            </section>
+              <div class="rounded-xl border border-default bg-default p-4">
+                <UCheckbox v-model="renewal.enrollmentVerified" label="The student submitted a copy of enrollment for the selected semester." />
+              </div>
+
+              <div class="grid gap-3 sm:grid-cols-2">
+                <UButton label="Scan Another" icon="i-lucide-scan-line" color="neutral" variant="outline" block @click="clearScanner" />
+                <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="success" block :disabled="!canRenew || !renewal.enrollmentVerified" :loading="renewing" @click="renewMembership" />
+              </div>
+            </div>
           </div>
+        </UCard>
 
-          <!-- Slideover Footer -->
-          <div
-            class="p-6 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
-          >
-            <UButton
-              color="success"
-              size="xl"
-              block
-              icon="i-lucide-check-circle"
-              :disabled="!verifiedStudent || !state.barcode"
-              class="font-semibold shadow-md rounded-xl transition-all"
-              @click="submitRegistration"
-            >
-              Activate Membership
-            </UButton>
+        <UCard>
+          <template #header><h2 class="font-semibold text-highlighted">Renewal Checklist</h2></template>
+          <div class="space-y-4">
+            <div v-for="(step, index) in [
+              'Receive the student library card.',
+              'Verify the new-semester enrollment copy.',
+              'Scan the permanent barcode.',
+              'Confirm the academic term and validity date.',
+              'Complete renewal and return the card.'
+            ]" :key="step" class="flex gap-3">
+              <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-success/10 text-xs font-bold text-success">{{ index + 1 }}</div>
+              <p class="text-sm leading-relaxed text-muted">{{ step }}</p>
+            </div>
           </div>
+          <template #footer>
+            <UAlert color="info" variant="soft" icon="i-lucide-info" title="Faculty are excluded" description="Faculty use the barcode on their faculty ID and do not require semester membership renewal." />
+          </template>
+        </UCard>
+      </div>
+
+      <UCard>
+        <template #header>
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 class="font-semibold text-highlighted">Membership History</h2>
+              <p class="mt-1 text-sm text-muted">One record is retained for every student and academic term.</p>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-4">
+              <UInput v-model="search" icon="i-lucide-search" placeholder="Search" />
+              <UInput v-model="academicYearFilter" placeholder="2026-2027" />
+              <USelect v-model="semesterFilter" :items="semesterItems" />
+              <USelect v-model="statusFilter" :items="statusItems" />
+            </div>
+          </div>
+        </template>
+
+        <div v-if="loading" class="space-y-3">
+          <USkeleton v-for="index in 5" :key="index" class="h-16 w-full" />
         </div>
-      </template>
-    </USlideover>
-  </div>
+        <div v-else-if="memberships.length === 0" class="py-16 text-center">
+          <UIcon name="i-lucide-id-card" class="mx-auto size-10 text-dimmed" />
+          <h3 class="mt-3 font-semibold text-highlighted">No membership records found</h3>
+        </div>
+
+        <UTable v-else :data="memberships" :columns="columns">
+          <template #student-cell="{ row }">
+            <p class="font-semibold text-highlighted">{{ row.original.student.fullName }}</p>
+            <p class="text-xs text-muted">{{ row.original.student.studentNo }} • {{ row.original.membershipNo }}</p>
+          </template>
+          <template #term-cell="{ row }">
+            <p class="font-medium text-highlighted">{{ row.original.semester }}</p>
+            <p class="text-xs text-muted">{{ row.original.academicYear }} • {{ row.original.renewalType }}</p>
+          </template>
+          <template #validity-cell="{ row }">
+            <p class="text-sm">{{ row.original.issuedDate }}</p>
+            <p class="text-xs text-muted">to {{ row.original.expiryDate }}</p>
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
+          </template>
+          <template #verified-cell="{ row }">
+            <p class="text-sm text-highlighted">{{ row.original.verifiedBy ?? "Librarian" }}</p>
+            <p class="text-xs text-muted">{{ row.original.enrollmentVerified ? "Enrollment verified" : "Not verified" }}</p>
+          </template>
+        </UTable>
+
+        <template #footer>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-muted">{{ pagination.total }} membership records</p>
+            <UPagination v-model:page="page" :total="pagination.total" :items-per-page="pageSize" />
+          </div>
+        </template>
+      </UCard>
+    </div>
+  </UContainer>
 </template>

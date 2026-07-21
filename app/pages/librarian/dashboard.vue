@@ -520,7 +520,7 @@ const stats = computed(() => [
     label: "Book Titles",
     value: dashboard.value.totalTitles,
     description: "Cataloged titles",
-    icon: "i-lucide-books",
+    icon: "i-lucide-book",
     color: "info" as BadgeColor,
     to: "/librarian/books",
   },

@@ -206,7 +206,7 @@ const navigationItems =
       },
       {
         label: "Books",
-        icon: "i-lucide-books",
+        icon: "i-lucide-book",
         to: "/librarian/books",
         active: isBooksCatalogActive(),
       },
@@ -473,7 +473,6 @@ watch(
       v-model:open="sidebarOpen"
       v-model:collapsed="sidebarCollapsed"
       collapsible
-      resizable
       :min-size="16"
       :default-size="20"
       :max-size="26"
@@ -549,10 +548,10 @@ watch(
                 : 'Collapse sidebar'
             "
             class="shrink-0 justify-center"
-            @click="
+            @click=" () => {
               sidebarCollapsed =
                 !sidebarCollapsed
-            "
+            }"
           />
         </UTooltip>
 
@@ -827,9 +826,9 @@ watch(
             size="lg"
             block
             :disabled="isLoggingOut"
-            @click="
+            @click=" () => {
               isLogoutModalOpen = false
-            "
+            }"
           />
 
           <UButton
