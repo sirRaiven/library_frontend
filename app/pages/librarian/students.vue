@@ -6,6 +6,7 @@ import type {
   StudentStatus,
 } from "~/composables/useLibraryMembers";
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
+import { STUDENT_PROGRAM_OPTIONS } from "~/constants/studentPrograms";
 
 definePageMeta({ layout: "librarian", title: "Students" });
 
@@ -70,6 +71,7 @@ const registrationForm = reactive<StudentRegistrationInput>({
     section: "",
     email: "",
     contactNo: "",
+    address: "",
   },
   membership: {
     academicYear: defaultAcademicYear(),
@@ -93,6 +95,7 @@ const editForm = reactive({
   section: "",
   email: "",
   contactNo: "",
+  address: "",
   status: "Active" as StudentStatus,
 });
 
@@ -108,6 +111,7 @@ const statusItems = ["All", "Active", "Inactive", "Suspended", "Graduated", "Dro
 const memberStatusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
 const semesterItems = ["First Semester", "Second Semester", "Summer"];
 const sexItems = ["Male", "Female"];
+const programItems = STUDENT_PROGRAM_OPTIONS;
 
 const cards = computed(() => [
   { label: "Registered Students", value: summary.totalStudents, icon: "i-lucide-users" },
@@ -127,7 +131,7 @@ function validate(state: StudentRegistrationInput): FormError[] {
   if (!state.student.studentNo.trim()) errors.push({ name: "student.studentNo", message: "Student number is required." });
   if (!state.student.firstName.trim()) errors.push({ name: "student.firstName", message: "First name is required." });
   if (!state.student.lastName.trim()) errors.push({ name: "student.lastName", message: "Last name is required." });
-  if (!state.student.course.trim()) errors.push({ name: "student.course", message: "Course is required." });
+  if (!state.student.course.trim()) errors.push({ name: "student.course", message: "Select a course or diploma program." });
   if (!/^\d{4}-\d{4}$/.test(state.membership.academicYear)) errors.push({ name: "membership.academicYear", message: "Use YYYY-YYYY format." });
   if (!state.membership.expiryDate) errors.push({ name: "membership.expiryDate", message: "Expiry date is required." });
   if (!state.membership.enrollmentVerified) errors.push({ name: "membership.enrollmentVerified", message: "Verify the enrollment document." });
@@ -172,6 +176,7 @@ function resetRegistration() {
     section: "",
     email: "",
     contactNo: "",
+    address: "",
   });
   Object.assign(registrationForm.membership, {
     academicYear: defaultAcademicYear(),
@@ -193,7 +198,7 @@ async function registerStudent(_event: FormSubmitEvent<StudentRegistrationInput>
     cardOpen.value = true;
     toast.add({
       title: "Student registered",
-      description: `${response.data.student.fullName} now has an active library card.`,
+      description: `${response.data.student.fullName} now has an active navy-blue Library ID card and semester membership.`,
       color: "success",
       icon: "i-lucide-circle-check",
     });
@@ -224,6 +229,7 @@ function openEdit(student: StudentMember) {
     section: student.section,
     email: student.email,
     contactNo: student.contactNo,
+    address: student.address,
     status: student.status,
   });
   editOpen.value = true;
@@ -266,7 +272,7 @@ onMounted(() => void loadStudents());
 
 <template>
   <UContainer class="py-6 sm:py-8">
-    <div class="mx-auto max-w-[1500px] space-y-6">
+    <div class="mx-auto max-w-375 space-y-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex items-center gap-3">
           <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -277,9 +283,29 @@ onMounted(() => void loadStudents());
             <p class="mt-1 max-w-3xl text-sm text-muted">Register students, review semester validity, generate library cards, and renew memberships with fewer steps.</p>
           </div>
         </div>
-        <div class="flex flex-col gap-2 sm:flex-row">
-          <UButton to="/librarian/memberships" label="Renew by Barcode" icon="i-lucide-scan-barcode" color="neutral" variant="outline" />
-          <UButton label="Register Student" icon="i-lucide-user-plus" color="success" @click="registrationOpen = true" />
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <UButton
+            to="/librarian/library-card-designer"
+            label="Card Designer"
+            icon="i-lucide-palette"
+            color="neutral"
+            variant="outline"
+          />
+
+          <UButton
+            to="/librarian/memberships"
+            label="Renew by Barcode"
+            icon="i-lucide-scan-barcode"
+            color="neutral"
+            variant="outline"
+          />
+
+          <UButton
+            label="Register Student"
+            icon="i-lucide-user-plus"
+            color="success"
+            @click="() => { registrationOpen = true; }"
+          />
         </div>
       </div>
 
@@ -349,7 +375,7 @@ onMounted(() => void loadStudents());
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UButton icon="i-lucide-id-card" color="neutral" variant="ghost" square aria-label="View library card" @click="openCard(row.original)" />
+              <UTooltip text="View front and back of Library ID card"><UButton icon="i-lucide-id-card" color="neutral" variant="ghost" square aria-label="View front and back of library card" @click="openCard(row.original)" /></UTooltip>
               <UButton icon="i-lucide-rotate-cw" color="success" variant="ghost" square aria-label="Renew membership" @click="renew(row.original)" />
               <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit student" @click="openEdit(row.original)" />
             </div>
@@ -379,13 +405,67 @@ onMounted(() => void loadStudents());
               <UFormField name="student.middleName" label="Middle Name"><UInput v-model="registrationForm.student.middleName" class="w-full" /></UFormField>
               <UFormField name="student.lastName" label="Last Name" required><UInput v-model="registrationForm.student.lastName" class="w-full" /></UFormField>
               <UFormField name="student.suffix" label="Suffix"><UInput v-model="registrationForm.student.suffix" class="w-full" /></UFormField>
-              <UFormField name="student.course" label="Course / Program" required><UInput v-model="registrationForm.student.course" class="w-full" /></UFormField>
+              <UFormField
+                name="student.course"
+                label="Course / Program"
+                description="Choose from the approved CHED degree and three-year diploma programs."
+                required
+                class="md:col-span-2"
+              >
+                <USelect
+                  v-model="registrationForm.student.course"
+                  :items="programItems"
+                  placeholder="Select a course or diploma program"
+                  class="w-full"
+                />
+              </UFormField>
+
               <div class="grid grid-cols-2 gap-3">
-                <UFormField name="student.yearLevel" label="Year Level"><UInputNumber v-model="registrationForm.student.yearLevel" :min="1" :max="6" class="w-full" /></UFormField>
-                <UFormField name="student.section" label="Section"><UInput v-model="registrationForm.student.section" class="w-full" /></UFormField>
+                <UFormField name="student.yearLevel" label="Year Level">
+                  <UInputNumber
+                    v-model="registrationForm.student.yearLevel"
+                    :min="1"
+                    :max="6"
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <UFormField name="student.section" label="Section">
+                  <UInput
+                    v-model="registrationForm.student.section"
+                    class="w-full"
+                  />
+                </UFormField>
               </div>
-              <UFormField name="student.email" label="Email"><UInput v-model="registrationForm.student.email" type="email" class="w-full" /></UFormField>
-              <UFormField name="student.contactNo" label="Contact Number"><UInput v-model="registrationForm.student.contactNo" class="w-full" /></UFormField>
+
+              <UFormField name="student.email" label="Email">
+                <UInput
+                  v-model="registrationForm.student.email"
+                  type="email"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="student.contactNo" label="Contact Number">
+                <UInput
+                  v-model="registrationForm.student.contactNo"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                name="student.address"
+                label="Address"
+                description="Student's current residential address."
+                class="md:col-span-2"
+              >
+                <UTextarea
+                  v-model="registrationForm.student.address"
+                  :rows="2"
+                  placeholder="House number, street, barangay, city or municipality, province"
+                  class="w-full"
+                />
+              </UFormField>
             </div>
 
             <div class="rounded-2xl border border-default bg-elevated/50 p-5">
@@ -396,8 +476,31 @@ onMounted(() => void loadStudents());
                 <UFormField name="membership.semester" label="Semester" required><USelect v-model="registrationForm.membership.semester" :items="semesterItems" class="w-full" /></UFormField>
                 <UFormField name="membership.issuedDate" label="Issued Date" required><UInput v-model="registrationForm.membership.issuedDate" type="date" class="w-full" /></UFormField>
                 <UFormField name="membership.expiryDate" label="Valid Until" required><UInput v-model="registrationForm.membership.expiryDate" type="date" class="w-full" /></UFormField>
-                <UFormField name="membership.enrollmentReference" label="Enrollment Reference"><UInput v-model="registrationForm.membership.enrollmentReference" class="w-full" /></UFormField>
-                <UFormField name="membership.remarks" label="Remarks"><UInput v-model="registrationForm.membership.remarks" class="w-full" /></UFormField>
+                <UFormField
+                  name="membership.enrollmentReference"
+                  label="Enrollment Reference"
+                  hint="Optional"
+                  description="Reference number, receipt number, or document identifier when available."
+                >
+                  <UInput
+                    v-model="registrationForm.membership.enrollmentReference"
+                    placeholder="Leave blank when not applicable"
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <UFormField
+                  name="membership.remarks"
+                  label="Remarks"
+                  hint="Optional"
+                >
+                  <UTextarea
+                    v-model="registrationForm.membership.remarks"
+                    :rows="2"
+                    placeholder="Additional notes about the registration"
+                    class="w-full"
+                  />
+                </UFormField>
               </div>
               <UFormField name="membership.enrollmentVerified" class="mt-4">
                 <UCheckbox v-model="registrationForm.membership.enrollmentVerified" label="I verified the student's enrollment document for this semester." />
@@ -405,7 +508,7 @@ onMounted(() => void loadStudents());
             </div>
 
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="registrationOpen = false" />
+              <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="() => { registrationOpen = false }" />
               <UButton type="submit" label="Register & Generate Card" icon="i-lucide-id-card" color="success" :loading="submitting" />
             </div>
           </UForm>
@@ -413,17 +516,23 @@ onMounted(() => void loadStudents());
       </template>
     </UModal>
 
-    <UModal v-model:open="cardOpen" :ui="{ content: 'sm:max-w-2xl' }">
+    <UModal v-model:open="cardOpen" :ui="{ content: 'sm:max-w-6xl max-h-[94dvh] overflow-y-auto' }">
       <template #content>
         <div class="bg-default p-6 sm:p-8">
           <div class="mb-5 flex items-center justify-between">
             <div>
-              <h2 class="text-xl font-bold text-highlighted">Student Library Card</h2>
-              <p class="mt-1 text-sm text-muted">The barcode is permanent; only membership validity changes each semester.</p>
+              <h2 class="text-xl font-bold text-highlighted">Student Library ID Card</h2>
+              <p class="mt-1 max-w-3xl text-sm text-muted">
+                Preview and download the active card design. Librarians can modify the institution background, colors, layout, labels, visible fields, validity panel, and barcode presentation in the Card Designer.
+              </p>
             </div>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square @click="cardOpen = false" />
+            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square @click="() => { cardOpen = false }" />
           </div>
-          <StudentLibraryCard v-if="selectedStudent" :student="selectedStudent" :membership="selectedStudent.membership" />
+          <StudentLibraryCard
+            v-if="selectedStudent"
+            :student="selectedStudent"
+            :membership="selectedStudent.membership"
+          />
         </div>
       </template>
     </UModal>
@@ -438,17 +547,72 @@ onMounted(() => void loadStudents());
             <UFormField label="Middle Name"><UInput v-model="editForm.middleName" class="w-full" /></UFormField>
             <UFormField label="Last Name"><UInput v-model="editForm.lastName" class="w-full" /></UFormField>
             <UFormField label="Suffix"><UInput v-model="editForm.suffix" class="w-full" /></UFormField>
-            <UFormField label="Course"><UInput v-model="editForm.course" class="w-full" /></UFormField>
+            <UFormField
+              label="Course / Program"
+              class="md:col-span-2"
+            >
+              <USelect
+                v-model="editForm.course"
+                :items="programItems"
+                placeholder="Select a course or diploma program"
+                class="w-full"
+              />
+            </UFormField>
+
             <div class="grid grid-cols-2 gap-3">
-              <UFormField label="Year"><UInputNumber v-model="editForm.yearLevel" :min="1" :max="6" class="w-full" /></UFormField>
-              <UFormField label="Section"><UInput v-model="editForm.section" class="w-full" /></UFormField>
+              <UFormField label="Year">
+                <UInputNumber
+                  v-model="editForm.yearLevel"
+                  :min="1"
+                  :max="6"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Section">
+                <UInput
+                  v-model="editForm.section"
+                  class="w-full"
+                />
+              </UFormField>
             </div>
-            <UFormField label="Email"><UInput v-model="editForm.email" type="email" class="w-full" /></UFormField>
-            <UFormField label="Contact Number"><UInput v-model="editForm.contactNo" class="w-full" /></UFormField>
-            <UFormField label="Status"><USelect v-model="editForm.status" :items="statusItems.slice(1)" class="w-full" /></UFormField>
+
+            <UFormField label="Email">
+              <UInput
+                v-model="editForm.email"
+                type="email"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Contact Number">
+              <UInput
+                v-model="editForm.contactNo"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField
+              label="Address"
+              class="md:col-span-2"
+            >
+              <UTextarea
+                v-model="editForm.address"
+                :rows="2"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Status">
+              <USelect
+                v-model="editForm.status"
+                :items="statusItems.slice(1)"
+                class="w-full"
+              />
+            </UFormField>
           </div>
           <div class="mt-6 flex justify-end gap-3">
-            <UButton label="Cancel" color="neutral" variant="outline" @click="editOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" @click="() => { editOpen = false }" />
             <UButton label="Save Changes" icon="i-lucide-save" color="success" :loading="submitting" @click="saveStudent" />
           </div>
         </div>

@@ -50,6 +50,7 @@ export interface StudentMember {
   section: string;
   email: string;
   contactNo: string;
+  address: string;
   photoUrl?: string | null;
   status: StudentStatus;
   membership: MembershipRecord | null;
@@ -135,6 +136,7 @@ export interface StudentRegistrationInput {
     section?: string;
     email?: string;
     contactNo?: string;
+    address?: string;
   };
   membership: {
     academicYear: string;

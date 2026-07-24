@@ -134,6 +134,17 @@ function getPageInformation(): {
     };
   }
 
+  if (
+    path.startsWith(
+      "/librarian/library-card-designer",
+    )
+  ) {
+    return {
+      title: "Library Card Designer",
+      icon: "i-lucide-palette",
+    };
+  }
+
   if (path.startsWith("/librarian/reports")) {
     return {
       title: "Reports",
@@ -206,7 +217,7 @@ const navigationItems =
       },
       {
         label: "Books",
-        icon: "i-lucide-book",
+        icon: "i-lucide-books",
         to: "/librarian/books",
         active: isBooksCatalogActive(),
       },
@@ -292,6 +303,14 @@ const navigationItems =
         to: "/librarian/memberships",
         active: isRouteActive(
           "/librarian/memberships",
+        ),
+      },
+      {
+        label: "Card Designer",
+        icon: "i-lucide-palette",
+        to: "/librarian/library-card-designer",
+        active: isRouteActive(
+          "/librarian/library-card-designer",
         ),
       },
     ],
@@ -473,6 +492,7 @@ watch(
       v-model:open="sidebarOpen"
       v-model:collapsed="sidebarCollapsed"
       collapsible
+      resizable
       :min-size="16"
       :default-size="20"
       :max-size="26"
@@ -548,7 +568,7 @@ watch(
                 : 'Collapse sidebar'
             "
             class="shrink-0 justify-center"
-            @click=" () => {
+            @click="() => {
               sidebarCollapsed =
                 !sidebarCollapsed
             }"
@@ -826,9 +846,7 @@ watch(
             size="lg"
             block
             :disabled="isLoggingOut"
-            @click=" () => {
-              isLogoutModalOpen = false
-            }"
+            @click="() => { isLogoutModalOpen = false }"
           />
 
           <UButton
