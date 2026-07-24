@@ -747,18 +747,17 @@ onBeforeUnmount(() => {
           <p class="mt-1 text-sm text-muted">Create the profile, permanent card, barcode, and initial semester membership in one step.</p>
 
           <UForm :state="registrationForm" :validate="validate" class="mt-6 space-y-6" @submit="registerStudent">
-            <div class="grid items-start gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
+            <div class="grid items-start gap-5 lg:grid-cols-[minmax(20rem,23rem)_minmax(0,1fr)]">
               <UFormField
                 name="student.photo"
-                label="Library Card Photo"
-                required
+                class="min-w-0"
               >
                 <StudentPhotoEditor
                   v-model="registrationPhoto"
                   required
                   :disabled="submitting"
-                  title="Student Library Card Photo"
-                  description="Choose a clear photo, then freely drag and zoom it inside the required 1:1 crop."
+                  title="Library Card Photo"
+                  description="Choose a clear photo, then drag and zoom it inside the required 1:1 crop."
                 />
               </UFormField>
 

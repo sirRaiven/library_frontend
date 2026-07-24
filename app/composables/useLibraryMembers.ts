@@ -175,6 +175,75 @@ export interface FacultyRegistrationInput {
 
 export function useLibraryMembers() {
   const auth = useAuth();
+  const runtimeConfig = useRuntimeConfig();
+
+  function strapiBaseUrl(): string {
+    return String(
+      runtimeConfig.public.strapiUrl ??
+        "http://localhost:1337",
+    )
+      .replace(/\/api\/?$/, "")
+      .replace(/\/$/, "");
+  }
+
+  function resolveMediaUrl(
+    value?: string | null,
+  ): string | null {
+    const source = value?.trim() ?? "";
+
+    if (!source) {
+      return null;
+    }
+
+    if (
+      source.startsWith("http://") ||
+      source.startsWith("https://") ||
+      source.startsWith("blob:") ||
+      source.startsWith("data:")
+    ) {
+      return source;
+    }
+
+    const normalizedPath =
+      source.startsWith("/")
+        ? source
+        : `/${source}`;
+
+    return `${strapiBaseUrl()}${normalizedPath}`;
+  }
+
+  function normalizeStudent(
+    student: StudentMember,
+  ): StudentMember {
+    return {
+      ...student,
+      photoUrl: resolveMediaUrl(
+        student.photoUrl,
+      ),
+    };
+  }
+
+  function normalizeFaculty(
+    faculty: FacultyMember,
+  ): FacultyMember {
+    return {
+      ...faculty,
+      photoUrl: resolveMediaUrl(
+        faculty.photoUrl,
+      ),
+    };
+  }
+
+  function normalizeMembershipItem(
+    membership: MembershipListItem,
+  ): MembershipListItem {
+    return {
+      ...membership,
+      student: normalizeStudent(
+        membership.student,
+      ),
+    };
+  }
 
   function query(input: Record<string, unknown>) {
     return Object.fromEntries(
@@ -188,6 +257,8 @@ export function useLibraryMembers() {
   }
 
   return {
+    resolveMediaUrl,
+
     async uploadStudentPhoto(
       file: File,
       studentNo?: string,
@@ -245,77 +316,214 @@ export function useLibraryMembers() {
         );
       }
 
-      return uploaded;
+      return {
+        ...uploaded,
+        url:
+          resolveMediaUrl(
+            uploaded.url,
+          ) ?? uploaded.url,
+      };
     },
 
-    listStudents(input: Record<string, unknown>) {
-      return auth.authFetch<StudentListResponse>(
-        "/api/library-members/students",
-        { method: "GET", query: query(input) },
-      );
+    async listStudents(
+      input: Record<string, unknown>,
+    ) {
+      const response =
+        await auth.authFetch<
+          StudentListResponse
+        >(
+          "/api/library-members/students",
+          {
+            method: "GET",
+            query: query(input),
+          },
+        );
+
+      return {
+        ...response,
+        data: response.data.map(
+          normalizeStudent,
+        ),
+      };
     },
 
-    registerStudent(input: StudentRegistrationInput) {
-      return auth.authFetch<{
+    async registerStudent(
+      input: StudentRegistrationInput,
+    ) {
+      const response =
+        await auth.authFetch<{
+          data: {
+            student: StudentMember;
+            membership: MembershipRecord;
+          };
+        }>(
+          "/api/library-members/students",
+          {
+            method: "POST",
+            body: {
+              data: input,
+            },
+          },
+        );
+
+      return {
+        ...response,
         data: {
-          student: StudentMember;
-          membership: MembershipRecord;
-        };
-      }>("/api/library-members/students", {
-        method: "POST",
-        body: { data: input },
-      });
+          ...response.data,
+          student: normalizeStudent(
+            response.data.student,
+          ),
+        },
+      };
     },
 
-    updateStudent(documentId: string, input: Record<string, unknown>) {
-      return auth.authFetch<{ data: StudentMember }>(
-        `/api/library-members/students/${documentId}`,
-        { method: "PUT", body: { data: input } },
-      );
+    async updateStudent(
+      documentId: string,
+      input: Record<string, unknown>,
+    ) {
+      const response =
+        await auth.authFetch<{
+          data: StudentMember;
+        }>(
+          `/api/library-members/students/${documentId}`,
+          {
+            method: "PUT",
+            body: {
+              data: input,
+            },
+          },
+        );
+
+      return {
+        ...response,
+        data: normalizeStudent(
+          response.data,
+        ),
+      };
     },
 
-    listFaculty(input: Record<string, unknown>) {
-      return auth.authFetch<FacultyListResponse>(
-        "/api/library-members/faculty",
-        { method: "GET", query: query(input) },
-      );
+    async listFaculty(
+      input: Record<string, unknown>,
+    ) {
+      const response =
+        await auth.authFetch<
+          FacultyListResponse
+        >(
+          "/api/library-members/faculty",
+          {
+            method: "GET",
+            query: query(input),
+          },
+        );
+
+      return {
+        ...response,
+        data: response.data.map(
+          normalizeFaculty,
+        ),
+      };
     },
 
-    registerFaculty(input: FacultyRegistrationInput) {
-      return auth.authFetch<{ data: FacultyMember }>(
-        "/api/library-members/faculty",
-        { method: "POST", body: { data: input } },
-      );
+    async registerFaculty(
+      input: FacultyRegistrationInput,
+    ) {
+      const response =
+        await auth.authFetch<{
+          data: FacultyMember;
+        }>(
+          "/api/library-members/faculty",
+          {
+            method: "POST",
+            body: {
+              data: input,
+            },
+          },
+        );
+
+      return {
+        ...response,
+        data: normalizeFaculty(
+          response.data,
+        ),
+      };
     },
 
-    updateFaculty(documentId: string, input: Record<string, unknown>) {
-      return auth.authFetch<{ data: FacultyMember }>(
-        `/api/library-members/faculty/${documentId}`,
-        { method: "PUT", body: { data: input } },
-      );
+    async updateFaculty(
+      documentId: string,
+      input: Record<string, unknown>,
+    ) {
+      const response =
+        await auth.authFetch<{
+          data: FacultyMember;
+        }>(
+          `/api/library-members/faculty/${documentId}`,
+          {
+            method: "PUT",
+            body: {
+              data: input,
+            },
+          },
+        );
+
+      return {
+        ...response,
+        data: normalizeFaculty(
+          response.data,
+        ),
+      };
     },
 
-    listMemberships(input: Record<string, unknown>) {
-      return auth.authFetch<MembershipListResponse>(
-        "/api/library-memberships/managed",
-        { method: "GET", query: query(input) },
-      );
+    async listMemberships(
+      input: Record<string, unknown>,
+    ) {
+      const response =
+        await auth.authFetch<
+          MembershipListResponse
+        >(
+          "/api/library-memberships/managed",
+          {
+            method: "GET",
+            query: query(input),
+          },
+        );
+
+      return {
+        ...response,
+        data: response.data.map(
+          normalizeMembershipItem,
+        ),
+      };
     },
 
-    lookupStudentCard(barcode: string) {
-      return auth.authFetch<{
+    async lookupStudentCard(
+      barcode: string,
+    ) {
+      const response =
+        await auth.authFetch<{
+          data: {
+            student: StudentMember;
+            canRenew: boolean;
+            reason: string | null;
+          };
+        }>(
+          `/api/library-memberships/lookup/${encodeURIComponent(barcode.trim())}`,
+          {
+            method: "GET",
+          },
+        );
+
+      return {
+        ...response,
         data: {
-          student: StudentMember;
-          canRenew: boolean;
-          reason: string | null;
-        };
-      }>(
-        `/api/library-memberships/lookup/${encodeURIComponent(barcode.trim())}`,
-        { method: "GET" },
-      );
+          ...response.data,
+          student: normalizeStudent(
+            response.data.student,
+          ),
+        },
+      };
     },
 
-    renewMembership(input: {
+    async renewMembership(input: {
       barcode: string;
       academicYear: string;
       semester: string;
@@ -325,15 +533,31 @@ export function useLibraryMembers() {
       enrollmentReference?: string;
       remarks?: string;
     }) {
-      return auth.authFetch<{
+      const response =
+        await auth.authFetch<{
+          data: {
+            student: StudentMember;
+            membership: MembershipRecord;
+          };
+        }>(
+          "/api/library-memberships/renew",
+          {
+            method: "POST",
+            body: {
+              data: input,
+            },
+          },
+        );
+
+      return {
+        ...response,
         data: {
-          student: StudentMember;
-          membership: MembershipRecord;
-        };
-      }>("/api/library-memberships/renew", {
-        method: "POST",
-        body: { data: input },
-      });
+          ...response.data,
+          student: normalizeStudent(
+            response.data.student,
+          ),
+        },
+      };
     },
   };
 }

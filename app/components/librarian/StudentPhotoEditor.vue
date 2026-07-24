@@ -692,160 +692,142 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section
-    class="rounded-2xl border border-default bg-elevated/40 p-4 sm:p-5"
-  >
-    <div
-      class="flex flex-col gap-4 sm:flex-row sm:items-start"
-    >
-      <div
-        class="relative mx-auto size-36 shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-default bg-default sm:mx-0"
-      >
-        <img
-          v-if="effectivePreview"
-          :src="effectivePreview"
-          alt="Student photo preview"
-          class="h-full w-full object-cover"
-        />
-
-        <div
-          v-else
-          class="flex h-full w-full flex-col items-center justify-center px-3 text-center text-muted"
-        >
-          <UIcon
-            name="i-lucide-user-round"
-            class="size-10"
+  <section class="photo-editor-card">
+    <div class="photo-editor-main">
+      <div class="photo-preview-column">
+        <div class="photo-preview-frame">
+          <img
+            v-if="effectivePreview"
+            :src="effectivePreview"
+            alt="Student photo preview"
+            class="h-full w-full object-cover"
           />
-          <span
-            class="mt-2 text-xs font-medium"
+
+          <div
+            v-else
+            class="flex h-full w-full flex-col items-center justify-center px-3 text-center text-muted"
           >
-            No photo selected
-          </span>
-        </div>
-
-        <div
-          v-if="hasPhoto"
-          class="absolute inset-x-0 bottom-0 bg-slate-950/70 px-2 py-1 text-center text-[11px] font-medium text-white"
-        >
-          1:1 Library Card Photo
-        </div>
-      </div>
-
-      <div class="min-w-0 flex-1">
-        <div
-          class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-        >
-          <div>
-            <div
-              class="flex items-center gap-2"
-            >
-              <h3
-                class="font-semibold text-highlighted"
-              >
-                {{ title }}
-              </h3>
-
-              <UBadge
-                v-if="required"
-                color="error"
-                variant="soft"
-                size="sm"
-              >
-                Required
-              </UBadge>
-            </div>
-
-            <p
-              class="mt-1 text-sm leading-relaxed text-muted"
-            >
-              {{ description }}
-            </p>
+            <UIcon
+              name="i-lucide-user-round"
+              class="size-10"
+            />
+            <span class="mt-2 text-xs font-medium">
+              No photo selected
+            </span>
           </div>
 
           <div
-            class="flex flex-wrap gap-2"
+            v-if="hasPhoto"
+            class="absolute inset-x-0 bottom-0 bg-slate-950/75 px-2 py-1.5 text-center text-[11px] font-medium text-white"
           >
-            <UButton
-              :label="
-                hasPhoto
-                  ? 'Change Photo'
-                  : 'Choose Photo'
-              "
-              :icon="
-                hasPhoto
-                  ? 'i-lucide-image-up'
-                  : 'i-lucide-upload'
-              "
-              color="primary"
-              variant="soft"
-              :disabled="disabled"
-              @click="openFilePicker"
-            />
-
-            <UButton
-              v-if="
-                allowRemove &&
-                hasPhoto
-              "
-              label="Remove"
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              :disabled="disabled"
-              @click="removePhoto"
-            />
+            1:1 Card Photo
           </div>
+        </div>
+      </div>
+
+      <div class="photo-editor-content">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-base font-semibold text-highlighted">
+              {{ title }}
+            </h3>
+
+            <UBadge
+              v-if="required"
+              color="error"
+              variant="soft"
+              size="sm"
+            >
+              Required
+            </UBadge>
+          </div>
+
+          <p class="mt-1 text-sm leading-relaxed text-muted">
+            {{ description }}
+          </p>
         </div>
 
         <div
-          class="mt-4 flex flex-wrap gap-2"
+          class="photo-editor-actions"
+          :class="{
+            'has-remove-action':
+              allowRemove && hasPhoto,
+          }"
         >
-          <UBadge
-            color="neutral"
+          <UButton
+            :label="
+              hasPhoto
+                ? 'Change Photo'
+                : 'Choose Photo'
+            "
+            :icon="
+              hasPhoto
+                ? 'i-lucide-image-up'
+                : 'i-lucide-upload'
+            "
+            color="primary"
             variant="soft"
-          >
-            1:1 Ratio
-          </UBadge>
-          <UBadge
-            color="neutral"
+            block
+            class="min-w-0"
+            :disabled="disabled"
+            @click="openFilePicker"
+          />
+
+          <UButton
+            v-if="allowRemove && hasPhoto"
+            label="Remove"
+            icon="i-lucide-trash-2"
+            color="error"
             variant="soft"
-          >
-            800 × 800 px
-          </UBadge>
-          <UBadge
-            color="neutral"
-            variant="soft"
-          >
-            JPG, PNG, or WebP
-          </UBadge>
-          <UBadge
-            color="neutral"
-            variant="soft"
-          >
-            Maximum 10 MB
-          </UBadge>
+            block
+            class="min-w-0"
+            :disabled="disabled"
+            @click="removePhoto"
+          />
+        </div>
+
+        <div class="photo-spec-grid">
+          <div class="photo-spec-item">
+            <UIcon name="i-lucide-ratio" class="size-4" />
+            <span>1:1 ratio</span>
+          </div>
+
+          <div class="photo-spec-item">
+            <UIcon name="i-lucide-scan" class="size-4" />
+            <span>800 × 800 px</span>
+          </div>
+
+          <div class="photo-spec-item">
+            <UIcon name="i-lucide-image" class="size-4" />
+            <span>JPG, PNG, WebP</span>
+          </div>
+
+          <div class="photo-spec-item">
+            <UIcon name="i-lucide-hard-drive-upload" class="size-4" />
+            <span>Maximum 10 MB</span>
+          </div>
         </div>
 
         <p
           v-if="modelValue"
-          class="mt-3 flex items-center gap-2 text-sm text-success"
+          class="flex items-start gap-2 rounded-xl bg-success/10 px-3 py-2 text-sm text-success"
         >
           <UIcon
             name="i-lucide-circle-check"
-            class="size-4"
+            class="mt-0.5 size-4 shrink-0"
           />
-          The cropped photo is ready to upload.
+          <span>The cropped photo is ready to upload.</span>
         </p>
 
         <p
           v-if="errorMessage"
-          class="mt-3 flex items-center gap-2 text-sm text-error"
+          class="flex items-start gap-2 rounded-xl bg-error/10 px-3 py-2 text-sm text-error"
         >
           <UIcon
             name="i-lucide-circle-alert"
-            class="size-4"
+            class="mt-0.5 size-4 shrink-0"
           />
-          {{ errorMessage }}
+          <span>{{ errorMessage }}</span>
         </p>
       </div>
     </div>
@@ -893,9 +875,10 @@ onBeforeUnmount(() => {
               variant="ghost"
               square
               aria-label="Close photo cropper"
-              @click="
+              @click="() => {
+
                 cropOpen = false
-              "
+              }"
             />
           </div>
 
@@ -1005,9 +988,9 @@ onBeforeUnmount(() => {
                 label="Cancel"
                 color="neutral"
                 variant="outline"
-                @click="
+                @click="() => {
                   cropOpen = false
-                "
+                }"
               />
 
               <UButton
@@ -1025,6 +1008,102 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.photo-editor-card {
+  container-type: inline-size;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 1rem;
+  background: color-mix(
+    in srgb,
+    var(--ui-bg-elevated) 42%,
+    transparent
+  );
+  padding: 1rem;
+}
+
+.photo-editor-main {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.photo-preview-column {
+  display: flex;
+  justify-content: center;
+}
+
+.photo-preview-frame {
+  position: relative;
+  width: 8.5rem;
+  height: 8.5rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 2px dashed var(--ui-border);
+  border-radius: 1rem;
+  background: var(--ui-bg);
+}
+
+.photo-editor-content {
+  display: grid;
+  min-width: 0;
+  gap: 0.9rem;
+}
+
+.photo-editor-actions {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.photo-editor-actions.has-remove-action {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.photo-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.photo-spec-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.65rem;
+  background: var(--ui-bg-elevated);
+  padding: 0.45rem 0.55rem;
+  color: var(--ui-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.photo-spec-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@container (min-width: 31rem) {
+  .photo-editor-main {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .photo-preview-column {
+    justify-content: flex-start;
+  }
+}
+
+@container (max-width: 20rem) {
+  .photo-editor-actions.has-remove-action,
+  .photo-spec-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .crop-stage {
   position: relative;
   width: min(100%, 420px);
