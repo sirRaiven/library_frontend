@@ -16,6 +16,7 @@ const canRenew = ref(false);
 const lookupReason = ref<string | null>(null);
 const lookupLoading = ref(false);
 const renewing = ref(false);
+const previewSide = ref<"front" | "back">("front");
 
 const memberships = ref<MembershipListItem[]>([]);
 const search = ref("");
@@ -91,6 +92,7 @@ async function lookupCard() {
   try {
     const response = await members.lookupStudentCard(barcode.value);
     scannedStudent.value = response.data.student;
+    previewSide.value = "front";
     canRenew.value = response.data.canRenew;
     lookupReason.value = response.data.reason;
   } catch (error) {
@@ -141,6 +143,7 @@ async function renewMembership() {
 function clearScanner() {
   barcode.value = "";
   scannedStudent.value = null;
+  previewSide.value = "front";
   canRenew.value = false;
   lookupReason.value = null;
 }
@@ -180,10 +183,27 @@ watch([statusFilter, semesterFilter], () => {
 });
 watch(page, () => void loadMemberships());
 
+watch(
+  () => route.query.barcode,
+  async (value) => {
+    if (
+      typeof value !== "string" ||
+      !value.trim() ||
+      value === barcode.value
+    ) {
+      return;
+    }
+
+    barcode.value = value.trim();
+    await lookupCard();
+  },
+);
+
 onMounted(async () => {
   await loadMemberships();
+
   if (typeof route.query.barcode === "string") {
-    barcode.value = route.query.barcode;
+    barcode.value = route.query.barcode.trim();
     await lookupCard();
   }
 });
@@ -202,7 +222,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         <UCard v-for="card in cards" :key="card.label">
           <div class="flex items-start justify-between">
             <div>
@@ -216,7 +236,7 @@ onMounted(async () => {
         </UCard>
       </div>
 
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <div class="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_24rem]">
         <UCard>
           <template #header>
             <div class="flex items-center gap-3">
@@ -235,10 +255,78 @@ onMounted(async () => {
             <UButton type="submit" label="Find Student" icon="i-lucide-search" color="success" size="xl" :loading="lookupLoading" />
           </form>
 
-          <div v-if="scannedStudent" class="mt-6 grid gap-6 lg:grid-cols-2">
-            <StudentLibraryCard :student="scannedStudent" :membership="scannedStudent.membership" :show-actions="false" />
+          <div
+            v-if="scannedStudent"
+            class="mt-6 grid gap-6 lg:grid-cols-2"
+          >
+            <div class="min-w-0 space-y-3">
+              <div
+                class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+              >
+                <div>
+                  <h3 class="font-semibold text-highlighted">
+                    Library Card Preview
+                  </h3>
+                  <p class="mt-1 text-sm text-muted">
+                    Preview one full side at a time. The card is scaled
+                    proportionally without clipping its content, and the Back
+                    side renders the permanent library-card barcode.
+                  </p>
+                </div>
 
-            <div class="space-y-4">
+                <div
+                  class="inline-flex w-full rounded-xl border border-default bg-elevated p-1 sm:w-auto"
+                  role="group"
+                  aria-label="Choose library card side"
+                >
+                  <UButton
+                    label="Front"
+                    icon="i-lucide-contact"
+                    size="sm"
+                    class="flex-1 sm:flex-none"
+                    :color="previewSide === 'front' ? 'primary' : 'neutral'"
+                    :variant="previewSide === 'front' ? 'solid' : 'ghost'"
+                    :aria-pressed="previewSide === 'front'"
+                    @click="() => { previewSide = 'front' }"
+                  />
+
+                  <UButton
+                    label="Back"
+                    icon="i-lucide-scan-barcode"
+                    size="sm"
+                    class="flex-1 sm:flex-none"
+                    :color="previewSide === 'back' ? 'primary' : 'neutral'"
+                    :variant="previewSide === 'back' ? 'solid' : 'ghost'"
+                    :aria-pressed="previewSide === 'back'"
+                    @click="() => { previewSide = 'back' }"
+                  />
+                </div>
+              </div>
+
+              <div
+                class="rounded-2xl border border-default bg-elevated/30 p-3 sm:p-5"
+              >
+                <StudentLibraryCard
+                  :student="scannedStudent"
+                  :membership="scannedStudent.membership"
+                  :show-actions="false"
+                  :display-side="previewSide"
+                  fit-preview
+                />
+              </div>
+
+              <UAlert
+                color="info"
+                variant="soft"
+                icon="i-lucide-scan-barcode"
+                title="Permanent barcode"
+                :description="`Barcode value: ${scannedStudent.barcode}. Membership validity and renewal are verified in the system instead of being printed on the card.`"
+              />
+            </div>
+
+            <div
+              class="min-w-0 space-y-4 rounded-2xl border border-default bg-elevated/20 p-4 sm:p-5"
+            >
               <div class="rounded-2xl border border-default bg-elevated/50 p-4">
                 <div class="flex items-start justify-between gap-3">
                   <div>
@@ -251,13 +339,36 @@ onMounted(async () => {
 
               <UAlert v-if="!canRenew" color="error" variant="soft" icon="i-lucide-circle-alert" title="Renewal unavailable" :description="lookupReason ?? 'This student cannot be renewed.'" />
 
-              <div class="grid gap-4 sm:grid-cols-2">
+              <div class="grid gap-4 md:grid-cols-2">
                 <UFormField label="Academic Year" required><UInput v-model="renewal.academicYear" class="w-full" /></UFormField>
                 <UFormField label="Semester" required><USelect v-model="renewal.semester" :items="renewalSemesters" class="w-full" /></UFormField>
                 <UFormField label="Issued Date" required><UInput v-model="renewal.issuedDate" type="date" class="w-full" /></UFormField>
                 <UFormField label="Valid Until" required><UInput v-model="renewal.expiryDate" type="date" class="w-full" /></UFormField>
-                <UFormField label="Enrollment Reference" class="sm:col-span-2"><UInput v-model="renewal.enrollmentReference" class="w-full" /></UFormField>
-                <UFormField label="Remarks" class="sm:col-span-2"><UTextarea v-model="renewal.remarks" :rows="2" class="w-full" /></UFormField>
+                <UFormField
+                  label="Enrollment Reference"
+                  hint="Optional"
+                  description="Reference number or document identifier when available."
+                  class="sm:col-span-2"
+                >
+                  <UInput
+                    v-model="renewal.enrollmentReference"
+                    placeholder="Leave blank when not applicable"
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <UFormField
+                  label="Remarks"
+                  hint="Optional"
+                  class="sm:col-span-2"
+                >
+                  <UTextarea
+                    v-model="renewal.remarks"
+                    :rows="2"
+                    placeholder="Additional renewal notes"
+                    class="w-full"
+                  />
+                </UFormField>
               </div>
 
               <div class="rounded-xl border border-default bg-default p-4">

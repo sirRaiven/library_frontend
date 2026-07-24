@@ -13,6 +13,11 @@ type DownloadSide =
   | "back"
   | "both";
 
+type DisplaySide =
+  | "front"
+  | "back"
+  | "both";
+
 type StudentWithAddress =
   StudentMember & {
     address?: string;
@@ -25,12 +30,22 @@ const props = withDefaults(
     showActions?: boolean;
     design?: Partial<LibraryCardDesign>;
     previewMode?: boolean;
+    displaySide?: DisplaySide;
+
+    /**
+     * Keeps the card at its full design size internally and scales the
+     * completed card to the available preview width. This prevents text,
+     * photos, and labels from being clipped in narrow page columns.
+     */
+    fitPreview?: boolean;
   }>(),
   {
     membership: null,
     showActions: true,
     design: undefined,
     previewMode: false,
+    displaySide: "both",
+    fitPreview: false,
   },
 );
 
@@ -44,8 +59,19 @@ const backCard =
   ref<HTMLElement | null>(null);
 const bothCards =
   ref<HTMLElement | null>(null);
+const previewViewport =
+  ref<HTMLElement | null>(null);
 const barcodeElement =
   ref<SVGSVGElement | null>(null);
+
+const CARD_WIDTH = 560;
+const CARD_HEIGHT =
+  CARD_WIDTH / 1.586;
+const CARD_GAP = 20;
+
+const previewScale = ref(1);
+let previewResizeObserver:
+  ResizeObserver | null = null;
 
 const downloading =
   ref<DownloadSide | null>(null);
@@ -57,6 +83,18 @@ const activeMembership = computed(
   () =>
     props.membership ??
     props.student.membership,
+);
+
+const showFront = computed(
+  () =>
+    props.displaySide === "front" ||
+    props.displaySide === "both",
+);
+
+const showBack = computed(
+  () =>
+    props.displaySide === "back" ||
+    props.displaySide === "both",
 );
 
 const cardDesign = computed(() =>
@@ -84,6 +122,14 @@ const studentAddress = computed(
     (
       props.student as StudentWithAddress
     ).address?.trim() ?? "",
+);
+
+const barcodeValue = computed(
+  () =>
+    props.student.barcode?.trim() ||
+    props.student.libraryCardNo?.trim() ||
+    props.student.studentNo?.trim() ||
+    "",
 );
 
 const initials = computed(() =>
@@ -192,6 +238,96 @@ const cssVariables = computed(
     }) as Record<string, string>,
 );
 
+const visibleSideCount = computed(
+  () =>
+    Number(showFront.value) +
+    Number(showBack.value),
+);
+
+const previewNaturalHeight = computed(
+  () =>
+    CARD_HEIGHT *
+      visibleSideCount.value +
+    CARD_GAP *
+      Math.max(
+        visibleSideCount.value - 1,
+        0,
+      ),
+);
+
+const previewViewportStyle = computed(
+  () => {
+    if (!props.fitPreview) {
+      return undefined;
+    }
+
+    return {
+      height:
+        `${previewNaturalHeight.value * previewScale.value}px`,
+    };
+  },
+);
+
+const cardPairStyle = computed(
+  () => {
+    if (!props.fitPreview) {
+      return cssVariables.value;
+    }
+
+    return {
+      ...cssVariables.value,
+      width: `${CARD_WIDTH}px`,
+      transform:
+        `scale(${previewScale.value})`,
+      transformOrigin: "top left",
+    };
+  },
+);
+
+function updatePreviewScale() {
+  if (
+    !props.fitPreview ||
+    !previewViewport.value
+  ) {
+    previewScale.value = 1;
+    return;
+  }
+
+  const availableWidth =
+    previewViewport.value.clientWidth;
+
+  previewScale.value = Math.min(
+    Math.max(
+      availableWidth / CARD_WIDTH,
+      0.1,
+    ),
+    1,
+  );
+}
+
+function connectPreviewObserver() {
+  if (
+    !import.meta.client ||
+    !props.fitPreview ||
+    !previewViewport.value
+  ) {
+    return;
+  }
+
+  previewResizeObserver?.disconnect();
+
+  previewResizeObserver =
+    new ResizeObserver(() => {
+      updatePreviewScale();
+    });
+
+  previewResizeObserver.observe(
+    previewViewport.value,
+  );
+
+  updatePreviewScale();
+}
+
 function cardBackgroundStyle() {
   const design = cardDesign.value;
 
@@ -234,7 +370,8 @@ async function renderBarcode() {
   if (
     !import.meta.client ||
     !barcodeElement.value ||
-    !cardDesign.value.showBarcode
+    !cardDesign.value.showBarcode ||
+    !barcodeValue.value
   ) {
     return;
   }
@@ -247,7 +384,7 @@ async function renderBarcode() {
 
     JsBarcode(
       barcodeElement.value,
-      props.student.barcode,
+      barcodeValue.value,
       {
         format: "CODE128",
         width: 1.55,
@@ -266,6 +403,26 @@ async function renderBarcode() {
     barcodeError.value =
       "Unable to render barcode.";
   }
+}
+
+async function renderBarcodeWhenReady() {
+  if (
+    !import.meta.client ||
+    !showBack.value ||
+    !cardDesign.value.showBarcode
+  ) {
+    return;
+  }
+
+  await nextTick();
+
+  // The Back side is conditionally rendered. Waiting for one animation
+  // frame guarantees that the SVG ref exists before JsBarcode runs.
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+
+  await renderBarcode();
 }
 
 function downloadTarget(
@@ -355,7 +512,13 @@ onMounted(async () => {
   }
 
   await nextTick();
-  await renderBarcode();
+  connectPreviewObserver();
+  await renderBarcodeWhenReady();
+});
+
+onBeforeUnmount(() => {
+  previewResizeObserver?.disconnect();
+  previewResizeObserver = null;
 });
 
 watch(
@@ -367,14 +530,26 @@ watch(
 
 watch(
   [
-    () => props.student.barcode,
+    () => props.displaySide,
+    () => props.fitPreview,
+  ],
+  async () => {
+    await nextTick();
+    connectPreviewObserver();
+    updatePreviewScale();
+    await renderBarcodeWhenReady();
+  },
+);
+
+watch(
+  [
+    () => barcodeValue.value,
     () => cardDesign.value.primaryColor,
     () => cardDesign.value.showBarcode,
     () => cardDesign.value.backLayout,
   ],
   async () => {
-    await nextTick();
-    await renderBarcode();
+    await renderBarcodeWhenReady();
   },
 );
 
@@ -387,16 +562,30 @@ defineExpose({
 <template>
   <div class="space-y-5">
     <div
-      ref="bothCards"
-      class="library-card-pair"
+      ref="previewViewport"
+      class="card-preview-viewport"
       :class="{
-        'designer-preview':
-          previewMode,
+        'fit-preview':
+          fitPreview,
       }"
-      :style="cssVariables"
+      :style="previewViewportStyle"
     >
+      <div
+        ref="bothCards"
+        class="library-card-pair"
+        :class="{
+          'designer-preview':
+            previewMode,
+          'single-side-preview':
+            displaySide !== 'both',
+          'scaled-card-pair':
+            fitPreview,
+        }"
+        :style="cardPairStyle"
+      >
       <!-- FRONT -->
       <section
+        v-if="showFront"
         ref="frontCard"
         class="library-card-shell library-card-front"
         :class="frontClass"
@@ -564,6 +753,7 @@ defineExpose({
 
       <!-- BACK -->
       <section
+        v-if="showBack"
         ref="backCard"
         class="library-card-shell library-card-back"
         :class="backClass"
@@ -732,11 +922,20 @@ defineExpose({
                 class="barcode-panel"
               >
                 <svg
+                  v-if="barcodeValue"
                   ref="barcodeElement"
                   class="barcode-svg"
                   role="img"
-                  :aria-label="`Library barcode for ${student.fullName}`"
+                  :aria-label="`Library barcode ${barcodeValue} for ${student.fullName}`"
                 />
+
+                <div
+                  v-else
+                  class="barcode-missing"
+                >
+                  <strong>Barcode unavailable</strong>
+                  <span>No library-card number was returned.</span>
+                </div>
 
                 <p
                   v-if="barcodeError"
@@ -789,6 +988,7 @@ defineExpose({
           </footer>
         </div>
       </section>
+      </div>
     </div>
 
     <div
@@ -849,10 +1049,47 @@ defineExpose({
 </template>
 
 <style scoped>
+.card-preview-viewport {
+  width: 100%;
+}
+
+.card-preview-viewport.fit-preview {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  margin-inline: auto;
+  overflow: hidden;
+}
+
 .library-card-pair {
   display: grid;
   gap: 1.25rem;
   justify-items: center;
+}
+
+.fit-preview
+  .scaled-card-pair {
+  grid-template-columns:
+    minmax(0, 1fr) !important;
+  gap: 20px;
+  justify-items: stretch;
+  will-change: transform;
+}
+
+.fit-preview
+  .library-card-shell {
+  width: 560px;
+  min-width: 560px;
+  max-width: none;
+}
+
+.single-side-preview {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.single-side-preview
+  .library-card-shell {
+  width: min(100%, 620px);
 }
 
 .library-card-shell {
@@ -1115,6 +1352,13 @@ defineExpose({
 
 .identity-copy {
   min-width: 0;
+  max-height: 100%;
+}
+
+.brand-name,
+.identity-name,
+.identity-program {
+  overflow-wrap: anywhere;
 }
 
 .identity-label {
@@ -1594,8 +1838,33 @@ defineExpose({
 .barcode-svg {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 4.2rem;
+  height: 4.2rem;
+  min-height: 4.2rem;
+  overflow: visible;
+}
+
+.barcode-missing {
+  display: flex;
+  min-height: 4.2rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  text-align: center;
+}
+
+.barcode-missing strong,
+.barcode-missing span {
+  display: block;
+}
+
+.barcode-missing strong {
+  font-size: 0.7rem;
+}
+
+.barcode-missing span {
+  margin-top: 0.15rem;
+  font-size: 0.55rem;
 }
 
 .barcode-error {
@@ -1844,7 +2113,8 @@ defineExpose({
     align-items: start;
   }
 
-  .designer-preview {
+  .designer-preview,
+  .single-side-preview {
     grid-template-columns: 1fr;
   }
 }
