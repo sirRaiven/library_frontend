@@ -29,6 +29,8 @@ const backgroundInput =
   ref<HTMLInputElement | null>(null);
 const logoInput =
   ref<HTMLInputElement | null>(null);
+const backLogoInput =
+  ref<HTMLInputElement | null>(null);
 const importInput =
   ref<HTMLInputElement | null>(null);
 
@@ -42,6 +44,8 @@ const loading = ref(true);
 const uploadingBackground =
   ref(false);
 const uploadingLogo = ref(false);
+const uploadingBackLogo =
+  ref(false);
 const importing = ref(false);
 const presetCategory =
   ref<"All" | LibraryCardPresetCategory>(
@@ -56,26 +60,32 @@ const savedAt = ref<Date | null>(null);
 const previewStudent =
   {
     documentId: "preview-student",
-    studentNo: "23-00123",
-    libraryCardNo: "LC2026-0123",
-    barcode: "LC2026-0123",
-    firstName: "John",
-    middleName: "B.",
-    lastName: "Doe",
+    studentNo: "23-00883",
+    libraryCardNo: "LC2023-0704",
+    barcode: "LC2023-0704",
+    firstName: "Karl Lian",
+    middleName: "A",
+    lastName: "Gomez",
     suffix: "",
     fullName:
-      "Doe, John B.",
+      "Gomez, Karl Lian A.",
     sex: "Male",
+    educationalLevel:
+      "College",
     course:
       "BS - INFORMATION TECHNOLOGY",
-    yearLevel: 2,
+    yearLevel: 3,
     section: "A",
     email:
-      "john.doe@student.sncbt.edu.ph",
+      "karl.gomez@student.sncbt.edu.ph",
     contactNo: "0912 345 6789",
     address:
       "City of San Fernando, Pampanga",
     photoUrl: null,
+    libraryCardStatus:
+      "Released",
+    libraryCardReleaseDate:
+      "2026-06-15",
     status: "Active",
     membership: null,
   } as StudentMember & {
@@ -194,6 +204,236 @@ const photoShapeItems = [
     value: "circle",
   },
 ];
+
+
+const imagePositionItems = [
+  {
+    label: "Center",
+    value: "50% 50%",
+  },
+  {
+    label: "Upper Center",
+    value: "50% 35%",
+  },
+  {
+    label: "Lower Center",
+    value: "50% 65%",
+  },
+  {
+    label: "Top",
+    value: "50% 0%",
+  },
+  {
+    label: "Bottom",
+    value: "50% 100%",
+  },
+  {
+    label: "Left",
+    value: "0% 50%",
+  },
+  {
+    label: "Right",
+    value: "100% 50%",
+  },
+  {
+    label: "Top Left",
+    value: "0% 0%",
+  },
+  {
+    label: "Top Right",
+    value: "100% 0%",
+  },
+  {
+    label: "Bottom Left",
+    value: "0% 100%",
+  },
+  {
+    label: "Bottom Right",
+    value: "100% 100%",
+  },
+  {
+    label: "Custom Position",
+    value: "custom",
+  },
+];
+
+function positionTokenToPercent(
+  token: string | undefined,
+  axis: "x" | "y",
+): number {
+  const normalized =
+    token?.trim().toLowerCase() ??
+    "";
+
+  if (
+    normalized.endsWith("%")
+  ) {
+    const numberValue =
+      Number.parseFloat(
+        normalized,
+      );
+
+    if (
+      Number.isFinite(
+        numberValue,
+      )
+    ) {
+      return Math.min(
+        Math.max(
+          numberValue,
+          0,
+        ),
+        100,
+      );
+    }
+  }
+
+  if (
+    normalized === "left" ||
+    normalized === "top"
+  ) {
+    return 0;
+  }
+
+  if (
+    normalized === "right" ||
+    normalized === "bottom"
+  ) {
+    return 100;
+  }
+
+  if (
+    normalized === "center"
+  ) {
+    return 50;
+  }
+
+  return axis === "x"
+    ? 50
+    : 45;
+}
+
+function parseImagePosition(
+  value: string,
+): {
+  x: number;
+  y: number;
+} {
+  const tokens =
+    value
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (tokens.length === 0) {
+    return {
+      x: 50,
+      y: 45,
+    };
+  }
+
+  if (tokens.length === 1) {
+    const token =
+      tokens[0];
+
+    if (
+      token === "top" ||
+      token === "bottom"
+    ) {
+      return {
+        x: 50,
+        y:
+          positionTokenToPercent(
+            token,
+            "y",
+          ),
+      };
+    }
+
+    return {
+      x:
+        positionTokenToPercent(
+          token,
+          "x",
+        ),
+      y: 50,
+    };
+  }
+
+  return {
+    x:
+      positionTokenToPercent(
+        tokens[0],
+        "x",
+      ),
+    y:
+      positionTokenToPercent(
+        tokens[1],
+        "y",
+      ),
+  };
+}
+
+const imagePositionPreset =
+  computed({
+    get() {
+      const exactMatch =
+        imagePositionItems.find(
+          (item) =>
+            item.value !==
+              "custom" &&
+            item.value ===
+              draft.backgroundPosition,
+        );
+
+      return exactMatch?.value ??
+        "custom";
+    },
+    set(value: string) {
+      if (
+        value !== "custom"
+      ) {
+        draft.backgroundPosition =
+          value;
+      }
+    },
+  });
+
+const imagePositionX =
+  computed({
+    get() {
+      return parseImagePosition(
+        draft.backgroundPosition,
+      ).x;
+    },
+    set(value: number) {
+      const position =
+        parseImagePosition(
+          draft.backgroundPosition,
+        );
+
+      draft.backgroundPosition =
+        `${Math.round(value)}% ${Math.round(position.y)}%`;
+    },
+  });
+
+const imagePositionY =
+  computed({
+    get() {
+      return parseImagePosition(
+        draft.backgroundPosition,
+      ).y;
+    },
+    set(value: number) {
+      const position =
+        parseImagePosition(
+          draft.backgroundPosition,
+        );
+
+      draft.backgroundPosition =
+        `${Math.round(position.x)}% ${Math.round(value)}%`;
+    },
+  });
 
 type ColorFieldKey =
   | "primaryColor"
@@ -384,6 +624,26 @@ function chooseBackgroundImage() {
 
 function chooseLogoImage() {
   logoInput.value?.click();
+}
+
+function chooseBackLogoImage() {
+  backLogoInput.value?.click();
+}
+
+function useFrontLogoOnBack() {
+  draft.backLogoUrl =
+    draft.logoUrl;
+  draft.showBackLogo = true;
+  saveState.value = "idle";
+
+  toast.add({
+    title:
+      "Front logo copied",
+    description:
+      "The institution logo is now also used on the back of the card.",
+    color: "info",
+    icon: "i-lucide-copy",
+  });
 }
 
 function chooseImportFile() {
@@ -728,6 +988,56 @@ async function uploadLogo(
   }
 }
 
+
+async function uploadBackLogo(
+  event: Event,
+) {
+  const input =
+    event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  uploadingBackLogo.value =
+    true;
+
+  try {
+    const url =
+      await cardDesign.uploadAsset(
+        file,
+      );
+
+    draft.backLogoUrl = url;
+    draft.showBackLogo = true;
+    saveState.value = "idle";
+
+    toast.add({
+      title:
+        "Library logo uploaded",
+      description:
+        "The uploaded logo is now displayed on the back of the Library Card.",
+      color: "success",
+      icon: "i-lucide-library",
+    });
+  } catch (error) {
+    toast.add({
+      title:
+        "Library logo upload failed",
+      description:
+        auth.getErrorMessage(error),
+      color: "error",
+      icon:
+        "i-lucide-circle-alert",
+    });
+  } finally {
+    uploadingBackLogo.value =
+      false;
+    input.value = "";
+  }
+}
+
 function handleSaveShortcut(
   event: KeyboardEvent,
 ) {
@@ -890,10 +1200,10 @@ onBeforeUnmount(() => {
         class="grid gap-6 xl:grid-cols-[28rem_minmax(0,1fr)]"
       >
         <USkeleton
-          class="h-225 w-full"
+          class="h-[900px] w-full"
         />
         <USkeleton
-          class="h-180 w-full"
+          class="h-[720px] w-full"
         />
       </div>
 
@@ -1110,13 +1420,12 @@ onBeforeUnmount(() => {
                     <p
                       class="text-sm font-medium text-highlighted"
                     >
-                      Institution Logo
+                      Front Institution Logo
                     </p>
                     <p
                       class="text-xs text-muted"
                     >
-                      A transparent PNG is
-                      recommended.
+                      Used beside the institution name on the front of the card.
                     </p>
                   </div>
 
@@ -1142,7 +1451,7 @@ onBeforeUnmount(() => {
                 />
 
                 <UButton
-                  label="Upload Logo"
+                  label="Upload Institution Logo"
                   icon="i-lucide-upload"
                   color="neutral"
                   variant="outline"
@@ -1155,6 +1464,97 @@ onBeforeUnmount(() => {
                     chooseLogoImage
                   "
                 />
+              </div>
+
+              <div
+                class="rounded-xl border border-default bg-elevated/40 p-4"
+              >
+                <div
+                  class="flex items-center justify-between gap-3"
+                >
+                  <div>
+                    <p
+                      class="text-sm font-medium text-highlighted"
+                    >
+                      Back Library Logo
+                    </p>
+                    <p
+                      class="text-xs leading-relaxed text-muted"
+                    >
+                      Upload a separate Library logo for the back of the card. A transparent square PNG or WebP gives the best result.
+                    </p>
+                  </div>
+
+                  <USwitch
+                    v-model="
+                      draft.showBackLogo
+                    "
+                  />
+                </div>
+
+                <UInput
+                  v-model="
+                    draft.backLogoUrl
+                  "
+                  placeholder="/uploads/sncbt-library-logo.png"
+                  class="mt-3 w-full"
+                />
+
+                <input
+                  ref="backLogoInput"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  class="hidden"
+                  @change="
+                    uploadBackLogo
+                  "
+                />
+
+                <div
+                  class="mt-2 grid gap-2 sm:grid-cols-2"
+                >
+                  <UButton
+                    label="Upload Library Logo"
+                    icon="i-lucide-image-up"
+                    color="primary"
+                    variant="soft"
+                    block
+                    :loading="
+                      uploadingBackLogo
+                    "
+                    @click="
+                      chooseBackLogoImage
+                    "
+                  />
+
+                  <UButton
+                    label="Use Front Logo"
+                    icon="i-lucide-copy"
+                    color="neutral"
+                    variant="outline"
+                    block
+                    @click="
+                      useFrontLogoOnBack
+                    "
+                  />
+                </div>
+
+                <UFormField
+                  class="mt-4"
+                  label="Back Logo Size"
+                  :description="`${draft.backLogoSize}px`"
+                >
+                  <input
+                    v-model.number="
+                      draft.backLogoSize
+                    "
+                    type="range"
+                    min="32"
+                    max="84"
+                    step="1"
+                    class="w-full accent-current"
+                  />
+                </UFormField>
               </div>
             </div>
           </UCard>
@@ -1247,17 +1647,101 @@ onBeforeUnmount(() => {
                   />
                 </UFormField>
 
-                <UFormField
-                  label="Image Position"
+                <div
+                  class="rounded-xl border border-default bg-elevated/40 p-4"
                 >
-                  <UInput
-                    v-model="
-                      draft.backgroundPosition
-                    "
-                    placeholder="center 45%"
-                    class="w-full"
-                  />
-                </UFormField>
+                  <div>
+                    <p
+                      class="text-sm font-medium text-highlighted"
+                    >
+                      Image Position
+                    </p>
+                    <p
+                      class="mt-1 text-xs leading-relaxed text-muted"
+                    >
+                      Choose a quick focal-point preset or fine-tune the horizontal and vertical positions.
+                    </p>
+                  </div>
+
+                  <UFormField
+                    class="mt-4"
+                    label="Position Preset"
+                  >
+                    <USelect
+                      v-model="
+                        imagePositionPreset
+                      "
+                      :items="
+                        imagePositionItems
+                      "
+                      value-key="value"
+                      class="w-full"
+                    />
+                  </UFormField>
+
+                  <div
+                    class="mt-4 grid gap-4 sm:grid-cols-2"
+                  >
+                    <UFormField
+                      label="Horizontal Position"
+                      :description="`${Math.round(imagePositionX)}%`"
+                    >
+                      <input
+                        v-model.number="
+                          imagePositionX
+                        "
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        class="w-full accent-current"
+                      />
+                    </UFormField>
+
+                    <UFormField
+                      label="Vertical Position"
+                      :description="`${Math.round(imagePositionY)}%`"
+                    >
+                      <input
+                        v-model.number="
+                          imagePositionY
+                        "
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        class="w-full accent-current"
+                      />
+                    </UFormField>
+                  </div>
+
+                  <UFormField
+                    class="mt-4"
+                    label="Advanced CSS Position"
+                    description="You may enter values such as 50% 35%, left center, or right bottom."
+                  >
+                    <UInput
+                      v-model="
+                        draft.backgroundPosition
+                      "
+                      placeholder="50% 45%"
+                      class="w-full font-mono"
+                    />
+                  </UFormField>
+
+                  <div
+                    class="mt-3 rounded-lg bg-default px-3 py-2 text-xs text-muted"
+                  >
+                    Current value:
+                    <code
+                      class="font-semibold text-highlighted"
+                    >
+                      {{
+                        draft.backgroundPosition
+                      }}
+                    </code>
+                  </div>
+                </div>
 
                 <input
                   ref="backgroundInput"

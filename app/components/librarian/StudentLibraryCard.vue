@@ -79,6 +79,7 @@ let previewResizeObserver:
 const downloading =
   ref<DownloadSide | null>(null);
 const logoFailed = ref(false);
+const backLogoFailed = ref(false);
 const backgroundFailed = ref(false);
 const barcodeError = ref("");
 
@@ -111,6 +112,13 @@ const resolvedLogo = computed(() =>
   designStore.assetUrl(
     cardDesign.value.logoUrl,
   ),
+);
+
+const resolvedBackLogo = computed(
+  () =>
+    designStore.assetUrl(
+      cardDesign.value.backLogoUrl,
+    ),
 );
 
 const resolvedBackground = computed(
@@ -240,6 +248,8 @@ const cssVariables = computed(
         `${16 * (cardDesign.value.fontScale / 100)}px`,
       "--card-background-position":
         cardDesign.value.backgroundPosition,
+      "--card-back-logo-size":
+        `${cardDesign.value.backLogoSize}px`,
     }) as Record<string, string>,
 );
 
@@ -534,6 +544,13 @@ watch(
 );
 
 watch(
+  resolvedBackLogo,
+  () => {
+    backLogoFailed.value = false;
+  },
+);
+
+watch(
   [
     () => props.displaySide,
     () => props.fitPreview,
@@ -778,21 +795,28 @@ defineExpose({
             </div>
 
             <div
-              v-if="cardDesign.showLogo"
+              v-if="
+                cardDesign.showBackLogo
+              "
               class="back-logo"
             >
               <img
                 v-if="
-                  resolvedLogo &&
-                  !logoFailed
+                  resolvedBackLogo &&
+                  !backLogoFailed
                 "
-                :src="resolvedLogo"
-                alt=""
+                :src="
+                  resolvedBackLogo
+                "
+                alt="Library logo"
                 crossorigin="anonymous"
+                @error="
+                  backLogoFailed = true
+                "
               />
 
               <span v-else>
-                SNCBT
+                LIBRARY
               </span>
             </div>
           </header>
@@ -1237,9 +1261,17 @@ defineExpose({
 }
 
 .back-logo {
-  width: 2.7rem;
-  height: 2.7rem;
-  font-size: 0.5rem;
+  width:
+    var(
+      --card-back-logo-size,
+      44px
+    );
+  height:
+    var(
+      --card-back-logo-size,
+      44px
+    );
+  font-size: 0.46rem;
 }
 
 .institution-logo img,

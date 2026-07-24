@@ -85,32 +85,27 @@ export const STUDENT_PROGRAM_OPTIONS: StudentProgramOption[] = [
 
   {
     label: "Diploma in Hospitality Technology",
-    value:
-      "Diploma in Hospitality Technology (Leading to Bachelor of Science in Hospitality Management)",
+    value: "Diploma in Hospitality Technology",
     educationalLevel: "Diploma",
   },
   {
     label: "Diploma in Information Technology",
-    value:
-      "Diploma in Information Technology (Leading to Bachelor of Science in Information Technology)",
+    value: "Diploma in Information Technology",
     educationalLevel: "Diploma",
   },
   {
     label: "Diploma in Computer Technology (DCT)",
-    value:
-      "Diploma in Computer Technology (Leading to Bachelor of Science in Computer Science)",
+    value: "Diploma in Computer Technology",
     educationalLevel: "Diploma",
   },
   {
     label: "Diploma in Computer Engineering Technology",
-    value:
-      "Diploma in Computer Engineering Technology (Leading to Bachelor of Science in Computer Engineering)",
+    value: "Diploma in Computer Engineering Technology",
     educationalLevel: "Diploma",
   },
   {
     label: "Diploma in Tourism Technology",
-    value:
-      "Diploma in Tourism Technology (Leading to Bachelor of Science in Tourism Management)",
+    value: "Diploma in Tourism Technology",
     educationalLevel: "Diploma",
   },
 
@@ -136,7 +131,7 @@ export const STUDENT_PROGRAM_OPTIONS: StudentProgramOption[] = [
   },
   {
     label: "Science, Technology, Engineering and Mathematics – STEM",
-    value: "Academic - STEM",
+    value: "Science, Technology, Engineering and Mathematics - STEM",
     educationalLevel: "Senior High School",
   },
 ];

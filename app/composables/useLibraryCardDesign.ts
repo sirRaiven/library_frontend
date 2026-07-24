@@ -41,10 +41,7 @@ export interface LibraryCardDesign {
   backStyle: LibraryCardBackStyle;
   backLayout: LibraryCardBackLayout;
 
-  backgroundMode:
-    | "image"
-    | "gradient"
-    | "solid";
+  backgroundMode: "image" | "gradient" | "solid";
   backgroundImage: string;
   backgroundPosition: string;
   overlayOpacity: number;
@@ -53,9 +50,21 @@ export interface LibraryCardDesign {
 
   photoShape: LibraryCardPhotoShape;
   photoBorderColor: string;
+
+  /**
+   * Institution seal used on the front of the card.
+   */
   logoUrl: string;
 
+  /**
+   * Independent Library logo used on the back of the card.
+   * It may be different from the institution seal.
+   */
+  backLogoUrl: string;
+  backLogoSize: number;
+
   showLogo: boolean;
+  showBackLogo: boolean;
   showPhoto: boolean;
   showStudentNumber: boolean;
   showCourse: boolean;
@@ -120,7 +129,13 @@ export const DEFAULT_LIBRARY_CARD_DESIGN: LibraryCardDesign = {
   photoBorderColor: "#FFFFFF",
   logoUrl: "/sncbt-logo.png",
 
+  // Uses the institution seal until the librarian uploads
+  // the official Library logo from the Designer.
+  backLogoUrl: "/sncbt-library-logo.png",
+  backLogoSize: 44,
+
   showLogo: true,
+  showBackLogo: true,
   showPhoto: true,
   showStudentNumber: true,
   showCourse: true,
@@ -139,7 +154,7 @@ export const DEFAULT_LIBRARY_CARD_DESIGN: LibraryCardDesign = {
   institutionName: "ST. NICOLAS COLLEGE OF BUSINESS AND TECHNOLOGY",
   cardTitle: "STUDENT LIBRARY CARD",
   departmentLabel: "COLLEGE DEPARTMENT",
-  frontTagline: "Learn • Achieve • Succeed",
+  frontTagline: "Knowledge • Access • Service",
 
   backTitle: "LIBRARY ACCESS CREDENTIAL",
   noticeText:
@@ -525,31 +540,19 @@ export function normalizeLibraryCardDesign(
 
     backStyle: enumValue(
       value.backStyle,
-      [
-        "navy",
-        "light",
-        "gradient",
-      ] as const,
+      ["navy", "light", "gradient"] as const,
       DEFAULT_LIBRARY_CARD_DESIGN.backStyle,
     ),
 
     backLayout: enumValue(
       value.backLayout,
-      [
-        "credential",
-        "profile",
-        "minimal",
-      ] as const,
+      ["credential", "profile", "minimal"] as const,
       DEFAULT_LIBRARY_CARD_DESIGN.backLayout,
     ),
 
     backgroundMode: enumValue(
       value.backgroundMode,
-      [
-        "image",
-        "gradient",
-        "solid",
-      ] as const,
+      ["image", "gradient", "solid"] as const,
       DEFAULT_LIBRARY_CARD_DESIGN.backgroundMode,
     ),
 
@@ -583,11 +586,7 @@ export function normalizeLibraryCardDesign(
 
     photoShape: enumValue(
       value.photoShape,
-      [
-        "rounded",
-        "square",
-        "circle",
-      ] as const,
+      ["rounded", "square", "circle"] as const,
       DEFAULT_LIBRARY_CARD_DESIGN.photoShape,
     ),
 
@@ -595,14 +594,28 @@ export function normalizeLibraryCardDesign(
       value.photoBorderColor,
       DEFAULT_LIBRARY_CARD_DESIGN.photoBorderColor,
     ),
-    logoUrl: stringValue(
-      value.logoUrl,
-      DEFAULT_LIBRARY_CARD_DESIGN.logoUrl,
+    logoUrl: stringValue(value.logoUrl, DEFAULT_LIBRARY_CARD_DESIGN.logoUrl),
+
+    // Older saved designs only have logoUrl. Use that value on the
+    // back until a dedicated Library logo is selected.
+    backLogoUrl: stringValue(
+      value.backLogoUrl,
+      stringValue(value.logoUrl, DEFAULT_LIBRARY_CARD_DESIGN.backLogoUrl),
+    ),
+    backLogoSize: clamp(
+      value.backLogoSize,
+      32,
+      84,
+      DEFAULT_LIBRARY_CARD_DESIGN.backLogoSize,
     ),
 
     showLogo: booleanValue(
       value.showLogo,
       DEFAULT_LIBRARY_CARD_DESIGN.showLogo,
+    ),
+    showBackLogo: booleanValue(
+      value.showBackLogo,
+      booleanValue(value.showLogo, DEFAULT_LIBRARY_CARD_DESIGN.showBackLogo),
     ),
     showPhoto: booleanValue(
       value.showPhoto,
@@ -665,10 +678,7 @@ export function normalizeLibraryCardDesign(
 
     backTitle: stringValue(
       value.backTitle,
-      stringValue(
-        legacy.validityTitle,
-        DEFAULT_LIBRARY_CARD_DESIGN.backTitle,
-      ),
+      stringValue(legacy.validityTitle, DEFAULT_LIBRARY_CARD_DESIGN.backTitle),
     ),
     noticeText: stringValue(
       value.noticeText,
@@ -687,8 +697,7 @@ export function normalizeLibraryCardDesign(
     showValidityTable: false,
     validityTitle: stringValue(
       legacy.validityTitle,
-      DEFAULT_LIBRARY_CARD_DESIGN.validityTitle ??
-        "",
+      DEFAULT_LIBRARY_CARD_DESIGN.validityTitle ?? "",
     ),
   };
 }
