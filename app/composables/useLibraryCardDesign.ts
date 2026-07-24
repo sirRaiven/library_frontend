@@ -95,70 +95,62 @@ export interface LibraryCardPreset {
   design: LibraryCardDesign;
 }
 
-export const DEFAULT_LIBRARY_CARD_DESIGN:
-  LibraryCardDesign = {
-    designName:
-      "SNCBT Campus Cinematic",
+export const DEFAULT_LIBRARY_CARD_DESIGN: LibraryCardDesign = {
+  designName: "SNCBT Campus Cinematic",
 
-    primaryColor: "#0B1F3A",
-    secondaryColor: "#173A63",
-    accentColor: "#38BDF8",
-    surfaceColor: "#FFFFFF",
-    textColor: "#FFFFFF",
-    mutedTextColor: "#CBD5E1",
+  primaryColor: "#0B1F3A",
+  secondaryColor: "#173A63",
+  accentColor: "#38BDF8",
+  surfaceColor: "#FFFFFF",
+  textColor: "#FFFFFF",
+  mutedTextColor: "#CBD5E1",
 
-    frontLayout: "cinematic",
-    backStyle: "navy",
-    backLayout: "credential",
+  frontLayout: "cinematic",
+  backStyle: "navy",
+  backLayout: "credential",
 
-    backgroundMode: "image",
-    backgroundImage:
-      "/library-card/sncbt-building.jpg",
-    backgroundPosition: "center 45%",
-    overlayOpacity: 78,
-    cornerRadius: 22,
-    fontScale: 100,
+  backgroundMode: "image",
+  backgroundImage: "/library-card/sncbt-building.jpg",
+  backgroundPosition: "center 45%",
+  overlayOpacity: 78,
+  cornerRadius: 22,
+  fontScale: 100,
 
-    photoShape: "rounded",
-    photoBorderColor: "#FFFFFF",
-    logoUrl: "/sncbt-logo.png",
+  photoShape: "rounded",
+  photoBorderColor: "#FFFFFF",
+  logoUrl: "/sncbt-logo.png",
 
-    showLogo: true,
-    showPhoto: true,
-    showStudentNumber: true,
-    showCourse: true,
-    showCardNumber: true,
+  showLogo: true,
+  showPhoto: true,
+  showStudentNumber: true,
+  showCourse: true,
+  showCardNumber: true,
 
-    // The physical card is permanent. Current membership is checked
-    // through the barcode, so this is hidden from the printed design.
-    showMembershipStatus: false,
-    showBarcode: true,
+  // The physical card is permanent. Current membership is checked
+  // through the barcode, so this is hidden from the printed design.
+  showMembershipStatus: false,
+  showBarcode: true,
 
-    showBackStudentDetails: true,
-    showYearSection: true,
-    showEmail: true,
-    showAddress: true,
+  showBackStudentDetails: true,
+  showYearSection: true,
+  showEmail: true,
+  showAddress: true,
 
-    institutionName:
-      "ST. NICOLAS COLLEGE OF BUSINESS AND TECHNOLOGY",
-    cardTitle: "STUDENT LIBRARY CARD",
-    departmentLabel: "COLLEGE DEPARTMENT",
-    frontTagline:
-      "Knowledge • Access • Service",
+  institutionName: "ST. NICOLAS COLLEGE OF BUSINESS AND TECHNOLOGY",
+  cardTitle: "STUDENT LIBRARY CARD",
+  departmentLabel: "COLLEGE DEPARTMENT",
+  frontTagline: "Learn • Achieve • Succeed",
 
-    backTitle:
-      "LIBRARY ACCESS CREDENTIAL",
-    noticeText:
-      "SCAN THE BARCODE TO VERIFY THE STUDENT'S CURRENT LIBRARY MEMBERSHIP",
-    librarianLabel:
-      "AUTHORIZED LIBRARIAN",
-    backFooterText:
-      "If found, please return this card to SNCBT Library. This card is non-transferable.",
+  backTitle: "LIBRARY ACCESS CREDENTIAL",
+  noticeText:
+    "SCAN THE BARCODE TO VERIFY THE STUDENT'S CURRENT LIBRARY MEMBERSHIP",
+  librarianLabel: "AUTHORIZED LIBRARIAN",
+  backFooterText:
+    "If found, please return this card to SNCBT Library. This card is non-transferable.",
 
-    showValidityTable: false,
-    validityTitle:
-      "SEMESTER MEMBERSHIP VALIDITY",
-  };
+  showValidityTable: false,
+  validityTitle: "SEMESTER MEMBERSHIP VALIDITY",
+};
 
 function preset(
   data: Omit<LibraryCardPreset, "design"> & {

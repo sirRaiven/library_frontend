@@ -6,6 +6,8 @@ import type {
   StudentStatus,
 } from "~/composables/useLibraryMembers";
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
+import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
+import type { CroppedStudentPhoto } from "~/types/studentPhoto";
 import { STUDENT_PROGRAM_OPTIONS } from "~/constants/studentPrograms";
 
 definePageMeta({ layout: "librarian", title: "Students" });
@@ -13,6 +15,9 @@ definePageMeta({ layout: "librarian", title: "Students" });
 const members = useLibraryMembers();
 const auth = useAuth();
 const toast = useToast();
+const route = useRoute();
+const cardPrintQueue =
+  useLibraryCardPrintQueue();
 
 const students = ref<StudentMember[]>([]);
 const selectedStudent = ref<StudentMember | null>(null);
@@ -26,6 +31,19 @@ const submitting = ref(false);
 const registrationOpen = ref(false);
 const editOpen = ref(false);
 const cardOpen = ref(false);
+
+const registrationPhoto =
+  ref<CroppedStudentPhoto | null>(
+    null,
+  );
+
+const editPhoto =
+  ref<CroppedStudentPhoto | null>(
+    null,
+  );
+
+const removeExistingPhoto =
+  ref(false);
 
 const pagination = reactive({ page: 1, pageSize, pageCount: 1, total: 0 });
 const summary = reactive({
@@ -99,6 +117,74 @@ const editForm = reactive({
   status: "Active" as StudentStatus,
 });
 
+
+const registrationPreviewStudent =
+  computed<StudentMember>(() => ({
+    documentId:
+      "new-student-preview",
+    studentNo:
+      registrationForm.student.studentNo ||
+      "STUDENT NO.",
+    libraryCardNo:
+      "GENERATED AFTER REGISTRATION",
+    barcode:
+      "GENERATED-AFTER-REGISTRATION",
+    firstName:
+      registrationForm.student.firstName ||
+      "FIRST NAME",
+    middleName:
+      registrationForm.student.middleName ||
+      "",
+    lastName:
+      registrationForm.student.lastName ||
+      "LAST NAME",
+    suffix:
+      registrationForm.student.suffix ||
+      "",
+    fullName: [
+      registrationForm.student.lastName ||
+        "LAST NAME",
+      registrationForm.student.firstName ||
+        "FIRST NAME",
+      registrationForm.student.middleName ||
+        "",
+      registrationForm.student.suffix ||
+        "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    sex:
+      (registrationForm.student.sex as
+        | "Male"
+        | "Female"
+        | null) ||
+      null,
+    course:
+      registrationForm.student.course ||
+      "COURSE / PROGRAM",
+    yearLevel:
+      registrationForm.student.yearLevel ||
+      null,
+    section:
+      registrationForm.student.section ||
+      "",
+    email:
+      registrationForm.student.email ||
+      "",
+    contactNo:
+      registrationForm.student.contactNo ||
+      "",
+    address:
+      registrationForm.student.address ||
+      "",
+    photoUrl:
+      registrationPhoto.value
+        ?.previewUrl ??
+      null,
+    status: "Active",
+    membership: null,
+  }));
+
 const columns: TableColumn<StudentMember>[] = [
   { id: "student", header: "Student" },
   { id: "card", header: "Library Card" },
@@ -132,6 +218,7 @@ function validate(state: StudentRegistrationInput): FormError[] {
   if (!state.student.firstName.trim()) errors.push({ name: "student.firstName", message: "First name is required." });
   if (!state.student.lastName.trim()) errors.push({ name: "student.lastName", message: "Last name is required." });
   if (!state.student.course.trim()) errors.push({ name: "student.course", message: "Select a course or diploma program." });
+  if (!registrationPhoto.value) errors.push({ name: "student.photo", message: "Upload and crop the Student photo for the Library Card." });
   if (!/^\d{4}-\d{4}$/.test(state.membership.academicYear)) errors.push({ name: "membership.academicYear", message: "Use YYYY-YYYY format." });
   if (!state.membership.expiryDate) errors.push({ name: "membership.expiryDate", message: "Expiry date is required." });
   if (!state.membership.enrollmentVerified) errors.push({ name: "membership.enrollmentVerified", message: "Verify the enrollment document." });
@@ -163,6 +250,22 @@ async function loadStudents() {
   }
 }
 
+
+function releasePhotoSelection(
+  photo:
+    CroppedStudentPhoto | null,
+) {
+  if (
+    photo?.previewUrl.startsWith(
+      "blob:",
+    )
+  ) {
+    URL.revokeObjectURL(
+      photo.previewUrl,
+    );
+  }
+}
+
 function resetRegistration() {
   Object.assign(registrationForm.student, {
     studentNo: "",
@@ -187,18 +290,62 @@ function resetRegistration() {
     enrollmentReference: "",
     remarks: "",
   });
+
+  releasePhotoSelection(
+    registrationPhoto.value,
+  );
+  registrationPhoto.value =
+    null;
 }
 
 async function registerStudent(_event: FormSubmitEvent<StudentRegistrationInput>) {
+  if (!registrationPhoto.value) {
+    toast.add({
+      title: "Student photo required",
+      description:
+        "Choose a photo and complete the 1:1 crop before registering the Student.",
+      color: "error",
+      icon: "i-lucide-image-off",
+    });
+    return;
+  }
+
   submitting.value = true;
+
   try {
-    const response = await members.registerStudent(registrationForm);
-    selectedStudent.value = response.data.student;
+    const uploadedPhoto =
+      await members.uploadStudentPhoto(
+        registrationPhoto.value.file,
+        registrationForm.student.studentNo,
+      );
+
+    const response =
+      await members.registerStudent({
+        student: {
+          ...registrationForm.student,
+          photoId:
+            uploadedPhoto.id,
+        },
+        membership: {
+          ...registrationForm.membership,
+        },
+      });
+
+    selectedStudent.value =
+      response.data.student;
+
+    cardPrintQueue.setPrintQueue(
+      [
+        response.data.student,
+      ],
+      route.fullPath,
+    );
+
     registrationOpen.value = false;
     cardOpen.value = true;
     toast.add({
       title: "Student registered",
-      description: `${response.data.student.fullName} now has an active navy-blue Library ID card and semester membership.`,
+      description: `${response.data.student.fullName} now has an active Library Card that is ready for preview, download, or printing.`,
       color: "success",
       icon: "i-lucide-circle-check",
     });
@@ -232,19 +379,93 @@ function openEdit(student: StudentMember) {
     address: student.address,
     status: student.status,
   });
+
+  releasePhotoSelection(
+    editPhoto.value,
+  );
+  editPhoto.value = null;
+  removeExistingPhoto.value =
+    false;
   editOpen.value = true;
 }
 
 async function saveStudent() {
-  if (!selectedStudent.value) return;
+  if (!selectedStudent.value) {
+    return;
+  }
+
   submitting.value = true;
+
   try {
-    await members.updateStudent(selectedStudent.value.documentId, editForm);
+    let photoId:
+      number | undefined;
+
+    if (editPhoto.value) {
+      const uploadedPhoto =
+        await members.uploadStudentPhoto(
+          editPhoto.value.file,
+          selectedStudent.value.studentNo,
+        );
+
+      photoId =
+        uploadedPhoto.id;
+    }
+
+    const photoWasRemoved =
+      removeExistingPhoto.value &&
+      !photoId;
+
+    const response =
+      await members.updateStudent(
+        selectedStudent.value.documentId,
+        {
+          ...editForm,
+          ...(photoId
+            ? {
+                photoId,
+              }
+            : {}),
+          ...(photoWasRemoved
+            ? {
+                removePhoto: true,
+              }
+            : {}),
+        },
+      );
+
+    selectedStudent.value =
+      response.data;
     editOpen.value = false;
-    toast.add({ title: "Student updated", description: "The student profile was saved.", color: "success", icon: "i-lucide-save" });
+
+    releasePhotoSelection(
+      editPhoto.value,
+    );
+    editPhoto.value = null;
+    removeExistingPhoto.value =
+      false;
+
+    toast.add({
+      title: "Student updated",
+      description:
+        photoId
+          ? "The Student profile and Library Card photo were updated."
+          : photoWasRemoved
+            ? "The Student profile was updated and the photo was removed."
+            : "The Student profile was saved.",
+      color: "success",
+      icon: "i-lucide-save",
+    });
+
     await loadStudents();
   } catch (error) {
-    toast.add({ title: "Update failed", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+    toast.add({
+      title: "Update failed",
+      description:
+        auth.getErrorMessage(error),
+      color: "error",
+      icon:
+        "i-lucide-circle-alert",
+    });
   } finally {
     submitting.value = false;
   }
@@ -253,6 +474,95 @@ async function saveStudent() {
 async function renew(student: StudentMember) {
   await navigateTo({ path: "/librarian/memberships", query: { barcode: student.barcode } });
 }
+
+async function printStudentCard(
+  student: StudentMember,
+) {
+  cardPrintQueue.setPrintQueue(
+    [student],
+    route.fullPath,
+  );
+
+  cardOpen.value = false;
+
+  await navigateTo(
+    "/librarian/library-card-print",
+  );
+}
+
+
+function removeEditPhoto() {
+  releasePhotoSelection(
+    editPhoto.value,
+  );
+  editPhoto.value = null;
+  removeExistingPhoto.value =
+    true;
+}
+
+function cancelRegistration() {
+  if (submitting.value) {
+    return;
+  }
+
+  registrationOpen.value =
+    false;
+  resetRegistration();
+}
+
+function cancelEdit() {
+  if (submitting.value) {
+    return;
+  }
+
+  releasePhotoSelection(
+    editPhoto.value,
+  );
+  editPhoto.value = null;
+  removeExistingPhoto.value =
+    false;
+  editOpen.value = false;
+}
+
+
+watch(
+  registrationPhoto,
+  (
+    value,
+    previous,
+  ) => {
+    if (
+      previous &&
+      previous !== value
+    ) {
+      releasePhotoSelection(
+        previous,
+      );
+    }
+  },
+);
+
+watch(
+  editPhoto,
+  (
+    value,
+    previous,
+  ) => {
+    if (
+      previous &&
+      previous !== value
+    ) {
+      releasePhotoSelection(
+        previous,
+      );
+    }
+
+    if (value) {
+      removeExistingPhoto.value =
+        false;
+    }
+  },
+);
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 watch(search, () => {
@@ -268,11 +578,20 @@ watch([statusFilter, membershipFilter], () => {
 });
 watch(page, () => void loadStudents());
 onMounted(() => void loadStudents());
+
+onBeforeUnmount(() => {
+  releasePhotoSelection(
+    registrationPhoto.value,
+  );
+  releasePhotoSelection(
+    editPhoto.value,
+  );
+});
 </script>
 
 <template>
   <UContainer class="py-6 sm:py-8">
-    <div class="mx-auto max-w-375 space-y-6">
+    <div class="mx-auto max-w-[1500px] space-y-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex items-center gap-3">
           <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -304,7 +623,7 @@ onMounted(() => void loadStudents());
             label="Register Student"
             icon="i-lucide-user-plus"
             color="success"
-            @click="() => { registrationOpen = true; }"
+            @click="() => { registrationOpen = true }"
           />
         </div>
       </div>
@@ -375,9 +694,39 @@ onMounted(() => void loadStudents());
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-1">
-              <UTooltip text="View front and back of Library ID card"><UButton icon="i-lucide-id-card" color="neutral" variant="ghost" square aria-label="View front and back of library card" @click="openCard(row.original)" /></UTooltip>
+              <UTooltip text="View front and back of Library ID card">
+                <UButton
+                  icon="i-lucide-id-card"
+                  color="neutral"
+                  variant="ghost"
+                  square
+                  aria-label="View front and back of library card"
+                  @click="openCard(row.original)"
+                />
+              </UTooltip>
+
+              <UTooltip text="Open ready-to-print Library Card">
+                <UButton
+                  icon="i-lucide-printer"
+                  color="primary"
+                  variant="ghost"
+                  square
+                  aria-label="Print student Library Card"
+                  @click="printStudentCard(row.original)"
+                />
+              </UTooltip>
+
               <UButton icon="i-lucide-rotate-cw" color="success" variant="ghost" square aria-label="Renew membership" @click="renew(row.original)" />
-              <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit student" @click="openEdit(row.original)" />
+              <UTooltip text="Edit profile and Library Card photo">
+                <UButton
+                  icon="i-lucide-pencil"
+                  color="neutral"
+                  variant="ghost"
+                  square
+                  aria-label="Edit Student profile and Library Card photo"
+                  @click="openEdit(row.original)"
+                />
+              </UTooltip>
             </div>
           </template>
         </UTable>
@@ -391,13 +740,49 @@ onMounted(() => void loadStudents());
       </UCard>
     </div>
 
-    <UModal v-model:open="registrationOpen" :dismissible="!submitting" :ui="{ content: 'sm:max-w-4xl max-h-[90dvh] overflow-y-auto' }">
+    <UModal v-model:open="registrationOpen" :dismissible="!submitting" :ui="{ content: 'sm:max-w-6xl max-h-[94dvh] overflow-y-auto' }">
       <template #content>
         <div class="bg-default p-6 sm:p-8">
           <h2 class="text-xl font-bold text-highlighted">Register Student Member</h2>
           <p class="mt-1 text-sm text-muted">Create the profile, permanent card, barcode, and initial semester membership in one step.</p>
 
           <UForm :state="registrationForm" :validate="validate" class="mt-6 space-y-6" @submit="registerStudent">
+            <div class="grid items-start gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
+              <UFormField
+                name="student.photo"
+                label="Library Card Photo"
+                required
+              >
+                <StudentPhotoEditor
+                  v-model="registrationPhoto"
+                  required
+                  :disabled="submitting"
+                  title="Student Library Card Photo"
+                  description="Choose a clear photo, then freely drag and zoom it inside the required 1:1 crop."
+                />
+              </UFormField>
+
+              <div class="min-w-0">
+                <div class="mb-3">
+                  <h3 class="font-semibold text-highlighted">
+                    Live Library Card Preview
+                  </h3>
+                  <p class="mt-1 text-sm text-muted">
+                    The card updates as the Student information and cropped photo are entered. The permanent card number and barcode are generated after registration.
+                  </p>
+                </div>
+
+                <div class="rounded-2xl border border-default bg-elevated/30 p-3 sm:p-4">
+                  <StudentLibraryCard
+                    :student="registrationPreviewStudent"
+                    :show-actions="false"
+                    display-side="front"
+                    fit-preview
+                  />
+                </div>
+              </div>
+            </div>
+
             <div class="grid gap-4 md:grid-cols-2">
               <UFormField name="student.studentNo" label="Student Number" required><UInput v-model="registrationForm.student.studentNo" class="w-full" /></UFormField>
               <UFormField name="student.sex" label="Sex"><USelect v-model="registrationForm.student.sex" :items="sexItems" class="w-full" /></UFormField>
@@ -508,7 +893,7 @@ onMounted(() => void loadStudents());
             </div>
 
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="() => { registrationOpen = false }" />
+              <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="cancelRegistration" />
               <UButton type="submit" label="Register & Generate Card" icon="i-lucide-id-card" color="success" :loading="submitting" />
             </div>
           </UForm>
@@ -519,14 +904,37 @@ onMounted(() => void loadStudents());
     <UModal v-model:open="cardOpen" :ui="{ content: 'sm:max-w-6xl max-h-[94dvh] overflow-y-auto' }">
       <template #content>
         <div class="bg-default p-6 sm:p-8">
-          <div class="mb-5 flex items-center justify-between">
+          <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 class="text-xl font-bold text-highlighted">Student Library ID Card</h2>
+              <h2 class="text-xl font-bold text-highlighted">
+                Student Library ID Card
+              </h2>
+
               <p class="mt-1 max-w-3xl text-sm text-muted">
-                Preview and download the active card design. Librarians can modify the institution background, colors, layout, labels, visible fields, validity panel, and barcode presentation in the Card Designer.
+                Preview, download, or open the dedicated ready-to-print page.
+                Printing uses the active Card Designer layout and the standard
+                CR80 card size.
               </p>
             </div>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square @click="() => { cardOpen = false }" />
+
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                v-if="selectedStudent"
+                label="Print Card"
+                icon="i-lucide-printer"
+                color="primary"
+                @click="printStudentCard(selectedStudent)"
+              />
+
+              <UButton
+                icon="i-lucide-x"
+                color="neutral"
+                variant="ghost"
+                square
+                aria-label="Close Library Card preview"
+                @click="() => { cardOpen = false }"
+              />
+            </div>
           </div>
           <StudentLibraryCard
             v-if="selectedStudent"
@@ -542,8 +950,32 @@ onMounted(() => void loadStudents());
         <div class="bg-default p-6 sm:p-8">
           <h2 class="text-xl font-bold text-highlighted">Edit Student Profile</h2>
           <p class="mt-1 text-sm text-muted">Student number, card number, and barcode remain unchanged.</p>
-          <div class="mt-6 grid gap-4 md:grid-cols-2">
-            <UFormField label="First Name"><UInput v-model="editForm.firstName" class="w-full" /></UFormField>
+          <div class="mt-6 space-y-5">
+            <StudentPhotoEditor
+              v-model="editPhoto"
+              :existing-url="
+                removeExistingPhoto
+                  ? null
+                  : selectedStudent?.photoUrl
+              "
+              allow-remove
+              :disabled="submitting"
+              title="Library Card Photo"
+              description="Change the Student photo, adjust the 1:1 crop, or remove the current image."
+              @remove="removeEditPhoto"
+            />
+
+            <UAlert
+              v-if="removeExistingPhoto"
+              color="warning"
+              variant="soft"
+              icon="i-lucide-image-off"
+              title="Photo will be removed"
+              description="Save the Student profile to remove the current Library Card photo. Choosing a new cropped photo will replace it instead."
+            />
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <UFormField label="First Name"><UInput v-model="editForm.firstName" class="w-full" /></UFormField>
             <UFormField label="Middle Name"><UInput v-model="editForm.middleName" class="w-full" /></UFormField>
             <UFormField label="Last Name"><UInput v-model="editForm.lastName" class="w-full" /></UFormField>
             <UFormField label="Suffix"><UInput v-model="editForm.suffix" class="w-full" /></UFormField>
@@ -610,9 +1042,10 @@ onMounted(() => void loadStudents());
                 class="w-full"
               />
             </UFormField>
+            </div>
           </div>
           <div class="mt-6 flex justify-end gap-3">
-            <UButton label="Cancel" color="neutral" variant="outline" @click="() => { editOpen = false }" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="cancelEdit" />
             <UButton label="Save Changes" icon="i-lucide-save" color="success" :loading="submitting" @click="saveStudent" />
           </div>
         </div>

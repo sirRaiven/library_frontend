@@ -137,6 +137,7 @@ export interface StudentRegistrationInput {
     email?: string;
     contactNo?: string;
     address?: string;
+    photoId?: number;
   };
   membership: {
     academicYear: string;
@@ -147,6 +148,16 @@ export interface StudentRegistrationInput {
     enrollmentReference?: string;
     remarks?: string;
   };
+}
+
+
+export interface UploadedStudentPhoto {
+  id: number;
+  documentId?: string;
+  name: string;
+  url: string;
+  mime?: string;
+  size?: number;
 }
 
 export interface FacultyRegistrationInput {
@@ -177,6 +188,66 @@ export function useLibraryMembers() {
   }
 
   return {
+    async uploadStudentPhoto(
+      file: File,
+      studentNo?: string,
+    ) {
+      const safeStudentNo =
+        studentNo
+          ?.trim()
+          .replace(
+            /[^a-zA-Z0-9_-]+/g,
+            "-",
+          ) ||
+        "student";
+
+      const extension =
+        file.type === "image/png"
+          ? "png"
+          : "jpg";
+
+      const uploadFile =
+        new File(
+          [file],
+          `${safeStudentNo}-library-card-${Date.now()}.${extension}`,
+          {
+            type: file.type,
+            lastModified:
+              file.lastModified,
+          },
+        );
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "files",
+        uploadFile,
+      );
+
+      const response =
+        await auth.authFetch<
+          UploadedStudentPhoto[]
+        >("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+      const uploaded =
+        response?.[0];
+
+      if (
+        !uploaded?.id ||
+        !uploaded.url
+      ) {
+        throw new Error(
+          "The Student photo upload did not return a usable media record.",
+        );
+      }
+
+      return uploaded;
+    },
+
     listStudents(input: Record<string, unknown>) {
       return auth.authFetch<StudentListResponse>(
         "/api/library-members/students",
