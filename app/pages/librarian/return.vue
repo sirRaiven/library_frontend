@@ -19,7 +19,15 @@ type ReturnCondition =
 
 interface ReturnSelection {
   borrow: ReturnLookup;
-  selected: boolean;
+
+  /**
+   * A record becomes ready only after its physical copy barcode is scanned.
+   * There is intentionally no manual checkbox that can bypass verification.
+   */
+  verified: boolean;
+  verifiedBarcode: string;
+  verifiedAt?: string;
+
   condition: ReturnCondition;
   fineAmount: number;
   remarks: string;
@@ -31,6 +39,8 @@ const auth = useAuth();
 const toast = useToast();
 
 const scannerInput = ref("");
+const bookScannerInput = ref("");
+
 const memberReturns =
   ref<MemberReturnLookup | null>(
     null,
@@ -45,6 +55,7 @@ const bulkCondition =
 const bulkFineAmount = ref(0);
 
 const isScanning = ref(false);
+const isVerifyingBook = ref(false);
 const isProcessing = ref(false);
 const isLoadingToday = ref(false);
 
@@ -55,29 +66,31 @@ const conditionOptions:
     "Lost",
   ];
 
-const selectedItems = computed(
+const verifiedItems = computed(
   () =>
     returnItems.value.filter(
-      (item) => item.selected,
+      (item) => item.verified,
     ),
 );
 
-const selectedCount = computed(
-  () => selectedItems.value.length,
+const verifiedCount = computed(
+  () => verifiedItems.value.length,
 );
 
-const allSelected = computed(
+const pendingScanCount = computed(
   () =>
-    returnItems.value.length > 0 &&
-    selectedCount.value ===
-      returnItems.value.length,
+    Math.max(
+      returnItems.value.length -
+        verifiedCount.value,
+      0,
+    ),
 );
 
 const canProcess = computed(
   () =>
-    selectedCount.value > 0 &&
+    verifiedCount.value > 0 &&
     !isProcessing.value &&
-    selectedItems.value.every(
+    verifiedItems.value.every(
       (item) =>
         Number.isFinite(
           Number(
@@ -90,7 +103,7 @@ const canProcess = computed(
     ),
 );
 
-function focusScanner() {
+function focusMemberScanner() {
   if (!import.meta.client) {
     return;
   }
@@ -104,13 +117,28 @@ function focusScanner() {
   });
 }
 
+function focusBookScanner() {
+  if (!import.meta.client) {
+    return;
+  }
+
+  nextTick(() => {
+    document
+      .querySelector<HTMLInputElement>(
+        "#book-return-scanner",
+      )
+      ?.focus();
+  });
+}
+
 function resetWorkflow() {
   memberReturns.value = null;
   returnItems.value = [];
   scannerInput.value = "";
+  bookScannerInput.value = "";
   bulkCondition.value = "Good";
   bulkFineAmount.value = 0;
-  focusScanner();
+  focusMemberScanner();
 }
 
 function buildReturnItems(
@@ -128,9 +156,17 @@ function buildReturnItems(
 
     return {
       borrow,
-      selected:
-        previous?.selected ??
-        true,
+
+      // Newly loaded books always require a physical barcode scan.
+      verified:
+        previous?.verified ??
+        false,
+      verifiedBarcode:
+        previous?.verifiedBarcode ??
+        "",
+      verifiedAt:
+        previous?.verifiedAt,
+
       condition:
         previous?.condition ??
         "Good",
@@ -202,6 +238,15 @@ async function loadMemberReturns(
       previous,
     );
 
+  bookScannerInput.value = "";
+
+  if (
+    memberReturns.value.totalActive >
+    0
+  ) {
+    focusBookScanner();
+  }
+
   if (options.showToast !== false) {
     toast.add({
       title: "Member borrowing records loaded",
@@ -264,30 +309,154 @@ async function handleScan() {
   } finally {
     isScanning.value =
       false;
-    focusScanner();
+
+    if (
+      memberReturns.value?.totalActive
+    ) {
+      focusBookScanner();
+    } else {
+      focusMemberScanner();
+    }
   }
 }
 
-function setAllSelected(
-  selected: boolean,
+function normalizeBarcode(
+  value: unknown,
+): string {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase();
+}
+
+function itemBarcodes(
+  item: ReturnSelection,
+): string[] {
+  return [
+    item.borrow.copy
+      .controlNumber,
+    item.borrow.copy
+      .accessionNumber,
+  ]
+    .map(normalizeBarcode)
+    .filter(Boolean);
+}
+
+async function handleBookScan() {
+  const scannedBarcode =
+    normalizeBarcode(
+      bookScannerInput.value,
+    );
+
+  if (
+    !memberReturns.value ||
+    !scannedBarcode ||
+    isVerifyingBook.value
+  ) {
+    return;
+  }
+
+  isVerifyingBook.value = true;
+
+  try {
+    const matchedItem =
+      returnItems.value.find(
+        (item) =>
+          itemBarcodes(
+            item,
+          ).includes(
+            scannedBarcode,
+          ),
+      );
+
+    if (!matchedItem) {
+      toast.add({
+        title:
+          "Book does not belong to this return list",
+        description:
+          "The scanned copy is not an active borrowing record for the selected Student or Faculty.",
+        color: "error",
+        icon:
+          "i-lucide-shield-x",
+      });
+      return;
+    }
+
+    if (
+      matchedItem.verified
+    ) {
+      toast.add({
+        title:
+          "Book already verified",
+        description:
+          `${matchedItem.borrow.copy.book.title} is already marked Ready to Return.`,
+        color: "info",
+        icon:
+          "i-lucide-scan-line",
+      });
+      return;
+    }
+
+    matchedItem.verified = true;
+    matchedItem.verifiedBarcode =
+      scannedBarcode;
+    matchedItem.verifiedAt =
+      new Date().toISOString();
+
+    toast.add({
+      title: "Book verified",
+      description:
+        `${matchedItem.borrow.copy.book.title} is now Ready to Return.`,
+      color: "success",
+      icon:
+        "i-lucide-badge-check",
+    });
+  } finally {
+    bookScannerInput.value = "";
+    isVerifyingBook.value =
+      false;
+    focusBookScanner();
+  }
+}
+
+function removeVerification(
+  item: ReturnSelection,
 ) {
+  item.verified = false;
+  item.verifiedBarcode = "";
+  item.verifiedAt = undefined;
+  focusBookScanner();
+}
+
+function clearVerifiedBooks() {
   for (
     const item of
     returnItems.value
   ) {
-    item.selected = selected;
+    removeVerification(
+      item,
+    );
   }
+
+  toast.add({
+    title:
+      "Ready books cleared",
+    description:
+      "Scan each physical book again before completing the return.",
+    color: "info",
+    icon:
+      "i-lucide-rotate-ccw",
+  });
 }
 
 function applyBulkValues() {
   if (
-    selectedItems.value.length ===
+    verifiedItems.value.length ===
     0
   ) {
     toast.add({
       title: "No books selected",
       description:
-        "Select at least one borrowed book before applying the bulk values.",
+        "Scan at least one physical book before applying the bulk values.",
       color: "warning",
       icon:
         "i-lucide-circle-alert",
@@ -297,7 +466,7 @@ function applyBulkValues() {
 
   for (
     const item of
-    selectedItems.value
+    verifiedItems.value
   ) {
     item.condition =
       bulkCondition.value;
@@ -309,10 +478,10 @@ function applyBulkValues() {
 
   toast.add({
     title:
-      "Values applied to selected books",
+      "Values applied to verified books",
     description:
-      `${selectedItems.value.length} ${
-        selectedItems.value.length ===
+      `${verifiedItems.value.length} ${
+        verifiedItems.value.length ===
         1
           ? "book was"
           : "books were"
@@ -333,11 +502,13 @@ async function processSelectedReturns() {
 
   const items:
     BatchReturnInputItem[] =
-      selectedItems.value.map(
+      verifiedItems.value.map(
         (item) => ({
           borrowDocumentId:
             item.borrow
               .borrowDocumentId,
+          scannedBarcode:
+            item.verifiedBarcode,
           condition:
             item.condition,
           fineAmount:
@@ -433,7 +604,14 @@ async function processSelectedReturns() {
   } finally {
     isProcessing.value =
       false;
-    focusScanner();
+
+    if (
+      memberReturns.value
+    ) {
+      focusBookScanner();
+    } else {
+      focusMemberScanner();
+    }
   }
 }
 
@@ -517,7 +695,7 @@ function conditionColor(
 }
 
 onMounted(() => {
-  focusScanner();
+  focusMemberScanner();
   void loadTodayReturns();
 });
 </script>
@@ -551,7 +729,7 @@ onMounted(() => {
           <p
             class="mt-1 max-w-3xl text-sm text-muted"
           >
-            Scan the Student Library Card or Faculty ID barcode to load all active borrowed books. Select only the copies being returned today.
+            Scan the member first, then scan every physical book presented at the counter. Only verified book barcodes can be returned.
           </p>
         </div>
 
@@ -778,7 +956,7 @@ onMounted(() => {
             variant="soft"
             icon="i-lucide-receipt-text"
             title="Fine handling"
-            description="Overdue days are displayed for guidance. The librarian enters the approved fine for each selected copy."
+            description="Overdue days are displayed for guidance. The librarian enters the approved fine for each verified copy."
           />
         </div>
 
@@ -796,7 +974,7 @@ onMounted(() => {
                 <p
                   class="mt-1 text-sm text-muted"
                 >
-                  Select all returned copies or only the books physically presented today.
+                  A record cannot be marked manually. Scan its physical barcode to change it from Scan Required to Ready to Return.
                 </p>
               </div>
 
@@ -804,36 +982,41 @@ onMounted(() => {
                 v-if="
                   returnItems.length > 0
                 "
-                class="flex flex-wrap gap-2"
+                class="flex flex-wrap items-center gap-2"
               >
                 <UButton
-                  :label="
-                    allSelected
-                      ? 'Clear Selection'
-                      : 'Select All'
+                  v-if="
+                    verifiedCount > 0
                   "
-                  :icon="
-                    allSelected
-                      ? 'i-lucide-square'
-                      : 'i-lucide-list-checks'
-                  "
+                  label="Clear Ready Books"
+                  icon="i-lucide-rotate-ccw"
                   color="neutral"
                   variant="outline"
                   size="sm"
                   @click="
-                    setAllSelected(
-                      !allSelected,
-                    )
+                    clearVerifiedBooks
                   "
                 />
 
                 <UBadge
-                  color="primary"
+                  color="success"
                   variant="soft"
                   size="lg"
                 >
-                  {{ selectedCount }}
-                  selected
+                  {{ verifiedCount }}
+                  ready
+                </UBadge>
+
+                <UBadge
+                  v-if="
+                    pendingScanCount > 0
+                  "
+                  color="warning"
+                  variant="soft"
+                  size="lg"
+                >
+                  {{ pendingScanCount }}
+                  awaiting scan
                 </UBadge>
               </div>
             </div>
@@ -898,6 +1081,103 @@ onMounted(() => {
             class="space-y-4"
           >
             <div
+              class="rounded-2xl border border-success/40 bg-success/5 p-4 sm:p-5"
+            >
+              <div
+                class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+              >
+                <div
+                  class="flex items-start gap-3"
+                >
+                  <div
+                    class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success"
+                  >
+                    <UIcon
+                      name="i-lucide-scan-barcode"
+                      class="size-6"
+                    />
+                  </div>
+
+                  <div>
+                    <p
+                      class="font-semibold text-highlighted"
+                    >
+                      Step 2: Verify Physical Books
+                    </p>
+
+                    <p
+                      class="mt-1 max-w-2xl text-sm leading-relaxed text-muted"
+                    >
+                      Scan the control number or accession-number barcode printed on each physical book. Scanning is the only way to mark a book Ready to Return.
+                    </p>
+                  </div>
+                </div>
+
+                <UBadge
+                  color="success"
+                  variant="soft"
+                  size="lg"
+                  class="self-start"
+                >
+                  {{ verifiedCount }} /
+                  {{ returnItems.length }}
+                  verified
+                </UBadge>
+              </div>
+
+              <form
+                class="mt-4 flex flex-col gap-3 sm:flex-row"
+                @submit.prevent="
+                  handleBookScan
+                "
+              >
+                <UInput
+                  id="book-return-scanner"
+                  v-model="
+                    bookScannerInput
+                  "
+                  icon="i-lucide-barcode"
+                  placeholder="Scan LIB-2026-0001"
+                  size="xl"
+                  color="success"
+                  autocomplete="off"
+                  :loading="
+                    isVerifyingBook
+                  "
+                  class="min-w-0 flex-1"
+                >
+                  <template #trailing>
+                    <UKbd>Enter</UKbd>
+                  </template>
+                </UInput>
+
+                <UButton
+                  type="submit"
+                  label="Verify Book"
+                  icon="i-lucide-shield-check"
+                  color="success"
+                  size="xl"
+                  :loading="
+                    isVerifyingBook
+                  "
+                  :disabled="
+                    !bookScannerInput.trim() ||
+                    isVerifyingBook
+                  "
+                />
+              </form>
+
+              <UAlert
+                class="mt-4"
+                color="info"
+                variant="soft"
+                icon="i-lucide-shield-check"
+                title="Physical verification required"
+                description="Unscanned books remain active Borrow Transactions and cannot be included in the return request."
+              />
+            </div>
+
+            <div
               class="rounded-2xl border border-default bg-elevated/30 p-4"
             >
               <div
@@ -905,7 +1185,7 @@ onMounted(() => {
               >
                 <UFormField
                   label="Bulk condition"
-                  description="Applied only to selected books."
+                  description="Applied only to Ready to Return books."
                 >
                   <USelect
                     v-model="bulkCondition"
@@ -935,7 +1215,7 @@ onMounted(() => {
                   variant="outline"
                   class="self-end"
                   :disabled="
-                    selectedCount === 0
+                    verifiedCount === 0
                   "
                   @click="applyBulkValues"
                 />
@@ -950,19 +1230,36 @@ onMounted(() => {
               "
               class="rounded-2xl border p-4 transition"
               :class="
-                item.selected
-                  ? 'border-primary/50 bg-primary/5'
+                item.verified
+                  ? 'border-success/50 bg-success/5'
                   : 'border-default bg-elevated/20'
               "
             >
               <div
                 class="flex items-start gap-4"
               >
-                <UCheckbox
-                  v-model="item.selected"
-                  :aria-label="`Select ${item.borrow.copy.book.title}`"
-                  class="mt-1"
-                />
+                <div
+                  class="flex size-10 shrink-0 items-center justify-center rounded-xl"
+                  :class="
+                    item.verified
+                      ? 'bg-success/15 text-success'
+                      : 'bg-muted text-muted'
+                  "
+                  :title="
+                    item.verified
+                      ? 'Barcode verified'
+                      : 'Physical barcode scan required'
+                  "
+                >
+                  <UIcon
+                    :name="
+                      item.verified
+                        ? 'i-lucide-badge-check'
+                        : 'i-lucide-scan-barcode'
+                    "
+                    class="size-5"
+                  />
+                </div>
 
                 <div
                   class="min-w-0 flex-1"
@@ -1043,6 +1340,50 @@ onMounted(() => {
                               : 'On time'
                           }}
                         </UBadge>
+
+                        <UBadge
+                          :color="
+                            item.verified
+                              ? 'success'
+                              : 'warning'
+                          "
+                          variant="solid"
+                        >
+                          {{
+                            item.verified
+                              ? 'Ready to Return'
+                              : 'Scan Required'
+                          }}
+                        </UBadge>
+                      </div>
+
+                      <div
+                        v-if="
+                          item.verified
+                        "
+                        class="mt-3 flex flex-wrap items-center gap-2"
+                      >
+                        <span
+                          class="font-mono text-xs text-success"
+                        >
+                          Verified:
+                          {{
+                            item.verifiedBarcode
+                          }}
+                        </span>
+
+                        <UButton
+                          label="Undo Verification"
+                          icon="i-lucide-x"
+                          color="neutral"
+                          variant="ghost"
+                          size="xs"
+                          @click="
+                            removeVerification(
+                              item,
+                            )
+                          "
+                        />
                       </div>
                     </div>
 
@@ -1110,7 +1451,7 @@ onMounted(() => {
                         icon="i-lucide-shield-check"
                         class="w-full"
                         :disabled="
-                          !item.selected
+                          !item.verified
                         "
                       />
                     </UFormField>
@@ -1128,7 +1469,7 @@ onMounted(() => {
                         icon="i-lucide-philippine-peso"
                         class="w-full"
                         :disabled="
-                          !item.selected
+                          !item.verified
                         "
                       />
                     </UFormField>
@@ -1147,7 +1488,7 @@ onMounted(() => {
                         placeholder="Damage details, payment reference, or other notes"
                         class="w-full"
                         :disabled="
-                          !item.selected
+                          !item.verified
                         "
                       />
                     </UFormField>
@@ -1155,7 +1496,7 @@ onMounted(() => {
 
                   <UAlert
                     v-if="
-                      item.selected &&
+                      item.verified &&
                       (
                         item.condition ===
                           'Damaged' ||
@@ -1198,22 +1539,22 @@ onMounted(() => {
                 class="text-sm text-muted"
               >
                 {{
-                  selectedCount === 0
-                    ? 'Select at least one book to continue.'
-                    : `${selectedCount} ${
-                        selectedCount === 1
-                          ? 'book'
-                          : 'books'
-                      } will be returned. Unselected books remain active.`
+                  verifiedCount === 0
+                    ? 'Scan at least one physical book barcode to continue.'
+                    : `${verifiedCount} ${
+                        verifiedCount === 1
+                          ? 'verified book'
+                          : 'verified books'
+                      } will be returned. Unscanned books remain active.`
                 }}
               </p>
 
               <UButton
                 :label="
-                  selectedCount ===
+                  verifiedCount ===
                     returnItems.length
-                    ? `Return All ${selectedCount}`
-                    : `Return Selected (${selectedCount})`
+                    ? `Return All Verified (${verifiedCount})`
+                    : `Return Verified (${verifiedCount})`
                 "
                 icon="i-lucide-check-check"
                 color="success"

@@ -110,6 +110,13 @@ export interface MemberReturnLookup {
 
 export interface BatchReturnInputItem {
   borrowDocumentId: string;
+
+  /**
+   * Physical barcode scanned at the Return counter.
+   * The backend verifies that it belongs to the selected Borrow Transaction.
+   */
+  scannedBarcode: string;
+
   condition: "Good" | "Damaged" | "Lost";
   fineAmount: number;
   remarks?: string;
