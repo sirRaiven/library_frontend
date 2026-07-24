@@ -489,23 +489,37 @@ watch(
     class="min-h-dvh bg-default text-default"
   >
     <UDashboardSidebar
-      v-model:open="sidebarOpen"
-      v-model:collapsed="sidebarCollapsed"
-      collapsible
-      resizable
-      :min-size="16"
-      :default-size="20"
-      :max-size="26"
-      mode="slideover"
-      :ui="{
-        root:
-          'bg-default border-e border-default transition-colors duration-200',
-        header:
-          'border-b border-default bg-default/95 backdrop-blur',
-        body: 'gap-3 py-4',
-        footer:
-          'border-t border-default bg-default/95 py-3 backdrop-blur',
-      }"
+    v-model:open="sidebarOpen"
+    v-model:collapsed="sidebarCollapsed"
+    collapsible
+    :default-size="15"
+    :min-size="13"
+    :max-size="17"
+    mode="slideover"
+    :ui="{
+      root: [
+        'bg-default border-e border-default',
+        'transition-[width,max-width] duration-200',
+        'lg:max-w-64'
+      ].join(' '),
+
+      header: [
+        'border-b border-default',
+        'bg-default/95 backdrop-blur',
+        'px-3 py-3'
+      ].join(' '),
+
+      body: [
+        'gap-2 px-2 py-3',
+        'overflow-y-auto'
+      ].join(' '),
+
+      footer: [
+        'border-t border-default',
+        'bg-default/95 backdrop-blur',
+        'px-3 py-3'
+      ].join(' ')
+    }"
     >
       <template #header="{ collapsed }">
         <NuxtLink
@@ -576,51 +590,16 @@ watch(
         </UTooltip>
 
         <UNavigationMenu
-          :collapsed="collapsed"
-          :items="navigationItems"
-          orientation="vertical"
-          tooltip
-          popover
-          highlight
-          color="success"
-          variant="pill"
-          class="min-h-0 flex-1 overflow-y-auto"
-          :ui="{
-            link: 'rounded-xl',
-            linkLeadingIcon: 'size-5',
-            linkLabel: 'font-medium',
-          }"
+        :items="navigationItems"
+        orientation="vertical"
+        :collapsed="sidebarCollapsed"
+        :ui="{
+          list: 'gap-0.5',
+          link: 'min-h-9 px-2.5 text-sm',
+          linkLeadingIcon: 'size-4.5',
+          label: 'text-xs font-semibold'
+        }"
         />
-
-        <div
-          v-if="!collapsed"
-          class="mt-auto rounded-xl border border-success/20 bg-success/5 p-3"
-        >
-          <div class="flex items-start gap-3">
-            <div
-              class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"
-            >
-              <UIcon
-                name="i-lucide-shield-check"
-                class="size-4"
-              />
-            </div>
-
-            <div class="min-w-0">
-              <p
-                class="text-xs font-semibold text-highlighted"
-              >
-                Secure librarian access
-              </p>
-              <p
-                class="mt-0.5 text-xs leading-relaxed text-muted"
-              >
-                Protected by Strapi authentication
-                and role permissions.
-              </p>
-            </div>
-          </div>
-        </div>
       </template>
 
       <template #footer="{ collapsed }">
