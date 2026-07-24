@@ -4,6 +4,9 @@ import type {
   StudentMember,
 } from "~/composables/useLibraryMembers";
 import {
+  yearGradeLabel,
+} from "~/constants/studentPrograms";
+import {
   normalizeLibraryCardDesign,
   type LibraryCardDesign,
 } from "~/composables/useLibraryCardDesign";
@@ -171,9 +174,11 @@ const formattedName = computed(() =>
 
 const yearSection = computed(() =>
   [
-    props.student.yearLevel
-      ? `YEAR ${props.student.yearLevel}`
-      : "",
+    yearGradeLabel(
+      props.student
+        .educationalLevel,
+      props.student.yearLevel,
+    ).toUpperCase(),
     props.student.section,
   ]
     .filter(Boolean)
@@ -852,6 +857,17 @@ defineExpose({
                   <dd>
                     {{
                       student.libraryCardNo
+                    }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>
+                    Educational Level
+                  </dt>
+                  <dd>
+                    {{
+                      student.educationalLevel
                     }}
                   </dd>
                 </div>

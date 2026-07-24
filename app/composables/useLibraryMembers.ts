@@ -1,3 +1,8 @@
+import type {
+  LibraryCardStatus,
+  StudentEducationalLevel,
+} from "~/constants/studentPrograms";
+
 export type StudentStatus =
   | "Active"
   | "Inactive"
@@ -45,6 +50,8 @@ export interface StudentMember {
   suffix: string;
   fullName: string;
   sex?: "Male" | "Female" | null;
+  educationalLevel:
+    StudentEducationalLevel;
   course: string;
   yearLevel?: number | null;
   section: string;
@@ -52,6 +59,10 @@ export interface StudentMember {
   contactNo: string;
   address: string;
   photoUrl?: string | null;
+  libraryCardStatus:
+    LibraryCardStatus;
+  libraryCardReleaseDate?:
+    string | null;
   status: StudentStatus;
   membership: MembershipRecord | null;
 }
@@ -131,12 +142,18 @@ export interface StudentRegistrationInput {
     lastName: string;
     suffix?: string;
     sex?: string;
+    educationalLevel:
+      StudentEducationalLevel;
     course: string;
     yearLevel?: number;
     section?: string;
     email?: string;
     contactNo?: string;
     address?: string;
+    libraryCardStatus?:
+      LibraryCardStatus;
+    libraryCardReleaseDate?:
+      string;
     photoId?: number;
   };
   membership: {

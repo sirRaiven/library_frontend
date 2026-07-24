@@ -8,7 +8,15 @@ import type {
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
 import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
 import type { CroppedStudentPhoto } from "~/types/studentPhoto";
-import { STUDENT_PROGRAM_OPTIONS } from "~/constants/studentPrograms";
+import {
+  LIBRARY_CARD_STATUSES,
+  STUDENT_EDUCATIONAL_LEVELS,
+  programsForLevel,
+  yearGradeLabel,
+  yearLevelsFor,
+  type LibraryCardStatus,
+  type StudentEducationalLevel,
+} from "~/constants/studentPrograms";
 
 definePageMeta({ layout: "librarian", title: "Students" });
 
@@ -24,6 +32,10 @@ const selectedStudent = ref<StudentMember | null>(null);
 const search = ref("");
 const statusFilter = ref("All");
 const membershipFilter = ref("All");
+const educationalLevelFilter =
+  ref("All");
+const cardStatusFilter =
+  ref("All");
 const page = ref(1);
 const pageSize = 10;
 const loading = ref(false);
@@ -84,12 +96,18 @@ const registrationForm = reactive<StudentRegistrationInput>({
     lastName: "",
     suffix: "",
     sex: "",
+    educationalLevel:
+      "College",
     course: "",
     yearLevel: 1,
     section: "",
     email: "",
     contactNo: "",
     address: "",
+    libraryCardStatus:
+      "On Process",
+    libraryCardReleaseDate:
+      "",
   },
   membership: {
     academicYear: defaultAcademicYear(),
@@ -108,12 +126,18 @@ const editForm = reactive({
   lastName: "",
   suffix: "",
   sex: "",
+  educationalLevel:
+    "College" as StudentEducationalLevel,
   course: "",
   yearLevel: 1,
   section: "",
   email: "",
   contactNo: "",
   address: "",
+  libraryCardStatus:
+    "On Process" as LibraryCardStatus,
+  libraryCardReleaseDate:
+    "",
   status: "Active" as StudentStatus,
 });
 
@@ -159,6 +183,9 @@ const registrationPreviewStudent =
         | "Female"
         | null) ||
       null,
+    educationalLevel:
+      registrationForm.student
+        .educationalLevel,
     course:
       registrationForm.student.course ||
       "COURSE / PROGRAM",
@@ -181,6 +208,14 @@ const registrationPreviewStudent =
       registrationPhoto.value
         ?.previewUrl ??
       null,
+    libraryCardStatus:
+      registrationForm.student
+        .libraryCardStatus ??
+      "On Process",
+    libraryCardReleaseDate:
+      registrationForm.student
+        .libraryCardReleaseDate ||
+      null,
     status: "Active",
     membership: null,
   }));
@@ -197,7 +232,46 @@ const statusItems = ["All", "Active", "Inactive", "Suspended", "Graduated", "Dro
 const memberStatusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
 const semesterItems = ["First Semester", "Second Semester", "Summer"];
 const sexItems = ["Male", "Female"];
-const programItems = STUDENT_PROGRAM_OPTIONS;
+
+const educationalLevelItems = [
+  "All",
+  ...STUDENT_EDUCATIONAL_LEVELS,
+];
+
+const cardStatusItems = [
+  "All",
+  ...LIBRARY_CARD_STATUSES,
+];
+
+const registrationProgramItems =
+  computed(() =>
+    programsForLevel(
+      registrationForm.student
+        .educationalLevel,
+    ),
+  );
+
+const editProgramItems =
+  computed(() =>
+    programsForLevel(
+      editForm.educationalLevel,
+    ),
+  );
+
+const registrationYearItems =
+  computed(() =>
+    yearLevelsFor(
+      registrationForm.student
+        .educationalLevel,
+    ),
+  );
+
+const editYearItems =
+  computed(() =>
+    yearLevelsFor(
+      editForm.educationalLevel,
+    ),
+  );
 
 const cards = computed(() => [
   { label: "Registered Students", value: summary.totalStudents, icon: "i-lucide-users" },
@@ -212,12 +286,40 @@ function membershipColor(value?: string | null) {
   return "error";
 }
 
+
+function cardStatusColor(
+  value: LibraryCardStatus,
+) {
+  if (value === "Released") {
+    return "success";
+  }
+
+  if (
+    value === "Printed" ||
+    value === "On Process"
+  ) {
+    return "info";
+  }
+
+  if (
+    value === "Replacement" ||
+    value === "Duplicated"
+  ) {
+    return "warning";
+  }
+
+  return "neutral";
+}
+
 function validate(state: StudentRegistrationInput): FormError[] {
   const errors: FormError[] = [];
   if (!state.student.studentNo.trim()) errors.push({ name: "student.studentNo", message: "Student number is required." });
   if (!state.student.firstName.trim()) errors.push({ name: "student.firstName", message: "First name is required." });
   if (!state.student.lastName.trim()) errors.push({ name: "student.lastName", message: "Last name is required." });
-  if (!state.student.course.trim()) errors.push({ name: "student.course", message: "Select a course or diploma program." });
+  if (!state.student.educationalLevel) errors.push({ name: "student.educationalLevel", message: "Select the Student educational level." });
+  if (!state.student.course.trim()) errors.push({ name: "student.course", message: "Select a program for the chosen educational level." });
+  if (!state.student.yearLevel) errors.push({ name: "student.yearLevel", message: "Select the Student year or grade level." });
+  if (!state.student.libraryCardStatus) errors.push({ name: "student.libraryCardStatus", message: "Select the Library Card processing status." });
   if (!registrationPhoto.value) errors.push({ name: "student.photo", message: "Upload and crop the Student photo for the Library Card." });
   if (!/^\d{4}-\d{4}$/.test(state.membership.academicYear)) errors.push({ name: "membership.academicYear", message: "Use YYYY-YYYY format." });
   if (!state.membership.expiryDate) errors.push({ name: "membership.expiryDate", message: "Expiry date is required." });
@@ -232,6 +334,10 @@ async function loadStudents() {
       search: search.value.trim(),
       status: statusFilter.value,
       membershipStatus: membershipFilter.value,
+      educationalLevel:
+        educationalLevelFilter.value,
+      libraryCardStatus:
+        cardStatusFilter.value,
       page: page.value,
       pageSize,
     });
@@ -274,12 +380,18 @@ function resetRegistration() {
     lastName: "",
     suffix: "",
     sex: "",
+    educationalLevel:
+      "College",
     course: "",
     yearLevel: 1,
     section: "",
     email: "",
     contactNo: "",
     address: "",
+    libraryCardStatus:
+      "On Process",
+    libraryCardReleaseDate:
+      "",
   });
   Object.assign(registrationForm.membership, {
     academicYear: defaultAcademicYear(),
@@ -371,12 +483,26 @@ function openEdit(student: StudentMember) {
     lastName: student.lastName,
     suffix: student.suffix,
     sex: student.sex ?? "",
+    educationalLevel:
+      student.educationalLevel,
     course: student.course,
-    yearLevel: student.yearLevel ?? 1,
+    yearLevel:
+      student.yearLevel ??
+      (
+        student.educationalLevel ===
+          "Senior High School"
+          ? 11
+          : 1
+      ),
     section: student.section,
     email: student.email,
     contactNo: student.contactNo,
     address: student.address,
+    libraryCardStatus:
+      student.libraryCardStatus,
+    libraryCardReleaseDate:
+      student.libraryCardReleaseDate ??
+      "",
     status: student.status,
   });
 
@@ -572,10 +698,120 @@ watch(search, () => {
     void loadStudents();
   }, 350);
 });
-watch([statusFilter, membershipFilter], () => {
-  page.value = 1;
-  void loadStudents();
-});
+watch(
+  [
+    statusFilter,
+    membershipFilter,
+    educationalLevelFilter,
+    cardStatusFilter,
+  ],
+  () => {
+    page.value = 1;
+    void loadStudents();
+  },
+);
+
+watch(
+  () =>
+    registrationForm.student
+      .educationalLevel,
+  (level) => {
+    const programs =
+      programsForLevel(level);
+
+    if (
+      !programs.some(
+        (item) =>
+          item.value ===
+          registrationForm.student
+            .course,
+      )
+    ) {
+      registrationForm.student.course =
+        "";
+    }
+
+    const years =
+      yearLevelsFor(level);
+
+    if (
+      !years.some(
+        (item) =>
+          item.value ===
+          registrationForm.student
+            .yearLevel,
+      )
+    ) {
+      registrationForm.student.yearLevel =
+        years[0]?.value ?? 1;
+    }
+  },
+);
+
+watch(
+  () =>
+    editForm.educationalLevel,
+  (level) => {
+    const programs =
+      programsForLevel(level);
+
+    if (
+      !programs.some(
+        (item) =>
+          item.value ===
+          editForm.course,
+      )
+    ) {
+      editForm.course = "";
+    }
+
+    const years =
+      yearLevelsFor(level);
+
+    if (
+      !years.some(
+        (item) =>
+          item.value ===
+          editForm.yearLevel,
+      )
+    ) {
+      editForm.yearLevel =
+        years[0]?.value ?? 1;
+    }
+  },
+);
+
+watch(
+  () =>
+    registrationForm.student
+      .libraryCardStatus,
+  (status) => {
+    if (
+      status === "Released" &&
+      !registrationForm.student
+        .libraryCardReleaseDate
+    ) {
+      registrationForm.student
+        .libraryCardReleaseDate =
+        today;
+    }
+  },
+);
+
+watch(
+  () =>
+    editForm.libraryCardStatus,
+  (status) => {
+    if (
+      status === "Released" &&
+      !editForm
+        .libraryCardReleaseDate
+    ) {
+      editForm.libraryCardReleaseDate =
+        today;
+    }
+  },
+);
 watch(page, () => void loadStudents());
 onMounted(() => void loadStudents());
 
@@ -649,10 +885,37 @@ onBeforeUnmount(() => {
               <h2 class="font-semibold text-highlighted">Student Directory</h2>
               <p class="mt-1 text-sm text-muted">Search by name, student number, card number, or barcode.</p>
             </div>
-            <div class="grid gap-2 sm:grid-cols-3">
-              <UInput v-model="search" icon="i-lucide-search" placeholder="Search students" class="w-full sm:w-64" />
-              <USelect v-model="statusFilter" :items="statusItems" />
-              <USelect v-model="membershipFilter" :items="memberStatusItems" />
+            <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <UInput
+                v-model="search"
+                icon="i-lucide-search"
+                placeholder="Search students"
+                class="w-full xl:min-w-56"
+              />
+
+              <USelect
+                v-model="educationalLevelFilter"
+                :items="educationalLevelItems"
+                placeholder="Educational level"
+              />
+
+              <USelect
+                v-model="cardStatusFilter"
+                :items="cardStatusItems"
+                placeholder="Card status"
+              />
+
+              <USelect
+                v-model="statusFilter"
+                :items="statusItems"
+                placeholder="Profile status"
+              />
+
+              <USelect
+                v-model="membershipFilter"
+                :items="memberStatusItems"
+                placeholder="Membership"
+              />
             </div>
           </div>
         </template>
@@ -673,13 +936,61 @@ onBeforeUnmount(() => {
               <UAvatar :src="row.original.photoUrl ?? undefined" :alt="row.original.fullName" size="md" />
               <div class="min-w-0">
                 <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>
-                <p class="truncate text-xs text-muted">{{ row.original.studentNo }} • {{ row.original.course }}</p>
+                <p class="truncate text-xs text-muted">
+                  {{ row.original.studentNo }}
+                  •
+                  {{ row.original.educationalLevel }}
+                  •
+                  {{
+                    yearGradeLabel(
+                      row.original.educationalLevel,
+                      row.original.yearLevel,
+                    )
+                  }}
+                </p>
+                <p class="truncate text-xs text-muted">
+                  {{ row.original.course }}
+                </p>
               </div>
             </div>
           </template>
           <template #card-cell="{ row }">
-            <p class="font-mono text-sm font-semibold text-highlighted">{{ row.original.libraryCardNo }}</p>
-            <p class="mt-1 font-mono text-xs text-muted">{{ row.original.barcode }}</p>
+            <p class="font-mono text-sm font-semibold text-highlighted">
+              {{ row.original.libraryCardNo }}
+            </p>
+
+            <p class="mt-1 font-mono text-xs text-muted">
+              {{ row.original.barcode }}
+            </p>
+
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <UBadge
+                :color="
+                  cardStatusColor(
+                    row.original.libraryCardStatus,
+                  )
+                "
+                variant="soft"
+              >
+                {{
+                  row.original.libraryCardStatus
+                }}
+              </UBadge>
+
+              <span
+                v-if="
+                  row.original
+                    .libraryCardReleaseDate
+                "
+                class="text-xs text-muted"
+              >
+                Released
+                {{
+                  row.original
+                    .libraryCardReleaseDate
+                }}
+              </span>
+            </div>
           </template>
           <template #membership-cell="{ row }">
             <div v-if="row.original.membership">
@@ -790,37 +1101,78 @@ onBeforeUnmount(() => {
               <UFormField name="student.lastName" label="Last Name" required><UInput v-model="registrationForm.student.lastName" class="w-full" /></UFormField>
               <UFormField name="student.suffix" label="Suffix"><UInput v-model="registrationForm.student.suffix" class="w-full" /></UFormField>
               <UFormField
-                name="student.course"
-                label="Course / Program"
-                description="Choose from the approved CHED degree and three-year diploma programs."
+                name="student.educationalLevel"
+                label="Educational Level"
+                description="Select College, Diploma, or Senior High School."
                 required
-                class="md:col-span-2"
               >
                 <USelect
-                  v-model="registrationForm.student.course"
-                  :items="programItems"
-                  placeholder="Select a course or diploma program"
+                  v-model="
+                    registrationForm.student
+                      .educationalLevel
+                  "
+                  :items="
+                    STUDENT_EDUCATIONAL_LEVELS
+                  "
                   class="w-full"
                 />
               </UFormField>
 
-              <div class="grid grid-cols-2 gap-3">
-                <UFormField name="student.yearLevel" label="Year Level">
-                  <UInputNumber
-                    v-model="registrationForm.student.yearLevel"
-                    :min="1"
-                    :max="6"
-                    class="w-full"
-                  />
-                </UFormField>
+              <UFormField
+                name="student.course"
+                label="Program"
+                description="The choices are filtered by the selected educational level."
+                required
+              >
+                <USelect
+                  v-model="
+                    registrationForm.student.course
+                  "
+                  :items="
+                    registrationProgramItems
+                  "
+                  value-key="value"
+                  placeholder="Select an approved program"
+                  class="w-full"
+                />
+              </UFormField>
 
-                <UFormField name="student.section" label="Section">
-                  <UInput
-                    v-model="registrationForm.student.section"
-                    class="w-full"
-                  />
-                </UFormField>
-              </div>
+              <UFormField
+                name="student.yearLevel"
+                :label="
+                  registrationForm.student
+                    .educationalLevel ===
+                  'Senior High School'
+                    ? 'Grade Level'
+                    : 'Year Level'
+                "
+                required
+              >
+                <USelect
+                  v-model="
+                    registrationForm.student
+                      .yearLevel
+                  "
+                  :items="
+                    registrationYearItems
+                  "
+                  value-key="value"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                name="student.section"
+                label="Section"
+              >
+                <UInput
+                  v-model="
+                    registrationForm.student
+                      .section
+                  "
+                  class="w-full"
+                />
+              </UFormField>
 
               <UFormField name="student.email" label="Email">
                 <UInput
@@ -850,6 +1202,75 @@ onBeforeUnmount(() => {
                   class="w-full"
                 />
               </UFormField>
+            </div>
+
+            <div class="rounded-2xl border border-default bg-elevated/50 p-5">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <UIcon
+                    name="i-lucide-id-card"
+                    class="size-5"
+                  />
+                </div>
+
+                <div>
+                  <h3 class="font-semibold text-highlighted">
+                    Library Card Processing
+                  </h3>
+                  <p class="mt-1 text-xs leading-relaxed text-muted">
+                    This operational status is separate from the Student profile and semester membership status.
+                  </p>
+                </div>
+              </div>
+
+              <div class="mt-4 grid gap-4 md:grid-cols-2">
+                <UFormField
+                  name="student.libraryCardStatus"
+                  label="Library Card Status"
+                  required
+                >
+                  <USelect
+                    v-model="
+                      registrationForm.student
+                        .libraryCardStatus
+                    "
+                    :items="
+                      LIBRARY_CARD_STATUSES
+                    "
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <UFormField
+                  name="student.libraryCardReleaseDate"
+                  label="Date of Release"
+                  :hint="
+                    registrationForm.student
+                      .libraryCardStatus ===
+                    'Released'
+                      ? 'Automatically defaults to today'
+                      : 'Optional'
+                  "
+                >
+                  <UInput
+                    v-model="
+                      registrationForm.student
+                        .libraryCardReleaseDate
+                    "
+                    type="date"
+                    class="w-full"
+                  />
+                </UFormField>
+              </div>
+
+              <UAlert
+                class="mt-4"
+                color="info"
+                variant="soft"
+                icon="i-lucide-info"
+                title="Recommended workflow"
+                description="New cards normally start as On Process. Change the status to Printed after production and Released when the physical card is given to the Student."
+              />
             </div>
 
             <div class="rounded-2xl border border-default bg-elevated/50 p-5">
@@ -979,34 +1400,59 @@ onBeforeUnmount(() => {
             <UFormField label="Last Name"><UInput v-model="editForm.lastName" class="w-full" /></UFormField>
             <UFormField label="Suffix"><UInput v-model="editForm.suffix" class="w-full" /></UFormField>
             <UFormField
-              label="Course / Program"
-              class="md:col-span-2"
+              label="Educational Level"
             >
               <USelect
-                v-model="editForm.course"
-                :items="programItems"
-                placeholder="Select a course or diploma program"
+                v-model="
+                  editForm.educationalLevel
+                "
+                :items="
+                  STUDENT_EDUCATIONAL_LEVELS
+                "
                 class="w-full"
               />
             </UFormField>
 
-            <div class="grid grid-cols-2 gap-3">
-              <UFormField label="Year">
-                <UInputNumber
-                  v-model="editForm.yearLevel"
-                  :min="1"
-                  :max="6"
-                  class="w-full"
-                />
-              </UFormField>
+            <UFormField
+              label="Program"
+            >
+              <USelect
+                v-model="editForm.course"
+                :items="
+                  editProgramItems
+                "
+                value-key="value"
+                placeholder="Select an approved program"
+                class="w-full"
+              />
+            </UFormField>
 
-              <UFormField label="Section">
-                <UInput
-                  v-model="editForm.section"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
+            <UFormField
+              :label="
+                editForm.educationalLevel ===
+                'Senior High School'
+                  ? 'Grade Level'
+                  : 'Year Level'
+              "
+            >
+              <USelect
+                v-model="
+                  editForm.yearLevel
+                "
+                :items="
+                  editYearItems
+                "
+                value-key="value"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Section">
+              <UInput
+                v-model="editForm.section"
+                class="w-full"
+              />
+            </UFormField>
 
             <UFormField label="Email">
               <UInput
@@ -1030,6 +1476,38 @@ onBeforeUnmount(() => {
               <UTextarea
                 v-model="editForm.address"
                 :rows="2"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField
+              label="Library Card Status"
+            >
+              <USelect
+                v-model="
+                  editForm.libraryCardStatus
+                "
+                :items="
+                  LIBRARY_CARD_STATUSES
+                "
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField
+              label="Date of Release"
+              :hint="
+                editForm.libraryCardStatus ===
+                'Released'
+                  ? 'Defaults to today when blank'
+                  : 'Optional'
+              "
+            >
+              <UInput
+                v-model="
+                  editForm.libraryCardReleaseDate
+                "
+                type="date"
                 class="w-full"
               />
             </UFormField>
