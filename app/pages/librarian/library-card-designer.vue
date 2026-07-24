@@ -60,24 +60,24 @@ const savedAt = ref<Date | null>(null);
 const previewStudent =
   {
     documentId: "preview-student",
-    studentNo: "23-00883",
-    libraryCardNo: "LC2023-0704",
-    barcode: "LC2023-0704",
-    firstName: "Karl Lian",
-    middleName: "A",
-    lastName: "Gomez",
+    studentNo: "23-00123",
+    libraryCardNo: "LC2026-0123",
+    barcode: "LC2026-0123",
+    firstName: "John",
+    middleName: "B",
+    lastName: "Doe",
     suffix: "",
     fullName:
-      "Gomez, Karl Lian A.",
+      "Doe, John B.",
     sex: "Male",
     educationalLevel:
       "College",
     course:
       "BS - INFORMATION TECHNOLOGY",
-    yearLevel: 3,
+    yearLevel: 2,
     section: "A",
     email:
-      "karl.gomez@student.sncbt.edu.ph",
+      "john.doe@student.sncbt.edu.ph",
     contactNo: "0912 345 6789",
     address:
       "City of San Fernando, Pampanga",

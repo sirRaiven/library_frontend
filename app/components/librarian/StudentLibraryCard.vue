@@ -1989,6 +1989,7 @@ defineExpose({
     0.44rem
   );
   font-weight: 700;
+  line-height: 0;
 }
 
 .back-footer span {

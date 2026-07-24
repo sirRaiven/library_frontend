@@ -1,15 +1,14 @@
 export type LibraryCardFrontLayout =
   | "cinematic"
+  | "classic"
   | "split"
   | "minimal"
   | "glass"
   | "diagonal"
-  | "portrait";
+  | "portrait"
+  | "modern";
 
-export type LibraryCardBackStyle =
-  | "navy"
-  | "light"
-  | "gradient";
+export type LibraryCardBackStyle = "navy" | "light" | "gradient" | "solid";
 
 export type LibraryCardBackLayout =
   | "credential"
@@ -182,249 +181,263 @@ function preset(
   };
 }
 
-export const LIBRARY_CARD_PRESETS:
-  LibraryCardPreset[] = [
-    preset({
-      key: "campus-cinematic",
-      category: "Institutional",
-      name: "SNCBT Campus Cinematic",
-      description:
-        "Full-bleed Mel-Vi Building background with a strong navy institutional overlay.",
-      icon: "i-lucide-building-2",
-      design: {
-        frontLayout: "cinematic",
-        backStyle: "navy",
-        backLayout: "credential",
-        backgroundMode: "image",
-        backgroundImage:
-          "/library-card/sncbt-building.jpg",
-        backgroundPosition:
-          "center 45%",
-        primaryColor: "#0B1F3A",
-        secondaryColor: "#173A63",
-        accentColor: "#38BDF8",
-        overlayOpacity: 78,
-        photoShape: "rounded",
-      },
-    }),
+export const LIBRARY_CARD_PRESETS: LibraryCardPreset[] = [
+  preset({
+    key: "campus-cinematic",
+    category: "Institutional",
+    name: "SNCBT Campus Cinematic",
+    description:
+      "Full-bleed Mel-Vi Building background with a strong navy institutional overlay.",
+    icon: "i-lucide-building-2",
+    design: {
+      frontLayout: "cinematic",
+      backStyle: "navy",
+      backLayout: "credential",
+      backgroundMode: "image",
+      backgroundImage: "/library-card/sncbt-building.jpg",
+      backgroundPosition: "center 45%",
+      primaryColor: "#0B1F3A",
+      secondaryColor: "#173A63",
+      accentColor: "#38BDF8",
+      overlayOpacity: 78,
+      photoShape: "rounded",
+    },
+  }),
 
-    preset({
-      key: "campus-glass",
-      category: "Institutional",
-      name: "SNCBT Campus Glass",
-      description:
-        "Modern glass-panel identity card using the institution building as the main visual.",
-      icon: "i-lucide-panels-top-left",
-      design: {
-        frontLayout: "glass",
-        backStyle: "gradient",
-        backLayout: "profile",
-        backgroundMode: "image",
-        backgroundImage:
-          "/library-card/sncbt-building.jpg",
-        backgroundPosition:
-          "center 40%",
-        primaryColor: "#071A33",
-        secondaryColor: "#164E63",
-        accentColor: "#67E8F9",
-        overlayOpacity: 68,
-        cornerRadius: 26,
-        photoShape: "circle",
-      },
-    }),
+  preset({
+    key: "campus-glass",
+    category: "Institutional",
+    name: "SNCBT Campus Glass",
+    description:
+      "Modern glass-panel identity card using the institution building as the main visual.",
+    icon: "i-lucide-panels-top-left",
+    design: {
+      frontLayout: "glass",
+      backStyle: "gradient",
 
-    preset({
-      key: "campus-split",
-      category: "Institutional",
-      name: "SNCBT Campus Split",
-      description:
-        "A clean split composition that keeps student information highly readable.",
-      icon: "i-lucide-columns-2",
-      design: {
-        frontLayout: "split",
-        backStyle: "light",
-        backLayout: "credential",
-        backgroundMode: "image",
-        backgroundImage:
-          "/library-card/sncbt-building.jpg",
-        backgroundPosition:
-          "58% center",
-        primaryColor: "#0A2540",
-        secondaryColor: "#1D4E89",
-        accentColor: "#0EA5E9",
-        surfaceColor: "#FFFFFF",
-        textColor: "#FFFFFF",
-        mutedTextColor: "#DCE8F5",
-        overlayOpacity: 88,
-        photoShape: "square",
-      },
-    }),
+      // Better layout for complete Student information
+      backLayout: "credential",
 
-    preset({
-      key: "navy-aurora",
-      category: "Modern",
-      name: "Navy Aurora",
-      description:
-        "A modern diagonal navy and cyan gradient for a digital-first identity.",
-      icon: "i-lucide-sparkles",
-      design: {
-        frontLayout: "diagonal",
-        backStyle: "gradient",
-        backLayout: "profile",
-        backgroundMode: "gradient",
-        backgroundImage: "",
-        primaryColor: "#071A33",
-        secondaryColor: "#1E3A8A",
-        accentColor: "#22D3EE",
-        overlayOpacity: 100,
-        cornerRadius: 24,
-        photoShape: "circle",
-      },
-    }),
+      backgroundMode: "image",
+      backgroundImage: "/library-card/sncbt-building.jpg",
+      backgroundPosition: "50% 40%",
 
-    preset({
-      key: "executive-midnight",
-      category: "Modern",
-      name: "Executive Midnight",
-      description:
-        "A formal solid-navy card with a portrait-led layout and restrained accents.",
-      icon: "i-lucide-badge",
-      design: {
-        frontLayout: "portrait",
-        backStyle: "navy",
-        backLayout: "credential",
-        backgroundMode: "solid",
-        backgroundImage: "",
-        primaryColor: "#06162B",
-        secondaryColor: "#132F4C",
-        accentColor: "#94A3B8",
-        overlayOpacity: 100,
-        cornerRadius: 18,
-        photoShape: "rounded",
-      },
-    }),
+      primaryColor: "#071A33",
+      secondaryColor: "#164E63",
+      accentColor: "#67E8F9",
+      overlayOpacity: 68,
+      cornerRadius: 26,
+      photoShape: "circle",
 
-    preset({
-      key: "ocean-glass",
-      category: "Modern",
-      name: "Ocean Glass",
-      description:
-        "A polished cyan-to-navy glass layout with a bright, approachable appearance.",
-      icon: "i-lucide-waves",
-      design: {
-        frontLayout: "glass",
-        backStyle: "light",
-        backLayout: "profile",
-        backgroundMode: "gradient",
-        backgroundImage: "",
-        primaryColor: "#082F49",
-        secondaryColor: "#0369A1",
-        accentColor: "#67E8F9",
-        surfaceColor: "#F8FAFC",
-        overlayOpacity: 100,
-        cornerRadius: 28,
-        photoShape: "rounded",
-      },
-    }),
+      showBackStudentDetails: true,
+      showYearSection: true,
+      showEmail: true,
+      showAddress: true,
+    },
+  }),
 
-    preset({
-      key: "minimal-academic",
-      category: "Minimal",
-      name: "Minimal Academic",
-      description:
-        "White academic styling with navy typography and a clean institutional structure.",
-      icon: "i-lucide-layout-template",
-      design: {
-        frontLayout: "minimal",
-        backStyle: "light",
-        backLayout: "minimal",
-        backgroundMode: "solid",
-        backgroundImage: "",
-        primaryColor: "#0F2747",
-        secondaryColor: "#E8EEF6",
-        accentColor: "#2563EB",
-        surfaceColor: "#FFFFFF",
-        textColor: "#0F172A",
-        mutedTextColor: "#475569",
-        overlayOpacity: 0,
-        cornerRadius: 16,
-        photoShape: "square",
-      },
-    }),
+  preset({
+    key: "campus-split",
+    category: "Institutional",
+    name: "SNCBT Campus Split",
+    description:
+      "A clean split composition that keeps student information highly readable.",
+    icon: "i-lucide-columns-2",
+    design: {
+      frontLayout: "split",
+      backStyle: "light",
+      backLayout: "credential",
+      backgroundMode: "image",
+      backgroundImage: "/library-card/sncbt-building.jpg",
+      backgroundPosition: "58% center",
+      primaryColor: "#0A2540",
+      secondaryColor: "#1D4E89",
+      accentColor: "#0EA5E9",
+      surfaceColor: "#FFFFFF",
+      textColor: "#FFFFFF",
+      mutedTextColor: "#DCE8F5",
+      overlayOpacity: 88,
+      photoShape: "square",
+    },
+  }),
 
-    preset({
-      key: "clean-credential",
-      category: "Minimal",
-      name: "Clean Credential",
-      description:
-        "Compact credential-focused layout with a clear barcode and cardholder information.",
-      icon: "i-lucide-credit-card",
-      design: {
-        frontLayout: "split",
-        backStyle: "light",
-        backLayout: "credential",
-        backgroundMode: "solid",
-        backgroundImage: "",
-        primaryColor: "#102A43",
-        secondaryColor: "#D9E2EC",
-        accentColor: "#3B82F6",
-        surfaceColor: "#FFFFFF",
-        textColor: "#FFFFFF",
-        mutedTextColor: "#D9E2EC",
-        overlayOpacity: 100,
-        cornerRadius: 12,
-        photoShape: "square",
-        showAddress: false,
-      },
-    }),
+  preset({
+    key: "navy-aurora",
+    category: "Modern",
+    name: "Navy Aurora",
+    description:
+      "A modern diagonal navy and cyan gradient for a digital-first identity.",
+    icon: "i-lucide-sparkles",
+    design: {
+      frontLayout: "modern",
+      backStyle: "gradient",
+      backLayout: "credential",
 
-    preset({
-      key: "geometric-navy",
-      category: "Creative",
-      name: "Geometric Navy",
-      description:
-        "Dynamic geometric styling that remains professional and easy to print.",
-      icon: "i-lucide-shapes",
-      design: {
-        frontLayout: "diagonal",
-        backStyle: "navy",
-        backLayout: "profile",
-        backgroundMode: "gradient",
-        backgroundImage: "",
-        primaryColor: "#111827",
-        secondaryColor: "#1D4ED8",
-        accentColor: "#F59E0B",
-        overlayOpacity: 100,
-        cornerRadius: 20,
-        photoShape: "rounded",
-      },
-    }),
+      backgroundMode: "gradient",
+      primaryColor: "#071A33",
+      secondaryColor: "#1E3A8A",
+      accentColor: "#60A5FA",
+      overlayOpacity: 72,
+      cornerRadius: 24,
+      photoShape: "circle",
 
-    preset({
-      key: "electric-campus",
-      category: "Creative",
-      name: "Electric Campus",
-      description:
-        "A vibrant building-based card with an energetic blue accent and portrait composition.",
-      icon: "i-lucide-zap",
-      design: {
-        frontLayout: "portrait",
-        backStyle: "gradient",
-        backLayout: "credential",
-        backgroundMode: "image",
-        backgroundImage:
-          "/library-card/sncbt-building.jpg",
-        backgroundPosition:
-          "center 50%",
-        primaryColor: "#0A1931",
-        secondaryColor: "#185ADB",
-        accentColor: "#FFC947",
-        overlayOpacity: 74,
-        cornerRadius: 24,
-        photoShape: "circle",
-      },
-    }),
-  ];
+      showBackStudentDetails: true,
+      showYearSection: true,
+      showEmail: true,
+      showAddress: true,
+    },
+  }),
+
+  preset({
+    key: "executive-midnight",
+    category: "Modern",
+    name: "Executive Midnight",
+    description:
+      "A formal solid-navy card with a portrait-led layout and restrained accents.",
+    icon: "i-lucide-badge",
+    design: {
+      frontLayout: "portrait",
+      backStyle: "navy",
+      backLayout: "credential",
+      backgroundMode: "solid",
+      backgroundImage: "",
+      primaryColor: "#06162B",
+      secondaryColor: "#132F4C",
+      accentColor: "#94A3B8",
+      overlayOpacity: 100,
+      cornerRadius: 18,
+      photoShape: "rounded",
+    },
+  }),
+
+  preset({
+    key: "ocean-glass",
+    category: "Modern",
+    name: "Ocean Glass",
+    description:
+      "A polished cyan-to-navy glass layout with a bright, approachable appearance.",
+    icon: "i-lucide-waves",
+    design: {
+      frontLayout: "glass",
+      backStyle: "gradient",
+      backLayout: "credential",
+
+      backgroundMode: "gradient",
+      primaryColor: "#082F49",
+      secondaryColor: "#155E75",
+      accentColor: "#67E8F9",
+      overlayOpacity: 68,
+      cornerRadius: 26,
+      photoShape: "circle",
+
+      showBackStudentDetails: true,
+      showYearSection: true,
+      showEmail: true,
+      showAddress: true,
+    },
+  }),
+
+  preset({
+    key: "minimal-academic",
+    category: "Minimal",
+    name: "Minimal Academic",
+    description:
+      "White academic styling with navy typography and a clean institutional structure.",
+    icon: "i-lucide-layout-template",
+    design: {
+      frontLayout: "minimal",
+      backStyle: "light",
+      backLayout: "minimal",
+      backgroundMode: "solid",
+      backgroundImage: "",
+      primaryColor: "#0F2747",
+      secondaryColor: "#E8EEF6",
+      accentColor: "#2563EB",
+      surfaceColor: "#FFFFFF",
+      textColor: "#0F172A",
+      mutedTextColor: "#475569",
+      overlayOpacity: 0,
+      cornerRadius: 16,
+      photoShape: "square",
+    },
+  }),
+
+  preset({
+    key: "clean-credential",
+    category: "Minimal",
+    name: "Clean Credential",
+    description:
+      "Compact credential-focused layout with a clear barcode and cardholder information.",
+    icon: "i-lucide-credit-card",
+    design: {
+      frontLayout: "split",
+      backStyle: "light",
+      backLayout: "credential",
+      backgroundMode: "solid",
+      backgroundImage: "",
+      primaryColor: "#102A43",
+      secondaryColor: "#D9E2EC",
+      accentColor: "#3B82F6",
+      surfaceColor: "#FFFFFF",
+      textColor: "#FFFFFF",
+      mutedTextColor: "#D9E2EC",
+      overlayOpacity: 100,
+      cornerRadius: 12,
+      photoShape: "square",
+      showAddress: false,
+    },
+  }),
+
+  preset({
+    key: "geometric-navy",
+    category: "Creative",
+    name: "Geometric Navy",
+    description:
+      "Dynamic geometric styling that remains professional and easy to print.",
+    icon: "i-lucide-shapes",
+    design: {
+      frontLayout: "classic",
+      backStyle: "solid",
+      backLayout: "credential",
+
+      backgroundMode: "solid",
+      primaryColor: "#0A1733",
+      secondaryColor: "#1D4ED8",
+      accentColor: "#93C5FD",
+      overlayOpacity: 100,
+      cornerRadius: 22,
+      photoShape: "circle",
+
+      showBackStudentDetails: true,
+      showYearSection: true,
+      showEmail: true,
+      showAddress: true,
+    },
+  }),
+
+  preset({
+    key: "electric-campus",
+    category: "Creative",
+    name: "Electric Campus",
+    description:
+      "A vibrant building-based card with an energetic blue accent and portrait composition.",
+    icon: "i-lucide-zap",
+    design: {
+      frontLayout: "portrait",
+      backStyle: "gradient",
+      backLayout: "credential",
+      backgroundMode: "image",
+      backgroundImage: "/library-card/sncbt-building.jpg",
+      backgroundPosition: "center 50%",
+      primaryColor: "#0A1931",
+      secondaryColor: "#185ADB",
+      accentColor: "#FFC947",
+      overlayOpacity: 74,
+      cornerRadius: 24,
+      photoShape: "circle",
+    },
+  }),
+];
 
 export const LIBRARY_CARD_PRESET_CATEGORIES:
   Array<"All" | LibraryCardPresetCategory> = [
