@@ -90,6 +90,45 @@ export interface ReturnLookup {
   };
 }
 
+
+export interface ReturnMemberSummary {
+  documentId: string;
+  type: MemberType;
+  barcode?: string;
+  identifier: string;
+  fullName: string;
+  status: string;
+  programOrDepartment?: string;
+}
+
+export interface MemberReturnLookup {
+  member: ReturnMemberSummary;
+  activeBorrows: ReturnLookup[];
+  totalActive: number;
+  overdueCount: number;
+}
+
+export interface BatchReturnInputItem {
+  borrowDocumentId: string;
+  condition: "Good" | "Damaged" | "Lost";
+  fineAmount: number;
+  remarks?: string;
+}
+
+export interface BatchReturnFailure {
+  borrowDocumentId: string;
+  borrowNo?: string;
+  title?: string;
+  message: string;
+}
+
+export interface BatchReturnResult {
+  processedCount: number;
+  failedCount: number;
+  results: ProcessReturnResult[];
+  failures: BatchReturnFailure[];
+}
+
 export interface ProcessReturnResult {
   returnNo: string;
   returnDocumentId: string;
@@ -252,6 +291,43 @@ export function useLibraryCirculation() {
     return response.data;
   }
 
+  async function lookupMemberReturns(
+    barcode: string,
+  ): Promise<MemberReturnLookup> {
+    const response =
+      await auth.authFetch<
+        DataResponse<MemberReturnLookup>
+      >(
+        `/api/circulation/returns/member/${encodePath(
+          barcode,
+        )}`,
+        {
+          method: "GET",
+        },
+      );
+
+    return response.data;
+  }
+
+  async function processReturns(input: {
+    items: BatchReturnInputItem[];
+  }): Promise<BatchReturnResult> {
+    const response =
+      await auth.authFetch<
+        DataResponse<BatchReturnResult>
+      >(
+        "/api/circulation/returns/process-batch",
+        {
+          method: "POST",
+          body: {
+            data: input,
+          },
+        },
+      );
+
+    return response.data;
+  }
+
   async function lookupReturn(
     barcode: string,
   ): Promise<ReturnLookup> {
@@ -314,30 +390,11 @@ export function useLibraryCirculation() {
     page?: number;
     pageSize?: number;
   }): Promise<ReservationListResponse> {
-    const search = input.search?.trim() ?? "";
-    const status = input.status?.trim() ?? "";
-
-    const query: Record<string, string | number> = {
-      page: Math.max(Number(input.page) || 1, 1),
-      pageSize: Math.min(
-        Math.max(Number(input.pageSize) || 10, 1),
-        50,
-      ),
-    };
-
-    if (search) {
-      query.search = search;
-    }
-
-    if (status && status !== "All") {
-      query.status = status;
-    }
-
     return await auth.authFetch<
       ReservationListResponse
     >("/api/circulation/reservations", {
       method: "GET",
-      query,
+      query: input,
     });
   }
 
@@ -419,6 +476,8 @@ export function useLibraryCirculation() {
     lookupCopy,
     borrowBooks,
     recentBorrows,
+    lookupMemberReturns,
+    processReturns,
     lookupReturn,
     processReturn,
     todayReturns,
