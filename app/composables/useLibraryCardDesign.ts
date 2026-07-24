@@ -1,19 +1,35 @@
 export type LibraryCardFrontLayout =
   | "cinematic"
   | "split"
-  | "minimal";
+  | "minimal"
+  | "glass"
+  | "diagonal"
+  | "portrait";
 
 export type LibraryCardBackStyle =
   | "navy"
-  | "light";
+  | "light"
+  | "gradient";
+
+export type LibraryCardBackLayout =
+  | "credential"
+  | "profile"
+  | "minimal";
 
 export type LibraryCardPhotoShape =
   | "rounded"
   | "square"
   | "circle";
 
+export type LibraryCardPresetCategory =
+  | "Institutional"
+  | "Modern"
+  | "Minimal"
+  | "Creative";
+
 export interface LibraryCardDesign {
   designName: string;
+
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -23,6 +39,8 @@ export interface LibraryCardDesign {
 
   frontLayout: LibraryCardFrontLayout;
   backStyle: LibraryCardBackStyle;
+  backLayout: LibraryCardBackLayout;
+
   backgroundMode:
     | "image"
     | "gradient"
@@ -36,29 +54,51 @@ export interface LibraryCardDesign {
   photoShape: LibraryCardPhotoShape;
   photoBorderColor: string;
   logoUrl: string;
+
   showLogo: boolean;
   showPhoto: boolean;
   showStudentNumber: boolean;
   showCourse: boolean;
   showCardNumber: boolean;
   showMembershipStatus: boolean;
-  showValidityTable: boolean;
   showBarcode: boolean;
+
+  showBackStudentDetails: boolean;
+  showYearSection: boolean;
+  showEmail: boolean;
+  showAddress: boolean;
 
   institutionName: string;
   cardTitle: string;
   departmentLabel: string;
   frontTagline: string;
+
+  backTitle: string;
   noticeText: string;
-  validityTitle: string;
   librarianLabel: string;
   backFooterText: string;
+
+  /**
+   * Retained only so older saved JSON remains compatible.
+   * The redesigned card no longer renders a semester-validity table.
+   */
+  showValidityTable?: boolean;
+  validityTitle?: string;
+}
+
+export interface LibraryCardPreset {
+  key: string;
+  category: LibraryCardPresetCategory;
+  name: string;
+  description: string;
+  icon: string;
+  design: LibraryCardDesign;
 }
 
 export const DEFAULT_LIBRARY_CARD_DESIGN:
   LibraryCardDesign = {
     designName:
-      "SNCBT Modern Building",
+      "SNCBT Campus Cinematic",
 
     primaryColor: "#0B1F3A",
     secondaryColor: "#173A63",
@@ -69,6 +109,8 @@ export const DEFAULT_LIBRARY_CARD_DESIGN:
 
     frontLayout: "cinematic",
     backStyle: "navy",
+    backLayout: "credential",
+
     backgroundMode: "image",
     backgroundImage:
       "/library-card/sncbt-building.jpg",
@@ -80,14 +122,22 @@ export const DEFAULT_LIBRARY_CARD_DESIGN:
     photoShape: "rounded",
     photoBorderColor: "#FFFFFF",
     logoUrl: "/sncbt-logo.png",
+
     showLogo: true,
     showPhoto: true,
     showStudentNumber: true,
     showCourse: true,
     showCardNumber: true,
-    showMembershipStatus: true,
-    showValidityTable: true,
+
+    // The physical card is permanent. Current membership is checked
+    // through the barcode, so this is hidden from the printed design.
+    showMembershipStatus: false,
     showBarcode: true,
+
+    showBackStudentDetails: true,
+    showYearSection: true,
+    showEmail: true,
+    showAddress: true,
 
     institutionName:
       "ST. NICOLAS COLLEGE OF BUSINESS AND TECHNOLOGY",
@@ -95,54 +145,288 @@ export const DEFAULT_LIBRARY_CARD_DESIGN:
     departmentLabel: "COLLEGE DEPARTMENT",
     frontTagline:
       "Knowledge • Access • Service",
+
+    backTitle:
+      "LIBRARY ACCESS CREDENTIAL",
     noticeText:
-      "VALID LIBRARY CARD REQUIRED FOR ALL TRANSACTIONS",
-    validityTitle:
-      "SEMESTER MEMBERSHIP VALIDITY",
+      "SCAN THE BARCODE TO VERIFY THE STUDENT'S CURRENT LIBRARY MEMBERSHIP",
     librarianLabel:
       "AUTHORIZED LIBRARIAN",
     backFooterText:
-      "This card remains the property of SNCBT Library.",
+      "If found, please return this card to SNCBT Library. This card is non-transferable.",
+
+    showValidityTable: false,
+    validityTitle:
+      "SEMESTER MEMBERSHIP VALIDITY",
   };
+
+function preset(
+  data: Omit<LibraryCardPreset, "design"> & {
+    design: Partial<LibraryCardDesign>;
+  },
+): LibraryCardPreset {
+  return {
+    ...data,
+    design: {
+      ...DEFAULT_LIBRARY_CARD_DESIGN,
+      ...data.design,
+      designName: data.name,
+    },
+  };
+}
 
 export const LIBRARY_CARD_PRESETS:
-  Record<string, LibraryCardDesign> = {
-    building: {
-      ...DEFAULT_LIBRARY_CARD_DESIGN,
-      designName:
-        "SNCBT Modern Building",
-    },
+  LibraryCardPreset[] = [
+    preset({
+      key: "campus-cinematic",
+      category: "Institutional",
+      name: "SNCBT Campus Cinematic",
+      description:
+        "Full-bleed Mel-Vi Building background with a strong navy institutional overlay.",
+      icon: "i-lucide-building-2",
+      design: {
+        frontLayout: "cinematic",
+        backStyle: "navy",
+        backLayout: "credential",
+        backgroundMode: "image",
+        backgroundImage:
+          "/library-card/sncbt-building.jpg",
+        backgroundPosition:
+          "center 45%",
+        primaryColor: "#0B1F3A",
+        secondaryColor: "#173A63",
+        accentColor: "#38BDF8",
+        overlayOpacity: 78,
+        photoShape: "rounded",
+      },
+    }),
 
-    gradient: {
-      ...DEFAULT_LIBRARY_CARD_DESIGN,
-      designName:
-        "Navy Aurora",
-      backgroundMode: "gradient",
-      backgroundImage: "",
-      frontLayout: "split",
-      primaryColor: "#071A33",
-      secondaryColor: "#1E3A5F",
-      accentColor: "#22D3EE",
-      overlayOpacity: 86,
-    },
+    preset({
+      key: "campus-glass",
+      category: "Institutional",
+      name: "SNCBT Campus Glass",
+      description:
+        "Modern glass-panel identity card using the institution building as the main visual.",
+      icon: "i-lucide-panels-top-left",
+      design: {
+        frontLayout: "glass",
+        backStyle: "gradient",
+        backLayout: "profile",
+        backgroundMode: "image",
+        backgroundImage:
+          "/library-card/sncbt-building.jpg",
+        backgroundPosition:
+          "center 40%",
+        primaryColor: "#071A33",
+        secondaryColor: "#164E63",
+        accentColor: "#67E8F9",
+        overlayOpacity: 68,
+        cornerRadius: 26,
+        photoShape: "circle",
+      },
+    }),
 
-    minimal: {
-      ...DEFAULT_LIBRARY_CARD_DESIGN,
-      designName:
-        "Minimal Academic",
-      backgroundMode: "solid",
-      backgroundImage: "",
-      frontLayout: "minimal",
-      backStyle: "light",
-      primaryColor: "#0F2747",
-      secondaryColor: "#E8EEF6",
-      accentColor: "#2563EB",
-      surfaceColor: "#FFFFFF",
-      textColor: "#0F172A",
-      mutedTextColor: "#475569",
-      overlayOpacity: 0,
-    },
-  };
+    preset({
+      key: "campus-split",
+      category: "Institutional",
+      name: "SNCBT Campus Split",
+      description:
+        "A clean split composition that keeps student information highly readable.",
+      icon: "i-lucide-columns-2",
+      design: {
+        frontLayout: "split",
+        backStyle: "light",
+        backLayout: "credential",
+        backgroundMode: "image",
+        backgroundImage:
+          "/library-card/sncbt-building.jpg",
+        backgroundPosition:
+          "58% center",
+        primaryColor: "#0A2540",
+        secondaryColor: "#1D4E89",
+        accentColor: "#0EA5E9",
+        surfaceColor: "#FFFFFF",
+        textColor: "#FFFFFF",
+        mutedTextColor: "#DCE8F5",
+        overlayOpacity: 88,
+        photoShape: "square",
+      },
+    }),
+
+    preset({
+      key: "navy-aurora",
+      category: "Modern",
+      name: "Navy Aurora",
+      description:
+        "A modern diagonal navy and cyan gradient for a digital-first identity.",
+      icon: "i-lucide-sparkles",
+      design: {
+        frontLayout: "diagonal",
+        backStyle: "gradient",
+        backLayout: "profile",
+        backgroundMode: "gradient",
+        backgroundImage: "",
+        primaryColor: "#071A33",
+        secondaryColor: "#1E3A8A",
+        accentColor: "#22D3EE",
+        overlayOpacity: 100,
+        cornerRadius: 24,
+        photoShape: "circle",
+      },
+    }),
+
+    preset({
+      key: "executive-midnight",
+      category: "Modern",
+      name: "Executive Midnight",
+      description:
+        "A formal solid-navy card with a portrait-led layout and restrained accents.",
+      icon: "i-lucide-badge",
+      design: {
+        frontLayout: "portrait",
+        backStyle: "navy",
+        backLayout: "credential",
+        backgroundMode: "solid",
+        backgroundImage: "",
+        primaryColor: "#06162B",
+        secondaryColor: "#132F4C",
+        accentColor: "#94A3B8",
+        overlayOpacity: 100,
+        cornerRadius: 18,
+        photoShape: "rounded",
+      },
+    }),
+
+    preset({
+      key: "ocean-glass",
+      category: "Modern",
+      name: "Ocean Glass",
+      description:
+        "A polished cyan-to-navy glass layout with a bright, approachable appearance.",
+      icon: "i-lucide-waves",
+      design: {
+        frontLayout: "glass",
+        backStyle: "light",
+        backLayout: "profile",
+        backgroundMode: "gradient",
+        backgroundImage: "",
+        primaryColor: "#082F49",
+        secondaryColor: "#0369A1",
+        accentColor: "#67E8F9",
+        surfaceColor: "#F8FAFC",
+        overlayOpacity: 100,
+        cornerRadius: 28,
+        photoShape: "rounded",
+      },
+    }),
+
+    preset({
+      key: "minimal-academic",
+      category: "Minimal",
+      name: "Minimal Academic",
+      description:
+        "White academic styling with navy typography and a clean institutional structure.",
+      icon: "i-lucide-layout-template",
+      design: {
+        frontLayout: "minimal",
+        backStyle: "light",
+        backLayout: "minimal",
+        backgroundMode: "solid",
+        backgroundImage: "",
+        primaryColor: "#0F2747",
+        secondaryColor: "#E8EEF6",
+        accentColor: "#2563EB",
+        surfaceColor: "#FFFFFF",
+        textColor: "#0F172A",
+        mutedTextColor: "#475569",
+        overlayOpacity: 0,
+        cornerRadius: 16,
+        photoShape: "square",
+      },
+    }),
+
+    preset({
+      key: "clean-credential",
+      category: "Minimal",
+      name: "Clean Credential",
+      description:
+        "Compact credential-focused layout with a clear barcode and cardholder information.",
+      icon: "i-lucide-credit-card",
+      design: {
+        frontLayout: "split",
+        backStyle: "light",
+        backLayout: "credential",
+        backgroundMode: "solid",
+        backgroundImage: "",
+        primaryColor: "#102A43",
+        secondaryColor: "#D9E2EC",
+        accentColor: "#3B82F6",
+        surfaceColor: "#FFFFFF",
+        textColor: "#FFFFFF",
+        mutedTextColor: "#D9E2EC",
+        overlayOpacity: 100,
+        cornerRadius: 12,
+        photoShape: "square",
+        showAddress: false,
+      },
+    }),
+
+    preset({
+      key: "geometric-navy",
+      category: "Creative",
+      name: "Geometric Navy",
+      description:
+        "Dynamic geometric styling that remains professional and easy to print.",
+      icon: "i-lucide-shapes",
+      design: {
+        frontLayout: "diagonal",
+        backStyle: "navy",
+        backLayout: "profile",
+        backgroundMode: "gradient",
+        backgroundImage: "",
+        primaryColor: "#111827",
+        secondaryColor: "#1D4ED8",
+        accentColor: "#F59E0B",
+        overlayOpacity: 100,
+        cornerRadius: 20,
+        photoShape: "rounded",
+      },
+    }),
+
+    preset({
+      key: "electric-campus",
+      category: "Creative",
+      name: "Electric Campus",
+      description:
+        "A vibrant building-based card with an energetic blue accent and portrait composition.",
+      icon: "i-lucide-zap",
+      design: {
+        frontLayout: "portrait",
+        backStyle: "gradient",
+        backLayout: "credential",
+        backgroundMode: "image",
+        backgroundImage:
+          "/library-card/sncbt-building.jpg",
+        backgroundPosition:
+          "center 50%",
+        primaryColor: "#0A1931",
+        secondaryColor: "#185ADB",
+        accentColor: "#FFC947",
+        overlayOpacity: 74,
+        cornerRadius: 24,
+        photoShape: "circle",
+      },
+    }),
+  ];
+
+export const LIBRARY_CARD_PRESET_CATEGORIES:
+  Array<"All" | LibraryCardPresetCategory> = [
+    "All",
+    "Institutional",
+    "Modern",
+    "Minimal",
+    "Creative",
+  ];
 
 function clamp(
   value: unknown,
@@ -180,10 +464,25 @@ function booleanValue(
     : fallback;
 }
 
+function enumValue<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  return allowed.includes(value as T)
+    ? (value as T)
+    : fallback;
+}
+
 export function normalizeLibraryCardDesign(
   input?: Partial<LibraryCardDesign> | null,
 ): LibraryCardDesign {
   const value = input ?? {};
+  const legacy =
+    value as Partial<LibraryCardDesign> & {
+      validityTitle?: string;
+      showValidityTable?: boolean;
+    };
 
   return {
     ...DEFAULT_LIBRARY_CARD_DESIGN,
@@ -219,6 +518,49 @@ export function normalizeLibraryCardDesign(
       DEFAULT_LIBRARY_CARD_DESIGN.mutedTextColor,
     ),
 
+    frontLayout: enumValue(
+      value.frontLayout,
+      [
+        "cinematic",
+        "split",
+        "minimal",
+        "glass",
+        "diagonal",
+        "portrait",
+      ] as const,
+      DEFAULT_LIBRARY_CARD_DESIGN.frontLayout,
+    ),
+
+    backStyle: enumValue(
+      value.backStyle,
+      [
+        "navy",
+        "light",
+        "gradient",
+      ] as const,
+      DEFAULT_LIBRARY_CARD_DESIGN.backStyle,
+    ),
+
+    backLayout: enumValue(
+      value.backLayout,
+      [
+        "credential",
+        "profile",
+        "minimal",
+      ] as const,
+      DEFAULT_LIBRARY_CARD_DESIGN.backLayout,
+    ),
+
+    backgroundMode: enumValue(
+      value.backgroundMode,
+      [
+        "image",
+        "gradient",
+        "solid",
+      ] as const,
+      DEFAULT_LIBRARY_CARD_DESIGN.backgroundMode,
+    ),
+
     backgroundImage: stringValue(
       value.backgroundImage,
       DEFAULT_LIBRARY_CARD_DESIGN.backgroundImage,
@@ -242,9 +584,28 @@ export function normalizeLibraryCardDesign(
     ),
     fontScale: clamp(
       value.fontScale,
-      80,
-      125,
+      85,
+      120,
       DEFAULT_LIBRARY_CARD_DESIGN.fontScale,
+    ),
+
+    photoShape: enumValue(
+      value.photoShape,
+      [
+        "rounded",
+        "square",
+        "circle",
+      ] as const,
+      DEFAULT_LIBRARY_CARD_DESIGN.photoShape,
+    ),
+
+    photoBorderColor: stringValue(
+      value.photoBorderColor,
+      DEFAULT_LIBRARY_CARD_DESIGN.photoBorderColor,
+    ),
+    logoUrl: stringValue(
+      value.logoUrl,
+      DEFAULT_LIBRARY_CARD_DESIGN.logoUrl,
     ),
 
     showLogo: booleanValue(
@@ -271,13 +632,26 @@ export function normalizeLibraryCardDesign(
       value.showMembershipStatus,
       DEFAULT_LIBRARY_CARD_DESIGN.showMembershipStatus,
     ),
-    showValidityTable: booleanValue(
-      value.showValidityTable,
-      DEFAULT_LIBRARY_CARD_DESIGN.showValidityTable,
-    ),
     showBarcode: booleanValue(
       value.showBarcode,
       DEFAULT_LIBRARY_CARD_DESIGN.showBarcode,
+    ),
+
+    showBackStudentDetails: booleanValue(
+      value.showBackStudentDetails,
+      DEFAULT_LIBRARY_CARD_DESIGN.showBackStudentDetails,
+    ),
+    showYearSection: booleanValue(
+      value.showYearSection,
+      DEFAULT_LIBRARY_CARD_DESIGN.showYearSection,
+    ),
+    showEmail: booleanValue(
+      value.showEmail,
+      DEFAULT_LIBRARY_CARD_DESIGN.showEmail,
+    ),
+    showAddress: booleanValue(
+      value.showAddress,
+      DEFAULT_LIBRARY_CARD_DESIGN.showAddress,
     ),
 
     institutionName: stringValue(
@@ -296,13 +670,17 @@ export function normalizeLibraryCardDesign(
       value.frontTagline,
       DEFAULT_LIBRARY_CARD_DESIGN.frontTagline,
     ),
+
+    backTitle: stringValue(
+      value.backTitle,
+      stringValue(
+        legacy.validityTitle,
+        DEFAULT_LIBRARY_CARD_DESIGN.backTitle,
+      ),
+    ),
     noticeText: stringValue(
       value.noticeText,
       DEFAULT_LIBRARY_CARD_DESIGN.noticeText,
-    ),
-    validityTitle: stringValue(
-      value.validityTitle,
-      DEFAULT_LIBRARY_CARD_DESIGN.validityTitle,
     ),
     librarianLabel: stringValue(
       value.librarianLabel,
@@ -311,6 +689,14 @@ export function normalizeLibraryCardDesign(
     backFooterText: stringValue(
       value.backFooterText,
       DEFAULT_LIBRARY_CARD_DESIGN.backFooterText,
+    ),
+
+    // Always disabled in the redesigned permanent card.
+    showValidityTable: false,
+    validityTitle: stringValue(
+      legacy.validityTitle,
+      DEFAULT_LIBRARY_CARD_DESIGN.validityTitle ??
+        "",
     ),
   };
 }

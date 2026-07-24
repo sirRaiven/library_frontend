@@ -13,6 +13,11 @@ type DownloadSide =
   | "back"
   | "both";
 
+type StudentWithAddress =
+  StudentMember & {
+    address?: string;
+  };
+
 const props = withDefaults(
   defineProps<{
     student: StudentMember;
@@ -74,6 +79,13 @@ const resolvedBackground = computed(
     ),
 );
 
+const studentAddress = computed(
+  () =>
+    (
+      props.student as StudentWithAddress
+    ).address?.trim() ?? "",
+);
+
 const initials = computed(() =>
   [
     props.student.firstName,
@@ -111,6 +123,17 @@ const formattedName = computed(() =>
     .join(" "),
 );
 
+const yearSection = computed(() =>
+  [
+    props.student.yearLevel
+      ? `YEAR ${props.student.yearLevel}`
+      : "",
+    props.student.section,
+  ]
+    .filter(Boolean)
+    .join(" • "),
+);
+
 const membershipStatus = computed(
   () =>
     activeMembership.value?.status ??
@@ -135,6 +158,7 @@ const frontClass = computed(() => [
 
 const backClass = computed(() => [
   `back-${cardDesign.value.backStyle}`,
+  `back-layout-${cardDesign.value.backLayout}`,
 ]);
 
 const cssVariables = computed(
@@ -161,96 +185,12 @@ const cssVariables = computed(
           cardDesign.value.overlayOpacity /
             100,
         ),
+      "--card-base-font-size":
+        `${16 * (cardDesign.value.fontScale / 100)}px`,
       "--card-background-position":
         cardDesign.value.backgroundPosition,
     }) as Record<string, string>,
 );
-
-const yearRows = [
-  {
-    value: 1,
-    label: "1ST YEAR",
-  },
-  {
-    value: 2,
-    label: "2ND YEAR",
-  },
-  {
-    value: 3,
-    label: "3RD YEAR",
-  },
-  {
-    value: 4,
-    label: "4TH YEAR",
-  },
-  {
-    value: 5,
-    label: "5TH YEAR",
-  },
-];
-
-const semesterColumns = [
-  {
-    value: "First Semester",
-    label: "1ST SEM",
-  },
-  {
-    value: "Second Semester",
-    label: "2ND SEM",
-  },
-  {
-    value: "Summer",
-    label: "SUMMER",
-  },
-];
-
-function validityText(
-  yearLevel: number,
-  semester: string,
-): string {
-  const membership =
-    activeMembership.value;
-
-  if (
-    !membership ||
-    props.student.yearLevel !==
-      yearLevel ||
-    membership.semester !==
-      semester
-  ) {
-    return "";
-  }
-
-  return membership.academicYear;
-}
-
-function formatDate(
-  value?: string | null,
-): string {
-  if (!value) {
-    return "NOT VALID";
-  }
-
-  const date = new Date(
-    `${value}T00:00:00+08:00`,
-  );
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(
-    "en-PH",
-    {
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-      timeZone: "Asia/Manila",
-    },
-  )
-    .format(date)
-    .toUpperCase();
-}
 
 function cardBackgroundStyle() {
   const design = cardDesign.value;
@@ -310,11 +250,11 @@ async function renderBarcode() {
       props.student.barcode,
       {
         format: "CODE128",
-        width: 1.45,
-        height: 42,
-        margin: 2,
+        width: 1.55,
+        height: 50,
+        margin: 3,
         displayValue: true,
-        fontSize: 10,
+        fontSize: 11,
         fontOptions: "bold",
         background: "#FFFFFF",
         lineColor:
@@ -366,10 +306,6 @@ async function downloadCard(
         backgroundColor: "#FFFFFF",
         cacheBust: false,
         pixelRatio: 3,
-
-        // The card uses system-safe fonts.
-        // Prevent html-to-image from parsing and
-        // downloading Nuxt's generated /_fonts URLs.
         skipFonts: true,
       },
     );
@@ -434,6 +370,7 @@ watch(
     () => props.student.barcode,
     () => cardDesign.value.primaryColor,
     () => cardDesign.value.showBarcode,
+    () => cardDesign.value.backLayout,
   ],
   async () => {
     await nextTick();
@@ -458,7 +395,7 @@ defineExpose({
       }"
       :style="cssVariables"
     >
-      <!-- MODERN FRONT -->
+      <!-- FRONT -->
       <section
         ref="frontCard"
         class="library-card-shell library-card-front"
@@ -490,13 +427,9 @@ defineExpose({
 
         <div class="front-content">
           <header class="brand-row">
-            <div
-              class="brand-lockup"
-            >
+            <div class="brand-lockup">
               <div
-                v-if="
-                  cardDesign.showLogo
-                "
+                v-if="cardDesign.showLogo"
                 class="institution-logo"
               >
                 <img
@@ -547,12 +480,8 @@ defineExpose({
               class="student-photo"
             >
               <img
-                v-if="
-                  studentPhotoUrl()
-                "
-                :src="
-                  studentPhotoUrl()
-                "
+                v-if="studentPhotoUrl()"
+                :src="studentPhotoUrl()"
                 :alt="student.fullName"
                 crossorigin="anonymous"
               />
@@ -572,9 +501,7 @@ defineExpose({
               </h2>
 
               <p
-                v-if="
-                  cardDesign.showCourse
-                "
+                v-if="cardDesign.showCourse"
                 class="identity-program"
               >
                 {{ student.course }}
@@ -629,175 +556,179 @@ defineExpose({
                 statusLabelClass
               "
             >
-              {{
-                membershipStatus
-              }}
+              {{ membershipStatus }}
             </div>
           </footer>
         </div>
       </section>
 
-      <!-- MODERN BACK -->
+      <!-- BACK -->
       <section
         ref="backCard"
         class="library-card-shell library-card-back"
         :class="backClass"
         aria-label="Back of student library card"
       >
-        <div class="back-glow" />
+        <div class="back-decoration" />
 
         <div class="back-content">
           <header class="back-header">
             <div>
               <p class="back-eyebrow">
-                SNCBT LIBRARY ACCESS
+                SNCBT LIBRARY
               </p>
               <h2>
-                {{
-                  cardDesign.validityTitle
-                }}
+                {{ cardDesign.backTitle }}
               </h2>
             </div>
 
             <div
-              v-if="
-                cardDesign
-                  .showMembershipStatus
-              "
-              class="back-status"
-              :class="
-                statusLabelClass
-              "
+              v-if="cardDesign.showLogo"
+              class="back-logo"
             >
-              {{ membershipStatus }}
+              <img
+                v-if="
+                  resolvedLogo &&
+                  !logoFailed
+                "
+                :src="resolvedLogo"
+                alt=""
+                crossorigin="anonymous"
+              />
+
+              <span v-else>
+                SNCBT
+              </span>
             </div>
           </header>
 
           <div class="back-notice">
-            {{
-              cardDesign.noticeText
-            }}
+            {{ cardDesign.noticeText }}
           </div>
 
-          <div class="back-grid">
+          <div
+            class="back-body"
+            :class="{
+              'back-body-barcode-only':
+                !cardDesign.showBackStudentDetails,
+            }"
+          >
             <div
               v-if="
                 cardDesign
-                  .showValidityTable
+                  .showBackStudentDetails
               "
-              class="validity-panel"
+              class="cardholder-panel"
             >
-              <div
-                class="validity-summary"
-              >
-                <div>
-                  <span>
-                    CURRENT TERM
-                  </span>
-                  <strong>
-                    {{
-                      activeMembership
-                        ?.semester ??
-                      "NOT RENEWED"
-                    }}
-                  </strong>
+              <div class="cardholder-heading">
+                <div class="cardholder-avatar">
+                  {{ initials }}
                 </div>
 
                 <div>
                   <span>
-                    VALID UNTIL
+                    CARDHOLDER
                   </span>
                   <strong>
-                    {{
-                      formatDate(
-                        activeMembership
-                          ?.expiryDate,
-                      )
-                    }}
+                    {{ formattedName }}
                   </strong>
                 </div>
               </div>
 
-              <table
-                class="validity-table"
-                aria-label="Semester validity table"
-              >
-                <thead>
-                  <tr>
-                    <th>
-                      LEVEL
-                    </th>
-                    <th
-                      v-for="
-                        column in
-                        semesterColumns
-                      "
-                      :key="
-                        column.value
-                      "
-                    >
-                      {{
-                        column.label
-                      }}
-                    </th>
-                  </tr>
-                </thead>
+              <dl class="student-detail-grid">
+                <div
+                  v-if="
+                    cardDesign
+                      .showStudentNumber
+                  "
+                >
+                  <dt>
+                    Student Number
+                  </dt>
+                  <dd>
+                    {{ student.studentNo }}
+                  </dd>
+                </div>
 
-                <tbody>
-                  <tr
-                    v-for="
-                      row in yearRows
-                    "
-                    :key="row.value"
-                  >
-                    <th>
-                      {{ row.label }}
-                    </th>
+                <div
+                  v-if="
+                    cardDesign
+                      .showCardNumber
+                  "
+                >
+                  <dt>
+                    Library Card
+                  </dt>
+                  <dd>
+                    {{
+                      student.libraryCardNo
+                    }}
+                  </dd>
+                </div>
 
-                    <td
-                      v-for="
-                        column in
-                        semesterColumns
-                      "
-                      :key="
-                        column.value
-                      "
-                      :class="{
-                        'validity-current':
-                          validityText(
-                            row.value,
-                            column.value,
-                          ),
-                      }"
-                    >
-                      {{
-                        validityText(
-                          row.value,
-                          column.value,
-                        )
-                      }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                <div
+                  v-if="
+                    cardDesign.showCourse
+                  "
+                  class="detail-wide"
+                >
+                  <dt>
+                    Course / Program
+                  </dt>
+                  <dd>
+                    {{ student.course }}
+                  </dd>
+                </div>
+
+                <div
+                  v-if="
+                    cardDesign
+                      .showYearSection &&
+                    yearSection
+                  "
+                >
+                  <dt>
+                    Year / Section
+                  </dt>
+                  <dd>
+                    {{ yearSection }}
+                  </dd>
+                </div>
+
+                <div
+                  v-if="
+                    cardDesign.showEmail &&
+                    student.email
+                  "
+                >
+                  <dt>
+                    Email
+                  </dt>
+                  <dd>
+                    {{ student.email }}
+                  </dd>
+                </div>
+
+                <div
+                  v-if="
+                    cardDesign.showAddress &&
+                    studentAddress
+                  "
+                  class="detail-wide"
+                >
+                  <dt>
+                    Address
+                  </dt>
+                  <dd>
+                    {{ studentAddress }}
+                  </dd>
+                </div>
+              </dl>
             </div>
 
             <div class="credential-panel">
-              <div class="credential-card-no">
-                <span>
-                  CARD NUMBER
-                </span>
-                <strong>
-                  {{
-                    student.libraryCardNo
-                  }}
-                </strong>
-              </div>
-
               <div
-                v-if="
-                  cardDesign.showBarcode
-                "
+                v-if="cardDesign.showBarcode"
                 class="barcode-panel"
               >
                 <svg
@@ -813,6 +744,22 @@ defineExpose({
                 >
                   {{ barcodeError }}
                 </p>
+              </div>
+
+              <div
+                v-if="
+                  cardDesign.showCardNumber
+                "
+                class="credential-card-no"
+              >
+                <span>
+                  LIBRARY CARD NUMBER
+                </span>
+                <strong>
+                  {{
+                    student.libraryCardNo
+                  }}
+                </strong>
               </div>
 
               <div class="signature-block">
@@ -927,13 +874,15 @@ defineExpose({
     Arial,
     Helvetica,
     sans-serif;
+  font-size:
+    var(--card-base-font-size);
   isolation: isolate;
 }
 
 .front-background,
 .front-overlay,
 .front-pattern,
-.back-glow {
+.back-decoration {
   position: absolute;
   inset: 0;
 }
@@ -974,14 +923,9 @@ defineExpose({
   z-index: -2;
   background:
     radial-gradient(
-      circle at 80% 18%,
-      color-mix(
-        in srgb,
-        var(--card-accent)
-          28%,
-        transparent
-      ),
-      transparent 27%
+      circle at 82% 16%,
+      rgb(56 189 248 / 18%),
+      transparent 28%
     ),
     linear-gradient(
       120deg,
@@ -1015,10 +959,9 @@ defineExpose({
   gap: 0.7rem;
 }
 
-.institution-logo {
+.institution-logo,
+.back-logo {
   display: flex;
-  width: 3.15rem;
-  height: 3.15rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -1026,16 +969,28 @@ defineExpose({
   border: 2px solid
     rgb(255 255 255 / 82%);
   border-radius: 9999px;
-  background: rgb(255 255 255 / 92%);
+  background: rgb(255 255 255 / 94%);
   color: var(--card-primary);
-  font-size: 0.58rem;
   font-weight: 900;
+}
+
+.institution-logo {
+  width: 3.15rem;
+  height: 3.15rem;
+  font-size: 0.58rem;
   box-shadow:
     0 8px 18px
       rgb(0 0 0 / 18%);
 }
 
-.institution-logo img {
+.back-logo {
+  width: 2.7rem;
+  height: 2.7rem;
+  font-size: 0.5rem;
+}
+
+.institution-logo img,
+.back-logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -1207,9 +1162,7 @@ defineExpose({
   margin-top: 0.8rem;
 }
 
-.identity-meta span,
-.credential-card-no span,
-.validity-summary span {
+.identity-meta span {
   display: block;
   color: var(--card-muted);
   font-size: clamp(
@@ -1254,8 +1207,7 @@ defineExpose({
   letter-spacing: 0.12em;
 }
 
-.front-status,
-.back-status {
+.front-status {
   border-radius: 9999px;
   padding: 0.22rem 0.55rem;
   font-size: clamp(
@@ -1282,19 +1234,20 @@ defineExpose({
   color: #991B1B;
 }
 
-/* Split preset */
+/* FRONT LAYOUT OPTIONS */
 .layout-split
   .front-overlay {
+  opacity: 1;
   background:
     linear-gradient(
       90deg,
       var(--card-primary)
         0%,
       var(--card-primary)
-        61%,
+        59%,
       rgb(7 26 51 / 48%)
-        61.5%,
-      rgb(7 26 51 / 22%)
+        59.5%,
+      rgb(7 26 51 / 18%)
         100%
     );
 }
@@ -1304,7 +1257,6 @@ defineExpose({
   max-width: 72%;
 }
 
-/* Minimal preset */
 .layout-minimal {
   color: var(--card-primary);
   background: var(--card-surface);
@@ -1312,19 +1264,20 @@ defineExpose({
 
 .layout-minimal
   .front-background {
-  opacity: 0.11;
+  opacity: 0.1;
 }
 
 .layout-minimal
   .front-overlay {
+  opacity: 1;
   background:
     linear-gradient(
       90deg,
-      rgb(255 255 255 / 97%)
+      rgb(255 255 255 / 98%)
         0%,
-      rgb(255 255 255 / 93%)
-        64%,
-      rgb(255 255 255 / 55%)
+      rgb(255 255 255 / 94%)
+        66%,
+      rgb(255 255 255 / 70%)
         100%
     );
 }
@@ -1356,22 +1309,88 @@ defineExpose({
   border-color: #CBD5E1;
 }
 
-/* Back */
-.library-card-back {
-  background:
-    var(--card-primary);
+.layout-glass
+  .identity-area {
+  align-items: stretch;
 }
 
-.back-glow {
+.layout-glass
+  .identity-copy {
+  align-self: center;
+  border: 1px solid
+    rgb(255 255 255 / 28%);
+  border-radius: 1rem;
+  background:
+    rgb(7 26 51 / 72%);
+  padding: 0.9rem;
+  box-shadow:
+    0 16px 30px
+      rgb(0 0 0 / 18%);
+}
+
+.layout-diagonal
+  .front-pattern {
+  background:
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      transparent 56%,
+      rgb(255 255 255 / 10%)
+        56.3%,
+      rgb(255 255 255 / 4%)
+        76%,
+      transparent 76.3%
+    ),
+    radial-gradient(
+      circle at 88% 18%,
+      rgb(255 255 255 / 14%),
+      transparent 24%
+    );
+}
+
+.layout-diagonal
+  .student-photo {
+  transform: rotate(-2deg);
+}
+
+.layout-portrait
+  .identity-area {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(7rem, 30%);
+}
+
+.layout-portrait
+  .student-photo {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.layout-portrait
+  .identity-copy {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.layout-portrait
+  .identity-name {
+  font-size: clamp(
+    1rem,
+    3.5vw,
+    1.55rem
+  );
+}
+
+/* BACK */
+.library-card-back {
+  background: var(--card-primary);
+}
+
+.back-decoration {
   background:
     radial-gradient(
-      circle at 86% 12%,
-      color-mix(
-        in srgb,
-        var(--card-accent)
-          30%,
-        transparent
-      ),
+      circle at 90% 8%,
+      rgb(56 189 248 / 18%),
       transparent 28%
     ),
     linear-gradient(
@@ -1389,7 +1408,7 @@ defineExpose({
   height: 100%;
   flex-direction: column;
   padding:
-    clamp(1rem, 3.5vw, 1.4rem);
+    clamp(0.95rem, 3.2vw, 1.35rem);
 }
 
 .back-header {
@@ -1414,127 +1433,144 @@ defineExpose({
 .back-header h2 {
   margin: 0.18rem 0 0;
   font-size: clamp(
-    0.74rem,
-    2.5vw,
-    1rem
+    0.78rem,
+    2.6vw,
+    1.05rem
   );
   font-weight: 900;
   letter-spacing: 0.045em;
 }
 
 .back-notice {
-  margin-top: 0.55rem;
+  margin-top: 0.45rem;
   border-radius: 0.6rem;
   background:
     rgb(255 255 255 / 9%);
-  padding: 0.4rem 0.65rem;
+  padding: 0.38rem 0.65rem;
   color: var(--card-muted);
   text-align: center;
   font-size: clamp(
-    0.42rem,
-    1.45vw,
-    0.56rem
+    0.4rem,
+    1.35vw,
+    0.53rem
   );
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.065em;
 }
 
-.back-grid {
+.back-body {
   display: grid;
   grid-template-columns:
-    minmax(0, 1.45fr)
-    minmax(8rem, 0.8fr);
+    minmax(0, 1.15fr)
+    minmax(8.5rem, 0.85fr);
+  min-height: 0;
   flex: 1;
-  gap: 0.75rem;
-  align-items: stretch;
-  margin-top: 0.65rem;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
 }
 
-.validity-panel,
+.cardholder-panel,
 .credential-panel {
   border: 1px solid
-    rgb(255 255 255 / 15%);
+    rgb(255 255 255 / 16%);
   border-radius: 0.85rem;
   background:
     rgb(255 255 255 / 8%);
-  backdrop-filter:
-    blur(8px);
 }
 
-.validity-panel {
-  padding: 0.55rem;
+.cardholder-panel {
+  min-width: 0;
+  padding: 0.65rem;
 }
 
-.validity-summary {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-  margin-bottom: 0.42rem;
+.cardholder-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid
+    rgb(255 255 255 / 14%);
 }
 
-.validity-summary strong {
+.cardholder-avatar {
+  display: flex;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background:
+    var(--card-accent);
+  color: var(--card-primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.cardholder-heading span,
+.credential-card-no span {
+  display: block;
+  color: var(--card-muted);
+  font-size: clamp(
+    0.36rem,
+    1.2vw,
+    0.48rem
+  );
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.cardholder-heading strong {
   display: block;
   margin-top: 0.08rem;
   font-size: clamp(
-    0.48rem,
-    1.65vw,
-    0.64rem
+    0.5rem,
+    1.7vw,
+    0.68rem
   );
+  line-height: 1.12;
 }
 
-.validity-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 2px;
+.student-detail-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.42rem 0.6rem;
+  margin: 0.55rem 0 0;
+}
+
+.student-detail-grid div {
+  min-width: 0;
+}
+
+.student-detail-grid dt {
+  color: var(--card-muted);
   font-size: clamp(
-    0.36rem,
-    1.25vw,
-    0.49rem
+    0.34rem,
+    1.05vw,
+    0.44rem
   );
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.validity-table th,
-.validity-table td {
-  height: clamp(
-    0.95rem,
-    3vw,
-    1.2rem
-  );
-  border-radius: 0.22rem;
-  padding: 0.08rem;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.validity-table thead th {
-  background:
-    rgb(255 255 255 / 16%);
-  color: var(--card-muted);
-  font-weight: 900;
-}
-
-.validity-table tbody th {
-  background:
-    rgb(255 255 255 / 10%);
-  color: var(--card-muted);
-  font-weight: 900;
-}
-
-.validity-table td {
-  background:
-    rgb(255 255 255 / 6%);
+.student-detail-grid dd {
+  margin: 0.08rem 0 0;
+  overflow: hidden;
   color: var(--card-text);
-  font-weight: 700;
+  font-size: clamp(
+    0.42rem,
+    1.35vw,
+    0.54rem
+  );
+  font-weight: 800;
+  line-height: 1.18;
+  text-overflow: ellipsis;
 }
 
-.validity-current {
-  background:
-    var(--card-accent) !important;
-  color:
-    var(--card-primary) !important;
-  font-weight: 900 !important;
+.detail-wide {
+  grid-column: 1 / -1;
 }
 
 .credential-panel {
@@ -1544,9 +1580,37 @@ defineExpose({
   padding: 0.65rem;
 }
 
+.barcode-panel {
+  display: flex;
+  min-height: 4.7rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.55rem;
+  background: #FFFFFF;
+  padding: 0.24rem;
+}
+
+.barcode-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 4.2rem;
+}
+
+.barcode-error {
+  color: #B91C1C;
+  font-size: 0.55rem;
+}
+
+.credential-card-no {
+  margin-top: 0.48rem;
+  text-align: center;
+}
+
 .credential-card-no strong {
   display: block;
-  margin-top: 0.12rem;
+  margin-top: 0.1rem;
   color: var(--card-text);
   font-family:
     "Courier New",
@@ -1557,30 +1621,6 @@ defineExpose({
     0.78rem
   );
   font-weight: 900;
-}
-
-.barcode-panel {
-  display: flex;
-  min-height: 4.1rem;
-  margin-top: 0.6rem;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: 0.55rem;
-  background: #FFFFFF;
-  padding: 0.2rem;
-}
-
-.barcode-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 3.6rem;
-}
-
-.barcode-error {
-  color: #B91C1C;
-  font-size: 0.55rem;
 }
 
 .signature-block {
@@ -1603,9 +1643,9 @@ defineExpose({
 
 .signature-block strong {
   font-size: clamp(
-    0.42rem,
-    1.45vw,
-    0.56rem
+    0.4rem,
+    1.35vw,
+    0.54rem
   );
 }
 
@@ -1613,9 +1653,9 @@ defineExpose({
   margin-top: 0.08rem;
   color: var(--card-muted);
   font-size: clamp(
-    0.34rem,
-    1.1vw,
-    0.44rem
+    0.32rem,
+    1vw,
+    0.42rem
   );
   font-weight: 800;
 }
@@ -1624,21 +1664,106 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
-  padding-top: 0.48rem;
+  padding-top: 0.42rem;
   color: var(--card-muted);
   font-size: clamp(
-    0.36rem,
-    1.2vw,
-    0.47rem
+    0.34rem,
+    1.1vw,
+    0.44rem
   );
   font-weight: 700;
+}
+
+.back-footer span {
+  max-width: 82%;
 }
 
 .back-footer strong {
   color: var(--card-text);
 }
 
-/* Light back preset */
+ .back-body-barcode-only {
+  grid-template-columns: 1fr;
+}
+
+.back-body-barcode-only
+  .credential-panel {
+  width: min(100%, 22rem);
+  justify-self: center;
+}
+
+/* BACK LAYOUT OPTIONS */
+.back-layout-profile
+  .back-body {
+  grid-template-columns: 1fr;
+  grid-template-rows:
+    minmax(0, 1fr)
+    auto;
+}
+
+.back-layout-profile
+  .cardholder-panel {
+  padding: 0.55rem 0.65rem;
+}
+
+.back-layout-profile
+  .student-detail-grid {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+}
+
+.back-layout-profile
+  .credential-panel {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(8rem, 0.55fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+}
+
+.back-layout-profile
+  .barcode-panel {
+  grid-row: 1 / 3;
+}
+
+.back-layout-profile
+  .credential-card-no,
+.back-layout-profile
+  .signature-block {
+  margin: 0;
+  padding: 0;
+}
+
+.back-layout-minimal
+  .back-body {
+  grid-template-columns: 1fr;
+}
+
+.back-layout-minimal
+  .cardholder-panel {
+  display: none;
+}
+
+.back-layout-minimal
+  .credential-panel {
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem;
+}
+
+.back-layout-minimal
+  .barcode-panel {
+  width: 82%;
+  min-height: 5.4rem;
+}
+
+.back-layout-minimal
+  .signature-block {
+  width: 62%;
+}
+
 .back-light {
   background:
     var(--card-surface);
@@ -1646,16 +1771,11 @@ defineExpose({
 }
 
 .back-light
-  .back-glow {
+  .back-decoration {
   background:
     linear-gradient(
       145deg,
-      color-mix(
-        in srgb,
-        var(--card-secondary)
-          9%,
-        transparent
-      ),
+      rgb(15 39 71 / 7%),
       transparent
     );
 }
@@ -1665,14 +1785,18 @@ defineExpose({
 .back-light
   .credential-card-no strong,
 .back-light
-  .back-footer strong {
+  .back-footer strong,
+.back-light
+  .student-detail-grid dd,
+.back-light
+  .cardholder-heading strong {
   color: var(--card-primary);
 }
 
 .back-light
   .back-notice,
 .back-light
-  .validity-panel,
+  .cardholder-panel,
 .back-light
   .credential-panel {
   border-color: #CBD5E1;
@@ -1686,29 +1810,30 @@ defineExpose({
 .back-light
   .back-eyebrow,
 .back-light
-  .validity-summary span,
+  .cardholder-heading span,
+.back-light
+  .credential-card-no span,
+.back-light
+  .student-detail-grid dt,
 .back-light
   .signature-block small {
   color: #475569;
 }
 
 .back-light
-  .validity-table thead th,
-.back-light
-  .validity-table tbody th {
-  background: #E8EEF6;
-  color: var(--card-primary);
-}
-
-.back-light
-  .validity-table td {
-  background: #F1F5F9;
-  color: var(--card-primary);
-}
-
+  .cardholder-heading,
 .back-light
   .signature-line {
-  border-color: #64748B;
+  border-color: #94A3B8;
+}
+
+.back-gradient {
+  background:
+    linear-gradient(
+      135deg,
+      var(--card-primary),
+      var(--card-secondary)
+    );
 }
 
 @media (min-width: 1240px) {
@@ -1729,10 +1854,14 @@ defineExpose({
     display: none;
   }
 
-  .back-grid {
+  .back-body {
     grid-template-columns:
       minmax(0, 1fr)
-      minmax(6.7rem, 0.72fr);
+      minmax(6.8rem, 0.75fr);
+  }
+
+  .student-detail-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -80,7 +80,7 @@ function getPageInformation(): {
   if (path.startsWith("/librarian/books")) {
     return {
       title: "Library Collection",
-      icon: "i-lucide-books",
+      icon: "i-lucide-library",
     };
   }
 
@@ -217,7 +217,7 @@ const navigationItems =
       },
       {
         label: "Books",
-        icon: "i-lucide-books",
+        icon: "i-lucide-library",
         to: "/librarian/books",
         active: isBooksCatalogActive(),
       },
@@ -846,7 +846,9 @@ watch(
             size="lg"
             block
             :disabled="isLoggingOut"
-            @click="() => { isLogoutModalOpen = false }"
+            @click="() => {
+              isLogoutModalOpen = false
+            }"
           />
 
           <UButton
