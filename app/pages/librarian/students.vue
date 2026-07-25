@@ -1329,12 +1329,6 @@ onBeforeUnmount(() => {
               <h2 class="text-xl font-bold text-highlighted">
                 Student Library ID Card
               </h2>
-
-              <p class="mt-1 max-w-3xl text-sm text-muted">
-                Preview, download, or open the dedicated ready-to-print page.
-                Printing uses the active Card Designer layout and the standard
-                CR80 card size.
-              </p>
             </div>
 
             <div class="flex flex-wrap gap-2">

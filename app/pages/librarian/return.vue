@@ -627,6 +627,7 @@ function formatDate(
       "en-PH",
       {
         dateStyle: "medium",
+        timeZone: "Asia/Manila",
       },
     )
     .format(
@@ -647,6 +648,7 @@ function formatDateTime(
       {
         dateStyle: "medium",
         timeStyle: "short",
+        timeZone: "Asia/Manila",
       },
     )
     .format(
@@ -1551,10 +1553,12 @@ onMounted(() => {
 
               <UButton
                 :label="
-                  verifiedCount ===
-                    returnItems.length
-                    ? `Return All Verified (${verifiedCount})`
-                    : `Return Verified (${verifiedCount})`
+                  verifiedCount === 0
+                    ? 'Return Verified'
+                    : verifiedCount ===
+                        returnItems.length
+                      ? `Return All Verified (${verifiedCount})`
+                      : `Return Verified (${verifiedCount})`
                 "
                 icon="i-lucide-check-check"
                 color="success"
