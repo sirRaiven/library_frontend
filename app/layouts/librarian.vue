@@ -622,7 +622,7 @@ watch(
           highlight
           class="w-full"
           :ui="{
-            root: 'w-full gap-2',
+            root: 'w-full gap-1',
             list: 'w-full gap-1',
             item: 'w-full',
             link: collapsed
@@ -631,7 +631,7 @@ watch(
             linkLeadingIcon: 'size-6',
             linkLabel: 'text-xs',
             label:
-              'px-3 pb-1 pt-3 text-[8px] font-bold tracking-[0.08em] text-muted',
+              'px-1 pb-1 pt-2 text-[8px] font-bold tracking-[0.08em] text-muted',
           }"
           @click="sidebarOpen = false"
         />
