@@ -1,4 +1,6 @@
+
 export type LibraryReportKey =
+  | "custom-summary"
   | "executive-summary"
   | "membership-statistics"
   | "membership-registry"
@@ -12,7 +14,9 @@ export type LibraryReportKey =
   | "fines-penalties"
   | "reservations"
   | "popular-books"
-  | "member-activity";
+  | "member-activity"
+  | "visitor-summary"
+  | "visitor-log";
 
 export type LibraryReportCategory =
   | "Overview"

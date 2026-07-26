@@ -8,12 +8,47 @@ import type {
   LibraryReportFilter,
   LibraryReportKey,
   LibraryReportMetric,
+  LibraryReportTable,
 } from "~/types/libraryReports";
 
 definePageMeta({
   layout: "librarian",
   title: "Reports",
 });
+
+type ReportBuilderMode =
+  | "standard"
+  | "custom";
+
+type StandardReportKey =
+  Exclude<
+    LibraryReportKey,
+    "custom-summary"
+  >;
+
+type CustomSectionKind =
+  | "metrics"
+  | "table";
+
+interface CustomSummarySection {
+  id: string;
+  sourceType:
+    StandardReportKey;
+  sourceLabel: string;
+  kind:
+    CustomSectionKind;
+  title: string;
+  description: string;
+  rowCount: number;
+  selected: boolean;
+}
+
+type CustomRowLimit =
+  | "10"
+  | "25"
+  | "50"
+  | "all";
+
 
 const reportApi =
   useLibraryReports();
@@ -36,8 +71,57 @@ const activeReport =
   );
 
 const selectedType =
-  ref<LibraryReportKey>(
+  ref<StandardReportKey>(
     "membership-statistics",
+  );
+
+const reportMode =
+  ref<ReportBuilderMode>(
+    "standard",
+  );
+
+const customSummaryTitle =
+  ref(
+    "Custom Library Summary Report",
+  );
+
+const customSummaryDescription =
+  ref(
+    "Selected Library management indicators and summary sections for the chosen reporting period.",
+  );
+
+const customSourceTypes =
+  ref<StandardReportKey[]>([
+    "executive-summary",
+    "membership-statistics",
+    "inventory-summary",
+    "circulation-summary",
+  ]);
+
+const customReports =
+  ref<
+    Partial<
+      Record<
+        StandardReportKey,
+        LibraryReportDocument
+      >
+    >
+  >({});
+
+const customSections =
+  ref<CustomSummarySection[]>(
+    [],
+  );
+
+const customSectionLoading =
+  ref(false);
+
+const includeCustomNotes =
+  ref(true);
+
+const customRowLimit =
+  ref<CustomRowLimit>(
+    "10",
   );
 const isLoadingDashboard =
   ref(false);
@@ -174,6 +258,92 @@ const academicYearItems =
       },
     );
   });
+
+
+const customSummarySourceKeys =
+  [
+    "executive-summary",
+    "membership-statistics",
+    "inventory-summary",
+    "circulation-summary",
+    "visitor-summary",
+    "popular-books",
+    "member-activity",
+  ] satisfies
+    StandardReportKey[];
+
+const customRowLimitItems = [
+  {
+    label:
+      "Top 10 rows per section",
+    value: "10",
+  },
+  {
+    label:
+      "Top 25 rows per section",
+    value: "25",
+  },
+  {
+    label:
+      "Top 50 rows per section",
+    value: "50",
+  },
+  {
+    label:
+      "Include all rows",
+    value: "all",
+  },
+];
+
+const customSummaryCatalog =
+  computed(() =>
+    customSummarySourceKeys
+      .map((key) =>
+        catalog.value.find(
+          (item) =>
+            item.value === key,
+        ),
+      )
+      .filter(
+        (
+          item,
+        ): item is
+          LibraryReportCatalogItem =>
+          Boolean(item),
+      ),
+  );
+
+const selectedCustomSections =
+  computed(() =>
+    customSections.value.filter(
+      (section) =>
+        section.selected,
+    ),
+  );
+
+const selectedCustomSourceCount =
+  computed(
+    () =>
+      customSourceTypes.value
+        .length,
+  );
+
+const customReportReady =
+  computed(
+    () =>
+      customSections.value
+        .length > 0 &&
+      selectedCustomSections.value
+        .length > 0,
+  );
+
+const reportActionDisabled =
+  computed(
+    () =>
+      reportMode.value ===
+        "custom" &&
+      !customReportReady.value,
+  );
 
 const selectedCatalogItem =
   computed(() =>
@@ -484,6 +654,571 @@ function setDatePreset(
   }
 }
 
+
+function invalidateCustomSections() {
+  customReports.value = {};
+  customSections.value = [];
+}
+
+function toggleCustomSource(
+  type: StandardReportKey,
+) {
+  if (
+    customSourceTypes.value
+      .includes(type)
+  ) {
+    customSourceTypes.value =
+      customSourceTypes.value
+        .filter(
+          (item) =>
+            item !== type,
+        );
+  } else {
+    customSourceTypes.value = [
+      ...customSourceTypes.value,
+      type,
+    ];
+  }
+
+  invalidateCustomSections();
+}
+
+function selectAllCustomSources() {
+  customSourceTypes.value =
+    customSummaryCatalog.value
+      .map(
+        (item) =>
+          item.value as
+            StandardReportKey,
+      );
+
+  invalidateCustomSections();
+}
+
+function clearCustomSources() {
+  customSourceTypes.value = [];
+  invalidateCustomSections();
+}
+
+function toggleCustomSection(
+  id: string,
+) {
+  customSections.value =
+    customSections.value.map(
+      (section) =>
+        section.id === id
+          ? {
+              ...section,
+              selected:
+                !section.selected,
+            }
+          : section,
+    );
+}
+
+function selectAllCustomSections() {
+  customSections.value =
+    customSections.value.map(
+      (section) => ({
+        ...section,
+        selected: true,
+      }),
+    );
+}
+
+function clearCustomSections() {
+  customSections.value =
+    customSections.value.map(
+      (section) => ({
+        ...section,
+        selected: false,
+      }),
+    );
+}
+
+function customSourceSelected(
+  type:
+    LibraryReportKey,
+): boolean {
+  return customSourceTypes.value
+    .includes(
+      type as
+        StandardReportKey,
+    );
+}
+
+async function loadCustomSummarySections(
+  showToast = true,
+): Promise<boolean> {
+  if (
+    customSourceTypes.value
+      .length === 0
+  ) {
+    toast.add({
+      title:
+        "Choose at least one summary area",
+      description:
+        "Select the Library areas that should provide sections for the custom report.",
+      color: "warning",
+      icon:
+        "i-lucide-list-checks",
+    });
+
+    return false;
+  }
+
+  customSectionLoading.value =
+    true;
+
+  try {
+    const reports =
+      await Promise.all(
+        customSourceTypes.value
+          .map(
+            async (type) => ({
+              type,
+              report:
+                await reportApi
+                  .generate(
+                    type,
+                    filters,
+                  ),
+            }),
+          ),
+      );
+
+    const previous =
+      new Map(
+        customSections.value.map(
+          (section) => [
+            section.id,
+            section.selected,
+          ],
+        ),
+      );
+
+    const loadedReports:
+      Partial<
+        Record<
+          StandardReportKey,
+          LibraryReportDocument
+        >
+      > = {};
+
+    const sections:
+      CustomSummarySection[] =
+      [];
+
+    for (
+      const item of reports
+    ) {
+      loadedReports[
+        item.type
+      ] = item.report;
+
+      if (
+        item.report.metrics
+          .length > 0
+      ) {
+        const id =
+          `${item.type}:metrics`;
+
+        sections.push({
+          id,
+          sourceType:
+            item.type,
+          sourceLabel:
+            item.report.title,
+          kind: "metrics",
+          title:
+            "Key Indicators",
+          description:
+            `${item.report.metrics.length} management indicator${
+              item.report.metrics
+                .length === 1
+                ? ""
+                : "s"
+            } from ${item.report.title}.`,
+          rowCount:
+            item.report.metrics
+              .length,
+          selected:
+            previous.get(id) ??
+            true,
+        });
+      }
+
+      for (
+        const table of
+        item.report.tables
+      ) {
+        const id =
+          `${item.type}:table:${table.id}`;
+
+        sections.push({
+          id,
+          sourceType:
+            item.type,
+          sourceLabel:
+            item.report.title,
+          kind: "table",
+          title:
+            table.title,
+          description:
+            table.description ||
+            `${table.rows.length} available record${
+              table.rows.length ===
+                1
+                ? ""
+                : "s"
+            }.`,
+          rowCount:
+            table.rows.length,
+          selected:
+            previous.get(id) ??
+            true,
+        });
+      }
+    }
+
+    customReports.value =
+      loadedReports;
+    customSections.value =
+      sections;
+
+    if (showToast) {
+      toast.add({
+        title:
+          "Custom summary sections loaded",
+        description:
+          `${sections.length} available section${
+            sections.length === 1
+              ? ""
+              : "s"
+          } can now be included or removed.`,
+        color: "success",
+        icon:
+          "i-lucide-list-checks",
+      });
+    }
+
+    return true;
+  } catch (error) {
+    toast.add({
+      title:
+        "Custom sections could not be loaded",
+      description:
+        auth.getErrorMessage(
+          error,
+        ),
+      color: "error",
+      icon:
+        "i-lucide-circle-alert",
+    });
+
+    return false;
+  } finally {
+    customSectionLoading.value =
+      false;
+  }
+}
+
+function limitedCustomTable(
+  table:
+    LibraryReportTable,
+  sourceTitle: string,
+): LibraryReportTable {
+  if (
+    customRowLimit.value ===
+    "all"
+  ) {
+    return {
+      ...table,
+      id:
+        `${sourceTitle}:${table.id}`,
+      title:
+        `${sourceTitle} — ${table.title}`,
+      columns:
+        table.columns.map(
+          (column) => ({
+            ...column,
+          }),
+        ),
+      rows:
+        table.rows.map(
+          (row) => ({
+            ...row,
+          }),
+        ),
+      totalRow:
+        table.totalRow
+          ? {
+              ...table.totalRow,
+            }
+          : undefined,
+    };
+  }
+
+  const limit =
+    Number(
+      customRowLimit.value,
+    );
+  const truncated =
+    table.rows.length >
+    limit;
+
+  return {
+    ...table,
+    id:
+      `${sourceTitle}:${table.id}`,
+    title:
+      `${sourceTitle} — ${table.title}`,
+    description: [
+      table.description,
+      truncated
+        ? `Showing the first ${limit} of ${table.rows.length} available records.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    columns:
+      table.columns.map(
+        (column) => ({
+          ...column,
+        }),
+      ),
+    rows:
+      table.rows
+        .slice(0, limit)
+        .map(
+          (row) => ({
+            ...row,
+          }),
+        ),
+    totalRow:
+      table.totalRow
+        ? {
+            ...table.totalRow,
+          }
+        : undefined,
+  };
+}
+
+function buildCustomSummaryReport():
+  LibraryReportDocument | null {
+  if (
+    !customReportReady.value
+  ) {
+    toast.add({
+      title:
+        "Select report sections",
+      description:
+        "Load the summary sections and keep at least one section selected before printing or downloading.",
+      color: "warning",
+      icon:
+        "i-lucide-list-checks",
+    });
+
+    return null;
+  }
+
+  const selected =
+    selectedCustomSections.value;
+
+  const indicatorRows:
+    Array<
+      Record<
+        string,
+        string | number
+      >
+    > = [];
+
+  const tables:
+    LibraryReportTable[] = [];
+
+  const sourceReports =
+    selected
+      .map(
+        (section) =>
+          customReports.value[
+            section.sourceType
+          ],
+      )
+      .filter(
+        (
+          report,
+        ): report is
+          LibraryReportDocument =>
+          Boolean(report),
+      );
+
+  for (
+    const section of
+    selected
+  ) {
+    const report =
+      customReports.value[
+        section.sourceType
+      ];
+
+    if (!report) {
+      continue;
+    }
+
+    if (
+      section.kind ===
+      "metrics"
+    ) {
+      for (
+        const metric of
+        report.metrics
+      ) {
+        indicatorRows.push({
+          reportArea:
+            report.title,
+          indicator:
+            metric.label,
+          value:
+            formatCell(
+              metric.value,
+              metric.format,
+            ),
+          description:
+            metric.description ||
+            "",
+        });
+      }
+
+      continue;
+    }
+
+    const tableId =
+      section.id.split(
+        ":table:",
+      )[1];
+
+    const table =
+      report.tables.find(
+        (item) =>
+          item.id ===
+          tableId,
+      );
+
+    if (table) {
+      tables.push(
+        limitedCustomTable(
+          table,
+          report.title,
+        ),
+      );
+    }
+  }
+
+  if (
+    indicatorRows.length > 0
+  ) {
+    tables.unshift({
+      id:
+        "custom-key-indicators",
+      title:
+        "Selected Key Indicators",
+      description:
+        "Management indicators collected from the selected Library summary areas.",
+      columns: [
+        {
+          key:
+            "reportArea",
+          label:
+            "Report Area",
+        },
+        {
+          key:
+            "indicator",
+          label:
+            "Indicator",
+        },
+        {
+          key: "value",
+          label: "Value",
+        },
+        {
+          key:
+            "description",
+          label:
+            "Description",
+        },
+      ],
+      rows:
+        indicatorRows,
+    });
+  }
+
+  const notes =
+    includeCustomNotes.value
+      ? sourceReports
+          .flatMap(
+            (report) =>
+              (
+                report.notes ??
+                []
+              ).map(
+                (note) =>
+                  `${report.title}: ${note}`,
+              ),
+          )
+          .filter(
+            (
+              note,
+              index,
+              values,
+            ) =>
+              values.indexOf(
+                note,
+              ) === index,
+          )
+      : [];
+
+  const firstReport =
+    sourceReports[0];
+
+  return {
+    type:
+      "custom-summary",
+    title:
+      customSummaryTitle.value
+        .trim() ||
+      "Custom Library Summary Report",
+    description:
+      customSummaryDescription.value
+        .trim() ||
+      "Selected Library summary sections.",
+    category:
+      "Overview",
+    generatedAt:
+      new Date()
+        .toISOString(),
+    periodLabel:
+      firstReport
+        ?.periodLabel ||
+      [
+        filters.from,
+        filters.to,
+      ]
+        .filter(Boolean)
+        .join(" to ") ||
+      "Complete Records",
+    filters: {
+      ...filters,
+    },
+    metrics: [],
+    tables,
+    notes:
+      notes.length > 0
+        ? notes
+        : undefined,
+  };
+}
+
 async function loadCatalog() {
   try {
     catalog.value =
@@ -537,14 +1272,28 @@ async function prepareReport(
   LibraryReportDocument | null
 > {
   isGenerating.value = true;
-  selectedType.value = type;
+
+  if (
+    reportMode.value ===
+    "standard"
+  ) {
+    selectedType.value =
+      type;
+  }
 
   try {
     const report =
-      await reportApi.generate(
-        type,
-        filters,
-      );
+      reportMode.value ===
+        "custom"
+        ? buildCustomSummaryReport()
+        : await reportApi.generate(
+            type,
+            filters,
+          );
+
+    if (!report) {
+      return null;
+    }
 
     activeReport.value =
       report;
@@ -680,17 +1429,26 @@ async function downloadReport(
 function chooseReport(
   item: LibraryReportCatalogItem,
 ) {
+  reportMode.value =
+    "standard";
   selectedType.value =
-    item.value;
+    item.value as
+      StandardReportKey;
 }
 
 watch(
   () => [
     filters.from,
     filters.to,
+    filters.academicYear,
+    filters.semester,
   ],
   () => {
-    // Dashboard refresh is explicit to avoid excessive report queries.
+    /*
+     * Previously loaded custom sections belong to the old filters.
+     * Clear them so the user cannot accidentally print stale data.
+     */
+    invalidateCustomSections();
   },
 );
 
@@ -870,48 +1628,458 @@ onMounted(async () => {
                   <p
                     class="text-xs text-muted"
                   >
-                    Choose a report and reporting period
+                    Choose a standard report or assemble a custom summary
                   </p>
                 </div>
               </div>
             </template>
 
             <div class="space-y-4">
-              <UFormField
-                label="Report Name"
-                required
-              >
-                <USelect
-                  v-model="
-                    selectedType
-                  "
-                  :items="catalog"
-                  value-key="value"
-                  label-key="label"
-                  placeholder="Choose a report"
-                  class="w-full"
-                />
-              </UFormField>
-
               <div
-                class="rounded-xl border border-default bg-elevated/30 p-3"
+                class="grid grid-cols-2 gap-2 rounded-xl bg-elevated p-1"
               >
-                <p
-                  class="text-sm font-medium text-highlighted"
-                >
-                  {{
-                    selectedCatalogItem?.label
-                  }}
-                </p>
+                <UButton
+                  label="Standard Report"
+                  icon="i-lucide-file-chart-column"
+                  :color="
+                    reportMode ===
+                    'standard'
+                      ? 'primary'
+                      : 'neutral'
+                  "
+                  :variant="
+                    reportMode ===
+                    'standard'
+                      ? 'solid'
+                      : 'ghost'
+                  "
+                  block
+                  @click="
+                    reportMode =
+                      'standard'
+                  "
+                />
 
-                <p
-                  class="mt-1 text-xs leading-relaxed text-muted"
-                >
-                  {{
-                    selectedCatalogItem?.description
-                  }}
-                </p>
+                <UButton
+                  label="Custom Summary"
+                  icon="i-lucide-list-checks"
+                  :color="
+                    reportMode ===
+                    'custom'
+                      ? 'primary'
+                      : 'neutral'
+                  "
+                  :variant="
+                    reportMode ===
+                    'custom'
+                      ? 'solid'
+                      : 'ghost'
+                  "
+                  block
+                  @click="
+                    reportMode =
+                      'custom'
+                  "
+                />
               </div>
+
+              <template
+                v-if="
+                  reportMode ===
+                  'standard'
+                "
+              >
+                <UFormField
+                  label="Report Name"
+                  required
+                >
+                  <USelect
+                    v-model="
+                      selectedType
+                    "
+                    :items="catalog"
+                    value-key="value"
+                    label-key="label"
+                    placeholder="Choose a report"
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <div
+                  class="rounded-xl border border-default bg-elevated/30 p-3"
+                >
+                  <p
+                    class="text-sm font-medium text-highlighted"
+                  >
+                    {{
+                      selectedCatalogItem?.label
+                    }}
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs leading-relaxed text-muted"
+                  >
+                    {{
+                      selectedCatalogItem?.description
+                    }}
+                  </p>
+                </div>
+              </template>
+
+              <template v-else>
+                <UAlert
+                  color="info"
+                  variant="soft"
+                  icon="i-lucide-list-checks"
+                  title="Build one report from selected summaries"
+                  description="Choose the Library areas first, load their available sections, then keep only the indicators and tables you need."
+                />
+
+                <UFormField
+                  label="Custom Report Title"
+                  required
+                >
+                  <UInput
+                    v-model="
+                      customSummaryTitle
+                    "
+                    icon="i-lucide-heading"
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <UFormField
+                  label="Report Description"
+                >
+                  <UTextarea
+                    v-model="
+                      customSummaryDescription
+                    "
+                    :rows="3"
+                    autoresize
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <div>
+                  <div
+                    class="mb-2 flex items-center justify-between gap-3"
+                  >
+                    <div>
+                      <p
+                        class="text-sm font-medium text-highlighted"
+                      >
+                        Summary Areas
+                      </p>
+
+                      <p
+                        class="text-xs text-muted"
+                      >
+                        {{
+                          selectedCustomSourceCount
+                        }}
+                        selected
+                      </p>
+                    </div>
+
+                    <div
+                      class="flex gap-1"
+                    >
+                      <UButton
+                        label="All"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click="
+                          selectAllCustomSources
+                        "
+                      />
+
+                      <UButton
+                        label="Clear"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click="
+                          clearCustomSources
+                        "
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="space-y-2"
+                  >
+                    <button
+                      v-for="
+                        item in
+                        customSummaryCatalog
+                      "
+                      :key="
+                        item.value
+                      "
+                      type="button"
+                      class="flex w-full items-start gap-3 rounded-xl border p-3 text-left transition"
+                      :class="
+                        customSourceSelected(
+                          item.value,
+                        )
+                          ? 'border-primary/50 bg-primary/5'
+                          : 'border-default bg-elevated/20 hover:border-primary/30'
+                      "
+                      @click="
+                        toggleCustomSource(
+                          item.value as StandardReportKey,
+                        )
+                      "
+                    >
+                      <div
+                        class="flex size-9 shrink-0 items-center justify-center rounded-lg"
+                        :class="
+                          customSourceSelected(
+                            item.value,
+                          )
+                            ? 'bg-primary text-white'
+                            : 'bg-elevated text-muted'
+                        "
+                      >
+                        <UIcon
+                          :name="
+                            customSourceSelected(
+                              item.value,
+                            )
+                              ? 'i-lucide-check'
+                              : item.icon
+                          "
+                          class="size-4"
+                        />
+                      </div>
+
+                      <div
+                        class="min-w-0"
+                      >
+                        <p
+                          class="text-sm font-semibold text-highlighted"
+                        >
+                          {{
+                            item.label
+                          }}
+                        </p>
+
+                        <p
+                          class="mt-1 line-clamp-2 text-xs leading-relaxed text-muted"
+                        >
+                          {{
+                            item.description
+                          }}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <UButton
+                  label="Load Summary Sections"
+                  icon="i-lucide-list-tree"
+                  color="primary"
+                  variant="soft"
+                  block
+                  :loading="
+                    customSectionLoading
+                  "
+                  :disabled="
+                    customSourceTypes.length ===
+                    0
+                  "
+                  @click="
+                    loadCustomSummarySections
+                  "
+                />
+
+                <div
+                  v-if="
+                    customSections.length >
+                    0
+                  "
+                  class="space-y-3 rounded-xl border border-default p-3"
+                >
+                  <div
+                    class="flex items-center justify-between gap-3"
+                  >
+                    <div>
+                      <p
+                        class="text-sm font-medium text-highlighted"
+                      >
+                        Exact Sections
+                      </p>
+
+                      <p
+                        class="text-xs text-muted"
+                      >
+                        {{
+                          selectedCustomSections.length
+                        }}
+                        of
+                        {{
+                          customSections.length
+                        }}
+                        included
+                      </p>
+                    </div>
+
+                    <div
+                      class="flex gap-1"
+                    >
+                      <UButton
+                        label="All"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click="
+                          selectAllCustomSections
+                        "
+                      />
+
+                      <UButton
+                        label="Clear"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click="
+                          clearCustomSections
+                        "
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="max-h-72 space-y-2 overflow-y-auto pr-1"
+                  >
+                    <button
+                      v-for="
+                        section in
+                        customSections
+                      "
+                      :key="
+                        section.id
+                      "
+                      type="button"
+                      class="flex w-full items-start gap-3 rounded-lg border p-2.5 text-left transition"
+                      :class="
+                        section.selected
+                          ? 'border-success/40 bg-success/5'
+                          : 'border-default bg-elevated/20 opacity-70'
+                      "
+                      @click="
+                        toggleCustomSection(
+                          section.id,
+                        )
+                      "
+                    >
+                      <div
+                        class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md"
+                        :class="
+                          section.selected
+                            ? 'bg-success text-white'
+                            : 'bg-elevated text-muted'
+                        "
+                      >
+                        <UIcon
+                          :name="
+                            section.selected
+                              ? 'i-lucide-check'
+                              : section.kind ===
+                                  'metrics'
+                                ? 'i-lucide-gauge'
+                                : 'i-lucide-table-2'
+                          "
+                          class="size-3.5"
+                        />
+                      </div>
+
+                      <div
+                        class="min-w-0 flex-1"
+                      >
+                        <p
+                          class="text-xs font-semibold text-highlighted"
+                        >
+                          {{
+                            section.sourceLabel
+                          }}
+                        </p>
+
+                        <p
+                          class="mt-0.5 text-xs text-muted"
+                        >
+                          {{
+                            section.title
+                          }}
+                          ·
+                          {{
+                            section.rowCount
+                          }}
+                          item{{
+                            section.rowCount ===
+                            1
+                              ? ""
+                              : "s"
+                          }}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  class="grid gap-3 sm:grid-cols-2"
+                >
+                  <UFormField
+                    label="Rows per Table"
+                  >
+                    <USelect
+                      v-model="
+                        customRowLimit
+                      "
+                      :items="
+                        customRowLimitItems
+                      "
+                      value-key="value"
+                      label-key="label"
+                      class="w-full"
+                    />
+                  </UFormField>
+
+                  <div
+                    class="flex items-end"
+                  >
+                    <label
+                      class="flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-lg border border-default px-3 py-2 text-sm text-highlighted"
+                    >
+                      <input
+                        v-model="
+                          includeCustomNotes
+                        "
+                        type="checkbox"
+                        class="size-4"
+                      />
+
+                      Include report notes
+                    </label>
+                  </div>
+                </div>
+
+                <UAlert
+                  v-if="
+                    customSections.length ===
+                    0
+                  "
+                  color="neutral"
+                  variant="soft"
+                  icon="i-lucide-mouse-pointer-click"
+                  title="Load sections before printing"
+                  description="After the sections load, you can remove any indicator or table that should not appear in the final custom summary."
+                />
+              </template>
 
               <div>
                 <p
@@ -1018,7 +2186,12 @@ onMounted(async () => {
               </div>
 
               <UButton
-                label="Preview & Print"
+                :label="
+                  reportMode ===
+                  'custom'
+                    ? 'Preview Custom Summary'
+                    : 'Preview & Print'
+                "
                 icon="i-lucide-printer"
                 color="primary"
                 block
@@ -1026,6 +2199,9 @@ onMounted(async () => {
                 :loading="
                   isPrinting ||
                   isGenerating
+                "
+                :disabled="
+                  reportActionDisabled
                 "
                 @click="
                   previewAndPrintReport
@@ -1035,7 +2211,12 @@ onMounted(async () => {
               <p
                 class="text-center text-xs leading-relaxed text-muted"
               >
-                Opens Chrome's native print preview over this page using a temporary Blob document. No separate report page is opened.
+                {{
+                  reportMode ===
+                  'custom'
+                    ? 'Only the selected custom sections will be included in the native print preview and downloaded files.'
+                    : "Opens Chrome's native print preview over this page using a temporary Blob document. No separate report page is opened."
+                }}
               </p>
             </div>
 
@@ -1070,6 +2251,9 @@ onMounted(async () => {
                     :loading="
                       exportingFormat ===
                       option.value
+                    "
+                    :disabled="
+                      reportActionDisabled
                     "
                     @click="
                       downloadReport(

@@ -77,6 +77,13 @@ function getPageInformation(): {
     };
   }
 
+  if (path.startsWith("/librarian/visits")) {
+    return {
+      title: "Library Entry Log",
+      icon: "i-lucide-scan-line",
+    };
+  }
+
   if (path.startsWith("/librarian/borrow")) {
     return {
       title: "Borrow Books",
@@ -243,6 +250,14 @@ const navigationItems =
       {
         label: "Library Services",
         type: "label",
+      },
+      {
+        label: "Library Entry Log",
+        icon: "i-lucide-scan-line",
+        to: "/librarian/visits",
+        active: isRouteActive(
+          "/librarian/visits",
+        ),
       },
       {
         label: "Borrow Books",

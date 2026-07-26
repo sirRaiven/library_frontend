@@ -81,6 +81,7 @@ interface DashboardData {
   unreadNotifications: number;
   damagedCopies: number;
   lostCopies: number;
+  todayVisits: number;
   recentActivity: RecentActivity[];
   unavailableModules: string[];
   loadedAt: string;
@@ -104,6 +105,7 @@ const EMPTY_DASHBOARD: DashboardData = {
   unreadNotifications: 0,
   damagedCopies: 0,
   lostCopies: 0,
+  todayVisits: 0,
   recentActivity: [],
   unavailableModules: [],
   loadedAt: "",
@@ -348,6 +350,32 @@ async function loadDashboard(): Promise<DashboardData> {
     }
   }
 
+  async function safeTodayVisits() {
+    try {
+      const response =
+        await auth.authFetch<{
+          data: {
+            totalVisits: number;
+          };
+        }>(
+          "/api/library-visits/summary",
+          {
+            method: "GET",
+          },
+        );
+
+      return (
+        response.data
+          .totalVisits ?? 0
+      );
+    } catch {
+      unavailableModules.push(
+        "Library entry log",
+      );
+      return 0;
+    }
+  }
+
   const [
     totalTitles,
     totalCopies,
@@ -358,6 +386,7 @@ async function loadDashboard(): Promise<DashboardData> {
     unreadNotifications,
     damagedCopies,
     lostCopies,
+    todayVisits,
     recentActivity,
   ] = await Promise.all([
     safeCount("Book titles", "/api/books"),
@@ -421,6 +450,7 @@ async function loadDashboard(): Promise<DashboardData> {
         "filters[copy_status][$eq]": "Lost",
       },
     ),
+    safeTodayVisits(),
     safeRecentActivity(),
   ]);
 
@@ -434,6 +464,7 @@ async function loadDashboard(): Promise<DashboardData> {
     unreadNotifications,
     damagedCopies,
     lostCopies,
+    todayVisits,
     recentActivity,
     unavailableModules: [
       ...new Set(unavailableModules),
@@ -548,6 +579,14 @@ const stats = computed(() => [
     color: "error" as BadgeColor,
     to: "/librarian/reports",
   },
+  {
+    label: "Today's Visits",
+    value: dashboard.value.todayVisits,
+    description: "Student and Faculty time-ins",
+    icon: "i-lucide-users-round",
+    color: "success" as BadgeColor,
+    to: "/librarian/visits",
+  },
 ]);
 
 const queueItems = computed(() => [
@@ -581,6 +620,13 @@ const queueItems = computed(() => [
 ]);
 
 const quickActions = [
+  {
+    title: "Member Time-In",
+    description:
+      "Scan a Student Library Card or Faculty ID.",
+    icon: "i-lucide-scan-line",
+    to: "/librarian/visits",
+  },
   {
     title: "Borrow Book",
     description:
@@ -765,11 +811,11 @@ async function refreshDashboard() {
 
     <section
       aria-label="Library statistics"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5"
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6"
     >
       <template v-if="status === 'pending'">
         <UCard
-          v-for="item in 5"
+          v-for="item in 6"
           :key="item"
           class="rounded-2xl"
         >
