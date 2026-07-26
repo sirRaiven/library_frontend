@@ -577,9 +577,6 @@ onMounted(() => {
                   <h2 class="text-lg font-semibold text-highlighted">
                     Physical Copies and Barcodes
                   </h2>
-                  <p class="mt-1 text-sm text-muted">
-                    Barcode format: LIB-{Inventory Year}-{Accession Number}.
-                  </p>
                 </div>
 
                 <div class="flex flex-col gap-2 sm:flex-row">

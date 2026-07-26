@@ -273,35 +273,6 @@ defineExpose({
       "
     >
       <div class="text-center">
-        <p
-          class="font-bold tracking-wide text-slate-950"
-          :class="
-            compact
-              ? 'text-xs'
-              : 'text-sm'
-          "
-        >
-          {{ institutionName }}
-        </p>
-
-        <p
-          v-if="title"
-          class="mx-auto mt-1 max-w-md font-medium text-slate-800"
-          :class="
-            compact
-              ? 'line-clamp-1 text-xs'
-              : 'line-clamp-2 text-sm'
-          "
-        >
-          {{ title }}
-        </p>
-
-        <p
-          v-if="author && !compact"
-          class="mt-0.5 text-xs text-slate-500"
-        >
-          {{ author }}
-        </p>
 
         <div
           class="mt-3 flex min-h-20 items-center justify-center overflow-hidden rounded-lg bg-white"
@@ -341,38 +312,6 @@ defineExpose({
           </div>
         </div>
 
-        <div
-          v-if="!compact"
-          class="mt-3 grid grid-cols-2 gap-3 border-t border-slate-200 pt-3 text-left text-xs"
-        >
-          <div>
-            <p class="text-slate-500">
-              Shelf
-            </p>
-            <p
-              class="mt-0.5 font-semibold text-slate-900"
-            >
-              {{
-                shelfLocation ||
-                "Not assigned"
-              }}
-            </p>
-          </div>
-
-          <div>
-            <p class="text-slate-500">
-              Condition
-            </p>
-            <p
-              class="mt-0.5 font-semibold text-slate-900"
-            >
-              {{
-                condition ||
-                "Not specified"
-              }}
-            </p>
-          </div>
-        </div>
       </div>
     </div>
 
