@@ -16,6 +16,16 @@ const isLogoutModalOpen = ref(false);
 const isLoggingOut = ref(false);
 const globalSearch = ref("");
 
+let desktopMediaQuery: MediaQueryList | undefined;
+
+function closeMobileSidebarOnDesktop(
+  event: MediaQueryListEvent,
+) {
+  if (event.matches) {
+    sidebarOpen.value = false;
+  }
+}
+
 const userName = computed(
   () => auth.user.value?.username || "Librarian",
 );
@@ -65,7 +75,7 @@ function getPageInformation(): {
     path === "/librarian"
   ) {
     return {
-      title: "Dashboard",
+      title: "Library Overview",
       icon: "i-lucide-layout-dashboard",
     };
   }
@@ -86,14 +96,14 @@ function getPageInformation(): {
 
   if (path.startsWith("/librarian/borrow")) {
     return {
-      title: "Borrow Books",
+      title: "Borrow a Book",
       icon: "i-lucide-book-up",
     };
   }
 
   if (path.startsWith("/librarian/return")) {
     return {
-      title: "Return Books",
+      title: "Return a Book",
       icon: "i-lucide-book-down",
     };
   }
@@ -212,17 +222,17 @@ const navigationItems =
     ],
     [
       {
-        label: "Library Collection",
+        label: "Books and Collection",
         type: "label",
       },
       {
-        label: "Books",
+        label: "View Books",
         icon: "i-lucide-library",
         to: "/librarian/books",
         active: isBooksCatalogActive(),
       },
       {
-        label: "Register Book",
+        label: "Add New Book",
         icon: "i-lucide-book-plus",
         to: "/librarian/books/register",
         active: isRouteActive(
@@ -230,7 +240,7 @@ const navigationItems =
         ),
       },
       {
-        label: "Import Inventory",
+        label: "Upload Book List",
         icon: "i-lucide-file-up",
         to: "/librarian/books/import",
         active: isRouteActive(
@@ -238,7 +248,7 @@ const navigationItems =
         ),
       },
       {
-        label: "Physical Copies",
+        label: "Manage Book Copies",
         icon: "i-lucide-copy",
         to: "/librarian/books/copies",
         active: isRouteActive(
@@ -260,7 +270,7 @@ const navigationItems =
         ),
       },
       {
-        label: "Borrow Books",
+        label: "Borrow a Book",
         icon: "i-lucide-book-up",
         to: "/librarian/borrow",
         active: isRouteActive(
@@ -268,7 +278,7 @@ const navigationItems =
         ),
       },
       {
-        label: "Return Books",
+        label: "Return a Book",
         icon: "i-lucide-book-down",
         to: "/librarian/return",
         active: isRouteActive(
@@ -286,7 +296,7 @@ const navigationItems =
     ],
     [
       {
-        label: "Library Members",
+        label: "Library Users",
         type: "label",
       },
       {
@@ -314,7 +324,7 @@ const navigationItems =
         ),
       },
       {
-        label: "Card Designer",
+        label: "Design Library Card",
         icon: "i-lucide-palette",
         to: "/librarian/library-card-designer",
         active: isRouteActive(
@@ -324,7 +334,7 @@ const navigationItems =
     ],
     [
       {
-        label: "Reports & Monitoring",
+        label: "Reports and Notices",
         type: "label",
       },
       {
@@ -366,7 +376,7 @@ const accountMenuItems =
         type: "label",
       },
       {
-        label: "Dashboard",
+        label: "Library Overview",
         icon: "i-lucide-layout-dashboard",
         to: "/librarian/dashboard",
       },
@@ -465,6 +475,21 @@ onMounted(() => {
     .startPolling();
 
   void refreshNotificationBadge();
+
+  desktopMediaQuery = window.matchMedia(
+    "(min-width: 1024px)",
+  );
+  desktopMediaQuery.addEventListener(
+    "change",
+    closeMobileSidebarOnDesktop,
+  );
+});
+
+onBeforeUnmount(() => {
+  desktopMediaQuery?.removeEventListener(
+    "change",
+    closeMobileSidebarOnDesktop,
+  );
 });
 
 watch(
@@ -488,46 +513,64 @@ watch(
   <UDashboardGroup
     storage="local"
     storage-key="sncbt-librarian-dashboard"
+    unit="rem"
     class="min-h-dvh bg-default text-default"
   >
     <UDashboardSidebar
-    v-model:open="sidebarOpen"
-    v-model:collapsed="sidebarCollapsed"
-    collapsible
-    :default-size="15"
-    :min-size="13"
-    :max-size="17"
-    mode="slideover"
-    :ui="{
-      root: [
-        'bg-default border-e border-default',
-        'transition-[width,max-width] duration-200',
-        'lg:max-w-64'
-      ].join(' '),
-
-      header: [
-        'border-b border-default',
-        'bg-default/95 backdrop-blur',
-        'px-3 py-3'
-      ].join(' '),
-
-      body: [
-        'gap-2 px-2 py-3',
-        'overflow-y-auto'
-      ].join(' '),
-
-      footer: [
-        'border-t border-default',
-        'bg-default/95 backdrop-blur',
-        'px-3 py-3'
-      ].join(' ')
-    }"
+      id="main-navigation"
+      v-model:open="sidebarOpen"
+      v-model:collapsed="sidebarCollapsed"
+      collapsible
+      :collapsed-size="4.5"
+      :default-size="16"
+      :min-size="15"
+      :max-size="20"
+      mode="slideover"
+      :auto-close="true"
+      :toggle="{
+        color: 'neutral',
+        variant: 'ghost',
+        icon: 'i-lucide-x',
+      }"
+      :ui="{
+        root: [
+          'overflow-hidden bg-default border-e border-default',
+          'transition-[width] duration-300 ease-out',
+          'motion-reduce:transition-none',
+          'data-[dragging=true]:transition-none',
+        ].join(' '),
+        header: [
+          'border-b border-default',
+          'bg-default/95 backdrop-blur',
+          'px-3 py-3',
+        ].join(' '),
+        body: [
+          'gap-2 px-2 py-3 ps-4',
+          'overflow-y-auto overscroll-contain',
+          '[scrollbar-gutter:stable]',
+        ].join(' '),
+        footer: [
+          'border-t border-default',
+          'bg-default/95 backdrop-blur',
+          'px-2 py-3',
+        ].join(' '),
+        content: [
+          'w-[min(88vw,20rem)] max-w-none',
+          'bg-default shadow-2xl',
+        ].join(' '),
+        overlay: 'bg-black/40 backdrop-blur-[1px]',
+      }"
     >
       <template #header="{ collapsed }">
         <NuxtLink
           to="/librarian/dashboard"
-          class="flex min-w-0 flex-1 items-center gap-3 rounded-xl outline-none ring-primary focus-visible:ring-2"
-          aria-label="Open librarian dashboard"
+          class="flex min-w-0 flex-1 items-center rounded-xl py-1 outline-none ring-primary transition-[gap,padding,background-color] duration-300 ease-out hover:bg-elevated/60 focus-visible:ring-2 motion-reduce:transition-none"
+          :class="
+            collapsed
+              ? 'justify-center gap-0 px-0'
+              : 'gap-3 px-1.5'
+          "
+          aria-label="Open library overview"
         >
           <div
             class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success text-white shadow-sm shadow-success/25"
@@ -539,8 +582,13 @@ watch(
           </div>
 
           <div
-            v-if="!collapsed"
-            class="min-w-0 flex-1"
+            class="min-w-0 overflow-hidden transition-[max-width,opacity,transform] duration-200 ease-out motion-reduce:transition-none"
+            :class="
+              collapsed
+                ? 'pointer-events-none max-w-0 -translate-x-1 opacity-0'
+                : 'max-w-48 translate-x-0 opacity-100'
+            "
+            :aria-hidden="collapsed"
           >
             <p
               class="truncate text-sm font-bold text-highlighted"
@@ -555,52 +603,37 @@ watch(
       </template>
 
       <template #default="{ collapsed }">
-        <UTooltip
-          :text="
-            collapsed
-              ? 'Expand sidebar'
-              : 'Collapse sidebar'
-          "
-          :disabled="!collapsed"
-        >
-          <UButton
-            :label="
-              collapsed
-                ? undefined
-                : 'Collapse sidebar'
-            "
-            :icon="
-              collapsed
-                ? 'i-lucide-panel-left-open'
-                : 'i-lucide-panel-left-close'
-            "
-            color="neutral"
-            variant="soft"
-            block
-            :square="collapsed"
-            :aria-label="
-              collapsed
-                ? 'Expand sidebar'
-                : 'Collapse sidebar'
-            "
-            class="shrink-0 justify-center"
-            @click="() => {
-              sidebarCollapsed =
-                !sidebarCollapsed
-            }"
-          />
-        </UTooltip>
-
         <UNavigationMenu
-        :items="navigationItems"
-        orientation="vertical"
-        :collapsed="sidebarCollapsed"
-        :ui="{
-          list: 'gap-0.5',
-          link: 'min-h-9 px-2.5 text-sm',
-          linkLeadingIcon: 'size-4.5',
-          label: 'text-xs font-semibold'
-        }"
+          :items="navigationItems"
+          orientation="vertical"
+          :collapsed="collapsed"
+          :tooltip="{
+            delayDuration: 150,
+            content: {
+              side: 'right',
+              align: 'center',
+              sideOffset: 10,
+              collisionPadding: 12,
+            },
+            arrow: true,
+          }"
+          color="success"
+          variant="pill"
+          highlight
+          class="w-full"
+          :ui="{
+            root: 'w-full gap-2',
+            list: 'w-full gap-1',
+            item: 'w-full',
+            link: collapsed
+              ? 'min-h-10 justify-center rounded-lg px-0 transition-colors duration-150'
+              : 'min-h-10 rounded-lg px-3 transition-colors duration-150',
+            linkLeadingIcon: 'size-6',
+            linkLabel: 'text-xs',
+            label:
+              'px-3 pb-1 pt-3 text-[4px] font-bold uppercase tracking-[0.08em] text-muted',
+          }"
+          @click="sidebarOpen = false"
         />
       </template>
 
@@ -621,7 +654,12 @@ watch(
             variant="ghost"
             :block="!collapsed"
             :square="collapsed"
-            class="w-full"
+            class="w-full rounded-xl transition-colors duration-150"
+            :aria-label="
+              collapsed
+                ? `Open account menu for ${userName}`
+                : 'Open account menu'
+            "
             :ui="{
               base: collapsed
                 ? 'justify-center'
@@ -636,8 +674,13 @@ watch(
             />
 
             <div
-              v-if="!collapsed"
-              class="min-w-0 flex-1 text-left"
+              class="min-w-0 overflow-hidden text-left transition-[max-width,opacity,transform] duration-200 ease-out motion-reduce:transition-none"
+              :class="
+                collapsed
+                  ? 'pointer-events-none max-w-0 -translate-x-1 opacity-0'
+                  : 'max-w-44 flex-1 translate-x-0 opacity-100'
+              "
+              :aria-hidden="collapsed"
             >
               <p
                 class="truncate text-sm font-semibold text-highlighted"
@@ -650,9 +693,14 @@ watch(
             </div>
 
             <UIcon
-              v-if="!collapsed"
               name="i-lucide-chevrons-up-down"
-              class="size-4 shrink-0 text-dimmed"
+              class="size-4 shrink-0 text-dimmed transition-[max-width,opacity,transform] duration-200 ease-out motion-reduce:transition-none"
+              :class="
+                collapsed
+                  ? 'max-w-0 translate-x-1 opacity-0'
+                  : 'max-w-4 translate-x-0 opacity-100'
+              "
+              :aria-hidden="collapsed"
             />
           </UButton>
         </UDropdownMenu>
@@ -662,7 +710,7 @@ watch(
     <UDashboardPanel
       id="librarian-main"
       :ui="{
-        root: 'bg-default',
+        root: 'min-w-0 bg-default',
         body: 'p-0 sm:p-0',
       }"
     >
@@ -670,20 +718,85 @@ watch(
         <UDashboardNavbar
           :title="pageTitle"
           :icon="pageIcon"
+          :toggle="false"
           toggle-side="left"
-          :toggle="{
-            color: 'neutral',
-            variant: 'ghost',
-            icon: 'i-lucide-menu',
-          }"
           :ui="{
-            root:
-              'border-b border-default bg-default/90 backdrop-blur transition-colors duration-200',
+            root: [
+              'border-b border-default bg-default/90 backdrop-blur',
+              'px-2 sm:px-4 lg:px-6',
+              'transition-colors duration-200',
+            ].join(' '),
+            left: 'min-w-0 gap-1 sm:gap-1.5',
+            icon: 'hidden size-5 shrink-0 sm:block',
+            title:
+              'max-w-[10rem] truncate text-sm font-semibold sm:max-w-none sm:text-base',
+            right: 'gap-0.5 sm:gap-1.5',
           }"
         >
+          <template
+            #toggle="{
+              sidebarCollapsed: dashboardSidebarCollapsed,
+              sidebarOpen: dashboardSidebarOpen,
+            }"
+          >
+            <UTooltip
+              :text="
+                dashboardSidebarOpen
+                  ? 'Close navigation menu'
+                  : 'Open navigation menu'
+              "
+              :content="{
+                side: 'bottom',
+                align: 'start',
+                sideOffset: 8,
+              }"
+            >
+              <UDashboardSidebarToggle
+                icon="i-lucide-panel-left"
+                color="neutral"
+                :variant="
+                  dashboardSidebarOpen
+                    ? 'soft'
+                    : 'ghost'
+                "
+                square
+                :aria-expanded="dashboardSidebarOpen"
+                aria-controls="sncbt-librarian-dashboard-sidebar-main-navigation"
+              />
+            </UTooltip>
+
+            <UTooltip
+              :text="
+                dashboardSidebarCollapsed
+                  ? 'Expand navigation sidebar'
+                  : 'Collapse navigation sidebar'
+              "
+              :content="{
+                side: 'bottom',
+                align: 'start',
+                sideOffset: 8,
+              }"
+            >
+              <UDashboardSidebarCollapse
+                icon="i-lucide-panel-left"
+                color="neutral"
+                :variant="
+                  dashboardSidebarCollapsed
+                    ? 'soft'
+                    : 'ghost'
+                "
+                square
+                :aria-expanded="
+                  !dashboardSidebarCollapsed
+                "
+                aria-controls="sncbt-librarian-dashboard-sidebar-main-navigation"
+              />
+            </UTooltip>
+          </template>
+
           <template #right>
             <form
-              class="hidden w-72 lg:block"
+              class="hidden w-64 xl:block 2xl:w-72"
               @submit.prevent="submitGlobalSearch"
             >
               <UInput
@@ -691,47 +804,66 @@ watch(
                 icon="i-lucide-search"
                 placeholder="Search the book collection"
                 autocomplete="off"
+                aria-label="Search the book collection"
                 class="w-full"
               />
             </form>
 
-            <div class="relative">
-              <UButton
-                to="/librarian/notifications"
-                icon="i-lucide-bell"
+            <UTooltip
+              text="Open notifications"
+              :content="{
+                side: 'bottom',
+                sideOffset: 8,
+              }"
+            >
+              <div class="relative">
+                <UButton
+                  to="/librarian/notifications"
+                  icon="i-lucide-bell"
+                  color="neutral"
+                  variant="ghost"
+                  square
+                  aria-label="Open notifications"
+                />
+
+                <span
+                  v-if="
+                    notificationCenter
+                      .badgeCount.value > 0
+                  "
+                  class="pointer-events-none absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-4 text-white"
+                  :class="
+                    notificationCenter
+                      .hasCritical.value
+                      ? 'bg-error'
+                      : 'bg-warning'
+                  "
+                  aria-hidden="true"
+                >
+                  {{
+                    notificationCenter
+                      .badgeCount.value > 99
+                      ? "99+"
+                      : notificationCenter
+                          .badgeCount.value
+                  }}
+                </span>
+              </div>
+            </UTooltip>
+
+            <UTooltip
+              text="Change color mode"
+              :content="{
+                side: 'bottom',
+                sideOffset: 8,
+              }"
+            >
+              <UColorModeButton
                 color="neutral"
                 variant="ghost"
-                square
-                aria-label="Open notifications"
+                class="hidden sm:inline-flex"
               />
-
-              <span
-                v-if="
-                  notificationCenter
-                    .badgeCount.value > 0
-                "
-                class="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-4 text-white"
-                :class="
-                  notificationCenter
-                    .hasCritical.value
-                    ? 'bg-error'
-                    : 'bg-warning'
-                "
-              >
-                {{
-                  notificationCenter
-                    .badgeCount.value > 99
-                    ? "99+"
-                    : notificationCenter
-                        .badgeCount.value
-                }}
-              </span>
-            </div>
-
-            <UColorModeButton
-              color="neutral"
-              variant="ghost"
-            />
+            </UTooltip>
 
             <UDropdownMenu
               :items="accountMenuItems"

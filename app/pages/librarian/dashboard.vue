@@ -89,7 +89,7 @@ interface DashboardData {
 
 definePageMeta({
   layout: "librarian",
-  title: "Dashboard",
+  title: "Library Overview",
 });
 
 const auth = useAuth();
@@ -167,7 +167,7 @@ function formatMemberName(
   member: LibraryMemberRecord | null,
 ): string {
   if (!member) {
-    return "Unknown borrower";
+    return "Borrower name unavailable";
   }
 
   return (
@@ -178,13 +178,13 @@ function formatMemberName(
       member.suffix,
     ]
       .filter(Boolean)
-      .join(" ") || "Unknown borrower"
+      .join(" ") || "Borrower name unavailable"
   );
 }
 
 function formatDate(value?: string): string {
   if (!value) {
-    return "No date";
+    return "Date unavailable";
   }
 
   const date = new Date(value);
@@ -243,12 +243,13 @@ function normalizeRecentActivity(
     );
 
   const member = students[0] ?? faculties[0] ?? null;
+  // @ts-ignore
   const memberType: RecentActivity["memberType"] =
     students.length > 0
       ? "Student"
       : faculties.length > 0
         ? "Faculty"
-        : "Member";
+        : "Library Member";
 
   const copy = unwrapOne<BookCopyRecord>(
     transaction.book_copy ??
@@ -274,11 +275,11 @@ function normalizeRecentActivity(
       book?.title ??
       (copy?.control_number
         ? `Book Copy ${copy.control_number}`
-        : "Book record"),
+        : "Book title unavailable"),
     barcode:
       copy?.control_number ??
       directBook?.control_number ??
-      "Not available",
+      "No barcode",
     status:
       transaction.borrow_transaction_status ??
       "Borrowed",
@@ -344,7 +345,7 @@ async function loadDashboard(): Promise<DashboardData> {
       return await getRecentActivity();
     } catch {
       unavailableModules.push(
-        "Recent transactions",
+        "Recent borrowing records",
       );
       return [];
     }
@@ -370,7 +371,7 @@ async function loadDashboard(): Promise<DashboardData> {
       );
     } catch {
       unavailableModules.push(
-        "Library entry log",
+        "Visitor records",
       );
       return 0;
     }
@@ -389,13 +390,13 @@ async function loadDashboard(): Promise<DashboardData> {
     todayVisits,
     recentActivity,
   ] = await Promise.all([
-    safeCount("Book titles", "/api/books"),
+    safeCount("Book records", "/api/books"),
     safeCount(
-      "Physical copies",
+      "Book copies",
       "/api/book-copies",
     ),
     safeCount(
-      "Available copies",
+      "Available books",
       "/api/book-copies",
       {
         "filters[copy_status][$eq]":
@@ -403,7 +404,7 @@ async function loadDashboard(): Promise<DashboardData> {
       },
     ),
     safeCount(
-      "Borrowed copies",
+      "Borrowed books",
       "/api/borrow-transactions",
       {
         "filters[borrow_transaction_status][$in][0]":
@@ -413,7 +414,7 @@ async function loadDashboard(): Promise<DashboardData> {
       },
     ),
     safeCount(
-      "Overdue transactions",
+      "Overdue books",
       "/api/borrow-transactions",
       {
         "filters[borrow_transaction_status][$eq]":
@@ -421,7 +422,7 @@ async function loadDashboard(): Promise<DashboardData> {
       },
     ),
     safeCount(
-      "Pending reservations",
+      "Reservations",
       "/api/reservations",
       {
         "filters[reservation_status][$eq]":
@@ -429,14 +430,14 @@ async function loadDashboard(): Promise<DashboardData> {
       },
     ),
     safeCount(
-      "Unread notifications",
+      "New notifications",
       "/api/notifications",
       {
         "filters[is_read][$eq]": false,
       },
     ),
     safeCount(
-      "Damaged copies",
+      "Damaged books",
       "/api/book-copies",
       {
         "filters[copy_status][$eq]":
@@ -444,7 +445,7 @@ async function loadDashboard(): Promise<DashboardData> {
       },
     ),
     safeCount(
-      "Lost copies",
+      "Lost books",
       "/api/book-copies",
       {
         "filters[copy_status][$eq]": "Lost",
@@ -522,7 +523,7 @@ const currentDate = computed(() =>
 
 const lastUpdated = computed(() => {
   if (!dashboard.value.loadedAt) {
-    return "Waiting for data";
+    return "Not updated yet";
   }
 
   return new Intl.DateTimeFormat("en-PH", {
@@ -542,47 +543,47 @@ const stats = computed(() => [
   {
     label: "Book Titles",
     value: dashboard.value.totalTitles,
-    description: "Cataloged titles",
+    description: "Different book titles in the catalog",
     icon: "i-lucide-books",
     color: "info" as BadgeColor,
     to: "/librarian/books",
   },
   {
-    label: "Physical Copies",
+    label: "Total Book Copies",
     value: dashboard.value.totalCopies,
-    description: "Registered inventory",
+    description: "All physical book copies in the library",
     icon: "i-lucide-copy",
     color: "neutral" as BadgeColor,
     to: "/librarian/books/copies",
   },
   {
-    label: "Available",
+    label: "Available to Borrow",
     value: dashboard.value.availableCopies,
-    description: "Ready for borrowing",
+    description: "Books currently available on the shelf",
     icon: "i-lucide-circle-check",
     color: "success" as BadgeColor,
     to: "/librarian/books/copies?status=Available",
   },
   {
-    label: "Borrowed",
+    label: "Currently Borrowed",
     value: dashboard.value.borrowedCopies,
-    description: "Currently in circulation",
+    description: "Books currently with students or faculty",
     icon: "i-lucide-book-up",
     color: "warning" as BadgeColor,
     to: "/librarian/borrow",
   },
   {
-    label: "Needs Attention",
+    label: "Books Needing Attention",
     value: needsAttention.value,
-    description: "Overdue, damaged, or lost",
+    description: "Overdue, damaged, or reported lost",
     icon: "i-lucide-triangle-alert",
     color: "error" as BadgeColor,
     to: "/librarian/reports",
   },
   {
-    label: "Today's Visits",
+    label: "Visitors Today",
     value: dashboard.value.todayVisits,
-    description: "Student and Faculty time-ins",
+    description: "Students and faculty who entered today",
     icon: "i-lucide-users-round",
     color: "success" as BadgeColor,
     to: "/librarian/visits",
@@ -591,28 +592,28 @@ const stats = computed(() => [
 
 const queueItems = computed(() => [
   {
-    label: "Pending Reservations",
+    label: "Reservations to Review",
     value: dashboard.value.pendingReservations,
     description:
-      "Requests waiting for librarian review",
+      "Book requests waiting for review or preparation",
     icon: "i-lucide-calendar-clock",
     color: "info" as BadgeColor,
     to: "/librarian/reservations",
   },
   {
-    label: "Overdue Transactions",
+    label: "Overdue Borrowed Books",
     value: dashboard.value.overdueTransactions,
     description:
-      "Borrowing records past their due date",
+      "Borrowed books that are already past the due date",
     icon: "i-lucide-clock-alert",
     color: "error" as BadgeColor,
     to: "/librarian/borrow?status=Overdue",
   },
   {
-    label: "Unread Notifications",
+    label: "New Notifications",
     value: dashboard.value.unreadNotifications,
     description:
-      "System notices that need review",
+      "Updates and reminders that have not been opened",
     icon: "i-lucide-bell-ring",
     color: "warning" as BadgeColor,
     to: "/librarian/notifications",
@@ -621,37 +622,37 @@ const queueItems = computed(() => [
 
 const quickActions = [
   {
-    title: "Member Time-In",
+    title: "Record Library Entry",
     description:
-      "Scan a Student Library Card or Faculty ID.",
+      "Scan a student library card or faculty ID.",
     icon: "i-lucide-scan-line",
     to: "/librarian/visits",
   },
   {
-    title: "Borrow Book",
+    title: "Borrow a Book",
     description:
-      "Scan a member ID and book barcode.",
+      "Record a book borrowed by a student or faculty member.",
     icon: "i-lucide-book-up",
     to: "/librarian/borrow",
   },
   {
-    title: "Return Book",
+    title: "Return a Book",
     description:
-      "Process and inspect a returned copy.",
+      "Scan and record a book returned to the library.",
     icon: "i-lucide-book-down",
     to: "/librarian/return",
   },
   {
-    title: "Register Book",
+    title: "Add a New Book",
     description:
-      "Add a title, copies, and barcodes.",
+      "Add a book title, its copies, and barcodes.",
     icon: "i-lucide-book-plus",
     to: "/librarian/books/register",
   },
   {
-    title: "Import Inventory",
+    title: "Upload Book List",
     description:
-      "Register existing records from Excel.",
+      "Add many existing book records from an Excel file.",
     icon: "i-lucide-file-spreadsheet",
     to: "/librarian/books/import",
   },
@@ -684,9 +685,9 @@ async function refreshDashboard() {
     await refresh();
 
     toast.add({
-      title: "Dashboard refreshed",
+      title: "Dashboard updated",
       description:
-        "The latest library data has been loaded.",
+        "The latest library information is now shown.",
       color: "success",
       icon: "i-lucide-refresh-cw",
     });
@@ -697,9 +698,9 @@ async function refreshDashboard() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 m-4">
     <section
-      class="relative overflow-hidden rounded-3xl border border-success/20 bg-gradient-to-br from-success/10 via-default to-default p-6 sm:p-8"
+      class="relative overflow-hidden rounded-3xl border border-success/20 bg-linear-to-br from-success/10 via-default to-default p-6 sm:p-8"
     >
       <div
         class="absolute -right-16 -top-20 size-64 rounded-full bg-success/10 blur-3xl"
@@ -715,7 +716,7 @@ async function refreshDashboard() {
             <span
               class="size-2 rounded-full bg-success"
             />
-            Live Strapi dashboard
+            Library overview
           </div>
 
           <h1
@@ -727,9 +728,9 @@ async function refreshDashboard() {
           <p
             class="mt-2 max-w-2xl text-sm leading-relaxed text-muted sm:text-base"
           >
-            Review collection availability, circulation,
-            reservations, and recent library activity from
-            one workspace.
+            See today's library activity, available books,
+            borrowed books, reservations, and items that need
+            your attention—all in one place.
           </p>
 
           <div
@@ -747,31 +748,43 @@ async function refreshDashboard() {
 
             <span class="flex items-center gap-1.5">
               <UIcon
-                name="i-lucide-database"
+                name="i-lucide-clock-3"
                 class="size-4"
               />
-              Last updated {{ lastUpdated }}
+              Information updated at {{ lastUpdated }}
             </span>
           </div>
         </div>
 
         <div
-          class="flex flex-col gap-3 sm:flex-row lg:flex-col"
+          class="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-56 lg:flex-col"
         >
           <UButton
-            to="/librarian/borrow"
-            label="Start Borrowing"
-            icon="i-lucide-scan-barcode"
+            to="/librarian/visits"
+            label="Record Library Entry"
+            icon="i-lucide-scan-line"
             color="success"
             size="lg"
+            block
           />
 
           <UButton
-            label="Refresh Data"
-            icon="i-lucide-refresh-cw"
+            to="/librarian/borrow"
+            label="Borrow a Book"
+            icon="i-lucide-book-up"
             color="neutral"
             variant="outline"
             size="lg"
+            block
+          />
+
+          <UButton
+            label="Update Dashboard"
+            icon="i-lucide-refresh-cw"
+            color="neutral"
+            variant="ghost"
+            size="md"
+            block
             :loading="isRefreshing"
             @click="refreshDashboard"
           />
@@ -784,13 +797,11 @@ async function refreshDashboard() {
       color="error"
       variant="soft"
       icon="i-lucide-circle-alert"
-      title="Unable to load the dashboard"
-      :description="
-        auth.getErrorMessage(error)
-      "
+      title="The dashboard information could not be loaded"
+      description="Please check your internet connection and select Try Again. If the problem continues, contact the system administrator."
       :actions="[
         {
-          label: 'Try again',
+          label: 'Try Again',
           color: 'error',
           variant: 'outline',
           onClick: refreshDashboard,
@@ -805,83 +816,100 @@ async function refreshDashboard() {
       color="warning"
       variant="soft"
       icon="i-lucide-shield-alert"
-      title="Some dashboard modules are unavailable"
-      :description="`Check the Librarian role's Strapi find permissions for: ${dashboard.unavailableModules.join(', ')}.`"
+      title="Some information is temporarily unavailable"
+      :description="`The dashboard could not load: ${dashboard.unavailableModules.join(', ')}. You can still use the available sections. Please ask the system administrator for help if the problem continues.`"
     />
 
-    <section
-      aria-label="Library statistics"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6"
-    >
-      <template v-if="status === 'pending'">
-        <UCard
-          v-for="item in 6"
-          :key="item"
-          class="rounded-2xl"
-        >
-          <USkeleton class="h-4 w-28" />
-          <USkeleton class="mt-4 h-9 w-20" />
-          <USkeleton class="mt-3 h-3 w-36" />
-        </UCard>
-      </template>
-
-      <NuxtLink
-        v-for="stat in stats"
-        v-else
-        :key="stat.label"
-        :to="stat.to"
-        class="group rounded-2xl border border-default bg-default p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-success/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+    <section aria-labelledby="library-summary-heading">
+      <div
+        class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"
       >
-        <div
-          class="flex items-start justify-between gap-4"
+        <div>
+          <h2
+            id="library-summary-heading"
+            class="text-lg font-semibold text-highlighted"
+          >
+            Today’s Library Summary
+          </h2>
+          <p class="mt-1 text-sm text-muted">
+            Select a card to view the related records.
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
+      >
+        <template v-if="status === 'pending'">
+          <UCard
+            v-for="item in 6"
+            :key="item"
+            class="rounded-2xl"
+          >
+            <USkeleton class="h-4 w-28" />
+            <USkeleton class="mt-4 h-9 w-20" />
+            <USkeleton class="mt-3 h-3 w-36" />
+          </UCard>
+        </template>
+
+        <NuxtLink
+          v-for="stat in stats"
+          v-else
+          :key="stat.label"
+          :to="stat.to"
+          class="group rounded-2xl border border-default bg-default p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-success/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
         >
-          <div>
-            <p
-              class="text-xs font-semibold uppercase tracking-wide text-muted"
+          <div
+            class="flex items-start justify-between gap-4"
+          >
+            <div>
+              <p
+                class="text-xs font-semibold uppercase tracking-wide text-muted"
+              >
+                {{ stat.label }}
+              </p>
+              <p
+                class="mt-2 text-3xl font-bold tracking-tight text-highlighted"
+              >
+                {{ formatNumber(stat.value) }}
+              </p>
+            </div>
+
+            <div
+              class="flex size-11 shrink-0 items-center justify-center rounded-xl"
+              :class="{
+                'bg-success/10 text-success':
+                  stat.color === 'success',
+                'bg-warning/10 text-warning':
+                  stat.color === 'warning',
+                'bg-error/10 text-error':
+                  stat.color === 'error',
+                'bg-info/10 text-info':
+                  stat.color === 'info',
+                'bg-elevated text-muted':
+                  stat.color === 'neutral',
+              }"
             >
-              {{ stat.label }}
-            </p>
-            <p
-              class="mt-2 text-3xl font-bold tracking-tight text-highlighted"
-            >
-              {{ formatNumber(stat.value) }}
-            </p>
+              <UIcon
+                :name="stat.icon"
+                class="size-5"
+              />
+            </div>
           </div>
 
           <div
-            class="flex size-11 shrink-0 items-center justify-center rounded-xl"
-            :class="{
-              'bg-success/10 text-success':
-                stat.color === 'success',
-              'bg-warning/10 text-warning':
-                stat.color === 'warning',
-              'bg-error/10 text-error':
-                stat.color === 'error',
-              'bg-info/10 text-info':
-                stat.color === 'info',
-              'bg-elevated text-muted':
-                stat.color === 'neutral',
-            }"
+            class="mt-4 flex items-center justify-between gap-3"
           >
+            <p class="text-xs text-muted">
+              {{ stat.description }}
+            </p>
             <UIcon
-              :name="stat.icon"
-              class="size-5"
+              name="i-lucide-arrow-up-right"
+              class="size-4 text-dimmed transition group-hover:text-success"
             />
           </div>
-        </div>
-
-        <div
-          class="mt-4 flex items-center justify-between gap-3"
-        >
-          <p class="text-xs text-muted">
-            {{ stat.description }}
-          </p>
-          <UIcon
-            name="i-lucide-arrow-up-right"
-            class="size-4 text-dimmed transition group-hover:text-success"
-          />
-        </div>
-      </NuxtLink>
+        </NuxtLink>
+      </div>
     </section>
 
     <section
@@ -896,10 +924,10 @@ async function refreshDashboard() {
               <h2
                 class="text-lg font-semibold text-highlighted"
               >
-                Quick Actions
+                Common Tasks
               </h2>
               <p class="mt-1 text-sm text-muted">
-                Start the most common librarian tasks.
+                Quickly open the tasks used most often each day.
               </p>
             </div>
 
@@ -907,7 +935,7 @@ async function refreshDashboard() {
               color="success"
               variant="soft"
             >
-              Operational shortcuts
+              Frequently used
             </UBadge>
           </div>
         </template>
@@ -957,10 +985,10 @@ async function refreshDashboard() {
             <h2
               class="text-lg font-semibold text-highlighted"
             >
-              Work Queue
+              Items to Check
             </h2>
             <p class="mt-1 text-sm text-muted">
-              Items that may require librarian action.
+              Records that may need your attention today.
             </p>
           </div>
         </template>
@@ -1026,16 +1054,16 @@ async function refreshDashboard() {
             <h2
               class="text-lg font-semibold text-highlighted"
             >
-              Recent Library Activity
+              Recent Borrowing Records
             </h2>
             <p class="mt-1 text-sm text-muted">
-              Latest borrowing transactions from Strapi.
+              Latest books borrowed by students and faculty.
             </p>
           </div>
 
           <UButton
             to="/librarian/borrow"
-            label="View All"
+            label="See All Borrowing Records"
             trailing-icon="i-lucide-arrow-right"
             color="neutral"
             variant="ghost"
@@ -1062,13 +1090,13 @@ async function refreshDashboard() {
           dashboard.recentActivity.length === 0
         "
         icon="i-lucide-history"
-        title="No recent transactions"
-        description="Borrowing activity will appear here after transactions are recorded."
+        title="No borrowing records yet"
+        description="Recent borrowing records will appear here after a book is borrowed."
         class="py-12"
       />
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full min-w-[760px]">
+        <table class="w-full min-w-190">
           <thead>
             <tr
               class="border-b border-default bg-elevated/50 text-left"
@@ -1086,17 +1114,17 @@ async function refreshDashboard() {
               <th
                 class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
               >
-                Barcode
+                Book Barcode
               </th>
               <th
                 class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
               >
-                Status
+                Borrowing Status
               </th>
               <th
                 class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
               >
-                Date
+                Borrowed On
               </th>
             </tr>
           </thead>
