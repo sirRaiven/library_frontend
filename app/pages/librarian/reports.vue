@@ -82,12 +82,12 @@ const reportMode =
 
 const customSummaryTitle =
   ref(
-    "Custom Library Summary Report",
+    "My Custom Library Report",
   );
 
 const customSummaryDescription =
   ref(
-    "Selected Library management indicators and summary sections for the chosen reporting period.",
+    "The Library information selected for the chosen date range.",
   );
 
 const customSourceTypes =
@@ -212,7 +212,7 @@ const formatOptions = [
     icon:
       "i-lucide-file-down",
     description:
-      "Download a fixed-layout copy",
+      "Best for printing and sharing",
   },
   {
     value: "docx",
@@ -220,7 +220,7 @@ const formatOptions = [
     icon:
       "i-lucide-file-text",
     description:
-      "Download an editable document",
+      "Editable report document",
   },
   {
     value: "xlsx",
@@ -228,7 +228,7 @@ const formatOptions = [
     icon:
       "i-lucide-sheet",
     description:
-      "Download a workbook for analysis",
+      "Spreadsheet for sorting and checking data",
   },
 ] as const;
 
@@ -275,22 +275,22 @@ const customSummarySourceKeys =
 const customRowLimitItems = [
   {
     label:
-      "Top 10 rows per section",
+      "Show the first 10 records in each section",
     value: "10",
   },
   {
     label:
-      "Top 25 rows per section",
+      "Show the first 25 records in each section",
     value: "25",
   },
   {
     label:
-      "Top 50 rows per section",
+      "Show the first 50 records in each section",
     value: "50",
   },
   {
     label:
-      "Include all rows",
+      "Show all records",
     value: "all",
   },
 ];
@@ -357,15 +357,15 @@ const selectedCatalogItem =
 const categoryLabels:
   Record<string, string> = {
     Overview:
-      "Management Summary",
+      "Quick Overview",
     Membership:
-      "Members and Library Cards",
+      "Student and Faculty Records",
     Collection:
-      "Books and Inventory",
+      "Books and Physical Copies",
     Circulation:
-      "Borrowing and Library Use",
+      "Borrowing, Returns, and Visits",
     Transactions:
-      "Detailed Transaction Reports",
+      "Detailed Lists and Logs",
   };
 
 function categoryLabel(
@@ -539,9 +539,9 @@ function saveBranding() {
 
   toast.add({
     title:
-      "Report branding saved",
+      "School header and signature details saved",
     description:
-      "The logos and institution header will be used for PDF, Word, and Excel exports.",
+      "The school logos, header, prepared-by name, and signature details will be used in printed and saved reports.",
     color: "success",
     icon:
       "i-lucide-badge-check",
@@ -756,9 +756,9 @@ async function loadCustomSummarySections(
   ) {
     toast.add({
       title:
-        "Choose at least one summary area",
+        "Choose at least one Library area",
       description:
-        "Select the Library areas that should provide sections for the custom report.",
+        "Choose the Library information you want to include in your custom report.",
       color: "warning",
       icon:
         "i-lucide-list-checks",
@@ -831,9 +831,9 @@ async function loadCustomSummarySections(
             item.report.title,
           kind: "metrics",
           title:
-            "Key Indicators",
+            "Important Numbers",
           description:
-            `${item.report.metrics.length} management indicator${
+            `${item.report.metrics.length} important number${
               item.report.metrics
                 .length === 1
                 ? ""
@@ -889,13 +889,13 @@ async function loadCustomSummarySections(
     if (showToast) {
       toast.add({
         title:
-          "Custom summary sections loaded",
+          "Available report sections are ready",
         description:
           `${sections.length} available section${
             sections.length === 1
               ? ""
               : "s"
-          } can now be included or removed.`,
+          } can now be selected or removed.`,
         color: "success",
         icon:
           "i-lucide-list-checks",
@@ -906,7 +906,7 @@ async function loadCustomSummarySections(
   } catch (error) {
     toast.add({
       title:
-        "Custom sections could not be loaded",
+        "Report sections could not be loaded",
       description:
         auth.getErrorMessage(
           error,
@@ -1011,9 +1011,9 @@ function buildCustomSummaryReport():
   ) {
     toast.add({
       title:
-        "Select report sections",
+        "Choose what to include",
       description:
-        "Load the summary sections and keep at least one section selected before printing or downloading.",
+        "Show the available sections, then keep at least one item selected before printing or saving.",
       color: "warning",
       icon:
         "i-lucide-list-checks",
@@ -1121,31 +1121,31 @@ function buildCustomSummaryReport():
       id:
         "custom-key-indicators",
       title:
-        "Selected Key Indicators",
+        "Selected Important Numbers",
       description:
-        "Management indicators collected from the selected Library summary areas.",
+        "Important numbers collected from the Library information you selected.",
       columns: [
         {
           key:
             "reportArea",
           label:
-            "Report Area",
+            "Library Area",
         },
         {
           key:
             "indicator",
           label:
-            "Indicator",
+            "Item",
         },
         {
           key: "value",
-          label: "Value",
+          label: "Result",
         },
         {
           key:
             "description",
           label:
-            "Description",
+            "What It Means",
         },
       ],
       rows:
@@ -1187,11 +1187,11 @@ function buildCustomSummaryReport():
     title:
       customSummaryTitle.value
         .trim() ||
-      "Custom Library Summary Report",
+      "My Custom Library Report",
     description:
       customSummaryDescription.value
         .trim() ||
-      "Selected Library summary sections.",
+      "The Library information selected for this report.",
     category:
       "Overview",
     generatedAt:
@@ -1226,7 +1226,7 @@ async function loadCatalog() {
   } catch (error) {
     toast.add({
       title:
-        "Report catalog unavailable",
+        "The report list could not be loaded",
       description:
         auth.getErrorMessage(
           error,
@@ -1251,7 +1251,7 @@ async function loadDashboard() {
   } catch (error) {
     toast.add({
       title:
-        "Analytics could not be loaded",
+        "The report summary could not be loaded",
       description:
         auth.getErrorMessage(
           error,
@@ -1302,7 +1302,7 @@ async function prepareReport(
   } catch (error) {
     toast.add({
       title:
-        "Report could not be prepared",
+        "The report could not be prepared",
       description:
         auth.getErrorMessage(
           error,
@@ -1348,7 +1348,7 @@ async function previewAndPrintReport() {
   } catch (error) {
     toast.add({
       title:
-        "Print preview could not be opened",
+        "The print preview could not be opened",
       description:
         auth.getErrorMessage(
           error,
@@ -1411,7 +1411,7 @@ async function downloadReport(
   } catch (error) {
     toast.add({
       title:
-        "Report download failed",
+        "The report could not be saved",
       description:
         auth.getErrorMessage(
           error,
@@ -1477,7 +1477,7 @@ onMounted(async () => {
             <h1
               class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
             >
-              Library Reports Center
+              Library Reports
             </h1>
 
             <UBadge
@@ -1491,7 +1491,7 @@ onMounted(async () => {
           <p
             class="mt-1 max-w-3xl text-sm leading-relaxed text-muted"
           >
-            Review key Library analytics, choose the report you need, and open a ready-to-print copy or download it as PDF, Word, or Excel.
+            Choose the information you need, set the date range, then print the report or save it as PDF, Word, or Excel.
           </p>
         </div>
 
@@ -1499,7 +1499,7 @@ onMounted(async () => {
           class="flex flex-wrap gap-2"
         >
           <UButton
-            label="Report Branding"
+            label="School Header & Signatures"
             icon="i-lucide-panels-top-left"
             color="neutral"
             variant="outline"
@@ -1509,7 +1509,7 @@ onMounted(async () => {
           />
 
           <UButton
-            label="Refresh Analytics"
+            label="Refresh Summary"
             icon="i-lucide-refresh-cw"
             color="primary"
             variant="soft"
@@ -1623,12 +1623,12 @@ onMounted(async () => {
                   <h2
                     class="font-semibold text-highlighted"
                   >
-                    Create a Library Report
+                    Choose and Prepare a Report
                   </h2>
                   <p
                     class="text-xs text-muted"
                   >
-                    Choose a standard report or assemble a custom summary
+                    Use a ready-made report or build your own
                   </p>
                 </div>
               </div>
@@ -1639,7 +1639,7 @@ onMounted(async () => {
                 class="grid grid-cols-2 gap-2 rounded-xl bg-elevated p-1"
               >
                 <UButton
-                  label="Standard Report"
+                  label="Ready-Made Report"
                   icon="i-lucide-file-chart-column"
                   :color="
                     reportMode ===
@@ -1661,7 +1661,7 @@ onMounted(async () => {
                 />
 
                 <UButton
-                  label="Custom Summary"
+                  label="Build My Own"
                   icon="i-lucide-list-checks"
                   :color="
                     reportMode ===
@@ -1690,7 +1690,7 @@ onMounted(async () => {
                 "
               >
                 <UFormField
-                  label="Report Name"
+                  label="Choose a Report"
                   required
                 >
                   <USelect
@@ -1731,12 +1731,12 @@ onMounted(async () => {
                   color="info"
                   variant="soft"
                   icon="i-lucide-list-checks"
-                  title="Build one report from selected summaries"
-                  description="Choose the Library areas first, load their available sections, then keep only the indicators and tables you need."
+                  title="Create one report using only the information you need"
+                  description="Choose the Library areas, show the available sections, then remove anything you do not want to print or save."
                 />
 
                 <UFormField
-                  label="Custom Report Title"
+                  label="Report Title"
                   required
                 >
                   <UInput
@@ -1749,7 +1749,7 @@ onMounted(async () => {
                 </UFormField>
 
                 <UFormField
-                  label="Report Description"
+                  label="Short Explanation"
                 >
                   <UTextarea
                     v-model="
@@ -1769,7 +1769,7 @@ onMounted(async () => {
                       <p
                         class="text-sm font-medium text-highlighted"
                       >
-                        Summary Areas
+                        Choose Information to Include
                       </p>
 
                       <p
@@ -1786,7 +1786,7 @@ onMounted(async () => {
                       class="flex gap-1"
                     >
                       <UButton
-                        label="All"
+                        label="Select All"
                         color="neutral"
                         variant="ghost"
                         size="xs"
@@ -1796,7 +1796,7 @@ onMounted(async () => {
                       />
 
                       <UButton
-                        label="Clear"
+                        label="Remove All"
                         color="neutral"
                         variant="ghost"
                         size="xs"
@@ -1879,7 +1879,7 @@ onMounted(async () => {
                 </div>
 
                 <UButton
-                  label="Load Summary Sections"
+                  label="Show Available Sections"
                   icon="i-lucide-list-tree"
                   color="primary"
                   variant="soft"
@@ -1910,7 +1910,7 @@ onMounted(async () => {
                       <p
                         class="text-sm font-medium text-highlighted"
                       >
-                        Exact Sections
+                        Choose Specific Sections
                       </p>
 
                       <p
@@ -1931,7 +1931,7 @@ onMounted(async () => {
                       class="flex gap-1"
                     >
                       <UButton
-                        label="All"
+                        label="Select All"
                         color="neutral"
                         variant="ghost"
                         size="xs"
@@ -1941,7 +1941,7 @@ onMounted(async () => {
                       />
 
                       <UButton
-                        label="Clear"
+                        label="Remove All"
                         color="neutral"
                         variant="ghost"
                         size="xs"
@@ -2034,7 +2034,7 @@ onMounted(async () => {
                   class="grid gap-3 sm:grid-cols-2"
                 >
                   <UFormField
-                    label="Rows per Table"
+                    label="Records to Include"
                   >
                     <USelect
                       v-model="
@@ -2063,7 +2063,7 @@ onMounted(async () => {
                         class="size-4"
                       />
 
-                      Include report notes
+                      Include Notes and Explanations
                     </label>
                   </div>
                 </div>
@@ -2076,8 +2076,8 @@ onMounted(async () => {
                   color="neutral"
                   variant="soft"
                   icon="i-lucide-mouse-pointer-click"
-                  title="Load sections before printing"
-                  description="After the sections load, you can remove any indicator or table that should not appear in the final custom summary."
+                  title="Show the available sections first"
+                  description="After the sections appear, remove any number or table that should not be included in the final report."
                 />
               </template>
 
@@ -2085,7 +2085,7 @@ onMounted(async () => {
                 <p
                   class="mb-2 text-sm font-medium text-highlighted"
                 >
-                  Reporting Period
+                  Choose Date Range
                 </p>
 
                 <div
@@ -2131,7 +2131,7 @@ onMounted(async () => {
                 <div
                   class="grid grid-cols-2 gap-3"
                 >
-                  <UFormField label="From">
+                  <UFormField label="Start Date">
                     <UInput
                       v-model="
                         filters.from
@@ -2141,7 +2141,7 @@ onMounted(async () => {
                     />
                   </UFormField>
 
-                  <UFormField label="To">
+                  <UFormField label="End Date">
                     <UInput
                       v-model="
                         filters.to
@@ -2189,8 +2189,8 @@ onMounted(async () => {
                 :label="
                   reportMode ===
                   'custom'
-                    ? 'Preview Custom Summary'
-                    : 'Preview & Print'
+                    ? 'Preview & Print My Report'
+                    : 'Preview & Print Report'
                 "
                 icon="i-lucide-printer"
                 color="primary"
@@ -2214,8 +2214,8 @@ onMounted(async () => {
                 {{
                   reportMode ===
                   'custom'
-                    ? 'Only the selected custom sections will be included in the native print preview and downloaded files.'
-                    : "Opens Chrome's native print preview over this page using a temporary Blob document. No separate report page is opened."
+                    ? 'Only the information you selected will appear in the print preview and saved files.'
+                    : 'Review the report in the browser print preview before printing or saving it.'
                 }}
               </p>
             </div>
@@ -2225,7 +2225,7 @@ onMounted(async () => {
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-muted"
                 >
-                  Download a Report File
+                  Save Report as a File
                 </p>
 
                 <div
@@ -2272,12 +2272,12 @@ onMounted(async () => {
                 <h2
                   class="font-semibold text-highlighted"
                 >
-                  Operational Distribution
+                  Quick Report Summary
                 </h2>
                 <p
                   class="text-xs text-muted"
                 >
-                  Quick visual from the current dashboard summary
+                  A simple view of the current Library totals
                 </p>
               </div>
             </template>
@@ -2338,8 +2338,8 @@ onMounted(async () => {
             <UEmpty
               v-else
               icon="i-lucide-chart-bar"
-              title="No chart data"
-              description="Generate records to populate the operational distribution."
+              title="No summary data yet"
+              description="Library records will appear here when data is available."
             />
           </UCard>
         </div>
@@ -2354,13 +2354,13 @@ onMounted(async () => {
                   <h2
                     class="font-semibold text-highlighted"
                   >
-                    Available Library Reports
+                    Reports You Can Print or Save
                   </h2>
 
                   <p
                     class="mt-1 text-sm text-muted"
                   >
-                    Complete report templates for Library membership, inventory, circulation, and transaction monitoring.
+                    Choose a report below to see what information it contains before printing or saving it.
                   </p>
                 </div>
 
@@ -2372,7 +2372,7 @@ onMounted(async () => {
                   {{
                     catalog.length
                   }}
-                  report types
+                  available reports
                 </UBadge>
               </div>
             </template>
@@ -2483,13 +2483,13 @@ onMounted(async () => {
               <h2
                 class="font-semibold text-highlighted"
               >
-                Recent Downloads
+                Recently Saved Reports
               </h2>
 
               <p
                 class="text-xs text-muted"
               >
-                Files downloaded from this browser during recent report sessions
+                Reports recently saved as PDF, Word, or Excel in this browser
               </p>
             </div>
 
@@ -2510,8 +2510,8 @@ onMounted(async () => {
             0
           "
           icon="i-lucide-file-clock"
-          title="No downloaded reports yet"
-          description="Downloaded PDF, Word, and Excel reports will appear here."
+          title="No saved reports yet"
+          description="Reports saved as PDF, Word, or Excel will appear here."
         />
 
         <div
