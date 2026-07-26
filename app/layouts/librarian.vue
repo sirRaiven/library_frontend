@@ -631,7 +631,7 @@ watch(
             linkLeadingIcon: 'size-6',
             linkLabel: 'text-xs',
             label:
-              'px-3 pb-1 pt-3 text-[4px] font-bold uppercase tracking-[0.08em] text-muted',
+              'px-3 pb-1 pt-3 text-[8px] font-bold tracking-[0.08em] text-muted',
           }"
           @click="sidebarOpen = false"
         />
