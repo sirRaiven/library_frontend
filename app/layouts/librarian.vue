@@ -4,24 +4,17 @@ import type {
   NavigationMenuItem,
 } from "@nuxt/ui";
 
-interface StrapiPaginationResponse {
-  meta?: {
-    pagination?: {
-      total?: number;
-    };
-  };
-}
-
 const route = useRoute();
 const auth = useAuth();
 const toast = useToast();
+const notificationCenter =
+  useLibraryNotifications();
 
 const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
 const isLogoutModalOpen = ref(false);
 const isLoggingOut = ref(false);
 const globalSearch = ref("");
-const unreadNotifications = ref(0);
 
 const userName = computed(
   () => auth.user.value?.username || "Librarian",
@@ -336,10 +329,12 @@ const navigationItems =
           "/librarian/notifications",
         ),
         badge:
-          unreadNotifications.value > 0
+          notificationCenter
+            .badgeCount.value > 0
             ? String(
                 Math.min(
-                  unreadNotifications.value,
+                  notificationCenter
+                    .badgeCount.value,
                   99,
                 ),
               )
@@ -365,10 +360,12 @@ const accountMenuItems =
         icon: "i-lucide-bell",
         to: "/librarian/notifications",
         badge:
-          unreadNotifications.value > 0
+          notificationCenter
+            .badgeCount.value > 0
             ? String(
                 Math.min(
-                  unreadNotifications.value,
+                  notificationCenter
+                    .badgeCount.value,
                   99,
                 ),
               )
@@ -404,25 +401,12 @@ async function submitGlobalSearch() {
   globalSearch.value = "";
 }
 
-async function loadUnreadNotifications() {
+async function refreshNotificationBadge() {
   try {
-    const response =
-      await auth.authFetch<StrapiPaginationResponse>(
-        "/api/notifications",
-        {
-          method: "GET",
-          query: {
-            "filters[is_read][$eq]": false,
-            "pagination[page]": 1,
-            "pagination[pageSize]": 1,
-          },
-        },
-      );
-
-    unreadNotifications.value =
-      response.meta?.pagination?.total ?? 0;
+    await notificationCenter
+      .loadSummary(true);
   } catch {
-    unreadNotifications.value = 0;
+    // Keep the navigation usable if notification synchronization is unavailable.
   }
 }
 
@@ -462,7 +446,10 @@ async function handleLogout() {
 }
 
 onMounted(() => {
-  void loadUnreadNotifications();
+  notificationCenter
+    .startPolling();
+
+  void refreshNotificationBadge();
 });
 
 watch(
@@ -476,7 +463,7 @@ watch(
         "/librarian/notifications",
       )
     ) {
-      void loadUnreadNotifications();
+      void refreshNotificationBadge();
     }
   },
 );
@@ -704,13 +691,24 @@ watch(
               />
 
               <span
-                v-if="unreadNotifications > 0"
-                class="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-bold leading-4 text-white"
+                v-if="
+                  notificationCenter
+                    .badgeCount.value > 0
+                "
+                class="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-4 text-white"
+                :class="
+                  notificationCenter
+                    .hasCritical.value
+                    ? 'bg-error'
+                    : 'bg-warning'
+                "
               >
                 {{
-                  unreadNotifications > 99
+                  notificationCenter
+                    .badgeCount.value > 99
                     ? "99+"
-                    : unreadNotifications
+                    : notificationCenter
+                        .badgeCount.value
                 }}
               </span>
             </div>

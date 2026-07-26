@@ -290,45 +290,35 @@ function normalizeRecentActivity(
 async function getRecentActivity(): Promise<
   RecentActivity[]
 > {
-  const baseQuery = {
-    "sort[0]": "createdAt:desc",
-    "pagination[page]": 1,
-    "pagination[pageSize]": 8,
-  };
+  const response =
+    await auth.authFetch<
+      StrapiListResponse<BorrowTransactionRecord>
+    >("/api/borrow-transactions", {
+      method: "GET",
+      query: {
+        "sort[0]":
+          "createdAt:desc",
+        "pagination[page]":
+          1,
+        "pagination[pageSize]":
+          8,
 
-  try {
-    const response =
-      await auth.authFetch<
-        StrapiListResponse<BorrowTransactionRecord>
-      >("/api/borrow-transactions", {
-        method: "GET",
-        query: {
-          ...baseQuery,
-          "populate[book_copy][populate]": "book",
-          "populate[students]": "true",
-          "populate[faculties]": "true",
-        },
-      });
+        /*
+         * Current Borrow Transaction relationships:
+         * student, faculty, and book_copy.
+         */
+        "populate[student]":
+          "true",
+        "populate[faculty]":
+          "true",
+        "populate[book_copy][populate][book]":
+          "true",
+      },
+    });
 
-    return response.data.map(
-      normalizeRecentActivity,
-    );
-  } catch {
-    const response =
-      await auth.authFetch<
-        StrapiListResponse<BorrowTransactionRecord>
-      >("/api/borrow-transactions", {
-        method: "GET",
-        query: {
-          ...baseQuery,
-          populate: "*",
-        },
-      });
-
-    return response.data.map(
-      normalizeRecentActivity,
-    );
-  }
+  return response.data.map(
+    normalizeRecentActivity,
+  );
 }
 
 async function loadDashboard(): Promise<DashboardData> {
@@ -385,10 +375,12 @@ async function loadDashboard(): Promise<DashboardData> {
     ),
     safeCount(
       "Borrowed copies",
-      "/api/book-copies",
+      "/api/borrow-transactions",
       {
-        "filters[copy_status][$eq]":
+        "filters[borrow_transaction_status][$in][0]":
           "Borrowed",
+        "filters[borrow_transaction_status][$in][1]":
+          "Overdue",
       },
     ),
     safeCount(
@@ -520,7 +512,7 @@ const stats = computed(() => [
     label: "Book Titles",
     value: dashboard.value.totalTitles,
     description: "Cataloged titles",
-    icon: "i-lucide-book",
+    icon: "i-lucide-books",
     color: "info" as BadgeColor,
     to: "/librarian/books",
   },
@@ -659,9 +651,9 @@ async function refreshDashboard() {
 </script>
 
 <template>
-  <div class="space-y-5 m-4">
+  <div class="space-y-6">
     <section
-      class="relative overflow-hidden rounded-3xl border border-success/20 bg-linear-to-br from-success/10 via-default to-default p-6 sm:p-8"
+      class="relative overflow-hidden rounded-3xl border border-success/20 bg-gradient-to-br from-success/10 via-default to-default p-6 sm:p-8"
     >
       <div
         class="absolute -right-16 -top-20 size-64 rounded-full bg-success/10 blur-3xl"
@@ -1030,7 +1022,7 @@ async function refreshDashboard() {
       />
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full min-w-190">
+        <table class="w-full min-w-[760px]">
           <thead>
             <tr
               class="border-b border-default bg-elevated/50 text-left"
