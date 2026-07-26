@@ -153,7 +153,7 @@ export const DEFAULT_LIBRARY_CARD_DESIGN: LibraryCardDesign = {
   institutionName: "ST. NICOLAS COLLEGE OF BUSINESS AND TECHNOLOGY",
   cardTitle: "STUDENT LIBRARY CARD",
   departmentLabel: "COLLEGE DEPARTMENT",
-  frontTagline: "Knowledge • Access • Service",
+  frontTagline: "Learn • Achieve • Succeed",
 
   backTitle: "LIBRARY ACCESS CREDENTIAL",
   noticeText:
