@@ -67,6 +67,18 @@ export interface StudentMember {
   membership: MembershipRecord | null;
 }
 
+export type FacultySex =
+  | "Male"
+  | "Female"
+  | "Prefer not to say";
+
+export type FacultyEmploymentType =
+  | "Full-Time"
+  | "Part-Time"
+  | "Guest Lecturer"
+  | "Administrative Personnel"
+  | "Other";
+
 export interface FacultyMember {
   documentId: string;
   employeeNo: string;
@@ -76,12 +88,48 @@ export interface FacultyMember {
   lastName: string;
   suffix: string;
   fullName: string;
+  sex?: FacultySex | null;
   department: string;
   designation: string;
+  employmentType:
+    FacultyEmploymentType;
   email: string;
   contactNo: string;
+  address: string;
   photoUrl?: string | null;
   status: FacultyStatus;
+  activeLoanCount: number;
+  canBorrow: boolean;
+  registeredAt?: string | null;
+  registeredBy?: string | null;
+  lastUpdatedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+export interface FacultyCredentialConflict {
+  documentId: string;
+  employeeNo: string;
+  barcode: string;
+  fullName: string;
+  status: FacultyStatus;
+}
+
+export interface FacultyCredentialCheck {
+  employeeNo: {
+    value: string;
+    available: boolean;
+    conflict:
+      FacultyCredentialConflict |
+      null;
+  };
+  barcode: {
+    value: string;
+    available: boolean;
+    conflict:
+      FacultyCredentialConflict |
+      null;
+  };
+  canProceed: boolean;
 }
 
 interface Pagination {
@@ -113,6 +161,8 @@ export interface FacultyListResponse {
       activeFaculty: number;
       inactiveFaculty: number;
       retiredFaculty: number;
+      activeLoans: number;
+      facultyWithActiveLoans: number;
     };
   };
 }
@@ -184,10 +234,24 @@ export interface FacultyRegistrationInput {
   middleName?: string;
   lastName: string;
   suffix?: string;
+  sex?: FacultySex;
   department: string;
   designation?: string;
+  employmentType:
+    FacultyEmploymentType;
   email?: string;
   contactNo?: string;
+  address?: string;
+}
+
+export interface FacultyUpdateInput
+  extends FacultyRegistrationInput {
+  status: FacultyStatus;
+}
+
+export interface FacultyMutationMeta {
+  activeLoanCount: number;
+  warning: string | null;
 }
 
 export function useLibraryMembers() {
@@ -441,12 +505,36 @@ export function useLibraryMembers() {
       };
     },
 
+    async checkFacultyCredential(
+      input: {
+        employeeNo: string;
+        barcode: string;
+        excludeDocumentId?: string;
+      },
+    ) {
+      const response =
+        await auth.authFetch<{
+          data:
+            FacultyCredentialCheck;
+        }>(
+          "/api/library-members/faculty/check-credential",
+          {
+            method: "GET",
+            query: query(input),
+          },
+        );
+
+      return response.data;
+    },
+
     async registerFaculty(
       input: FacultyRegistrationInput,
     ) {
       const response =
         await auth.authFetch<{
           data: FacultyMember;
+          meta:
+            FacultyMutationMeta;
         }>(
           "/api/library-members/faculty",
           {
@@ -467,11 +555,13 @@ export function useLibraryMembers() {
 
     async updateFaculty(
       documentId: string,
-      input: Record<string, unknown>,
+      input: FacultyUpdateInput,
     ) {
       const response =
         await auth.authFetch<{
           data: FacultyMember;
+          meta:
+            FacultyMutationMeta;
         }>(
           `/api/library-members/faculty/${documentId}`,
           {

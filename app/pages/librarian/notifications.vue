@@ -10,7 +10,7 @@ import type {
 definePageMeta({
   layout: "librarian",
   title:
-    "Notifications & Attention",
+    "Notifications",
 });
 
 const notificationCenter =
@@ -658,7 +658,7 @@ onMounted(() => {
               <h1
                 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
               >
-                Notification & Attention Center
+                Notification
               </h1>
 
               <UBadge
