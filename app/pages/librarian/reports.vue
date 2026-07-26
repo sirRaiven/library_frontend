@@ -8,7 +8,6 @@ import type {
   LibraryReportFilter,
   LibraryReportKey,
   LibraryReportMetric,
-  LibraryReportTable,
 } from "~/types/libraryReports";
 
 definePageMeta({
@@ -40,14 +39,11 @@ const selectedType =
   ref<LibraryReportKey>(
     "membership-statistics",
   );
-const selectedTableIndex =
-  ref(0);
-const previewLimit = ref(25);
-
 const isLoadingDashboard =
   ref(false);
 const isGenerating =
   ref(false);
+const isPrinting = ref(false);
 const exportingFormat =
   ref<
     "pdf" | "docx" | "xlsx" | null
@@ -130,9 +126,9 @@ const formatOptions = [
     value: "pdf",
     label: "PDF",
     icon:
-      "i-lucide-file-type-2",
+      "i-lucide-file-down",
     description:
-      "Print-ready portable document",
+      "Download a fixed-layout copy",
   },
   {
     value: "docx",
@@ -140,7 +136,7 @@ const formatOptions = [
     icon:
       "i-lucide-file-text",
     description:
-      "Editable Microsoft Word document",
+      "Download an editable document",
   },
   {
     value: "xlsx",
@@ -148,7 +144,7 @@ const formatOptions = [
     icon:
       "i-lucide-sheet",
     description:
-      "Formatted workbook with separate sheets",
+      "Download a workbook for analysis",
   },
 ] as const;
 
@@ -188,6 +184,29 @@ const selectedCatalogItem =
     ),
   );
 
+const categoryLabels:
+  Record<string, string> = {
+    Overview:
+      "Management Summary",
+    Membership:
+      "Members and Library Cards",
+    Collection:
+      "Books and Inventory",
+    Circulation:
+      "Borrowing and Library Use",
+    Transactions:
+      "Detailed Transaction Reports",
+  };
+
+function categoryLabel(
+  value: string,
+): string {
+  return (
+    categoryLabels[value] ??
+    value
+  );
+}
+
 const groupedCatalog =
   computed(() => {
     const groups =
@@ -221,37 +240,6 @@ const groupedCatalog =
       }),
     );
   });
-
-const previewTable =
-  computed<LibraryReportTable | null>(
-    () =>
-      activeReport.value
-        ?.tables[
-          selectedTableIndex.value
-        ] ?? null,
-  );
-
-const previewRows =
-  computed(() =>
-    previewTable.value
-      ?.rows.slice(
-        0,
-        previewLimit.value,
-      ) ?? [],
-  );
-
-const remainingRows =
-  computed(() =>
-    Math.max(
-      (
-        previewTable.value
-          ?.rows.length ??
-        0
-      ) -
-        previewRows.value.length,
-      0,
-    ),
-  );
 
 const chartData =
   computed(() => {
@@ -525,12 +513,6 @@ async function loadDashboard() {
         filters,
       );
 
-    if (
-      !activeReport.value
-    ) {
-      activeReport.value =
-        dashboardReport.value;
-    }
   } catch (error) {
     toast.add({
       title:
@@ -549,35 +531,75 @@ async function loadDashboard() {
   }
 }
 
-async function generatePreview(
+async function prepareReport(
   type = selectedType.value,
-) {
-  isGenerating.value =
-    true;
+): Promise<
+  LibraryReportDocument | null
+> {
+  isGenerating.value = true;
   selectedType.value = type;
 
   try {
-    activeReport.value =
+    const report =
       await reportApi.generate(
         type,
         filters,
       );
-    selectedTableIndex.value =
-      0;
-    previewLimit.value = 25;
+
+    activeReport.value =
+      report;
+
+    return report;
+  } catch (error) {
+    toast.add({
+      title:
+        "Report could not be prepared",
+      description:
+        auth.getErrorMessage(
+          error,
+        ),
+      color: "error",
+      icon:
+        "i-lucide-circle-alert",
+    });
+
+    return null;
+  } finally {
+    isGenerating.value =
+      false;
+  }
+}
+
+async function previewAndPrintReport() {
+  isPrinting.value = true;
+
+  try {
+    const report =
+      await prepareReport();
+
+    if (!report) {
+      return;
+    }
+
+    await reportExport
+      .previewAndPrint(
+        report,
+        branding,
+      );
 
     toast.add({
-      title: "Report prepared",
+      title:
+        "Print preview closed",
       description:
-        `${activeReport.value.title} is ready for review and export.`,
+        "The native browser print preview was completed or cancelled.",
       color: "success",
       icon:
-        "i-lucide-file-check-2",
+        "i-lucide-printer-check",
     });
   } catch (error) {
     toast.add({
       title:
-        "Report generation failed",
+        "Print preview could not be opened",
       description:
         auth.getErrorMessage(
           error,
@@ -587,48 +609,52 @@ async function generatePreview(
         "i-lucide-circle-alert",
     });
   } finally {
-    isGenerating.value =
+    isPrinting.value =
       false;
   }
 }
 
-async function exportActive(
+async function downloadReport(
   format:
     | "pdf"
     | "docx"
     | "xlsx",
 ) {
-  if (
-    !activeReport.value
-  ) {
-    await generatePreview();
-
-    if (!activeReport.value) {
-      return;
-    }
-  }
-
   exportingFormat.value =
     format;
 
   try {
+    const report =
+      await prepareReport();
+
+    if (!report) {
+      return;
+    }
+
     await reportExport
       .exportReport(
         format,
-        activeReport.value,
+        report,
         branding,
       );
 
     archiveExport(
       format,
-      activeReport.value,
+      report,
     );
+
+    const formatName =
+      format === "docx"
+        ? "Word"
+        : format === "xlsx"
+          ? "Excel"
+          : "PDF";
 
     toast.add({
       title:
-        `${format.toUpperCase()} report generated`,
+        `${formatName} report downloaded`,
       description:
-        "The formatted report has been downloaded.",
+        `${report.title} was generated using the selected reporting period.`,
       color: "success",
       icon:
         "i-lucide-download",
@@ -636,7 +662,7 @@ async function exportActive(
   } catch (error) {
     toast.add({
       title:
-        "Export failed",
+        "Report download failed",
       description:
         auth.getErrorMessage(
           error,
@@ -656,9 +682,6 @@ function chooseReport(
 ) {
   selectedType.value =
     item.value;
-  void generatePreview(
-    item.value,
-  );
 }
 
 watch(
@@ -696,21 +719,21 @@ onMounted(async () => {
             <h1
               class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
             >
-              Analytics & Reports
+              Library Reports Center
             </h1>
 
             <UBadge
               color="primary"
               variant="soft"
             >
-              PDF · Word · Excel
+              Print · PDF · Word · Excel
             </UBadge>
           </div>
 
           <p
             class="mt-1 max-w-3xl text-sm leading-relaxed text-muted"
           >
-            Review membership, Library Card, collection inventory, circulation, fines, reservations, and transaction analytics, then generate an institution-formatted report.
+            Review key Library analytics, choose the report you need, and open a ready-to-print copy or download it as PDF, Word, or Excel.
           </p>
         </div>
 
@@ -722,9 +745,9 @@ onMounted(async () => {
             icon="i-lucide-panels-top-left"
             color="neutral"
             variant="outline"
-            @click="() => {
+            @click="
               brandingOpen = true
-            }"
+            "
           />
 
           <UButton
@@ -823,8 +846,8 @@ onMounted(async () => {
       <div
         class="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]"
       >
-        <div class="space-y-6">
-          <UCard>
+        <div class="space-y-6 xl:sticky xl:top-6 xl:self-start">
+          <UCard id="report-builder">
             <template #header>
               <div
                 class="flex items-center gap-3"
@@ -842,12 +865,12 @@ onMounted(async () => {
                   <h2
                     class="font-semibold text-highlighted"
                   >
-                    Generate Report
+                    Create a Library Report
                   </h2>
                   <p
                     class="text-xs text-muted"
                   >
-                    Select scope, preview, and export
+                    Choose a report and reporting period
                   </p>
                 </div>
               </div>
@@ -855,7 +878,7 @@ onMounted(async () => {
 
             <div class="space-y-4">
               <UFormField
-                label="Report Type"
+                label="Report Name"
                 required
               >
                 <USelect
@@ -865,7 +888,7 @@ onMounted(async () => {
                   :items="catalog"
                   value-key="value"
                   label-key="label"
-                  placeholder="Select report"
+                  placeholder="Choose a report"
                   class="w-full"
                 />
               </UFormField>
@@ -894,14 +917,14 @@ onMounted(async () => {
                 <p
                   class="mb-2 text-sm font-medium text-highlighted"
                 >
-                  Date Range
+                  Reporting Period
                 </p>
 
                 <div
                   class="mb-3 flex flex-wrap gap-2"
                 >
                   <UButton
-                    label="This Month"
+                    label="Current Month"
                     color="neutral"
                     variant="soft"
                     size="xs"
@@ -913,7 +936,7 @@ onMounted(async () => {
                   />
 
                   <UButton
-                    label="This Year"
+                    label="Current Year"
                     color="neutral"
                     variant="soft"
                     size="xs"
@@ -925,7 +948,7 @@ onMounted(async () => {
                   />
 
                   <UButton
-                    label="All Records"
+                    label="Complete Records"
                     color="neutral"
                     variant="ghost"
                     size="xs"
@@ -995,18 +1018,25 @@ onMounted(async () => {
               </div>
 
               <UButton
-                label="Generate Preview"
-                icon="i-lucide-file-search-2"
+                label="Preview & Print"
+                icon="i-lucide-printer"
                 color="primary"
                 block
                 size="lg"
                 :loading="
+                  isPrinting ||
                   isGenerating
                 "
                 @click="
-                  generatePreview()
+                  previewAndPrintReport
                 "
               />
+
+              <p
+                class="text-center text-xs leading-relaxed text-muted"
+              >
+                Opens Chrome's native print preview over this page using a temporary Blob document. No separate report page is opened.
+              </p>
             </div>
 
             <template #footer>
@@ -1014,7 +1044,7 @@ onMounted(async () => {
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-muted"
                 >
-                  Export Current Report
+                  Download a Report File
                 </p>
 
                 <div
@@ -1042,7 +1072,7 @@ onMounted(async () => {
                       option.value
                     "
                     @click="
-                      exportActive(
+                      downloadReport(
                         option.value,
                       )
                     "
@@ -1140,7 +1170,7 @@ onMounted(async () => {
                   <h2
                     class="font-semibold text-highlighted"
                   >
-                    Report Library
+                    Available Library Reports
                   </h2>
 
                   <p
@@ -1182,7 +1212,9 @@ onMounted(async () => {
                     class="font-semibold text-highlighted"
                   >
                     {{
-                      group.category
+                      categoryLabel(
+                        group.category,
+                      )
                     }}
                   </h3>
 
@@ -1203,7 +1235,7 @@ onMounted(async () => {
                       item.value
                     "
                     type="button"
-                    class="group rounded-2xl border p-4 text-left transition"
+                    class="group rounded-xl border p-3 text-left transition"
                     :class="
                       selectedType ===
                       item.value
@@ -1258,426 +1290,6 @@ onMounted(async () => {
         </div>
       </div>
 
-      <UCard
-        v-if="activeReport"
-        :ui="{
-          body: 'p-0',
-        }"
-      >
-        <template #header>
-          <div
-            class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
-          >
-            <div
-              class="flex min-w-0 items-start gap-4"
-            >
-              <div
-                class="hidden size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-white sm:flex"
-              >
-                <img
-                  :src="
-                    branding.institutionLogoUrl
-                  "
-                  alt="SNCBT logo"
-                  class="size-12 object-contain"
-                />
-              </div>
-
-              <div class="min-w-0">
-                <p
-                  class="text-xs font-bold uppercase tracking-[0.18em] text-primary"
-                >
-                  {{
-                    branding.officeName
-                  }}
-                </p>
-
-                <h2
-                  class="mt-1 text-xl font-bold text-highlighted"
-                >
-                  {{
-                    activeReport.title
-                  }}
-                </h2>
-
-                <p
-                  class="mt-1 max-w-4xl text-sm text-muted"
-                >
-                  {{
-                    activeReport.description
-                  }}
-                </p>
-
-                <div
-                  class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted"
-                >
-                  <span>
-                    Period:
-                    {{
-                      activeReport.periodLabel
-                    }}
-                  </span>
-
-                  <span>
-                    Generated:
-                    {{
-                      formatCell(
-                        activeReport.generatedAt,
-                        'datetime',
-                      )
-                    }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="flex flex-wrap gap-2"
-            >
-              <UButton
-                v-for="
-                  option in
-                  formatOptions
-                "
-                :key="
-                  option.value
-                "
-                :label="
-                  option.label
-                "
-                :icon="
-                  option.icon
-                "
-                color="neutral"
-                variant="outline"
-                :loading="
-                  exportingFormat ===
-                  option.value
-                "
-                @click="
-                  exportActive(
-                    option.value,
-                  )
-                "
-              />
-            </div>
-          </div>
-        </template>
-
-        <div
-          class="border-b border-default p-4 sm:p-6"
-        >
-          <div
-            class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6"
-          >
-            <div
-              v-for="
-                item in
-                activeReport.metrics
-              "
-              :key="
-                item.label
-              "
-              class="rounded-xl border border-default bg-elevated/30 p-3"
-            >
-              <p
-                class="text-xs text-muted"
-              >
-                {{ item.label }}
-              </p>
-
-              <p
-                class="mt-1 truncate text-lg font-bold text-highlighted"
-              >
-                {{
-                  formatCell(
-                    item.value,
-                    item.format,
-                  )
-                }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="border-b border-default px-4 py-3 sm:px-6"
-        >
-          <div
-            class="flex gap-2 overflow-x-auto pb-1"
-          >
-            <UButton
-              v-for="
-                (
-                  table,
-                  index
-                ) in
-                activeReport.tables
-              "
-              :key="
-                table.id
-              "
-              :label="
-                table.title
-              "
-              :color="
-                selectedTableIndex ===
-                index
-                  ? 'primary'
-                  : 'neutral'
-              "
-              :variant="
-                selectedTableIndex ===
-                index
-                  ? 'soft'
-                  : 'ghost'
-              "
-              size="sm"
-              class="shrink-0"
-              @click="() => {
-                selectedTableIndex =
-                  index
-              }"
-            />
-          </div>
-        </div>
-
-        <div
-          v-if="previewTable"
-          class="p-4 sm:p-6"
-        >
-          <div
-            class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
-          >
-            <div>
-              <h3
-                class="font-semibold text-highlighted"
-              >
-                {{
-                  previewTable.title
-                }}
-              </h3>
-
-              <p
-                v-if="
-                  previewTable.description
-                "
-                class="mt-1 text-sm text-muted"
-              >
-                {{
-                  previewTable.description
-                }}
-              </p>
-            </div>
-
-            <UBadge
-              color="neutral"
-              variant="soft"
-            >
-              {{
-                previewTable.rows.length
-              }}
-              rows
-            </UBadge>
-          </div>
-
-          <div
-            class="overflow-x-auto rounded-xl border border-default"
-          >
-            <table
-              class="w-full min-w-max text-left text-sm"
-            >
-              <thead>
-                <tr
-                  class="bg-elevated"
-                >
-                  <th
-                    v-for="
-                      item in
-                      previewTable.columns
-                    "
-                    :key="
-                      item.key
-                    "
-                    class="whitespace-nowrap border-b border-default px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
-                    :class="{
-                      'text-right':
-                        item.align ===
-                        'right',
-                      'text-center':
-                        item.align ===
-                        'center',
-                    }"
-                  >
-                    {{
-                      item.label
-                    }}
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr
-                  v-for="
-                    (
-                      row,
-                      rowIndex
-                    ) in
-                    previewRows
-                  "
-                  :key="
-                    rowIndex
-                  "
-                  class="border-b border-default/70 last:border-0 hover:bg-elevated/40"
-                >
-                  <td
-                    v-for="
-                      item in
-                      previewTable.columns
-                    "
-                    :key="
-                      item.key
-                    "
-                    class="max-w-80 px-3 py-3 align-top"
-                    :class="{
-                      'text-right':
-                        item.align ===
-                        'right',
-                      'text-center':
-                        item.align ===
-                        'center',
-                    }"
-                  >
-                    <UBadge
-                      v-if="
-                        item.format ===
-                        'status'
-                      "
-                      color="neutral"
-                      variant="soft"
-                    >
-                      {{
-                        formatCell(
-                          row[
-                            item.key
-                          ],
-                          item.format,
-                        ) ||
-                        '—'
-                      }}
-                    </UBadge>
-
-                    <span
-                      v-else
-                      class="break-words text-highlighted"
-                    >
-                      {{
-                        formatCell(
-                          row[
-                            item.key
-                          ],
-                          item.format,
-                        ) ||
-                        '—'
-                      }}
-                    </span>
-                  </td>
-                </tr>
-
-                <tr
-                  v-if="
-                    previewTable.totalRow
-                  "
-                  class="bg-elevated font-semibold"
-                >
-                  <td
-                    v-for="
-                      item in
-                      previewTable.columns
-                    "
-                    :key="
-                      item.key
-                    "
-                    class="border-t border-default px-3 py-3"
-                    :class="{
-                      'text-right':
-                        item.align ===
-                        'right',
-                      'text-center':
-                        item.align ===
-                        'center',
-                    }"
-                  >
-                    {{
-                      formatCell(
-                        previewTable
-                          .totalRow[
-                          item.key
-                        ],
-                        item.format,
-                      )
-                    }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div
-            v-if="
-              remainingRows > 0
-            "
-            class="mt-4 flex justify-center"
-          >
-            <UButton
-              :label="
-                `Show ${Math.min(
-                  remainingRows,
-                  50,
-                )} more rows`
-              "
-              icon="i-lucide-chevrons-down"
-              color="neutral"
-              variant="soft"
-              @click="() => {
-                previewLimit +=
-                  50
-              }"
-            />
-          </div>
-
-          <div
-            v-if="
-              activeReport.notes?.length
-            "
-            class="mt-6"
-          >
-            <UAlert
-              color="info"
-              variant="soft"
-              icon="i-lucide-info"
-              title="Report Notes"
-            >
-              <template #description>
-                <ul
-                  class="list-disc space-y-1 pl-5"
-                >
-                  <li
-                    v-for="
-                      note in
-                      activeReport.notes
-                    "
-                    :key="note"
-                  >
-                    {{ note }}
-                  </li>
-                </ul>
-              </template>
-            </UAlert>
-          </div>
-        </div>
-      </UCard>
-
       <UCard>
         <template #header>
           <div
@@ -1687,13 +1299,13 @@ onMounted(async () => {
               <h2
                 class="font-semibold text-highlighted"
               >
-                Recent Exports
+                Recent Downloads
               </h2>
 
               <p
                 class="text-xs text-muted"
               >
-                Local record of files generated from this browser
+                Files downloaded from this browser during recent report sessions
               </p>
             </div>
 
@@ -1714,8 +1326,8 @@ onMounted(async () => {
             0
           "
           icon="i-lucide-file-clock"
-          title="No exported reports yet"
-          description="Generated PDF, Word, and Excel files will be listed here."
+          title="No downloaded reports yet"
+          description="Downloaded PDF, Word, and Excel reports will appear here."
         />
 
         <div
@@ -1826,10 +1438,10 @@ onMounted(async () => {
               variant="ghost"
               square
               aria-label="Close branding settings"
-              @click="() => {
+              @click="
                 brandingOpen =
                   false
-              }"
+              "
             />
           </div>
 
@@ -1947,10 +1559,10 @@ onMounted(async () => {
               label="Cancel"
               color="neutral"
               variant="outline"
-              @click="() => {
+              @click="
                 brandingOpen =
                   false
-              }"
+              "
             />
 
             <UButton

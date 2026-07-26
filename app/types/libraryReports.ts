@@ -1,4 +1,3 @@
-
 export type LibraryReportKey =
   | "executive-summary"
   | "membership-statistics"

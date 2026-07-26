@@ -175,6 +175,864 @@ function reportFilename(
   return `${fileSafe(report.title)}-${date}.${extension}`;
 }
 
+
+function escapeHtml(
+  value: unknown,
+): string {
+  return String(
+    value ?? "",
+  )
+    .replace(
+      /&/g,
+      "&amp;",
+    )
+    .replace(
+      /</g,
+      "&lt;",
+    )
+    .replace(
+      />/g,
+      "&gt;",
+    )
+    .replace(
+      /"/g,
+      "&quot;",
+    )
+    .replace(
+      /'/g,
+      "&#039;",
+    );
+}
+
+function absoluteAssetUrl(
+  source: string,
+): string {
+  const value =
+    source.trim();
+
+  if (!value) {
+    return "";
+  }
+
+  try {
+    return new URL(
+      value,
+      window.location.origin,
+    ).href;
+  } catch {
+    return value;
+  }
+}
+
+function printReportHtml(
+  report: LibraryReportDocument,
+  branding: LibraryReportBranding,
+): string {
+  const widestTable =
+    Math.max(
+      ...report.tables.map(
+        (table) =>
+          table.columns.length,
+      ),
+      1,
+    );
+
+  const orientation =
+    widestTable > 7
+      ? "landscape"
+      : "portrait";
+
+  const institutionLogo =
+    absoluteAssetUrl(
+      branding.institutionLogoUrl,
+    );
+
+  const libraryLogo =
+    absoluteAssetUrl(
+      branding.libraryLogoUrl,
+    );
+
+  const logoMarkup = (
+    source: string,
+    alt: string,
+  ) =>
+    source
+      ? `<img src="${escapeHtml(
+          source,
+        )}" alt="${escapeHtml(
+          alt,
+        )}" />`
+      : `<div class="logo-placeholder"></div>`;
+
+  const tables =
+    report.tables
+      .map((table) => {
+        const rows =
+          totalRows(table);
+
+        return `
+          <section class="table-section">
+            <div class="table-heading">
+              <div>
+                <h2>${escapeHtml(
+                  table.title,
+                )}</h2>
+                ${
+                  table.description
+                    ? `<p>${escapeHtml(
+                        table.description,
+                      )}</p>`
+                    : ""
+                }
+              </div>
+              <span>${table.rows.length} record${
+                table.rows.length === 1
+                  ? ""
+                  : "s"
+              }</span>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  ${table.columns
+                    .map(
+                      (column) =>
+                        `<th class="${escapeHtml(
+                          column.align ??
+                            "left",
+                        )}">${escapeHtml(
+                          column.label,
+                        )}</th>`,
+                    )
+                    .join("")}
+                </tr>
+              </thead>
+
+              <tbody>
+                ${rows
+                  .map(
+                    (
+                      row,
+                      rowIndex,
+                    ) => `
+                      <tr class="${
+                        table.totalRow &&
+                        rowIndex ===
+                          table.rows.length
+                          ? "total-row"
+                          : ""
+                      }">
+                        ${table.columns
+                          .map(
+                            (
+                              column,
+                            ) => `
+                              <td class="${escapeHtml(
+                                column.align ??
+                                  "left",
+                              )}">
+                                ${escapeHtml(
+                                  formatValue(
+                                    row[
+                                      column.key
+                                    ],
+                                    column.format,
+                                  ) || "—",
+                                )}
+                              </td>
+                            `,
+                          )
+                          .join("")}
+                      </tr>
+                    `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </section>
+        `;
+      })
+      .join("");
+
+  const notes =
+    report.notes?.length
+      ? `
+        <section class="notes">
+          <h2>Report Notes</h2>
+          <ul>
+            ${report.notes
+              .map(
+                (note) =>
+                  `<li>${escapeHtml(
+                    note,
+                  )}</li>`,
+              )
+              .join("")}
+          </ul>
+        </section>
+      `
+      : "";
+
+  const signatory =
+    branding.signatoryName.trim()
+      ? `
+        <section class="signatory">
+          <div class="signature-line"></div>
+          <strong>${escapeHtml(
+            branding.signatoryName,
+          )}</strong>
+          <span>${escapeHtml(
+            branding.signatoryTitle,
+          )}</span>
+        </section>
+      `
+      : "";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <base href="${escapeHtml(
+    `${window.location.origin}/`,
+  )}" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+  <title>${escapeHtml(
+    report.title,
+  )}</title>
+
+  <style>
+    @page {
+      size: A4 ${orientation};
+      margin: 10mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #0f172a;
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      font-size: 9pt;
+      line-height: 1.35;
+    }
+
+    .institution-header {
+      display: grid;
+      grid-template-columns: 22mm 1fr 22mm;
+      align-items: center;
+      gap: 4mm;
+      padding-bottom: 3mm;
+      border-bottom: 1.4pt solid #0b2642;
+    }
+
+    .institution-header img,
+    .logo-placeholder {
+      display: block;
+      width: 18mm;
+      height: 18mm;
+      margin: 0 auto;
+      object-fit: contain;
+    }
+
+    .institution-copy {
+      text-align: center;
+    }
+
+    .institution-copy strong {
+      display: block;
+      color: #0b2642;
+      font-size: 12pt;
+      letter-spacing: 0.02em;
+    }
+
+    .institution-copy span {
+      display: block;
+      margin-top: 1mm;
+      color: #0f766e;
+      font-size: 9pt;
+      font-weight: 700;
+    }
+
+    .institution-copy small {
+      display: block;
+      margin-top: 1mm;
+      color: #64748b;
+      font-size: 7.5pt;
+    }
+
+    .report-heading {
+      padding: 5mm 0 3mm;
+    }
+
+    .report-heading h1 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 16pt;
+      line-height: 1.15;
+    }
+
+    .report-heading p {
+      max-width: 180mm;
+      margin: 2mm 0 0;
+      color: #475569;
+      font-size: 8.5pt;
+    }
+
+    .report-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 2mm 8mm;
+      margin-top: 3mm;
+      padding: 2.5mm 3mm;
+      border: 0.5pt solid #cbd5e1;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 7.5pt;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 2.5mm;
+      margin: 2mm 0 5mm;
+    }
+
+    .metric {
+      min-height: 18mm;
+      padding: 3mm;
+      border: 0.5pt solid #cbd5e1;
+      border-radius: 2mm;
+      background: #f8fafc;
+      break-inside: avoid;
+    }
+
+    .metric-label {
+      color: #64748b;
+      font-size: 7pt;
+    }
+
+    .metric-value {
+      margin-top: 1mm;
+      color: #0f172a;
+      font-size: 13pt;
+      font-weight: 700;
+    }
+
+    .metric-description {
+      margin-top: 1mm;
+      color: #64748b;
+      font-size: 6.5pt;
+    }
+
+    .table-section {
+      margin-top: 5mm;
+      break-inside: auto;
+    }
+
+    .table-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 6mm;
+      margin-bottom: 2mm;
+    }
+
+    .table-heading h2,
+    .notes h2 {
+      margin: 0;
+      color: #0b2642;
+      font-size: 10pt;
+    }
+
+    .table-heading p {
+      margin: 1mm 0 0;
+      color: #64748b;
+      font-size: 7pt;
+    }
+
+    .table-heading span {
+      flex: none;
+      color: #64748b;
+      font-size: 7pt;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      font-size: ${
+        widestTable > 10
+          ? "6.2pt"
+          : widestTable > 7
+            ? "7pt"
+            : "8pt"
+      };
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    th,
+    td {
+      padding: 1.5mm 1.7mm;
+      border: 0.45pt solid #cbd5e1;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      background: #0b2642;
+      color: #ffffff;
+      font-size: 6.7pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .total-row td {
+      background: #e2e8f0;
+      font-weight: 700;
+    }
+
+    .left {
+      text-align: left;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .notes {
+      margin-top: 5mm;
+      padding: 3mm 4mm;
+      border-left: 2pt solid #0ea5e9;
+      background: #f0f9ff;
+      break-inside: avoid;
+    }
+
+    .notes ul {
+      margin: 2mm 0 0;
+      padding-left: 5mm;
+    }
+
+    .notes li + li {
+      margin-top: 1mm;
+    }
+
+    .certification {
+      display: grid;
+      grid-template-columns: 1fr 62mm;
+      gap: 8mm;
+      align-items: end;
+      margin-top: 10mm;
+      break-inside: avoid;
+    }
+
+    .prepared {
+      color: #475569;
+      font-size: 7.5pt;
+    }
+
+    .signatory {
+      text-align: center;
+    }
+
+    .signature-line {
+      margin-bottom: 2mm;
+      border-top: 0.7pt solid #475569;
+    }
+
+    .signatory strong,
+    .signatory span {
+      display: block;
+    }
+
+    .signatory span {
+      margin-top: 1mm;
+      color: #64748b;
+      font-size: 7pt;
+    }
+
+    .screen-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px 16px;
+      border-bottom: 1px solid #cbd5e1;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+    }
+
+    .screen-toolbar button {
+      padding: 9px 14px;
+      border: 0;
+      border-radius: 8px;
+      background: #0b2642;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .screen-document {
+      max-width: ${
+        orientation === "landscape"
+          ? "297mm"
+          : "210mm"
+      };
+      min-height: ${
+        orientation === "landscape"
+          ? "210mm"
+          : "297mm"
+      };
+      margin: 18px auto;
+      padding: 10mm;
+      background: #ffffff;
+      box-shadow:
+        0 18px 45px
+        rgba(15, 23, 42, 0.18);
+    }
+
+    @media print {
+      .screen-toolbar {
+        display: none !important;
+      }
+
+      .screen-document {
+        max-width: none;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+    }
+
+    @media screen and (max-width: 900px) {
+      .screen-document {
+        margin: 0;
+        padding: 12px;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="screen-toolbar">
+    <button
+      type="button"
+      onclick="window.print()"
+    >
+      Print Report
+    </button>
+  </div>
+
+  <main class="screen-document">
+    <article>
+      <header class="institution-header">
+        <div>
+          ${logoMarkup(
+            institutionLogo,
+            "SNCBT logo",
+          )}
+        </div>
+
+        <div class="institution-copy">
+          <strong>${escapeHtml(
+            branding.schoolName,
+          )}</strong>
+          <span>${escapeHtml(
+            branding.officeName,
+          )}</span>
+          <small>${escapeHtml(
+            branding.address,
+          )}</small>
+        </div>
+
+        <div>
+          ${logoMarkup(
+            libraryLogo,
+            "SNCBT Library logo",
+          )}
+        </div>
+      </header>
+
+      <section class="report-heading">
+        <h1>${escapeHtml(
+          report.title,
+        )}</h1>
+        <p>${escapeHtml(
+          report.description,
+        )}</p>
+
+        <div class="report-meta">
+          <span>
+            <strong>Reporting period:</strong>
+            ${escapeHtml(
+              report.periodLabel,
+            )}
+          </span>
+
+          <span>
+            <strong>Prepared:</strong>
+            ${escapeHtml(
+              formatValue(
+                report.generatedAt,
+                "datetime",
+              ),
+            )}
+          </span>
+        </div>
+      </section>
+
+      ${tables}
+      ${notes}
+
+      <section class="certification">
+        <div class="prepared">
+          Prepared by:
+          <strong>${escapeHtml(
+            branding.preparedBy ||
+              "SNCBT Library",
+          )}</strong>
+        </div>
+
+        ${signatory}
+      </section>
+    </article>
+  </main>
+
+</body>
+</html>`;
+}
+
+function previewAndPrint(
+  report: LibraryReportDocument,
+  branding: LibraryReportBranding,
+): Promise<void> {
+  if (!import.meta.client) {
+    return Promise.reject(
+      new Error(
+        "Print preview is available only in the browser.",
+      ),
+    );
+  }
+
+  const html =
+    printReportHtml(
+      report,
+      branding,
+    );
+
+  const blob =
+    new Blob(
+      [html],
+      {
+        type:
+          "text/html;charset=utf-8",
+      },
+    );
+
+  const blobUrl =
+    URL.createObjectURL(
+      blob,
+    );
+
+  const frame =
+    document.createElement(
+      "iframe",
+    );
+
+  frame.title =
+    `${report.title} Print Preview`;
+  frame.setAttribute(
+    "aria-hidden",
+    "true",
+  );
+
+  /*
+   * Do not use display:none. Chromium may skip printing a completely hidden
+   * frame. The frame is kept off-screen and visually transparent instead.
+   */
+  Object.assign(
+    frame.style,
+    {
+      position: "fixed",
+      right: "0",
+      bottom: "0",
+      width: "1px",
+      height: "1px",
+      border: "0",
+      opacity: "0",
+      pointerEvents: "none",
+      zIndex: "-1",
+    },
+  );
+
+  return new Promise(
+    (resolve, reject) => {
+      let settled = false;
+      let fallbackTimer:
+        ReturnType<
+          typeof window.setTimeout
+        > | undefined;
+
+      const cleanup = () => {
+        if (fallbackTimer) {
+          window.clearTimeout(
+            fallbackTimer,
+          );
+        }
+
+        frame.remove();
+
+        URL.revokeObjectURL(
+          blobUrl,
+        );
+      };
+
+      const finish = () => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        resolve();
+      };
+
+      const fail = (
+        error: unknown,
+      ) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+
+        reject(
+          error instanceof Error
+            ? error
+            : new Error(
+                "The browser could not open the print preview.",
+              ),
+        );
+      };
+
+      frame.addEventListener(
+        "error",
+        () => {
+          fail(
+            new Error(
+              "The temporary print document could not be loaded.",
+            ),
+          );
+        },
+        {
+          once: true,
+        },
+      );
+
+      frame.addEventListener(
+        "load",
+        () => {
+          const printWindow =
+            frame.contentWindow;
+
+          if (!printWindow) {
+            fail(
+              new Error(
+                "The browser did not create the print document window.",
+              ),
+            );
+            return;
+          }
+
+          printWindow.addEventListener(
+            "afterprint",
+            finish,
+            {
+              once: true,
+            },
+          );
+
+          /*
+           * Give Chromium a brief moment to finish painting the Blob document.
+           * iframe.onload fires only after the report images load or fail.
+           */
+          window.setTimeout(
+            () => {
+              try {
+                printWindow.focus();
+                printWindow.print();
+              } catch (error) {
+                fail(error);
+              }
+            },
+            250,
+          );
+
+          /*
+           * Fallback cleanup for browsers that do not dispatch afterprint.
+           * This does not interrupt the normal Chrome print-preview workflow.
+           */
+          fallbackTimer =
+            window.setTimeout(
+              finish,
+              120_000,
+            );
+        },
+        {
+          once: true,
+        },
+      );
+
+      frame.src =
+        blobUrl;
+
+      document.body.appendChild(
+        frame,
+      );
+    },
+  );
+}
+
 async function exportPdf(
   report: LibraryReportDocument,
   branding: LibraryReportBranding,
@@ -332,105 +1190,6 @@ async function exportPdf(
     );
     doc.text(lines, margin, y);
     y += lines.length * 4 + 2;
-  }
-
-  if (report.metrics.length > 0) {
-    const columns =
-      orientation === "landscape"
-        ? 4
-        : 2;
-    const gap = 3;
-    const cardWidth =
-      (
-        pageWidth -
-        margin * 2 -
-        gap * (columns - 1)
-      ) /
-      columns;
-    const cardHeight = 17;
-
-    report.metrics.forEach(
-      (item, index) => {
-        const col = index % columns;
-        const row = Math.floor(
-          index / columns,
-        );
-        const x =
-          margin +
-          col * (cardWidth + gap);
-        const top =
-          y +
-          row * (cardHeight + gap);
-
-        doc.setFillColor(
-          241,
-          245,
-          249,
-        );
-        doc.setDrawColor(
-          203,
-          213,
-          225,
-        );
-        doc.roundedRect(
-          x,
-          top,
-          cardWidth,
-          cardHeight,
-          2,
-          2,
-          "FD",
-        );
-
-        doc.setTextColor(
-          71,
-          85,
-          105,
-        );
-        doc.setFontSize(6.5);
-        doc.setFont(
-          "helvetica",
-          "normal",
-        );
-        doc.text(
-          item.label,
-          x + 3,
-          top + 5,
-        );
-
-        doc.setTextColor(
-          15,
-          23,
-          42,
-        );
-        doc.setFontSize(10);
-        doc.setFont(
-          "helvetica",
-          "bold",
-        );
-        const metricText =
-          formatValue(
-            item.value,
-            item.format,
-          );
-        doc.text(
-          doc.splitTextToSize(
-            metricText,
-            cardWidth - 6,
-          )[0] ?? "",
-          x + 3,
-          top + 12,
-        );
-      },
-    );
-
-    y +=
-      Math.ceil(
-        report.metrics.length /
-        columns,
-      ) *
-        (cardHeight + gap) +
-      2;
   }
 
   for (
@@ -931,77 +1690,6 @@ async function exportDocx(
       ],
     });
 
-  const metricCells =
-    report.metrics.map(
-      (item) =>
-        new TableCell({
-          shading: {
-            type:
-              ShadingType.CLEAR,
-            fill: "F1F5F9",
-          },
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text:
-                    item.label,
-                  size: 15,
-                  color: "64748B",
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text:
-                    formatValue(
-                      item.value,
-                      item.format,
-                    ),
-                  bold: true,
-                  size: 22,
-                  color: "0F172A",
-                }),
-              ],
-            }),
-          ],
-        }),
-    );
-
-  const metricRows: any[] = [];
-  const metricColumns = 3;
-
-  for (
-    let index = 0;
-    index < metricCells.length;
-    index += metricColumns
-  ) {
-    const cells = metricCells.slice(
-      index,
-      index + metricColumns,
-    );
-
-    while (
-      cells.length <
-      metricColumns
-    ) {
-      cells.push(
-        new TableCell({
-          children: [
-            new Paragraph(""),
-          ],
-        }),
-      );
-    }
-
-    metricRows.push(
-      new TableRow({
-        children: cells,
-      }),
-    );
-  }
-
   const children: any[] = [
     new Paragraph({
       spacing: {
@@ -1051,20 +1739,6 @@ async function exportDocx(
       ],
     }),
   ];
-
-  if (metricRows.length > 0) {
-    children.push(
-      new Table({
-        width: {
-          size: 100,
-          type:
-            WidthType.PERCENTAGE,
-        },
-        rows: metricRows,
-      }),
-      new Paragraph(""),
-    );
-  }
 
   for (const table of report.tables) {
     children.push(
@@ -1646,7 +2320,8 @@ async function exportXlsx(
 
   summary.getCell(
     `A${rowNumber}`,
-  ).value = "Summary Metrics";
+  ).value =
+    "Report Information";
   summary.getCell(
     `A${rowNumber}`,
   ).font = {
@@ -1656,60 +2331,62 @@ async function exportXlsx(
       argb: "FF0B2642",
     },
   };
+
   rowNumber += 1;
 
-  const metricHeaders =
-    summary.getRow(
-      rowNumber,
-    );
-  metricHeaders.values = [
-    "Metric",
-    "Value",
-    "Description",
+  const informationRows = [
+    [
+      "Reporting Period",
+      report.periodLabel,
+    ],
+    [
+      "Generated",
+      formatValue(
+        report.generatedAt,
+        "datetime",
+      ),
+    ],
+    [
+      "Description",
+      report.description,
+    ],
+    [
+      "Report Tables",
+      report.tables.length,
+    ],
   ];
-  metricHeaders.font = {
-    bold: true,
-    color: {
-      argb: "FFFFFFFF",
-    },
-  };
-  metricHeaders.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: {
-      argb: "FF0B2642",
-    },
-  };
-  rowNumber += 1;
 
-  for (const item of report.metrics) {
+  for (
+    const [
+      label,
+      value,
+    ] of informationRows
+  ) {
     const row =
       summary.getRow(
         rowNumber,
       );
+
     row.values = [
-      item.label,
-      item.value,
-      item.description ?? "",
+      label,
+      value,
     ];
 
-    if (
-      item.format ===
-      "currency"
-    ) {
-      row.getCell(2).numFmt =
-        '"₱"#,##0.00';
-    } else if (
-      item.format ===
-      "number"
-    ) {
-      row.getCell(2).numFmt =
-        "#,##0";
-    }
+    row.getCell(1).font = {
+      bold: true,
+      color: {
+        argb: "FF475569",
+      },
+    };
+
+    row.getCell(2)
+      .alignment = {
+        wrapText: true,
+        vertical: "top",
+      };
 
     rowNumber += 1;
   }
-
 
   if (
     branding.signatoryName.trim()
@@ -1988,6 +2665,7 @@ export function useLibraryReportExport() {
 
   return {
     exportReport,
+    previewAndPrint,
     formatValue,
   };
 }
