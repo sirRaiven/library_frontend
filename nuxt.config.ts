@@ -12,6 +12,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: "SNCBT Library Management System",
+      titleTemplate: "%s | SNCBT Library Management System",
       htmlAttrs: {
         lang: "en",
       },
