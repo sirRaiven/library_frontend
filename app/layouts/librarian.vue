@@ -966,12 +966,22 @@ watch(
         </div>
 
         <div
-          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row"
+        class="mt-6 flex flex-col-reverse gap-3 sm:flex-row"
         >
+        <UButton
+            label="Sign Out"
+            icon="i-lucide-log-out"
+            color="neutral"
+            size="lg"
+            variant="outline"
+            block
+            :loading="isLoggingOut"
+            @click="handleLogout"
+          />
           <UButton
             label="Cancel"
-            color="neutral"
-            variant="outline"
+            color="error"
+            
             size="lg"
             block
             :disabled="isLoggingOut"
@@ -979,17 +989,7 @@ watch(
               isLogoutModalOpen = false
             }"
           />
-
-          <UButton
-            label="Sign Out"
-            icon="i-lucide-log-out"
-            color="error"
-            size="lg"
-            block
-            :loading="isLoggingOut"
-            @click="handleLogout"
-          />
-        </div>
+      </div>
       </div>
     </template>
   </UModal>
