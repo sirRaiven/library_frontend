@@ -4,6 +4,8 @@ import type {
   CirculationMember,
   RecentBorrow,
 } from "~/composables/useLibraryCirculation";
+import LiveBarcodeScanner from "~/components/librarian/visits/LiveBarcodeScanner.vue";
+import type { BarcodeScanResult } from "~/composables/useBarcodeScanResult";
 
 definePageMeta({
   layout: "librarian",
@@ -57,6 +59,18 @@ const scannerPlaceholder = computed(() =>
   member.value
     ? "Scan a book barcode or accession number"
     : "Scan a student or faculty barcode",
+);
+
+const cameraScannerTitle = computed(() =>
+  member.value
+    ? "Scan Book Barcode"
+    : "Scan Member Barcode",
+);
+
+const cameraScannerDescription = computed(() =>
+  member.value
+    ? "Place the physical book copy barcode inside the guide."
+    : "Place the student Library Card or Faculty ID barcode inside the guide.",
 );
 
 const remainingAfterSelection = computed(() =>
@@ -188,6 +202,27 @@ async function scanCopy(code: string) {
     color: "success",
     icon: "i-lucide-book-check",
   });
+}
+
+async function handleCameraBarcodeDetected(
+  result: BarcodeScanResult,
+) {
+  const code = result.value
+    .trim()
+    .toUpperCase();
+
+  if (
+    !code ||
+    isScanning.value ||
+    isConfirming.value
+  ) {
+    return;
+  }
+
+  scannerInput.value = code;
+
+  await nextTick();
+  await handleScan();
 }
 
 async function handleScan() {
@@ -397,7 +432,7 @@ onMounted(() => {
                   <p
                     class="text-xs text-muted"
                   >
-                    Press Enter after manual input.
+                    Use a hardware scanner, camera, or manual entry.
                   </p>
                 </div>
               </div>
@@ -407,22 +442,46 @@ onMounted(() => {
               class="space-y-4"
               @submit.prevent="handleScan"
             >
-              <UInput
-                id="borrow-scanner"
-                v-model="scannerInput"
-                :placeholder="scannerPlaceholder"
-                icon="i-lucide-barcode"
-                size="xl"
-                color="success"
-                autocomplete="off"
-                autofocus
-                :loading="isScanning"
-                class="w-full"
+              <div
+                class="flex flex-col gap-2 sm:flex-row sm:items-stretch"
               >
-                <template #trailing>
-                  <UKbd>Enter</UKbd>
-                </template>
-              </UInput>
+                <UInput
+                  id="borrow-scanner"
+                  v-model="scannerInput"
+                  :placeholder="scannerPlaceholder"
+                  icon="i-lucide-barcode"
+                  size="xl"
+                  color="success"
+                  autocomplete="off"
+                  autofocus
+                  :loading="isScanning"
+                  class="min-w-0 flex-1"
+                >
+                  <template #trailing>
+                    <UKbd>Enter</UKbd>
+                  </template>
+                </UInput>
+
+                <LiveBarcodeScanner
+                  :disabled="
+                    isScanning ||
+                    isConfirming
+                  "
+                  :title="cameraScannerTitle"
+                  button-label="Use Camera"
+                  :ready-description="
+                    cameraScannerDescription
+                  "
+                  processing-label="Checking barcode"
+                  processing-description="Please wait while the member or book copy is being verified."
+                  storage-key="sncbt-borrowing-camera"
+                  :duplicate-cooldown-ms="5000"
+                  :detection-hold-ms="800"
+                  @detected="
+                    handleCameraBarcodeDetected
+                  "
+                />
+              </div>
 
               <UButton
                 type="submit"
@@ -512,7 +571,7 @@ onMounted(() => {
             variant="soft"
             icon="i-lucide-lightbulb"
             title="Fast checkout"
-            description="A hardware barcode scanner normally sends Enter automatically, so the cursor remains ready for the next scan."
+            description="Use a hardware scanner, the camera button, or manual entry. After a member is verified, the same scanner automatically switches to book-copy scanning."
           />
         </div>
 

@@ -23,10 +23,28 @@ const props = withDefaults(
   defineProps<{
     disabled?: boolean;
     formats?: BarcodeFormat[];
+    title?: string;
+    buttonLabel?: string;
+    readyDescription?: string;
+    processingLabel?: string;
+    processingDescription?: string;
+    storageKey?: string;
+    duplicateCooldownMs?: number;
+    detectionHoldMs?: number;
   }>(),
   {
     disabled: false,
     formats: () => ["code_128"],
+    title: "Live Barcode Scanner",
+    buttonLabel: "Camera Scanner",
+    readyDescription:
+      "Place the complete barcode inside the guide.",
+    processingLabel: "Processing barcode",
+    processingDescription:
+      "Please wait while the barcode is being processed.",
+    storageKey: "sncbt-library-camera",
+    duplicateCooldownMs: 60_000,
+    detectionHoldMs: 900,
   },
 );
 
@@ -36,7 +54,9 @@ const emit = defineEmits<{
 
 const QrcodeStream = defineAsyncComponent({
   loader: () =>
-    import("vue-qrcode-reader").then((module) => module.QrcodeStream),
+    import("vue-qrcode-reader").then(
+      (module) => module.QrcodeStream,
+    ),
   suspensible: false,
 });
 
@@ -53,19 +73,17 @@ interface CameraItem {
   value: string;
 }
 
-interface CameraCapabilities extends MediaTrackCapabilities {
+interface CameraCapabilities
+  extends MediaTrackCapabilities {
   torch?: boolean;
 }
 
-const CAMERA_STORAGE_KEY = "sncbt-library-entry-camera";
-const DETECTION_HOLD_MS = 900;
 
 const open = ref(false);
 const minimized = ref(false);
 const panel = ref<HTMLElement | null>(null);
 const status = ref<ScannerStatus>("idle");
 const errorMessage = ref("");
-const errorName = ref("");
 const streamKey = ref(0);
 const detectionPaused = ref(false);
 const detectedValue = ref("");
@@ -79,56 +97,66 @@ const position = reactive({
   y: 16,
 });
 
-let dragStart: {
-  pointerX: number;
-  pointerY: number;
-  panelX: number;
-  panelY: number;
-} | null = null;
-let detectionTimer: ReturnType<typeof setTimeout> | undefined;
+let dragStart:
+  | {
+      pointerX: number;
+      pointerY: number;
+      panelX: number;
+      panelY: number;
+    }
+  | null = null;
+let detectionTimer:
+  | ReturnType<typeof setTimeout>
+  | undefined;
 
 const {
   createResult,
   reset: resetDetectionHistory,
   playSuccessFeedback,
 } = useBarcodeScanResult({
-  duplicateCooldownMs: 60_000,
+  duplicateCooldownMs:
+    props.duplicateCooldownMs,
 });
 
 const streamPaused = computed(
-  () => props.disabled || minimized.value || detectionPaused.value,
+  () =>
+    props.disabled ||
+    minimized.value ||
+    detectionPaused.value,
 );
 
-const cameraConstraints = computed<MediaTrackConstraints>(() => {
-  const commonConstraints: MediaTrackConstraints = {
-    width: {
-      ideal: 1920,
-    },
-    height: {
-      ideal: 1080,
-    },
-    frameRate: {
-      ideal: 30,
-      max: 60,
-    },
-  };
-
-  if (selectedCameraId.value) {
-    return {
-      ...commonConstraints,
-      deviceId: {
-        exact: selectedCameraId.value,
+const cameraConstraints = computed<MediaTrackConstraints>(
+  () => {
+    const commonConstraints: MediaTrackConstraints = {
+      width: {
+        ideal: 1920,
+      },
+      height: {
+        ideal: 1080,
+      },
+      frameRate: {
+        ideal: 30,
+        max: 60,
       },
     };
-  }
 
-  return {
-    ...commonConstraints,
-    facingMode: {
-      ideal: "environment",
-    },
-  };
-});
+    if (selectedCameraId.value) {
+      return {
+        ...commonConstraints,
+        deviceId: {
+          exact: selectedCameraId.value,
+        },
+      };
+    }
+
+    return {
+      ...commonConstraints,
+      facingMode: {
+        ideal: "environment",
+      },
+    };
+  },
+);
 
 const panelStyle = computed(() => ({
   transform: `translate3d(${Math.round(
@@ -136,11 +164,24 @@ const panelStyle = computed(() => ({
   )}px, ${Math.round(position.y)}px, 0)`,
 }));
 
-const activeCameraLabel = computed(
-  () =>
-    cameraItems.value.find((camera) => camera.value === selectedCameraId.value)
-      ?.label ??
-    (selectedCameraId.value ? "Selected camera" : "Default camera"),
+const activeCameraLabel = computed(() =>
+  cameraItems.value.find(
+    (camera) =>
+      camera.value === selectedCameraId.value,
+  )?.label ??
+  (selectedCameraId.value
+    ? "Selected camera"
+    : "Default camera"),
+);
+
+const formatLabel = computed(() =>
+  props.formats
+    .map((format) =>
+      String(format)
+        .replaceAll("_", " ")
+        .toUpperCase(),
+    )
+    .join(", "),
 );
 
 const statusDetails = computed(() => {
@@ -150,7 +191,11 @@ const statusDetails = computed(() => {
       label: string;
       description: string;
       icon: string;
-      color: "neutral" | "info" | "success" | "error";
+      color:
+        | "neutral"
+        | "info"
+        | "success"
+        | "error";
       guideClass: string;
       dotClass: string;
     }
@@ -165,7 +210,8 @@ const statusDetails = computed(() => {
     },
     starting: {
       label: "Starting camera",
-      description: "Preparing the camera and barcode detector…",
+      description:
+        "Preparing the camera and barcode detector…",
       icon: "i-lucide-loader-circle",
       color: "info",
       guideClass: "border-info",
@@ -173,7 +219,8 @@ const statusDetails = computed(() => {
     },
     ready: {
       label: "Ready to scan",
-      description: "Place the complete barcode inside the guide.",
+      description:
+        props.readyDescription,
       icon: "i-lucide-scan-line",
       color: "info",
       guideClass: "border-success/90",
@@ -181,15 +228,19 @@ const statusDetails = computed(() => {
     },
     detected: {
       label: "Barcode detected",
-      description: detectedValue.value || "The barcode was read successfully.",
+      description:
+        detectedValue.value ||
+        "The barcode was read successfully.",
       icon: "i-lucide-circle-check-big",
       color: "success",
-      guideClass: "border-success shadow-[0_0_34px_rgba(34,197,94,0.55)]",
+      guideClass:
+        "border-success shadow-[0_0_34px_rgba(34,197,94,0.55)]",
       dotClass: "bg-success",
     },
     processing: {
-      label: "Recording time-in",
-      description: "Please wait while the entry is being saved.",
+      label: props.processingLabel,
+      description:
+        props.processingDescription,
       icon: "i-lucide-loader-circle",
       color: "info",
       guideClass: "border-info/80",
@@ -197,7 +248,9 @@ const statusDetails = computed(() => {
     },
     error: {
       label: "Camera unavailable",
-      description: errorMessage.value || "The camera scanner could not start.",
+      description:
+        errorMessage.value ||
+        "The camera scanner could not start.",
       icon: "i-lucide-circle-alert",
       color: "error",
       guideClass: "border-error",
@@ -209,16 +262,6 @@ const statusDetails = computed(() => {
 });
 
 function normalizeCameraError(error: EmittedError | Error) {
-  const rawMessage = String(error.message ?? "");
-
-  if (/failed to fetch/i.test(rawMessage)) {
-    return "The barcode decoder could not load its required files. Check the internet connection or Content Security Policy, then try again.";
-  }
-
-  if (/barcode.?detector|barcode detection/i.test(rawMessage)) {
-    return "The barcode decoder failed to initialize. Reload the page after clearing the Nuxt and browser cache.";
-  }
-
   switch (error.name) {
     case "NotAllowedError":
     case "SecurityError":
@@ -248,13 +291,23 @@ function paintDetectedBarcode(
   detectedCodes: DetectedBarcode[],
   context: CanvasRenderingContext2D,
 ) {
-  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+  context.clearRect(
+    0,
+    0,
+    context.canvas.width,
+    context.canvas.height,
+  );
 
   for (const detectedCode of detectedCodes) {
-    const points = Array.from(detectedCode.cornerPoints ?? []);
+    const points = Array.from(
+      detectedCode.cornerPoints ?? [],
+    );
 
     context.save();
-    context.lineWidth = Math.max(3, context.canvas.width / 280);
+    context.lineWidth = Math.max(
+      3,
+      context.canvas.width / 280,
+    );
     context.strokeStyle = "#22c55e";
     context.shadowColor = "rgba(34, 197, 94, 0.9)";
     context.shadowBlur = 14;
@@ -270,12 +323,14 @@ function paintDetectedBarcode(
       context.closePath();
       context.stroke();
     } else if (detectedCode.boundingBox) {
-      const { x, y, width, height } = detectedCode.boundingBox;
+      const { x, y, width, height } =
+        detectedCode.boundingBox;
       context.strokeRect(x, y, width, height);
     }
 
     if (detectedCode.boundingBox) {
-      const { x, y, width, height } = detectedCode.boundingBox;
+      const { x, y, width, height } =
+        detectedCode.boundingBox;
       const centerY = y + height / 2;
 
       context.lineWidth = 2;
@@ -300,11 +355,17 @@ function clampPosition() {
 
   position.x = Math.min(
     Math.max(position.x, margin),
-    Math.max(margin, window.innerWidth - rect.width - margin),
+    Math.max(
+      margin,
+      window.innerWidth - rect.width - margin,
+    ),
   );
   position.y = Math.min(
     Math.max(position.y, margin),
-    Math.max(margin, window.innerHeight - rect.height - margin),
+    Math.max(
+      margin,
+      window.innerHeight - rect.height - margin,
+    ),
   );
 }
 
@@ -318,8 +379,14 @@ async function placePanel() {
   const margin = window.innerWidth < 640 ? 12 : 24;
   const rect = panel.value.getBoundingClientRect();
 
-  position.x = Math.max(margin, window.innerWidth - rect.width - margin);
-  position.y = Math.max(margin, window.innerHeight - rect.height - margin);
+  position.x = Math.max(
+    margin,
+    window.innerWidth - rect.width - margin,
+  );
+  position.y = Math.max(
+    margin,
+    window.innerHeight - rect.height - margin,
+  );
 
   clampPosition();
 }
@@ -336,7 +403,9 @@ function beginDrag(event: PointerEvent) {
     panelY: position.y,
   };
 
-  (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+  (event.currentTarget as HTMLElement).setPointerCapture?.(
+    event.pointerId,
+  );
 }
 
 function movePanel(event: PointerEvent) {
@@ -344,8 +413,14 @@ function movePanel(event: PointerEvent) {
     return;
   }
 
-  position.x = dragStart.panelX + event.clientX - dragStart.pointerX;
-  position.y = dragStart.panelY + event.clientY - dragStart.pointerY;
+  position.x =
+    dragStart.panelX +
+    event.clientX -
+    dragStart.pointerX;
+  position.y =
+    dragStart.panelY +
+    event.clientY -
+    dragStart.pointerY;
 
   clampPosition();
 }
@@ -361,19 +436,27 @@ async function refreshCameras() {
   }
 
   const devices = await navigator.mediaDevices.enumerateDevices();
-  const videoDevices = devices.filter((device) => device.kind === "videoinput");
+  const videoDevices = devices.filter(
+    (device) => device.kind === "videoinput",
+  );
 
-  cameraItems.value = videoDevices.map((device, index) => ({
-    value: device.deviceId,
-    label: device.label || `Camera ${index + 1}`,
-  }));
+  cameraItems.value = videoDevices.map(
+    (device, index) => ({
+      value: device.deviceId,
+      label:
+        device.label || `Camera ${index + 1}`,
+    }),
+  );
 
   if (
     selectedCameraId.value &&
-    !cameraItems.value.some((camera) => camera.value === selectedCameraId.value)
+    !cameraItems.value.some(
+      (camera) =>
+        camera.value === selectedCameraId.value,
+    )
   ) {
     selectedCameraId.value = "";
-    localStorage.removeItem(CAMERA_STORAGE_KEY);
+    localStorage.removeItem(props.storageKey);
   }
 }
 
@@ -382,7 +465,9 @@ async function handleCameraOn(
     | Partial<CameraCapabilities>
     | Promise<Partial<CameraCapabilities>>,
 ) {
-  const capabilities = await Promise.resolve(capabilitiesPayload);
+  const capabilities = await Promise.resolve(
+    capabilitiesPayload,
+  );
 
   torchSupported.value = capabilities.torch === true;
 
@@ -391,23 +476,30 @@ async function handleCameraOn(
   }
 
   errorMessage.value = "";
-  errorName.value = "";
-  status.value = props.disabled ? "processing" : "ready";
+  status.value = props.disabled
+    ? "processing"
+    : "ready";
 
   await refreshCameras();
 }
 
 function handleCameraOff() {
-  if (open.value && !minimized.value && status.value !== "error") {
+  if (
+    open.value &&
+    !minimized.value &&
+    status.value !== "error"
+  ) {
     status.value = "starting";
   }
 }
 
 function handleCameraError(error: EmittedError | Error) {
-  errorName.value = error.name || "CameraError";
-  if (error.name === "OverconstrainedError" && selectedCameraId.value) {
+  if (
+    error.name === "OverconstrainedError" &&
+    selectedCameraId.value
+  ) {
     selectedCameraId.value = "";
-    localStorage.removeItem(CAMERA_STORAGE_KEY);
+    localStorage.removeItem(props.storageKey);
     torchEnabled.value = false;
     status.value = "starting";
     streamKey.value += 1;
@@ -416,13 +508,11 @@ function handleCameraError(error: EmittedError | Error) {
 
   errorMessage.value = normalizeCameraError(error);
   status.value = "error";
-  console.error("[LiveBarcodeScanner]", {
-    name: error.name,
-    message: error.message,
-  });
 }
 
-async function handleDetectedCodes(detectedCodes: DetectedBarcode[]) {
+async function handleDetectedCodes(
+  detectedCodes: DetectedBarcode[],
+) {
   if (props.disabled || detectionPaused.value) {
     return;
   }
@@ -448,7 +538,7 @@ async function handleDetectedCodes(detectedCodes: DetectedBarcode[]) {
     if (!props.disabled && open.value) {
       status.value = "ready";
     }
-  }, DETECTION_HOLD_MS);
+  }, props.detectionHoldMs);
 }
 
 async function openScanner() {
@@ -459,31 +549,6 @@ async function openScanner() {
   open.value = true;
   minimized.value = false;
   errorMessage.value = "";
-  errorName.value = "";
-
-  if (!import.meta.client) {
-    status.value = "starting";
-    return;
-  }
-
-  if (!window.isSecureContext) {
-    errorName.value = "InsecureContextError";
-    errorMessage.value =
-      "Camera access is blocked on an insecure address. Open the system through localhost or HTTPS.";
-    status.value = "error";
-    await placePanel();
-    return;
-  }
-
-  if (!navigator.mediaDevices?.getUserMedia) {
-    errorName.value = "StreamApiNotSupportedError";
-    errorMessage.value =
-      "This browser cannot access camera streams. Update Chrome or Edge and try again.";
-    status.value = "error";
-    await placePanel();
-    return;
-  }
-
   status.value = "starting";
   streamKey.value += 1;
 
@@ -511,7 +576,9 @@ function toggleMinimized() {
   minimized.value = !minimized.value;
 
   if (!minimized.value && status.value !== "error") {
-    status.value = props.disabled ? "processing" : "starting";
+    status.value = props.disabled
+      ? "processing"
+      : "starting";
   }
 
   void nextTick(clampPosition);
@@ -519,13 +586,14 @@ function toggleMinimized() {
 
 function restartScanner() {
   errorMessage.value = "";
-  errorName.value = "";
   torchEnabled.value = false;
   status.value = "starting";
   streamKey.value += 1;
 }
 
-function handleCameraChange(value: string | number | undefined) {
+function handleCameraChange(
+  value: string | number | undefined,
+) {
   const deviceId = String(value ?? "");
 
   selectedCameraId.value = deviceId;
@@ -534,9 +602,12 @@ function handleCameraChange(value: string | number | undefined) {
   streamKey.value += 1;
 
   if (deviceId) {
-    localStorage.setItem(CAMERA_STORAGE_KEY, deviceId);
+    localStorage.setItem(
+      props.storageKey,
+      deviceId,
+    );
   } else {
-    localStorage.removeItem(CAMERA_STORAGE_KEY);
+    localStorage.removeItem(props.storageKey);
   }
 }
 
@@ -546,10 +617,13 @@ function selectNextCamera() {
   }
 
   const currentIndex = cameraItems.value.findIndex(
-    (camera) => camera.value === selectedCameraId.value,
+    (camera) =>
+      camera.value === selectedCameraId.value,
   );
   const nextIndex =
-    currentIndex < 0 ? 0 : (currentIndex + 1) % cameraItems.value.length;
+    currentIndex < 0
+      ? 0
+      : (currentIndex + 1) % cameraItems.value.length;
 
   handleCameraChange(cameraItems.value[nextIndex]?.value);
 }
@@ -584,9 +658,14 @@ watch(
 
 onMounted(() => {
   if (import.meta.client) {
-    selectedCameraId.value = localStorage.getItem(CAMERA_STORAGE_KEY) ?? "";
+    selectedCameraId.value =
+      localStorage.getItem(props.storageKey) ?? "";
 
-    window.addEventListener("resize", clampPosition, { passive: true });
+    window.addEventListener(
+      "resize",
+      clampPosition,
+      { passive: true },
+    );
     navigator.mediaDevices?.addEventListener(
       "devicechange",
       handleDeviceChange,
@@ -611,11 +690,15 @@ onBeforeUnmount(() => {
 <template>
   <div class="contents">
     <UTooltip
-      :text="open ? 'Close camera scanner' : 'Open live camera scanner'"
+      :text="
+        open
+          ? 'Close camera scanner'
+          : 'Open live camera scanner'
+      "
     >
       <UButton
         type="button"
-        :label="open ? 'Close Camera' : 'Camera Scanner'"
+        :label="open ? 'Close Camera' : props.buttonLabel"
         :icon="open ? 'i-lucide-camera-off' : 'i-lucide-camera'"
         color="neutral"
         variant="outline"
@@ -623,6 +706,7 @@ onBeforeUnmount(() => {
         :disabled="disabled"
         :loading="status === 'starting' && open"
         :aria-pressed="open"
+        class="w-full shrink-0 sm:w-auto"
         @click="toggleScanner"
       />
     </UTooltip>
@@ -643,8 +727,7 @@ onBeforeUnmount(() => {
             :style="panelStyle"
             class="fixed left-0 top-0 z-[100] w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-default bg-default shadow-2xl will-change-transform sm:w-[28rem]"
             role="dialog"
-            aria-label="Live barcode camera scanner"
-            data-scanner-engine="vue-qrcode-reader-5.7.3"
+            :aria-label="props.title"
           >
             <header
               class="flex touch-none select-none items-center justify-between gap-3 border-b border-default bg-elevated/95 px-3 py-2.5 backdrop-blur"
@@ -657,12 +740,15 @@ onBeforeUnmount(() => {
                 <div
                   class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success"
                 >
-                  <UIcon name="i-lucide-scan-barcode" class="size-4.5" />
+                  <UIcon
+                    name="i-lucide-scan-barcode"
+                    class="size-4.5"
+                  />
                 </div>
 
                 <div class="min-w-0">
                   <p class="truncate text-sm font-semibold text-highlighted">
-                    Live Barcode Scanner
+                    {{ props.title }}
                   </p>
                   <p class="truncate text-xs text-muted">
                     {{ activeCameraLabel }}
@@ -670,7 +756,10 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <div class="flex shrink-0 items-center gap-1" @pointerdown.stop>
+              <div
+                class="flex shrink-0 items-center gap-1"
+                @pointerdown.stop
+              >
                 <UTooltip text="Switch camera">
                   <UButton
                     icon="i-lucide-refresh-cw"
@@ -684,18 +773,14 @@ onBeforeUnmount(() => {
                   />
                 </UTooltip>
 
-                <UTooltip
-                  :text="minimized ? 'Restore camera' : 'Minimize camera'"
-                >
+                <UTooltip :text="minimized ? 'Restore camera' : 'Minimize camera'">
                   <UButton
                     :icon="minimized ? 'i-lucide-maximize-2' : 'i-lucide-minus'"
                     color="neutral"
                     variant="ghost"
                     size="sm"
                     square
-                    :aria-label="
-                      minimized ? 'Restore camera' : 'Minimize camera'
-                    "
+                    :aria-label="minimized ? 'Restore camera' : 'Minimize camera'"
                     @click="toggleMinimized"
                   />
                 </UTooltip>
@@ -715,7 +800,9 @@ onBeforeUnmount(() => {
             </header>
 
             <div v-show="!minimized">
-              <div class="relative aspect-video overflow-hidden bg-black">
+              <div
+                class="relative aspect-video overflow-hidden bg-black"
+              >
                 <QrcodeStream
                   :key="streamKey"
                   class="live-barcode-stream absolute inset-0 size-full"
@@ -739,7 +826,9 @@ onBeforeUnmount(() => {
                       name="i-lucide-loader-circle"
                       class="mx-auto size-9 animate-spin"
                     />
-                    <p class="mt-3 text-sm font-semibold">Starting camera…</p>
+                    <p class="mt-3 text-sm font-semibold">
+                      Starting camera…
+                    </p>
                   </div>
                 </div>
 
@@ -754,12 +843,6 @@ onBeforeUnmount(() => {
                     />
                     <p class="mt-3 text-sm font-semibold">
                       {{ errorMessage }}
-                    </p>
-                    <p
-                      v-if="errorName"
-                      class="mt-2 font-mono text-[10px] text-white/55"
-                    >
-                      {{ errorName }}
                     </p>
                     <UButton
                       class="mt-4"
@@ -802,7 +885,10 @@ onBeforeUnmount(() => {
                     <span class="scanner-corner scanner-corner-tr" />
                     <span class="scanner-corner scanner-corner-bl" />
                     <span class="scanner-corner scanner-corner-br" />
-                    <span v-if="status === 'ready'" class="scanner-line" />
+                    <span
+                      v-if="status === 'ready'"
+                      class="scanner-line"
+                    />
                   </div>
 
                   <Transition
@@ -833,9 +919,7 @@ onBeforeUnmount(() => {
                           {{ detectedValue }}
                         </p>
                         <p class="mt-1 text-[11px] text-white/70">
-                          {{
-                            detectedFormat.replaceAll("_", " ").toUpperCase()
-                          }}
+                          {{ detectedFormat.replaceAll('_', ' ').toUpperCase() }}
                         </p>
                       </div>
                     </div>
@@ -865,7 +949,10 @@ onBeforeUnmount(() => {
                     @update:model-value="handleCameraChange"
                   />
 
-                  <div v-else class="min-w-0 flex-1 text-xs text-muted">
+                  <div
+                    v-else
+                    class="min-w-0 flex-1 text-xs text-muted"
+                  >
                     {{ activeCameraLabel }}
                   </div>
 
@@ -883,18 +970,10 @@ onBeforeUnmount(() => {
 
                   <UTooltip
                     v-if="torchSupported"
-                    :text="
-                      torchEnabled
-                        ? 'Turn off flashlight'
-                        : 'Turn on flashlight'
-                    "
+                    :text="torchEnabled ? 'Turn off flashlight' : 'Turn on flashlight'"
                   >
                     <UButton
-                      :icon="
-                        torchEnabled
-                          ? 'i-lucide-flashlight-off'
-                          : 'i-lucide-flashlight'
-                      "
+                      :icon="torchEnabled ? 'i-lucide-flashlight-off' : 'i-lucide-flashlight'"
                       :color="torchEnabled ? 'warning' : 'neutral'"
                       variant="soft"
                       size="sm"
@@ -923,8 +1002,12 @@ onBeforeUnmount(() => {
                     </p>
                   </div>
 
-                  <UBadge color="neutral" variant="soft" size="sm">
-                    CODE 128
+                  <UBadge
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                  >
+                    {{ formatLabel }}
                   </UBadge>
                 </div>
               </div>
