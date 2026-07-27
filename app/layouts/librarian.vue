@@ -573,12 +573,17 @@ watch(
           aria-label="Open library overview"
         >
           <div
-            class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success text-white shadow-sm shadow-success/25"
+            class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-white p-1 shadow-sm"
           >
-            <UIcon
-              name="i-lucide-library-big"
-              class="size-5"
-            />
+            <img
+              src="/sncbt-library-logo.png"
+              alt="SNCBT Library logo"
+              width="40"
+              height="40"
+              class="size-full object-contain"
+              decoding="async"
+              draggable="false"
+            >
           </div>
 
           <div
