@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   ssr: true,
 
   devtools: {
-    enabled: true,
+    enabled: process.env.NODE_ENV !== "production",
   },
 
   modules: ["@nuxt/ui"],
