@@ -6,6 +6,8 @@ import type {
   ReturnLookup,
   TodayReturn,
 } from "~/composables/useLibraryCirculation";
+import LiveBarcodeScanner from "~/components/librarian/visits/LiveBarcodeScanner.vue";
+import type { BarcodeScanResult } from "~/composables/useBarcodeScanResult";
 
 definePageMeta({
   layout: "librarian",
@@ -65,6 +67,42 @@ const conditionOptions:
     "Damaged",
     "Lost",
   ];
+
+const cameraScanningBooks = computed(
+  () =>
+    Boolean(
+      memberReturns.value &&
+      returnItems.value.length > 0,
+    ),
+);
+
+const cameraScannerTitle = computed(
+  () =>
+    cameraScanningBooks.value
+      ? "Scan Return Book Barcode"
+      : "Scan Library Member",
+);
+
+const cameraScannerDescription = computed(
+  () =>
+    cameraScanningBooks.value
+      ? "Place the control-number or accession-number barcode of the physical book inside the guide."
+      : "Place the Student Library Card or Faculty ID barcode inside the guide.",
+);
+
+const cameraProcessingLabel = computed(
+  () =>
+    cameraScanningBooks.value
+      ? "Verifying return book"
+      : "Loading member records",
+);
+
+const cameraProcessingDescription = computed(
+  () =>
+    cameraScanningBooks.value
+      ? "Please wait while the physical book is matched with the member's active borrowing records."
+      : "Please wait while the member and active borrowed books are being loaded.",
+);
 
 const verifiedItems = computed(
   () =>
@@ -269,6 +307,41 @@ async function loadMemberReturns(
           : "i-lucide-circle-check",
     });
   }
+}
+
+async function handleCameraBarcodeDetected(
+  result: BarcodeScanResult,
+) {
+  const barcode =
+    normalizeBarcode(
+      result.value,
+    );
+
+  if (
+    !barcode ||
+    isScanning.value ||
+    isVerifyingBook.value ||
+    isProcessing.value
+  ) {
+    return;
+  }
+
+  if (
+    cameraScanningBooks.value
+  ) {
+    bookScannerInput.value =
+      barcode;
+
+    await nextTick();
+    await handleBookScan();
+    return;
+  }
+
+  scannerInput.value =
+    barcode;
+
+  await nextTick();
+  await handleScan();
 }
 
 async function handleScan() {
@@ -782,22 +855,53 @@ onMounted(() => {
               class="space-y-4"
               @submit.prevent="handleScan"
             >
-              <UInput
-                id="member-return-scanner"
-                v-model="scannerInput"
-                icon="i-lucide-scan-barcode"
-                placeholder="Scan LC-2026-000001 or Faculty ID"
-                size="xl"
-                color="success"
-                autocomplete="off"
-                autofocus
-                :loading="isScanning"
-                class="w-full"
+              <div
+                class="flex flex-col gap-2 sm:flex-row sm:items-stretch"
               >
-                <template #trailing>
-                  <UKbd>Enter</UKbd>
-                </template>
-              </UInput>
+                <UInput
+                  id="member-return-scanner"
+                  v-model="scannerInput"
+                  icon="i-lucide-scan-barcode"
+                  placeholder="Scan LC-2026-000001 or Faculty ID"
+                  size="xl"
+                  color="success"
+                  autocomplete="off"
+                  autofocus
+                  :loading="isScanning"
+                  class="min-w-0 flex-1"
+                >
+                  <template #trailing>
+                    <UKbd>Enter</UKbd>
+                  </template>
+                </UInput>
+
+                <LiveBarcodeScanner
+                  :disabled="
+                    isScanning ||
+                    isVerifyingBook ||
+                    isProcessing
+                  "
+                  :title="
+                    cameraScannerTitle
+                  "
+                  button-label="Use Camera"
+                  :ready-description="
+                    cameraScannerDescription
+                  "
+                  :processing-label="
+                    cameraProcessingLabel
+                  "
+                  :processing-description="
+                    cameraProcessingDescription
+                  "
+                  storage-key="sncbt-returning-camera"
+                  :duplicate-cooldown-ms="0"
+                  :detection-hold-ms="800"
+                  @detected="
+                    handleCameraBarcodeDetected
+                  "
+                />
+              </div>
 
               <UButton
                 type="submit"
@@ -1168,6 +1272,16 @@ onMounted(() => {
                   "
                 />
               </form>
+
+              <p
+                class="mt-3 flex items-center gap-2 text-xs text-muted"
+              >
+                <UIcon
+                  name="i-lucide-camera"
+                  class="size-4 text-success"
+                />
+                An open camera scanner automatically switches to physical-book verification after the member is loaded.
+              </p>
 
               <UAlert
                 class="mt-4"
