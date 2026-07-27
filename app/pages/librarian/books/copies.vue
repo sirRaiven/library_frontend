@@ -620,10 +620,10 @@ onBeforeUnmount(() => {
             copy.id ??
             copy.control_number
           "
-          class="space-y-3"
+          class="space-y-3 border border-default bg-default rounded-3xl shadow-sm"
         >
           <div
-            class="flex flex-col gap-3 rounded-xl border border-default bg-default p-4 sm:flex-row sm:items-center sm:justify-between"
+            class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <UCheckbox
               v-model="copy.selected"

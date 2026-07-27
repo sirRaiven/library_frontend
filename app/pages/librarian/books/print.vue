@@ -301,7 +301,7 @@ watch(
         <article
           v-for="(item, index) in printItems"
           :key="`${item.controlNumber}-${index}`"
-          class="barcode-label"
+          class="barcode-label border border-default"
         >
           <div class="barcode-area">
             <svg
@@ -337,7 +337,6 @@ watch(
   break-inside: avoid;
   flex-direction: column;
   justify-content: space-between;
-  border: 1px solid #cbd5e1;
   border-radius: 12px;
   background: #ffffff;
   padding: 14px;
@@ -430,10 +429,10 @@ watch(
   }
 
   .barcode-label {
-    min-height: 12mm !important;
+    min-height: 1mm !important;
     border: 0.25mm solid #94a3b8 !important;
-    border-radius: 2mm !important;
-    padding: 3mm !important;
+    border-radius: 1mm !important;
+    padding: 0.1mm !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
