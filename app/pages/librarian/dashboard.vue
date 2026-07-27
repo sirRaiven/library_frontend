@@ -544,7 +544,7 @@ const stats = computed(() => [
     label: "Book Titles",
     value: dashboard.value.totalTitles,
     description: "Different book titles in the catalog",
-    icon: "i-lucide-books",
+    icon: "i-lucide-book",
     color: "info" as BadgeColor,
     to: "/librarian/books",
   },
@@ -700,7 +700,7 @@ async function refreshDashboard() {
 <template>
   <div class="space-y-6 m-4">
     <section
-      class="relative overflow-hidden rounded-3xl border border-success/20 bg-linear-to-br from-success/10 via-default to-default p-6 sm:p-8"
+      class="relative overflow-hidden shadow-sm shadow-emerald-100 rounded-3xl border border-success/20 from-success/10 via-default to-default p-6 sm:p-8"
     >
       <div
         class="absolute -right-16 -top-20 size-64 rounded-full bg-success/10 blur-3xl"
@@ -857,7 +857,7 @@ async function refreshDashboard() {
           v-else
           :key="stat.label"
           :to="stat.to"
-          class="group rounded-2xl border border-default bg-default p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-success/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+          class="group rounded-2xl border border-default bg-default p-5 shadow-sm shadow-emerald-100 transition hover:-translate-y-0.5 hover:border-success/40 hover:shadow-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
         >
           <div
             class="flex items-start justify-between gap-4"
@@ -915,7 +915,7 @@ async function refreshDashboard() {
     <section
       class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.6fr)]"
     >
-      <UCard class="rounded-2xl">
+      <UCard class="rounded-2xl shadow-sm shadow-emerald-100">
         <template #header>
           <div
             class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -947,7 +947,7 @@ async function refreshDashboard() {
             v-for="action in quickActions"
             :key="action.title"
             :to="action.to"
-            class="group flex items-start gap-4 rounded-2xl border border-default bg-elevated/50 p-4 transition hover:border-success/40 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+            class="group flex items-start gap-4 rounded-2xl border border-default bg-elevated/50 p-4 transition hover:translate-y-0.5 hover:border-success/40 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
           >
             <div
               class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success transition group-hover:bg-success group-hover:text-white"
@@ -979,7 +979,7 @@ async function refreshDashboard() {
         </div>
       </UCard>
 
-      <UCard class="rounded-2xl">
+      <UCard class="rounded-2xl shadow-sm shadow-emerald-100">
         <template #header>
           <div>
             <h2
@@ -1045,7 +1045,7 @@ async function refreshDashboard() {
       </UCard>
     </section>
 
-    <UCard class="overflow-hidden rounded-2xl">
+    <UCard class="overflow-hidden rounded-2xl shadow-sm shadow-emerald-100">
       <template #header>
         <div
           class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"

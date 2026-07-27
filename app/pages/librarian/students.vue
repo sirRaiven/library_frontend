@@ -827,7 +827,7 @@ onBeforeUnmount(() => {
 
 <template>
   <UContainer class="py-6 sm:py-8">
-    <div class="mx-auto max-w-[1500px] space-y-6">
+    <div class="mx-auto max-w-375 space-y-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex items-center gap-3">
           <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -1323,7 +1323,7 @@ onBeforeUnmount(() => {
 
     <UModal v-model:open="cardOpen" :ui="{ content: 'sm:max-w-6xl max-h-[94dvh] overflow-y-auto' }">
       <template #content>
-        <div class="bg-default p-6 sm:p-8">
+        <div class="bg-default p-6 sm:p-2">
           <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 class="text-xl font-bold text-highlighted">

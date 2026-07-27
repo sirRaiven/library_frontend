@@ -532,7 +532,7 @@ onMounted(() => {
           icon="i-lucide-calendar-plus"
           color="success"
           class="self-start"
-          @click="isCreateOpen = true"
+          @click="() => { isCreateOpen = true }"
         />
       </div>
 
@@ -919,7 +919,7 @@ onMounted(() => {
             square
             aria-label="Close reservation form"
             :disabled="isSaving"
-            @click="isCreateOpen = false"
+            @click="() => { isCreateOpen = false }"
           />
         </div>
 
@@ -1223,7 +1223,7 @@ onMounted(() => {
             color="neutral"
             variant="ghost"
             :disabled="isSaving"
-            @click="isCreateOpen = false"
+            @click="() => { isCreateOpen = false }"
           />
 
           <UButton
