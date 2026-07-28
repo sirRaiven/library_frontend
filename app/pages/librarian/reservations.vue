@@ -14,6 +14,7 @@ definePageMeta({
 });
 
 const circulation = useLibraryCirculation();
+const librarySettings = useLibrarySettings();
 const auth = useAuth();
 const toast = useToast();
 
@@ -205,7 +206,7 @@ function resetCreateForm() {
   bookResults.value = [];
   selectedBooks.value = [];
   expirationDate.value =
-    defaultExpirationDate();
+    librarySettings.reservationExpirationDate();
   remarks.value = "";
 }
 
@@ -771,7 +772,15 @@ watch(isCreateOpen, (open) => {
   }
 });
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    await librarySettings.load();
+    expirationDate.value =
+      librarySettings.reservationExpirationDate();
+  } catch (error) {
+    console.warn("Operational Library settings could not be loaded.", error);
+  }
+
   void loadReservations();
 });
 </script>

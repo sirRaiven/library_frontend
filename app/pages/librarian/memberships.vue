@@ -9,6 +9,7 @@ definePageMeta({ layout: "librarian", title: "Library Cards" });
 
 const route = useRoute();
 const members = useLibraryMembers();
+const librarySettings = useLibrarySettings();
 const auth = useAuth();
 const toast = useToast();
 
@@ -125,7 +126,10 @@ async function handleCameraBarcodeDetected(
 
 async function renewMembership() {
   if (!scannedStudent.value) return;
-  if (!renewal.enrollmentVerified) {
+  if (
+    librarySettings.settings.value.membership.requireEnrollmentVerification &&
+    !renewal.enrollmentVerified
+  ) {
     toast.add({
       title: "Enrollment verification required",
       description: "Confirm that the student submitted a current enrollment document.",
@@ -219,6 +223,23 @@ watch(
 );
 
 onMounted(async () => {
+  try {
+    await librarySettings.load();
+    renewal.academicYear =
+      librarySettings.settings.value.general.currentAcademicYear ||
+      currentAcademicYear();
+    renewal.semester =
+      librarySettings.settings.value.general.currentSemester;
+    renewal.expiryDate =
+      librarySettings.membershipExpiryDate(
+        new Date(`${renewal.issuedDate}T00:00:00`),
+      );
+    renewal.enrollmentVerified =
+      !librarySettings.settings.value.membership.requireEnrollmentVerification;
+  } catch (error) {
+    console.warn("Operational Library settings could not be loaded.", error);
+  }
+
   await loadMemberships();
 
   if (typeof route.query.barcode === "string") {
@@ -438,12 +459,12 @@ onMounted(async () => {
               </div>
 
               <div class="rounded-xl border border-default bg-default p-4">
-                <UCheckbox v-model="renewal.enrollmentVerified" label="The student submitted a copy of enrollment for the selected semester." />
+                <UCheckbox v-if="librarySettings.settings.value.membership.requireEnrollmentVerification" v-model="renewal.enrollmentVerified" label="The student submitted a copy of enrollment for the selected semester." />
               </div>
 
               <div class="grid gap-3 sm:grid-cols-2">
                 <UButton label="Scan Another" icon="i-lucide-scan-line" color="neutral" variant="outline" block @click="clearScanner" />
-                <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="success" block :disabled="!canRenew || !renewal.enrollmentVerified" :loading="renewing" @click="renewMembership" />
+                <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="success" block :disabled="!canRenew || (librarySettings.settings.value.membership.requireEnrollmentVerification && !renewal.enrollmentVerified)" :loading="renewing" @click="renewMembership" />
               </div>
             </div>
           </div>

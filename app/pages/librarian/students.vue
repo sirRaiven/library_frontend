@@ -21,6 +21,7 @@ import {
 definePageMeta({ layout: "librarian", title: "Students" });
 
 const members = useLibraryMembers();
+const librarySettings = useLibrarySettings();
 const auth = useAuth();
 const toast = useToast();
 const route = useRoute();
@@ -105,16 +106,23 @@ const registrationForm = reactive<StudentRegistrationInput>({
     contactNo: "",
     address: "",
     libraryCardStatus:
-      "On Process",
+      librarySettings.settings.value.membership.defaultLibraryCardStatus,
     libraryCardReleaseDate:
       "",
   },
   membership: {
-    academicYear: defaultAcademicYear(),
-    semester: defaultSemester(),
+    academicYear:
+      librarySettings.settings.value.general.currentAcademicYear ||
+      defaultAcademicYear(),
+    semester:
+      librarySettings.settings.value.general.currentSemester ||
+      defaultSemester(),
     issuedDate: today,
-    expiryDate: defaultExpiryDate(),
-    enrollmentVerified: false,
+    expiryDate: librarySettings.membershipExpiryDate(
+      new Date(`${today}T00:00:00`),
+    ),
+    enrollmentVerified:
+      !librarySettings.settings.value.membership.requireEnrollmentVerification,
     enrollmentReference: "",
     remarks: "",
   },
@@ -323,7 +331,10 @@ function validate(state: StudentRegistrationInput): FormError[] {
   if (!registrationPhoto.value) errors.push({ name: "student.photo", message: "Upload and crop the Student photo for the Library Card." });
   if (!/^\d{4}-\d{4}$/.test(state.membership.academicYear)) errors.push({ name: "membership.academicYear", message: "Use YYYY-YYYY format." });
   if (!state.membership.expiryDate) errors.push({ name: "membership.expiryDate", message: "Expiry date is required." });
-  if (!state.membership.enrollmentVerified) errors.push({ name: "membership.enrollmentVerified", message: "Verify the enrollment document." });
+  if (
+    librarySettings.settings.value.membership.requireEnrollmentVerification &&
+    !state.membership.enrollmentVerified
+  ) errors.push({ name: "membership.enrollmentVerified", message: "Verify the enrollment document." });
   return errors;
 }
 
@@ -389,16 +400,23 @@ function resetRegistration() {
     contactNo: "",
     address: "",
     libraryCardStatus:
-      "On Process",
+      librarySettings.settings.value.membership.defaultLibraryCardStatus,
     libraryCardReleaseDate:
       "",
   });
   Object.assign(registrationForm.membership, {
-    academicYear: defaultAcademicYear(),
-    semester: defaultSemester(),
+    academicYear:
+      librarySettings.settings.value.general.currentAcademicYear ||
+      defaultAcademicYear(),
+    semester:
+      librarySettings.settings.value.general.currentSemester ||
+      defaultSemester(),
     issuedDate: today,
-    expiryDate: defaultExpiryDate(),
-    enrollmentVerified: false,
+    expiryDate: librarySettings.membershipExpiryDate(
+      new Date(`${today}T00:00:00`),
+    ),
+    enrollmentVerified:
+      !librarySettings.settings.value.membership.requireEnrollmentVerification,
     enrollmentReference: "",
     remarks: "",
   });
@@ -813,7 +831,16 @@ watch(
   },
 );
 watch(page, () => void loadStudents());
-onMounted(() => void loadStudents());
+onMounted(async () => {
+  try {
+    await librarySettings.load();
+    resetRegistration();
+  } catch (error) {
+    console.warn("Operational Library settings could not be loaded.", error);
+  }
+
+  void loadStudents();
+});
 
 onBeforeUnmount(() => {
   releasePhotoSelection(
@@ -1308,7 +1335,7 @@ onBeforeUnmount(() => {
                 </UFormField>
               </div>
               <UFormField name="membership.enrollmentVerified" class="mt-4">
-                <UCheckbox v-model="registrationForm.membership.enrollmentVerified" label="I verified the student's enrollment document for this semester." />
+                <UCheckbox v-if="librarySettings.settings.value.membership.requireEnrollmentVerification" v-model="registrationForm.membership.enrollmentVerified" label="I verified the student's enrollment document for this semester." />
               </UFormField>
             </div>
 

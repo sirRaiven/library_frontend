@@ -13,6 +13,7 @@ definePageMeta({
 });
 
 const circulation = useLibraryCirculation();
+const librarySettings = useLibrarySettings();
 const auth = useAuth();
 const toast = useToast();
 
@@ -125,6 +126,7 @@ async function scanMember(code: string) {
 
   member.value = result;
   copies.value = [];
+  dueDate.value = librarySettings.dueDateFor(result.type);
 
   if (!result.canBorrow) {
     toast.add({
@@ -271,7 +273,7 @@ function clearTransaction() {
   member.value = null;
   copies.value = [];
   remarks.value = "";
-  dueDate.value = defaultDueDate();
+  dueDate.value = librarySettings.dueDateFor("Student");
   scannerInput.value = "";
   focusScanner();
 }
@@ -354,7 +356,14 @@ function statusColor(
   return "neutral";
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    await librarySettings.load();
+    dueDate.value = librarySettings.dueDateFor("Student");
+  } catch (error) {
+    console.warn("Operational Library settings could not be loaded.", error);
+  }
+
   focusScanner();
   void loadRecentTransactions();
 });

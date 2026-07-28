@@ -54,7 +54,7 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/admin\/roles\/[^/]+\/?$/, title: "Role Details" },
   { pattern: /^\/admin\/roles\/?$/, title: "Roles and Permissions" },
   { pattern: /^\/admin\/audit-logs\/?$/, title: "Audit Logs" },
-  { pattern: /^\/admin\/settings\/?$/, title: "System Settings" },
+  { pattern: /^\/admin\/settings\/?$/, title: "Library Rules and Settings" },
   { pattern: /^\/admin\/reports\/?$/, title: "System Reports" },
 ];
 

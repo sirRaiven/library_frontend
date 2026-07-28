@@ -73,6 +73,18 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   ],
   [
     {
+      label: "Library Configuration",
+      type: "label",
+    },
+    {
+      label: "Library Rules and Settings",
+      icon: "i-lucide-settings-2",
+      to: "/admin/settings",
+      active: active("/admin/settings"),
+    },
+  ],
+  [
+    {
       label: "Security and Monitoring",
       type: "label",
     },
@@ -96,6 +108,9 @@ function pageInformation() {
   }
   if (path.startsWith("/admin/roles")) {
     return { title: "Roles and Permissions", icon: "i-lucide-shield-check" };
+  }
+  if (path.startsWith("/admin/settings")) {
+    return { title: "Library Rules and Settings", icon: "i-lucide-settings-2" };
   }
   if (path.startsWith("/admin/audit-logs")) {
     return { title: "Audit Logs", icon: "i-lucide-scroll-text" };
