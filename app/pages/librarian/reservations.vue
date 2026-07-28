@@ -1171,7 +1171,7 @@ onMounted(() => {
 
   <UModal
     v-model:open="isCreateOpen"
-    :dismissible="isSaving"
+    :dismissible="!isSaving"
     :ui="{
       content:
         'sm:max-w-4xl max-h-[90dvh] overflow-y-auto',

@@ -1,103 +1,446 @@
-
 <script setup lang="ts">
 import type {
-  LibraryReportArchiveItem,
   LibraryReportBranding,
-  LibraryReportCatalogItem,
+  LibraryReportCategory,
   LibraryReportDocument,
   LibraryReportFilter,
   LibraryReportKey,
-  LibraryReportMetric,
   LibraryReportTable,
+  ReportCellFormat,
 } from "~/types/libraryReports";
 
 definePageMeta({
   layout: "librarian",
-  title: "Reports",
+  title: "Library Reports",
 });
+
+type StandardReportKey = Exclude<
+  LibraryReportKey,
+  "custom-summary"
+>;
 
 type ReportBuilderMode =
   | "standard"
   | "custom";
 
-type StandardReportKey =
-  Exclude<
-    LibraryReportKey,
-    "custom-summary"
-  >;
-
 type CustomSectionKind =
   | "metrics"
   | "table";
 
-interface CustomSummarySection {
+type CustomRowLimit =
+  | "25"
+  | "50"
+  | "100"
+  | "all";
+
+interface FormalReportDefinition {
+  key: StandardReportKey;
+  label: string;
+  category:
+    | "Administration"
+    | "Members"
+    | "Collection"
+    | "Circulation"
+    | "Library Visits";
+  purpose: string;
+  contents: string[];
+  icon: string;
+  recommendedOrientation:
+    | "portrait"
+    | "landscape";
+}
+
+interface ReportCategoryDefinition {
+  key: FormalReportDefinition["category"];
+  label: string;
+  description: string;
+  icon: string;
+}
+
+interface CustomSourceDefinition {
+  key: StandardReportKey;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+interface CustomReportSection {
   id: string;
-  sourceType:
-    StandardReportKey;
+  sourceType: StandardReportKey;
   sourceLabel: string;
-  kind:
-    CustomSectionKind;
+  kind: CustomSectionKind;
   title: string;
   description: string;
   rowCount: number;
   selected: boolean;
 }
 
-type CustomRowLimit =
-  | "10"
-  | "25"
-  | "50"
-  | "all";
-
-
-const reportApi =
-  useLibraryReports();
+const reportApi = useLibraryReports();
 const reportExport =
   useLibraryReportExport();
 const auth = useAuth();
 const toast = useToast();
 
-const catalog =
-  ref<LibraryReportCatalogItem[]>(
-    [],
-  );
-const dashboardReport =
-  ref<LibraryReportDocument | null>(
-    null,
-  );
-const activeReport =
-  ref<LibraryReportDocument | null>(
-    null,
-  );
+const FORMAL_REPORTS:
+  FormalReportDefinition[] = [
+  {
+    key: "executive-summary",
+    label:
+      "Library Operations Summary",
+    category:
+      "Administration",
+    purpose:
+      "Presents the official overall status of the Library for administrative review.",
+    contents: [
+      "Key collection and service totals",
+      "Current borrowing and overdue status",
+      "Membership and attendance indicators",
+    ],
+    icon:
+      "i-lucide-clipboard-check",
+    recommendedOrientation:
+      "portrait",
+  },
+  {
+    key: "membership-registry",
+    label:
+      "Student Membership and Library Card Register",
+    category: "Members",
+    purpose:
+      "Lists registered students and the status of their Library membership and Library Card.",
+    contents: [
+      "Student identification details",
+      "Membership validity",
+      "Library Card status",
+    ],
+    icon:
+      "i-lucide-id-card",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key: "faculty-registry",
+    label:
+      "Faculty Library User Register",
+    category: "Members",
+    purpose:
+      "Provides the official list and account status of faculty members registered in the Library.",
+    contents: [
+      "Employee and department details",
+      "Library account status",
+      "Contact information when available",
+    ],
+    icon:
+      "i-lucide-contact-round",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key: "inventory-summary",
+    label:
+      "Book Collection Summary",
+    category:
+      "Collection",
+    purpose:
+      "Summarizes Library holdings by title, copy status, category, and availability.",
+    contents: [
+      "Total titles and physical copies",
+      "Available, borrowed, lost, or damaged copies",
+      "Collection distribution",
+    ],
+    icon:
+      "i-lucide-library-big",
+    recommendedOrientation:
+      "portrait",
+  },
+  {
+    key: "inventory-detail",
+    label:
+      "Book Inventory and Copy Register",
+    category:
+      "Collection",
+    purpose:
+      "Provides the detailed official inventory of books and every registered physical copy.",
+    contents: [
+      "Title, author, ISBN, and category",
+      "Accession number and barcode",
+      "Shelf location, condition, and copy status",
+    ],
+    icon:
+      "i-lucide-notebook-tabs",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key:
+      "borrowing-transactions",
+    label:
+      "Book Borrowing Register",
+    category:
+      "Circulation",
+    purpose:
+      "Lists books released to students and faculty during the selected reporting period.",
+    contents: [
+      "Borrower and book-copy details",
+      "Borrowed date and due date",
+      "Current borrowing status",
+    ],
+    icon:
+      "i-lucide-book-up-2",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key:
+      "return-transactions",
+    label:
+      "Book Return Register",
+    category:
+      "Circulation",
+    purpose:
+      "Lists completed book returns and their recorded condition during the selected period.",
+    contents: [
+      "Borrower and returned book",
+      "Return date and condition",
+      "Fine or penalty when applicable",
+    ],
+    icon:
+      "i-lucide-book-down",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key:
+      "overdue-outstanding",
+    label:
+      "Outstanding and Overdue Books Report",
+    category:
+      "Circulation",
+    purpose:
+      "Identifies books that remain borrowed and transactions that have passed their due date.",
+    contents: [
+      "Borrower and book details",
+      "Due date and overdue duration",
+      "Outstanding account status",
+    ],
+    icon:
+      "i-lucide-triangle-alert",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key: "fines-penalties",
+    label:
+      "Fines and Penalties Report",
+    category:
+      "Circulation",
+    purpose:
+      "Records assessed fines and penalties and their payment status.",
+    contents: [
+      "Member and related transaction",
+      "Reason and assessed amount",
+      "Payment or settlement status",
+    ],
+    icon:
+      "i-lucide-receipt-text",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key: "reservations",
+    label:
+      "Book Reservation Register",
+    category:
+      "Circulation",
+    purpose:
+      "Lists book reservations and their current processing status.",
+    contents: [
+      "Member and reserved title",
+      "Reservation and expiration dates",
+      "Queue and reservation status",
+    ],
+    icon:
+      "i-lucide-calendar-clock",
+    recommendedOrientation:
+      "landscape",
+  },
+  {
+    key: "visitor-summary",
+    label:
+      "Library Attendance Summary",
+    category:
+      "Library Visits",
+    purpose:
+      "Summarizes student and faculty Library attendance for the selected reporting period.",
+    contents: [
+      "Total Library visits",
+      "Student and faculty attendance",
+      "Attendance distribution by date or group",
+    ],
+    icon:
+      "i-lucide-users-round",
+    recommendedOrientation:
+      "portrait",
+  },
+  {
+    key: "visitor-log",
+    label:
+      "Library Entry Log",
+    category:
+      "Library Visits",
+    purpose:
+      "Provides the detailed official time-in record of Library visitors.",
+    contents: [
+      "Member identification",
+      "Visit date and time-in",
+      "Program, department, year, or section",
+    ],
+    icon:
+      "i-lucide-logs",
+    recommendedOrientation:
+      "landscape",
+  },
+];
 
-const selectedType =
-  ref<StandardReportKey>(
-    "membership-statistics",
-  );
+const REPORT_CATEGORIES:
+  ReportCategoryDefinition[] = [
+  {
+    key:
+      "Administration",
+    label:
+      "Administrative Report",
+    description:
+      "Overall Library status for management review and institutional documentation.",
+    icon:
+      "i-lucide-building-2",
+  },
+  {
+    key: "Members",
+    label:
+      "Members and Memberships",
+    description:
+      "Official records of students, faculty, memberships, and Library Cards.",
+    icon:
+      "i-lucide-users",
+  },
+  {
+    key: "Collection",
+    label:
+      "Book Collection and Inventory",
+    description:
+      "Summary and detailed records of titles and physical book copies.",
+    icon:
+      "i-lucide-books",
+  },
+  {
+    key:
+      "Circulation",
+    label:
+      "Borrowing, Returns, and Reservations",
+    description:
+      "Transaction reports covering borrowed books, returns, overdues, fines, and reservations.",
+    icon:
+      "i-lucide-repeat-2",
+  },
+  {
+    key:
+      "Library Visits",
+    label:
+      "Library Attendance",
+    description:
+      "Summary and detailed time-in records for students and faculty.",
+    icon:
+      "i-lucide-door-open",
+  },
+];
+
+const CUSTOM_SOURCES:
+  CustomSourceDefinition[] = [
+  {
+    key: "executive-summary",
+    label:
+      "Administrative Summary",
+    description:
+      "Overall Library totals and operational status.",
+    icon:
+      "i-lucide-clipboard-check",
+  },
+  {
+    key:
+      "membership-statistics",
+    label:
+      "Members and Memberships",
+    description:
+      "Student, faculty, membership, and Library Card totals.",
+    icon:
+      "i-lucide-users",
+  },
+  {
+    key:
+      "inventory-summary",
+    label:
+      "Book Collection",
+    description:
+      "Collection totals, physical-copy status, and availability.",
+    icon:
+      "i-lucide-library-big",
+  },
+  {
+    key:
+      "circulation-summary",
+    label:
+      "Circulation Services",
+    description:
+      "Borrowing, returns, overdues, fines, and reservation totals.",
+    icon:
+      "i-lucide-repeat-2",
+  },
+  {
+    key: "visitor-summary",
+    label:
+      "Library Attendance",
+    description:
+      "Student and faculty Library visit information.",
+    icon:
+      "i-lucide-door-open",
+  },
+];
 
 const reportMode =
   ref<ReportBuilderMode>(
     "standard",
   );
 
-const customSummaryTitle =
-  ref(
-    "My Custom Library Report",
+const selectedType =
+  ref<StandardReportKey>(
+    "executive-summary",
   );
 
-const customSummaryDescription =
-  ref(
-    "The Library information selected for the chosen date range.",
-  );
+const isGenerating =
+  ref(false);
+const isPrinting =
+  ref(false);
+const exportingFormat =
+  ref<
+    "pdf" | "docx" | "xlsx" | null
+  >(null);
+const brandingOpen =
+  ref(false);
 
+const customTitle =
+  ref(
+    "Consolidated Library Report",
+  );
+const customPurpose =
+  ref(
+    "Prepared for official Library monitoring and institutional records.",
+  );
 const customSourceTypes =
   ref<StandardReportKey[]>([
     "executive-summary",
-    "membership-statistics",
     "inventory-summary",
     "circulation-summary",
   ]);
-
 const customReports =
   ref<
     Partial<
@@ -107,33 +450,18 @@ const customReports =
       >
     >
   >({});
-
 const customSections =
-  ref<CustomSummarySection[]>(
+  ref<CustomReportSection[]>(
     [],
   );
-
 const customSectionLoading =
   ref(false);
-
-const includeCustomNotes =
-  ref(true);
-
 const customRowLimit =
   ref<CustomRowLimit>(
-    "10",
+    "all",
   );
-const isLoadingDashboard =
+const includeReportNotes =
   ref(false);
-const isGenerating =
-  ref(false);
-const isPrinting = ref(false);
-const exportingFormat =
-  ref<
-    "pdf" | "docx" | "xlsx" | null
-  >(null);
-
-const brandingOpen = ref(false);
 
 function dateInput(
   date: Date,
@@ -145,6 +473,7 @@ function dateInput(
 
 function monthStart(): string {
   const date = new Date();
+
   return dateInput(
     new Date(
       date.getFullYear(),
@@ -160,7 +489,8 @@ function today(): string {
   );
 }
 
-function defaultAcademicYear() {
+function defaultAcademicYear():
+  string {
   const date = new Date();
   const start =
     date.getMonth() >= 5
@@ -193,44 +523,11 @@ const branding =
     libraryLogoUrl:
       "/sncbt-library-logo.png",
     preparedBy:
-      auth.user.value?.username ??
       "SNCBT Librarian",
     signatoryName: "",
     signatoryTitle:
       "Authorized Librarian",
   });
-
-const recentExports =
-  ref<LibraryReportArchiveItem[]>(
-    [],
-  );
-
-const formatOptions = [
-  {
-    value: "pdf",
-    label: "PDF",
-    icon:
-      "i-lucide-file-down",
-    description:
-      "Best for printing and sharing",
-  },
-  {
-    value: "docx",
-    label: "Word",
-    icon:
-      "i-lucide-file-text",
-    description:
-      "Editable report document",
-  },
-  {
-    value: "xlsx",
-    label: "Excel",
-    icon:
-      "i-lucide-sheet",
-    description:
-      "Spreadsheet for sorting and checking data",
-  },
-] as const;
 
 const semesterItems = [
   "First Semester",
@@ -259,58 +556,52 @@ const academicYearItems =
     );
   });
 
-
-const customSummarySourceKeys =
-  [
-    "executive-summary",
-    "membership-statistics",
-    "inventory-summary",
-    "circulation-summary",
-    "visitor-summary",
-    "popular-books",
-    "member-activity",
-  ] satisfies
-    StandardReportKey[];
-
 const customRowLimitItems = [
   {
     label:
-      "Show the first 10 records in each section",
-    value: "10",
+      "Complete records",
+    value: "all",
   },
   {
     label:
-      "Show the first 25 records in each section",
+      "First 25 records per table",
     value: "25",
   },
   {
     label:
-      "Show the first 50 records in each section",
+      "First 50 records per table",
     value: "50",
   },
   {
     label:
-      "Show all records",
-    value: "all",
+      "First 100 records per table",
+    value: "100",
   },
 ];
 
-const customSummaryCatalog =
+const groupedReports =
   computed(() =>
-    customSummarySourceKeys
-      .map((key) =>
-        catalog.value.find(
-          (item) =>
-            item.value === key,
-        ),
-      )
-      .filter(
-        (
-          item,
-        ): item is
-          LibraryReportCatalogItem =>
-          Boolean(item),
-      ),
+    REPORT_CATEGORIES.map(
+      (category) => ({
+        ...category,
+        reports:
+          FORMAL_REPORTS.filter(
+            (report) =>
+              report.category ===
+              category.key,
+          ),
+      }),
+    ),
+  );
+
+const selectedDefinition =
+  computed(() =>
+    FORMAL_REPORTS.find(
+      (report) =>
+        report.key ===
+        selectedType.value,
+    ) ??
+    FORMAL_REPORTS[0]!,
   );
 
 const selectedCustomSections =
@@ -321,18 +612,9 @@ const selectedCustomSections =
     ),
   );
 
-const selectedCustomSourceCount =
-  computed(
-    () =>
-      customSourceTypes.value
-        .length,
-  );
-
 const customReportReady =
   computed(
     () =>
-      customSections.value
-        .length > 0 &&
       selectedCustomSections.value
         .length > 0,
   );
@@ -345,178 +627,40 @@ const reportActionDisabled =
       !customReportReady.value,
   );
 
-const selectedCatalogItem =
-  computed(() =>
-    catalog.value.find(
-      (item) =>
-        item.value ===
-        selectedType.value,
-    ),
-  );
-
-const categoryLabels:
-  Record<string, string> = {
-    Overview:
-      "Quick Overview",
-    Membership:
-      "Student and Faculty Records",
-    Collection:
-      "Books and Physical Copies",
-    Circulation:
-      "Borrowing, Returns, and Visits",
-    Transactions:
-      "Detailed Lists and Logs",
-  };
-
-function categoryLabel(
-  value: string,
-): string {
-  return (
-    categoryLabels[value] ??
-    value
-  );
-}
-
-const groupedCatalog =
+const selectedPeriodLabel =
   computed(() => {
-    const groups =
-      new Map<
-        string,
-        LibraryReportCatalogItem[]
-      >();
-
-    for (
-      const item of
-      catalog.value
+    if (
+      !filters.from &&
+      !filters.to
     ) {
-      const group =
-        groups.get(
-          item.category,
-        ) ?? [];
-
-      group.push(item);
-      groups.set(
-        item.category,
-        group,
-      );
+      return "Complete records";
     }
 
-    return [
-      ...groups.entries(),
-    ].map(
-      ([category, items]) => ({
-        category,
-        items,
-      }),
+    if (
+      filters.from &&
+      filters.to
+    ) {
+      return `${filters.from} to ${filters.to}`;
+    }
+
+    return (
+      filters.from ??
+      filters.to ??
+      "Selected period"
     );
   });
 
-const chartData =
-  computed(() => {
-    const table =
-      dashboardReport.value
-        ?.tables.find(
-          (item) =>
-            item.rows.length >
-              0 &&
-            item.columns.some(
-              (column) =>
-                column.format ===
-                  "number" ||
-                column.format ===
-                  "currency",
-            ),
-        );
-
-    if (!table) {
-      return [];
-    }
-
-    const labelColumn =
-      table.columns.find(
-        (column) =>
-          ![
-            "number",
-            "currency",
-            "percent",
-          ].includes(
-            column.format ??
-              "text",
-          ),
-      ) ??
-      table.columns[0];
-
-    const valueColumn =
-      table.columns.find(
-        (column) =>
-          column.format ===
-            "number" ||
-          column.format ===
-            "currency",
-      );
-
-    if (!valueColumn) {
-      return [];
-    }
-
-    return table.rows
-      .slice(0, 8)
-      .map((row) => ({
-        label: String(
-          row[
-            labelColumn.key
-          ] ?? "Unspecified",
-        ),
-        value:
-          Number(
-            row[
-              valueColumn.key
-            ] ?? 0,
-          ) || 0,
-      }));
-  });
-
-const chartMax =
-  computed(() =>
-    Math.max(
-      ...chartData.value.map(
-        (item) =>
-          item.value,
-      ),
-      1,
-    ),
+const selectedCustomSourceCount =
+  computed(
+    () =>
+      customSourceTypes.value
+        .length,
   );
-
-function toneClass(
-  tone:
-    LibraryReportMetric["tone"],
-): string {
-  if (tone === "success") {
-    return "bg-success/10 text-success";
-  }
-
-  if (tone === "warning") {
-    return "bg-warning/10 text-warning";
-  }
-
-  if (tone === "error") {
-    return "bg-error/10 text-error";
-  }
-
-  if (tone === "info") {
-    return "bg-info/10 text-info";
-  }
-
-  if (tone === "neutral") {
-    return "bg-muted text-muted";
-  }
-
-  return "bg-primary/10 text-primary";
-}
 
 function formatCell(
   value: unknown,
-  format?: any,
+  format?:
+    ReportCellFormat,
 ): string {
   return reportExport
     .formatValue(
@@ -525,117 +669,23 @@ function formatCell(
     );
 }
 
-function saveBranding() {
-  if (!import.meta.client) {
-    return;
-  }
-
-  localStorage.setItem(
-    "sncbt-report-branding",
-    JSON.stringify(branding),
-  );
-  brandingOpen.value =
-    false;
-
-  toast.add({
-    title:
-      "School header and signature details saved",
-    description:
-      "The school logos, header, prepared-by name, and signature details will be used in printed and saved reports.",
-    color: "success",
-    icon:
-      "i-lucide-badge-check",
-  });
-}
-
-function loadLocalState() {
-  if (!import.meta.client) {
-    return;
-  }
-
-  try {
-    const savedBranding =
-      localStorage.getItem(
-        "sncbt-report-branding",
-      );
-
-    if (savedBranding) {
-      Object.assign(
-        branding,
-        JSON.parse(
-          savedBranding,
-        ),
-      );
-    }
-
-    const savedExports =
-      localStorage.getItem(
-        "sncbt-report-archive",
-      );
-
-    if (savedExports) {
-      recentExports.value =
-        JSON.parse(
-          savedExports,
-        );
-    }
-  } catch {
-    // Ignore malformed local preferences.
-  }
-}
-
-function archiveExport(
-  format:
-    "pdf"
-    | "docx"
-    | "xlsx",
-  report: LibraryReportDocument,
-) {
-  const item:
-    LibraryReportArchiveItem = {
-      id:
-        `REP-${Date.now()}`,
-      title: report.title,
-      format,
-      generatedAt:
-        new Date()
-          .toISOString(),
-      periodLabel:
-        report.periodLabel,
-    };
-
-  recentExports.value = [
-    item,
-    ...recentExports.value,
-  ].slice(0, 8);
-
-  if (import.meta.client) {
-    localStorage.setItem(
-      "sncbt-report-archive",
-      JSON.stringify(
-        recentExports.value,
-      ),
-    );
-  }
-}
-
 function setDatePreset(
   preset:
     | "month"
     | "year"
     | "all",
 ) {
-  const date =
-    new Date();
+  const date = new Date();
 
   if (preset === "month") {
     filters.from =
       monthStart();
     filters.to =
       today();
-  } else if (
-    preset === "year"
-  ) {
+    return;
+  }
+
+  if (preset === "year") {
     filters.from =
       dateInput(
         new Date(
@@ -646,37 +696,88 @@ function setDatePreset(
       );
     filters.to =
       today();
-  } else {
-    filters.from =
-      undefined;
-    filters.to =
-      undefined;
+    return;
   }
+
+  filters.from =
+    undefined;
+  filters.to =
+    undefined;
 }
 
+function validatePeriod():
+  boolean {
+  if (
+    filters.from &&
+    filters.to &&
+    filters.from >
+      filters.to
+  ) {
+    toast.add({
+      title:
+        "Check the reporting period",
+      description:
+        "The start date must be earlier than or equal to the end date.",
+      color: "warning",
+      icon:
+        "i-lucide-calendar-alert",
+    });
+
+    return false;
+  }
+
+  return true;
+}
+
+function chooseReport(
+  report:
+    FormalReportDefinition,
+) {
+  reportMode.value =
+    "standard";
+  selectedType.value =
+    report.key;
+
+  nextTick(() => {
+    document
+      .getElementById(
+        "report-settings",
+      )
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  });
+}
 
 function invalidateCustomSections() {
   customReports.value = {};
   customSections.value = [];
 }
 
+function sourceSelected(
+  key: StandardReportKey,
+): boolean {
+  return customSourceTypes.value
+    .includes(key);
+}
+
 function toggleCustomSource(
-  type: StandardReportKey,
+  key: StandardReportKey,
 ) {
   if (
-    customSourceTypes.value
-      .includes(type)
+    sourceSelected(key)
   ) {
     customSourceTypes.value =
       customSourceTypes.value
         .filter(
           (item) =>
-            item !== type,
+            item !== key,
         );
   } else {
     customSourceTypes.value = [
       ...customSourceTypes.value,
-      type,
+      key,
     ];
   }
 
@@ -685,13 +786,10 @@ function toggleCustomSource(
 
 function selectAllCustomSources() {
   customSourceTypes.value =
-    customSummaryCatalog.value
-      .map(
-        (item) =>
-          item.value as
-            StandardReportKey,
-      );
-
+    CUSTOM_SOURCES.map(
+      (source) =>
+        source.key,
+    );
   invalidateCustomSections();
 }
 
@@ -726,6 +824,18 @@ function selectAllCustomSections() {
     );
 }
 
+function selectSummarySectionsOnly() {
+  customSections.value =
+    customSections.value.map(
+      (section) => ({
+        ...section,
+        selected:
+          section.kind ===
+          "metrics",
+      }),
+    );
+}
+
 function clearCustomSections() {
   customSections.value =
     customSections.value.map(
@@ -736,29 +846,17 @@ function clearCustomSections() {
     );
 }
 
-function customSourceSelected(
-  type:
-    LibraryReportKey,
-): boolean {
-  return customSourceTypes.value
-    .includes(
-      type as
-        StandardReportKey,
-    );
-}
-
-async function loadCustomSummarySections(
-  showToast = true,
-): Promise<boolean> {
+async function loadCustomSections():
+  Promise<boolean> {
   if (
     customSourceTypes.value
       .length === 0
   ) {
     toast.add({
       title:
-        "Choose at least one Library area",
+        "Select at least one Library area",
       description:
-        "Choose the Library information you want to include in your custom report.",
+        "Choose the Library areas that should appear in the consolidated report.",
       color: "warning",
       icon:
         "i-lucide-list-checks",
@@ -767,11 +865,15 @@ async function loadCustomSummarySections(
     return false;
   }
 
+  if (!validatePeriod()) {
+    return false;
+  }
+
   customSectionLoading.value =
     true;
 
   try {
-    const reports =
+    const responses =
       await Promise.all(
         customSourceTypes.value
           .map(
@@ -789,58 +891,63 @@ async function loadCustomSummarySections(
 
     const previous =
       new Map(
-        customSections.value.map(
-          (section) => [
-            section.id,
-            section.selected,
-          ],
-        ),
+        customSections.value
+          .map(
+            (section) => [
+              section.id,
+              section.selected,
+            ],
+          ),
       );
 
-    const loadedReports:
+    const loaded:
       Partial<
         Record<
           StandardReportKey,
           LibraryReportDocument
         >
       > = {};
-
     const sections:
-      CustomSummarySection[] =
+      CustomReportSection[] =
       [];
 
     for (
-      const item of reports
+      const response of
+      responses
     ) {
-      loadedReports[
-        item.type
-      ] = item.report;
+      loaded[
+        response.type
+      ] = response.report;
+
+      const source =
+        CUSTOM_SOURCES.find(
+          (item) =>
+            item.key ===
+            response.type,
+        );
+      const sourceLabel =
+        source?.label ??
+        response.report.title;
 
       if (
-        item.report.metrics
+        response.report.metrics
           .length > 0
       ) {
         const id =
-          `${item.type}:metrics`;
+          `${response.type}:metrics`;
 
         sections.push({
           id,
           sourceType:
-            item.type,
-          sourceLabel:
-            item.report.title,
+            response.type,
+          sourceLabel,
           kind: "metrics",
           title:
-            "Important Numbers",
+            "Summary figures",
           description:
-            `${item.report.metrics.length} important number${
-              item.report.metrics
-                .length === 1
-                ? ""
-                : "s"
-            } from ${item.report.title}.`,
+            "Official totals and status figures for this Library area.",
           rowCount:
-            item.report.metrics
+            response.report.metrics
               .length,
           selected:
             previous.get(id) ??
@@ -850,57 +957,45 @@ async function loadCustomSummarySections(
 
       for (
         const table of
-        item.report.tables
+        response.report.tables
       ) {
         const id =
-          `${item.type}:table:${table.id}`;
+          `${response.type}:table:${table.id}`;
 
         sections.push({
           id,
           sourceType:
-            item.type,
-          sourceLabel:
-            item.report.title,
+            response.type,
+          sourceLabel,
           kind: "table",
           title:
             table.title,
           description:
             table.description ||
-            `${table.rows.length} available record${
-              table.rows.length ===
-                1
-                ? ""
-                : "s"
-            }.`,
+            "Detailed records for this Library area.",
           rowCount:
             table.rows.length,
           selected:
             previous.get(id) ??
-            true,
+            false,
         });
       }
     }
 
     customReports.value =
-      loadedReports;
+      loaded;
     customSections.value =
       sections;
 
-    if (showToast) {
-      toast.add({
-        title:
-          "Available report sections are ready",
-        description:
-          `${sections.length} available section${
-            sections.length === 1
-              ? ""
-              : "s"
-          } can now be selected or removed.`,
-        color: "success",
-        icon:
-          "i-lucide-list-checks",
-      });
-    }
+    toast.add({
+      title:
+        "Report sections loaded",
+      description:
+        "Summary figures are selected by default. Select only the detailed tables required for the final report.",
+      color: "success",
+      icon:
+        "i-lucide-list-checks",
+    });
 
     return true;
   } catch (error) {
@@ -923,39 +1018,174 @@ async function loadCustomSummarySections(
   }
 }
 
-function limitedCustomTable(
+const TECHNICAL_COLUMN_KEYS =
+  new Set([
+    "documentid",
+    "createdat",
+    "updatedat",
+    "publishedat",
+    "metadata",
+    "internalid",
+    "internalreference",
+  ]);
+
+function normalizeKey(
+  value: string,
+): string {
+  return value
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]/g,
+      "",
+    );
+}
+
+function isFormalColumn(
+  key: string,
+  label: string,
+): boolean {
+  const normalizedKey =
+    normalizeKey(key);
+  const normalizedLabel =
+    normalizeKey(label);
+
+  if (
+    TECHNICAL_COLUMN_KEYS.has(
+      normalizedKey,
+    )
+  ) {
+    return false;
+  }
+
+  return ![
+    "documentid",
+    "databaseid",
+    "internalid",
+    "createdat",
+    "updatedat",
+    "publishedat",
+    "metadata",
+  ].some(
+    (technicalLabel) =>
+      normalizedLabel ===
+      technicalLabel,
+  );
+}
+
+function sanitizeTable(
   table:
     LibraryReportTable,
-  sourceTitle: string,
 ): LibraryReportTable {
+  const filteredColumns =
+    table.columns.filter(
+      (column) =>
+        isFormalColumn(
+          column.key,
+          column.label,
+        ),
+    );
+
+  const columns =
+    filteredColumns.length > 0
+      ? filteredColumns
+      : table.columns;
+
+  const projectRow = (
+    row:
+      LibraryReportTable["rows"][number],
+  ) =>
+    Object.fromEntries(
+      columns.map(
+        (column) => [
+          column.key,
+          row[column.key],
+        ],
+      ),
+    );
+
+  return {
+    ...table,
+    description:
+      undefined,
+    columns:
+      columns.map(
+        (column) => ({
+          ...column,
+        }),
+      ),
+    rows:
+      table.rows.map(
+        projectRow,
+      ),
+    totalRow:
+      table.totalRow
+        ? projectRow(
+            table.totalRow,
+          )
+        : undefined,
+  };
+}
+
+function formalizeReport(
+  report:
+    LibraryReportDocument,
+): LibraryReportDocument {
+  const definition =
+    FORMAL_REPORTS.find(
+      (item) =>
+        item.key ===
+        report.type,
+    );
+
+  return {
+    ...report,
+    title:
+      definition?.label ??
+      report.title,
+    description:
+      definition?.purpose ??
+      report.description,
+    category:
+      (definition?.category ??
+        report.category) as
+        LibraryReportCategory,
+    metrics:
+      report.metrics.map(
+        (metric) => ({
+          ...metric,
+          description:
+            undefined,
+        }),
+      ),
+    tables:
+      report.tables.map(
+        sanitizeTable,
+      ),
+    notes:
+      includeReportNotes.value
+        ? report.notes
+        : undefined,
+  };
+}
+
+function applyRowLimit(
+  table:
+    LibraryReportTable,
+  sourceLabel: string,
+): LibraryReportTable {
+  const clean =
+    sanitizeTable(table);
+
   if (
     customRowLimit.value ===
     "all"
   ) {
     return {
-      ...table,
+      ...clean,
       id:
-        `${sourceTitle}:${table.id}`,
+        `${sourceLabel}:${clean.id}`,
       title:
-        `${sourceTitle} — ${table.title}`,
-      columns:
-        table.columns.map(
-          (column) => ({
-            ...column,
-          }),
-        ),
-      rows:
-        table.rows.map(
-          (row) => ({
-            ...row,
-          }),
-        ),
-      totalRow:
-        table.totalRow
-          ? {
-              ...table.totalRow,
-            }
-          : undefined,
+        `${sourceLabel} — ${clean.title}`,
     };
   }
 
@@ -963,57 +1193,31 @@ function limitedCustomTable(
     Number(
       customRowLimit.value,
     );
-  const truncated =
-    table.rows.length >
-    limit;
 
   return {
-    ...table,
+    ...clean,
     id:
-      `${sourceTitle}:${table.id}`,
+      `${sourceLabel}:${clean.id}`,
     title:
-      `${sourceTitle} — ${table.title}`,
-    description: [
-      table.description,
-      truncated
-        ? `Showing the first ${limit} of ${table.rows.length} available records.`
-        : "",
-    ]
-      .filter(Boolean)
-      .join(" "),
-    columns:
-      table.columns.map(
-        (column) => ({
-          ...column,
-        }),
-      ),
+      `${sourceLabel} — ${clean.title}`,
     rows:
-      table.rows
-        .slice(0, limit)
-        .map(
-          (row) => ({
-            ...row,
-          }),
-        ),
-    totalRow:
-      table.totalRow
-        ? {
-            ...table.totalRow,
-          }
-        : undefined,
+      clean.rows.slice(
+        0,
+        limit,
+      ),
   };
 }
 
-function buildCustomSummaryReport():
+function buildCustomReport():
   LibraryReportDocument | null {
   if (
     !customReportReady.value
   ) {
     toast.add({
       title:
-        "Choose what to include",
+        "Select report sections",
       description:
-        "Show the available sections, then keep at least one item selected before printing or saving.",
+        "Load the available sections and select at least one section for the consolidated report.",
       color: "warning",
       icon:
         "i-lucide-list-checks",
@@ -1022,10 +1226,9 @@ function buildCustomSummaryReport():
     return null;
   }
 
-  const selected =
-    selectedCustomSections.value;
-
-  const indicatorRows:
+  const tables:
+    LibraryReportTable[] = [];
+  const summaryRows:
     Array<
       Record<
         string,
@@ -1033,28 +1236,15 @@ function buildCustomSummaryReport():
       >
     > = [];
 
-  const tables:
-    LibraryReportTable[] = [];
-
-  const sourceReports =
-    selected
-      .map(
-        (section) =>
-          customReports.value[
-            section.sourceType
-          ],
-      )
-      .filter(
-        (
-          report,
-        ): report is
-          LibraryReportDocument =>
-          Boolean(report),
-      );
+  const usedReports =
+    new Map<
+      StandardReportKey,
+      LibraryReportDocument
+    >();
 
   for (
     const section of
-    selected
+    selectedCustomSections.value
   ) {
     const report =
       customReports.value[
@@ -1065,6 +1255,11 @@ function buildCustomSummaryReport():
       continue;
     }
 
+    usedReports.set(
+      section.sourceType,
+      report,
+    );
+
     if (
       section.kind ===
       "metrics"
@@ -1073,19 +1268,16 @@ function buildCustomSummaryReport():
         const metric of
         report.metrics
       ) {
-        indicatorRows.push({
-          reportArea:
-            report.title,
+        summaryRows.push({
+          area:
+            section.sourceLabel,
           indicator:
             metric.label,
-          value:
+          result:
             formatCell(
               metric.value,
               metric.format,
             ),
-          description:
-            metric.description ||
-            "",
         });
       }
 
@@ -1096,7 +1288,6 @@ function buildCustomSummaryReport():
       section.id.split(
         ":table:",
       )[1];
-
     const table =
       report.tables.find(
         (item) =>
@@ -1106,28 +1297,25 @@ function buildCustomSummaryReport():
 
     if (table) {
       tables.push(
-        limitedCustomTable(
+        applyRowLimit(
           table,
-          report.title,
+          section.sourceLabel,
         ),
       );
     }
   }
 
   if (
-    indicatorRows.length > 0
+    summaryRows.length > 0
   ) {
     tables.unshift({
       id:
-        "custom-key-indicators",
+        "consolidated-summary",
       title:
-        "Selected Important Numbers",
-      description:
-        "Important numbers collected from the Library information you selected.",
+        "Summary of Selected Library Areas",
       columns: [
         {
-          key:
-            "reportArea",
+          key: "area",
           label:
             "Library Area",
         },
@@ -1135,170 +1323,105 @@ function buildCustomSummaryReport():
           key:
             "indicator",
           label:
-            "Item",
+            "Indicator",
         },
         {
-          key: "value",
+          key: "result",
           label: "Result",
-        },
-        {
-          key:
-            "description",
-          label:
-            "What It Means",
         },
       ],
       rows:
-        indicatorRows,
+        summaryRows,
     });
   }
 
+  const firstReport =
+    [...usedReports.values()][0];
+
   const notes =
-    includeCustomNotes.value
-      ? sourceReports
+    includeReportNotes.value
+      ? [...usedReports.values()]
           .flatMap(
             (report) =>
-              (
-                report.notes ??
-                []
-              ).map(
-                (note) =>
-                  `${report.title}: ${note}`,
-              ),
+              report.notes ?? [],
           )
           .filter(
             (
               note,
               index,
-              values,
+              all,
             ) =>
-              values.indexOf(
+              all.indexOf(
                 note,
               ) === index,
           )
-      : [];
-
-  const firstReport =
-    sourceReports[0];
+      : undefined;
 
   return {
     type:
       "custom-summary",
     title:
-      customSummaryTitle.value
+      customTitle.value
         .trim() ||
-      "My Custom Library Report",
+      "Consolidated Library Report",
     description:
-      customSummaryDescription.value
+      customPurpose.value
         .trim() ||
-      "The Library information selected for this report.",
+      "Prepared for official Library monitoring and institutional records.",
     category:
-      "Overview",
+      "Administration",
     generatedAt:
       new Date()
         .toISOString(),
     periodLabel:
       firstReport
-        ?.periodLabel ||
-      [
-        filters.from,
-        filters.to,
-      ]
-        .filter(Boolean)
-        .join(" to ") ||
-      "Complete Records",
+        ?.periodLabel ??
+      selectedPeriodLabel.value,
     filters: {
       ...filters,
     },
     metrics: [],
     tables,
     notes:
+      notes &&
       notes.length > 0
         ? notes
         : undefined,
   };
 }
 
-async function loadCatalog() {
-  try {
-    catalog.value =
-      await reportApi.catalog();
-  } catch (error) {
-    toast.add({
-      title:
-        "The report list could not be loaded",
-      description:
-        auth.getErrorMessage(
-          error,
-        ),
-      color: "error",
-      icon:
-        "i-lucide-circle-alert",
-    });
+async function prepareReport():
+  Promise<
+    LibraryReportDocument | null
+  > {
+  if (!validatePeriod()) {
+    return null;
   }
-}
 
-async function loadDashboard() {
-  isLoadingDashboard.value =
+  isGenerating.value =
     true;
-
-  try {
-    dashboardReport.value =
-      await reportApi.dashboard(
-        filters,
-      );
-
-  } catch (error) {
-    toast.add({
-      title:
-        "The report summary could not be loaded",
-      description:
-        auth.getErrorMessage(
-          error,
-        ),
-      color: "error",
-      icon:
-        "i-lucide-circle-alert",
-    });
-  } finally {
-    isLoadingDashboard.value =
-      false;
-  }
-}
-
-async function prepareReport(
-  type = selectedType.value,
-): Promise<
-  LibraryReportDocument | null
-> {
-  isGenerating.value = true;
-
-  if (
-    reportMode.value ===
-    "standard"
-  ) {
-    selectedType.value =
-      type;
-  }
 
   try {
     const report =
       reportMode.value ===
         "custom"
-        ? buildCustomSummaryReport()
-        : await reportApi.generate(
-            type,
-            filters,
-          );
+        ? buildCustomReport()
+        : await reportApi
+            .generate(
+              selectedType.value,
+              filters,
+            );
 
     if (!report) {
       return null;
     }
 
-    activeReport.value =
-      report;
-
-    return report;
+    return reportMode.value ===
+      "custom"
+      ? report
+      : formalizeReport(
+          report,
+        );
   } catch (error) {
     toast.add({
       title:
@@ -1319,8 +1442,9 @@ async function prepareReport(
   }
 }
 
-async function previewAndPrintReport() {
-  isPrinting.value = true;
+async function previewAndPrint() {
+  isPrinting.value =
+    true;
 
   try {
     const report =
@@ -1335,20 +1459,10 @@ async function previewAndPrintReport() {
         report,
         branding,
       );
-
-    toast.add({
-      title:
-        "Print preview closed",
-      description:
-        "The native browser print preview was completed or cancelled.",
-      color: "success",
-      icon:
-        "i-lucide-printer-check",
-    });
   } catch (error) {
     toast.add({
       title:
-        "The print preview could not be opened",
+        "Print preview could not be opened",
       description:
         auth.getErrorMessage(
           error,
@@ -1387,23 +1501,11 @@ async function downloadReport(
         branding,
       );
 
-    archiveExport(
-      format,
-      report,
-    );
-
-    const formatName =
-      format === "docx"
-        ? "Word"
-        : format === "xlsx"
-          ? "Excel"
-          : "PDF";
-
     toast.add({
       title:
-        `${formatName} report downloaded`,
+        "Report saved",
       description:
-        `${report.title} was generated using the selected reporting period.`,
+        `${report.title} was saved successfully.`,
       color: "success",
       icon:
         "i-lucide-download",
@@ -1426,14 +1528,58 @@ async function downloadReport(
   }
 }
 
-function chooseReport(
-  item: LibraryReportCatalogItem,
-) {
-  reportMode.value =
-    "standard";
-  selectedType.value =
-    item.value as
-      StandardReportKey;
+function saveBranding() {
+  if (!import.meta.client) {
+    return;
+  }
+
+  localStorage.setItem(
+    "sncbt-report-branding",
+    JSON.stringify(
+      branding,
+    ),
+  );
+  brandingOpen.value =
+    false;
+
+  toast.add({
+    title:
+      "Report header saved",
+    description:
+      "The official header and approval details will be used in generated reports.",
+    color: "success",
+    icon:
+      "i-lucide-badge-check",
+  });
+}
+
+function loadBranding() {
+  if (!import.meta.client) {
+    return;
+  }
+
+  try {
+    const saved =
+      localStorage.getItem(
+        "sncbt-report-branding",
+      );
+
+    if (saved) {
+      Object.assign(
+        branding,
+        JSON.parse(saved),
+      );
+    } else if (
+      auth.user.value
+        ?.username
+    ) {
+      branding.preparedBy =
+        auth.user.value
+          .username;
+    }
+  } catch {
+    // Ignore malformed local preferences.
+  }
 }
 
 watch(
@@ -1443,32 +1589,23 @@ watch(
     filters.academicYear,
     filters.semester,
   ],
-  () => {
-    /*
-     * Previously loaded custom sections belong to the old filters.
-     * Clear them so the user cannot accidentally print stale data.
-     */
-    invalidateCustomSections();
-  },
+  invalidateCustomSections,
 );
 
-onMounted(async () => {
-  loadLocalState();
-
-  await Promise.all([
-    loadCatalog(),
-    loadDashboard(),
-  ]);
-});
+onMounted(
+  loadBranding,
+);
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer
+    class="py-6 sm:py-8"
+  >
     <div
-      class="mx-auto max-w-[1500px] space-y-6"
+      class="mx-auto max-w-[1480px] space-y-6"
     >
-      <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+      <header
+        class="flex flex-col gap-4 border-b border-default pb-5 lg:flex-row lg:items-start lg:justify-between"
       >
         <div>
           <div
@@ -1484,128 +1621,214 @@ onMounted(async () => {
               color="primary"
               variant="soft"
             >
-              Print · PDF · Word · Excel
+              Official Records
             </UBadge>
           </div>
 
           <p
-            class="mt-1 max-w-3xl text-sm leading-relaxed text-muted"
+            class="mt-2 max-w-3xl text-sm leading-relaxed text-muted"
           >
-            Choose the information you need, set the date range, then print the report or save it as PDF, Word, or Excel.
+            Select an official report by Library area, set the reporting period, and review it before printing or saving.
           </p>
         </div>
 
-        <div
-          class="flex flex-wrap gap-2"
-        >
-          <UButton
-            label="School Header & Signatures"
-            icon="i-lucide-panels-top-left"
-            color="neutral"
-            variant="outline"
-            @click="
-              brandingOpen = true
-            "
-          />
+        <UButton
+          label="Report Header and Approval"
+          icon="i-lucide-stamp"
+          color="neutral"
+          variant="outline"
+          @click="
+            brandingOpen = true
+          "
+        />
+      </header>
 
-          <UButton
-            label="Refresh Summary"
-            icon="i-lucide-refresh-cw"
-            color="primary"
-            variant="soft"
-            :loading="
-              isLoadingDashboard
-            "
-            @click="
-              loadDashboard
-            "
-          />
-        </div>
-      </div>
+      <UAlert
+        color="info"
+        variant="soft"
+        icon="i-lucide-info"
+        title="Reports are organized by their official purpose"
+        description="Use a ready-made report for a complete official record. Use the consolidated report only when information from several Library areas must be combined."
+      />
 
       <div
-        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+        class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]"
       >
-        <template
-          v-if="isLoadingDashboard"
+        <main
+          class="space-y-6"
         >
-          <USkeleton
-            v-for="item in 10"
-            :key="item"
-            class="h-32 rounded-2xl"
-          />
-        </template>
+          <UCard>
+            <template #header>
+              <div>
+                <h2
+                  class="text-lg font-semibold text-highlighted"
+                >
+                  Official Report Directory
+                </h2>
 
-        <UCard
-          v-for="
-            item in
-            dashboardReport?.metrics ??
-            []
-          "
-          v-else
-          :key="item.label"
-          :ui="{
-            body: 'p-4 sm:p-5',
-          }"
-        >
-          <div
-            class="flex items-start justify-between gap-3"
-          >
-            <div class="min-w-0">
-              <p
-                class="text-sm text-muted"
-              >
-                {{ item.label }}
-              </p>
-
-              <p
-                class="mt-2 truncate text-2xl font-bold text-highlighted"
-              >
-                {{
-                  formatCell(
-                    item.value,
-                    item.format,
-                  )
-                }}
-              </p>
-
-              <p
-                v-if="
-                  item.description
-                "
-                class="mt-1 text-xs text-muted"
-              >
-                {{
-                  item.description
-                }}
-              </p>
-            </div>
+                <p
+                  class="mt-1 text-sm text-muted"
+                >
+                  Choose the Library area first, then select the report that matches the record you need.
+                </p>
+              </div>
+            </template>
 
             <div
-              class="flex size-10 shrink-0 items-center justify-center rounded-xl"
-              :class="
-                toneClass(
-                  item.tone,
-                )
-              "
+              class="space-y-8"
             >
-              <UIcon
-                :name="
-                  item.icon ||
-                  'i-lucide-chart-no-axes-combined'
+              <section
+                v-for="
+                  group in
+                  groupedReports
                 "
-                class="size-5"
-              />
-            </div>
-          </div>
-        </UCard>
-      </div>
+                :key="
+                  group.key
+                "
+              >
+                <div
+                  class="mb-3 flex items-start gap-3"
+                >
+                  <div
+                    class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                  >
+                    <UIcon
+                      :name="
+                        group.icon
+                      "
+                      class="size-5"
+                    />
+                  </div>
 
-      <div
-        class="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]"
-      >
-        <div class="space-y-6 xl:sticky xl:top-6 xl:self-start">
-          <UCard id="report-builder">
+                  <div>
+                    <h3
+                      class="font-semibold text-highlighted"
+                    >
+                      {{
+                        group.label
+                      }}
+                    </h3>
+
+                    <p
+                      class="mt-0.5 text-xs leading-relaxed text-muted"
+                    >
+                      {{
+                        group.description
+                      }}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="grid gap-3 md:grid-cols-2"
+                >
+                  <button
+                    v-for="
+                      report in
+                      group.reports
+                    "
+                    :key="
+                      report.key
+                    "
+                    type="button"
+                    class="rounded-xl border p-4 text-left transition"
+                    :class="
+                      selectedType ===
+                        report.key &&
+                      reportMode ===
+                        'standard'
+                        ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/10'
+                        : 'border-default bg-elevated/20 hover:border-primary/40 hover:bg-elevated/50'
+                    "
+                    @click="
+                      chooseReport(
+                        report,
+                      )
+                    "
+                  >
+                    <div
+                      class="flex items-start gap-3"
+                    >
+                      <div
+                        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-elevated text-primary"
+                      >
+                        <UIcon
+                          :name="
+                            report.icon
+                          "
+                          class="size-5"
+                        />
+                      </div>
+
+                      <div
+                        class="min-w-0 flex-1"
+                      >
+                        <div
+                          class="flex flex-wrap items-start justify-between gap-2"
+                        >
+                          <p
+                            class="font-semibold leading-snug text-highlighted"
+                          >
+                            {{
+                              report.label
+                            }}
+                          </p>
+
+                          <UBadge
+                            color="neutral"
+                            variant="soft"
+                            size="xs"
+                            class="capitalize"
+                          >
+                            {{
+                              report.recommendedOrientation
+                            }}
+                          </UBadge>
+                        </div>
+
+                        <p
+                          class="mt-2 text-xs leading-relaxed text-muted"
+                        >
+                          {{
+                            report.purpose
+                          }}
+                        </p>
+
+                        <ul
+                          class="mt-3 space-y-1.5"
+                        >
+                          <li
+                            v-for="
+                              item in
+                              report.contents
+                            "
+                            :key="item"
+                            class="flex items-start gap-2 text-xs text-muted"
+                          >
+                            <UIcon
+                              name="i-lucide-check"
+                              class="mt-0.5 size-3.5 shrink-0 text-success"
+                            />
+
+                            <span>
+                              {{ item }}
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </UCard>
+        </main>
+
+        <aside
+          id="report-settings"
+          class="space-y-4 xl:sticky xl:top-6 xl:self-start"
+        >
+          <UCard>
             <template #header>
               <div
                 class="flex items-center gap-3"
@@ -1614,7 +1837,7 @@ onMounted(async () => {
                   class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"
                 >
                   <UIcon
-                    name="i-lucide-file-chart-column-increasing"
+                    name="i-lucide-file-cog"
                     class="size-5"
                   />
                 </div>
@@ -1623,24 +1846,27 @@ onMounted(async () => {
                   <h2
                     class="font-semibold text-highlighted"
                   >
-                    Choose and Prepare a Report
+                    Report Settings
                   </h2>
+
                   <p
                     class="text-xs text-muted"
                   >
-                    Use a ready-made report or build your own
+                    Select content, period, and output
                   </p>
                 </div>
               </div>
             </template>
 
-            <div class="space-y-4">
+            <div
+              class="space-y-5"
+            >
               <div
                 class="grid grid-cols-2 gap-2 rounded-xl bg-elevated p-1"
               >
                 <UButton
-                  label="Ready-Made Report"
-                  icon="i-lucide-file-chart-column"
+                  label="Official Report"
+                  icon="i-lucide-file-check-2"
                   :color="
                     reportMode ===
                     'standard'
@@ -1661,8 +1887,8 @@ onMounted(async () => {
                 />
 
                 <UButton
-                  label="Build My Own"
-                  icon="i-lucide-list-checks"
+                  label="Consolidated"
+                  icon="i-lucide-layers-3"
                   :color="
                     reportMode ===
                     'custom'
@@ -1689,413 +1915,407 @@ onMounted(async () => {
                   'standard'
                 "
               >
-                <UFormField
-                  label="Choose a Report"
-                  required
-                >
-                  <USelect
-                    v-model="
-                      selectedType
-                    "
-                    :items="catalog"
-                    value-key="value"
-                    label-key="label"
-                    placeholder="Choose a report"
-                    class="w-full"
-                  />
-                </UFormField>
-
                 <div
-                  class="rounded-xl border border-default bg-elevated/30 p-3"
+                  class="rounded-xl border border-primary/30 bg-primary/5 p-4"
                 >
                   <p
-                    class="text-sm font-medium text-highlighted"
+                    class="text-xs font-semibold uppercase tracking-wide text-primary"
+                  >
+                    Selected official report
+                  </p>
+
+                  <p
+                    class="mt-2 font-semibold leading-snug text-highlighted"
                   >
                     {{
-                      selectedCatalogItem?.label
+                      selectedDefinition.label
                     }}
                   </p>
 
                   <p
-                    class="mt-1 text-xs leading-relaxed text-muted"
+                    class="mt-2 text-xs leading-relaxed text-muted"
                   >
                     {{
-                      selectedCatalogItem?.description
+                      selectedDefinition.purpose
                     }}
                   </p>
                 </div>
               </template>
 
               <template v-else>
-                <UAlert
-                  color="info"
-                  variant="soft"
-                  icon="i-lucide-list-checks"
-                  title="Create one report using only the information you need"
-                  description="Choose the Library areas, show the available sections, then remove anything you do not want to print or save."
-                />
-
-                <UFormField
-                  label="Report Title"
-                  required
+                <div
+                  class="space-y-4"
                 >
-                  <UInput
-                    v-model="
-                      customSummaryTitle
-                    "
-                    icon="i-lucide-heading"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField
-                  label="Short Explanation"
-                >
-                  <UTextarea
-                    v-model="
-                      customSummaryDescription
-                    "
-                    :rows="3"
-                    autoresize
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <div>
-                  <div
-                    class="mb-2 flex items-center justify-between gap-3"
-                  >
-                    <div>
-                      <p
-                        class="text-sm font-medium text-highlighted"
-                      >
-                        Choose Information to Include
-                      </p>
-
-                      <p
-                        class="text-xs text-muted"
-                      >
-                        {{
-                          selectedCustomSourceCount
-                        }}
-                        selected
-                      </p>
-                    </div>
-
+                  <div>
                     <div
-                      class="flex gap-1"
+                      class="mb-2 flex items-center justify-between gap-3"
                     >
-                      <UButton
-                        label="Select All"
-                        color="neutral"
-                        variant="ghost"
-                        size="xs"
-                        @click="
-                          selectAllCustomSources
-                        "
-                      />
-
-                      <UButton
-                        label="Remove All"
-                        color="neutral"
-                        variant="ghost"
-                        size="xs"
-                        @click="
-                          clearCustomSources
-                        "
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    class="space-y-2"
-                  >
-                    <button
-                      v-for="
-                        item in
-                        customSummaryCatalog
-                      "
-                      :key="
-                        item.value
-                      "
-                      type="button"
-                      class="flex w-full items-start gap-3 rounded-xl border p-3 text-left transition"
-                      :class="
-                        customSourceSelected(
-                          item.value,
-                        )
-                          ? 'border-primary/50 bg-primary/5'
-                          : 'border-default bg-elevated/20 hover:border-primary/30'
-                      "
-                      @click="
-                        toggleCustomSource(
-                          item.value as StandardReportKey,
-                        )
-                      "
-                    >
-                      <div
-                        class="flex size-9 shrink-0 items-center justify-center rounded-lg"
-                        :class="
-                          customSourceSelected(
-                            item.value,
-                          )
-                            ? 'bg-primary text-white'
-                            : 'bg-elevated text-muted'
-                        "
-                      >
-                        <UIcon
-                          :name="
-                            customSourceSelected(
-                              item.value,
-                            )
-                              ? 'i-lucide-check'
-                              : item.icon
-                          "
-                          class="size-4"
-                        />
-                      </div>
-
-                      <div
-                        class="min-w-0"
-                      >
+                      <div>
                         <p
                           class="text-sm font-semibold text-highlighted"
                         >
-                          {{
-                            item.label
-                          }}
+                          1. Select Library areas
                         </p>
 
                         <p
-                          class="mt-1 line-clamp-2 text-xs leading-relaxed text-muted"
+                          class="text-xs text-muted"
                         >
                           {{
-                            item.description
+                            selectedCustomSourceCount
                           }}
+                          of
+                          {{
+                            CUSTOM_SOURCES.length
+                          }}
+                          selected
                         </p>
                       </div>
-                    </button>
-                  </div>
-                </div>
 
-                <UButton
-                  label="Show Available Sections"
-                  icon="i-lucide-list-tree"
-                  color="primary"
-                  variant="soft"
-                  block
-                  :loading="
-                    customSectionLoading
-                  "
-                  :disabled="
-                    customSourceTypes.length ===
-                    0
-                  "
-                  @click="
-                    loadCustomSummarySections
-                  "
-                />
-
-                <div
-                  v-if="
-                    customSections.length >
-                    0
-                  "
-                  class="space-y-3 rounded-xl border border-default p-3"
-                >
-                  <div
-                    class="flex items-center justify-between gap-3"
-                  >
-                    <div>
-                      <p
-                        class="text-sm font-medium text-highlighted"
+                      <div
+                        class="flex gap-1"
                       >
-                        Choose Specific Sections
-                      </p>
+                        <UButton
+                          label="All"
+                          size="xs"
+                          color="neutral"
+                          variant="ghost"
+                          @click="
+                            selectAllCustomSources
+                          "
+                        />
 
-                      <p
-                        class="text-xs text-muted"
-                      >
-                        {{
-                          selectedCustomSections.length
-                        }}
-                        of
-                        {{
-                          customSections.length
-                        }}
-                        included
-                      </p>
+                        <UButton
+                          label="Clear"
+                          size="xs"
+                          color="neutral"
+                          variant="ghost"
+                          @click="
+                            clearCustomSources
+                          "
+                        />
+                      </div>
                     </div>
 
                     <div
-                      class="flex gap-1"
+                      class="space-y-2"
                     >
-                      <UButton
-                        label="Select All"
-                        color="neutral"
-                        variant="ghost"
-                        size="xs"
-                        @click="
-                          selectAllCustomSections
+                      <button
+                        v-for="
+                          source in
+                          CUSTOM_SOURCES
                         "
-                      />
+                        :key="
+                          source.key
+                        "
+                        type="button"
+                        class="flex w-full items-start gap-3 rounded-xl border p-3 text-left transition"
+                        :class="
+                          sourceSelected(
+                            source.key,
+                          )
+                            ? 'border-primary/50 bg-primary/5'
+                            : 'border-default bg-elevated/20'
+                        "
+                        @click="
+                          toggleCustomSource(
+                            source.key,
+                          )
+                        "
+                      >
+                        <div
+                          class="flex size-8 shrink-0 items-center justify-center rounded-lg"
+                          :class="
+                            sourceSelected(
+                              source.key,
+                            )
+                              ? 'bg-primary text-white'
+                              : 'bg-elevated text-muted'
+                          "
+                        >
+                          <UIcon
+                            :name="
+                              sourceSelected(
+                                source.key,
+                              )
+                                ? 'i-lucide-check'
+                                : source.icon
+                            "
+                            class="size-4"
+                          />
+                        </div>
 
-                      <UButton
-                        label="Remove All"
-                        color="neutral"
-                        variant="ghost"
-                        size="xs"
-                        @click="
-                          clearCustomSections
+                        <div>
+                          <p
+                            class="text-sm font-medium text-highlighted"
+                          >
+                            {{
+                              source.label
+                            }}
+                          </p>
+
+                          <p
+                            class="mt-0.5 text-xs leading-relaxed text-muted"
+                          >
+                            {{
+                              source.description
+                            }}
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+
+                    <UButton
+                      label="Load Available Sections"
+                      icon="i-lucide-list-tree"
+                      color="primary"
+                      variant="soft"
+                      block
+                      class="mt-3"
+                      :loading="
+                        customSectionLoading
+                      "
+                      :disabled="
+                        customSourceTypes.length ===
+                        0
+                      "
+                      @click="
+                        loadCustomSections
+                      "
+                    />
+                  </div>
+
+                  <div
+                    v-if="
+                      customSections.length >
+                      0
+                    "
+                    class="space-y-3 border-t border-default pt-4"
+                  >
+                    <div
+                      class="flex items-start justify-between gap-3"
+                    >
+                      <div>
+                        <p
+                          class="text-sm font-semibold text-highlighted"
+                        >
+                          2. Select report sections
+                        </p>
+
+                        <p
+                          class="text-xs text-muted"
+                        >
+                          {{
+                            selectedCustomSections.length
+                          }}
+                          of
+                          {{
+                            customSections.length
+                          }}
+                          included
+                        </p>
+                      </div>
+
+                      <div
+                        class="flex flex-wrap justify-end gap-1"
+                      >
+                        <UButton
+                          label="Summary Only"
+                          size="xs"
+                          color="neutral"
+                          variant="ghost"
+                          @click="
+                            selectSummarySectionsOnly
+                          "
+                        />
+
+                        <UButton
+                          label="All"
+                          size="xs"
+                          color="neutral"
+                          variant="ghost"
+                          @click="
+                            selectAllCustomSections
+                          "
+                        />
+
+                        <UButton
+                          label="Clear"
+                          size="xs"
+                          color="neutral"
+                          variant="ghost"
+                          @click="
+                            clearCustomSections
+                          "
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      class="max-h-80 space-y-2 overflow-y-auto pr-1"
+                    >
+                      <button
+                        v-for="
+                          section in
+                          customSections
                         "
-                      />
+                        :key="
+                          section.id
+                        "
+                        type="button"
+                        class="flex w-full items-start gap-3 rounded-lg border p-3 text-left transition"
+                        :class="
+                          section.selected
+                            ? 'border-success/40 bg-success/5'
+                            : 'border-default bg-elevated/20 opacity-70'
+                        "
+                        @click="
+                          toggleCustomSection(
+                            section.id,
+                          )
+                        "
+                      >
+                        <div
+                          class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md"
+                          :class="
+                            section.selected
+                              ? 'bg-success text-white'
+                              : 'bg-elevated text-muted'
+                          "
+                        >
+                          <UIcon
+                            :name="
+                              section.selected
+                                ? 'i-lucide-check'
+                                : section.kind ===
+                                    'metrics'
+                                  ? 'i-lucide-gauge'
+                                  : 'i-lucide-table-2'
+                            "
+                            class="size-3.5"
+                          />
+                        </div>
+
+                        <div
+                          class="min-w-0 flex-1"
+                        >
+                          <div
+                            class="flex items-start justify-between gap-2"
+                          >
+                            <p
+                              class="text-xs font-semibold text-highlighted"
+                            >
+                              {{
+                                section.sourceLabel
+                              }}
+                            </p>
+
+                            <UBadge
+                              color="neutral"
+                              variant="soft"
+                              size="xs"
+                            >
+                              {{
+                                section.kind ===
+                                  "metrics"
+                                  ? "Summary"
+                                  : `${section.rowCount} records`
+                              }}
+                            </UBadge>
+                          </div>
+
+                          <p
+                            class="mt-1 text-xs text-muted"
+                          >
+                            {{
+                              section.title
+                            }}
+                          </p>
+                        </div>
+                      </button>
                     </div>
                   </div>
 
                   <div
-                    class="max-h-72 space-y-2 overflow-y-auto pr-1"
+                    class="space-y-3 border-t border-default pt-4"
                   >
-                    <button
-                      v-for="
-                        section in
-                        customSections
-                      "
-                      :key="
-                        section.id
-                      "
-                      type="button"
-                      class="flex w-full items-start gap-3 rounded-lg border p-2.5 text-left transition"
-                      :class="
-                        section.selected
-                          ? 'border-success/40 bg-success/5'
-                          : 'border-default bg-elevated/20 opacity-70'
-                      "
-                      @click="
-                        toggleCustomSection(
-                          section.id,
-                        )
-                      "
+                    <p
+                      class="text-sm font-semibold text-highlighted"
                     >
-                      <div
-                        class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md"
-                        :class="
-                          section.selected
-                            ? 'bg-success text-white'
-                            : 'bg-elevated text-muted'
-                        "
-                      >
-                        <UIcon
-                          :name="
-                            section.selected
-                              ? 'i-lucide-check'
-                              : section.kind ===
-                                  'metrics'
-                                ? 'i-lucide-gauge'
-                                : 'i-lucide-table-2'
-                          "
-                          class="size-3.5"
-                        />
-                      </div>
+                      3. Report details
+                    </p>
 
-                      <div
-                        class="min-w-0 flex-1"
-                      >
-                        <p
-                          class="text-xs font-semibold text-highlighted"
-                        >
-                          {{
-                            section.sourceLabel
-                          }}
-                        </p>
-
-                        <p
-                          class="mt-0.5 text-xs text-muted"
-                        >
-                          {{
-                            section.title
-                          }}
-                          ·
-                          {{
-                            section.rowCount
-                          }}
-                          item{{
-                            section.rowCount ===
-                            1
-                              ? ""
-                              : "s"
-                          }}
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  class="grid gap-3 sm:grid-cols-2"
-                >
-                  <UFormField
-                    label="Records to Include"
-                  >
-                    <USelect
-                      v-model="
-                        customRowLimit
-                      "
-                      :items="
-                        customRowLimitItems
-                      "
-                      value-key="value"
-                      label-key="label"
-                      class="w-full"
-                    />
-                  </UFormField>
-
-                  <div
-                    class="flex items-end"
-                  >
-                    <label
-                      class="flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-lg border border-default px-3 py-2 text-sm text-highlighted"
+                    <UFormField
+                      label="Official Report Title"
                     >
-                      <input
+                      <UInput
                         v-model="
-                          includeCustomNotes
+                          customTitle
                         "
-                        type="checkbox"
-                        class="size-4"
+                        icon="i-lucide-heading"
+                        class="w-full"
                       />
+                    </UFormField>
 
-                      Include Notes and Explanations
-                    </label>
+                    <UFormField
+                      label="Purpose or Reference"
+                      description="Optional short statement printed below the title."
+                    >
+                      <UTextarea
+                        v-model="
+                          customPurpose
+                        "
+                        :rows="2"
+                        autoresize
+                        class="w-full"
+                      />
+                    </UFormField>
+
+                    <UFormField
+                      label="Detailed records"
+                    >
+                      <USelect
+                        v-model="
+                          customRowLimit
+                        "
+                        :items="
+                          customRowLimitItems
+                        "
+                        value-key="value"
+                        label-key="label"
+                        class="w-full"
+                      />
+                    </UFormField>
                   </div>
                 </div>
-
-                <UAlert
-                  v-if="
-                    customSections.length ===
-                    0
-                  "
-                  color="neutral"
-                  variant="soft"
-                  icon="i-lucide-mouse-pointer-click"
-                  title="Show the available sections first"
-                  description="After the sections appear, remove any number or table that should not be included in the final report."
-                />
               </template>
 
-              <div>
-                <p
-                  class="mb-2 text-sm font-medium text-highlighted"
-                >
-                  Choose Date Range
-                </p>
+              <div
+                class="space-y-3 border-t border-default pt-4"
+              >
+                <div>
+                  <p
+                    class="text-sm font-semibold text-highlighted"
+                  >
+                    Reporting period
+                  </p>
+
+                  <p
+                    class="text-xs text-muted"
+                  >
+                    {{
+                      selectedPeriodLabel
+                    }}
+                  </p>
+                </div>
 
                 <div
-                  class="mb-3 flex flex-wrap gap-2"
+                  class="flex flex-wrap gap-2"
                 >
                   <UButton
-                    label="Current Month"
+                    label="This Month"
+                    size="xs"
                     color="neutral"
                     variant="soft"
-                    size="xs"
                     @click="
                       setDatePreset(
                         'month',
@@ -2104,10 +2324,10 @@ onMounted(async () => {
                   />
 
                   <UButton
-                    label="Current Year"
+                    label="This Year"
+                    size="xs"
                     color="neutral"
                     variant="soft"
-                    size="xs"
                     @click="
                       setDatePreset(
                         'year',
@@ -2116,10 +2336,10 @@ onMounted(async () => {
                   />
 
                   <UButton
-                    label="Complete Records"
+                    label="All Records"
+                    size="xs"
                     color="neutral"
                     variant="ghost"
-                    size="xs"
                     @click="
                       setDatePreset(
                         'all',
@@ -2131,7 +2351,9 @@ onMounted(async () => {
                 <div
                   class="grid grid-cols-2 gap-3"
                 >
-                  <UFormField label="Start Date">
+                  <UFormField
+                    label="From"
+                  >
                     <UInput
                       v-model="
                         filters.from
@@ -2141,7 +2363,9 @@ onMounted(async () => {
                     />
                   </UFormField>
 
-                  <UFormField label="End Date">
+                  <UFormField
+                    label="To"
+                  >
                     <UInput
                       v-model="
                         filters.to
@@ -2151,441 +2375,169 @@ onMounted(async () => {
                     />
                   </UFormField>
                 </div>
+
+                <div
+                  class="grid grid-cols-2 gap-3"
+                >
+                  <UFormField
+                    label="Academic Year"
+                  >
+                    <USelect
+                      v-model="
+                        filters.academicYear
+                      "
+                      :items="
+                        academicYearItems
+                      "
+                      class="w-full"
+                    />
+                  </UFormField>
+
+                  <UFormField
+                    label="Semester"
+                  >
+                    <USelect
+                      v-model="
+                        filters.semester
+                      "
+                      :items="
+                        semesterItems
+                      "
+                      class="w-full"
+                    />
+                  </UFormField>
+                </div>
               </div>
+
+              <details
+                class="rounded-xl border border-default bg-elevated/20 p-3"
+              >
+                <summary
+                  class="cursor-pointer text-sm font-medium text-highlighted"
+                >
+                  Additional report option
+                </summary>
+
+                <label
+                  class="mt-3 flex cursor-pointer items-start gap-3 text-sm text-muted"
+                >
+                  <input
+                    v-model="
+                      includeReportNotes
+                    "
+                    type="checkbox"
+                    class="mt-0.5 size-4"
+                  />
+
+                  <span>
+                    Include system-generated notes. Leave this off for a concise formal report.
+                  </span>
+                </label>
+              </details>
 
               <div
-                class="grid gap-3 sm:grid-cols-2"
+                class="space-y-2"
               >
-                <UFormField
-                  label="Academic Year"
-                >
-                  <USelect
-                    v-model="
-                      filters.academicYear
-                    "
-                    :items="
-                      academicYearItems
-                    "
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField
-                  label="Semester"
-                >
-                  <USelect
-                    v-model="
-                      filters.semester
-                    "
-                    :items="
-                      semesterItems
-                    "
-                    class="w-full"
-                  />
-                </UFormField>
-              </div>
-
-              <UButton
-                :label="
-                  reportMode ===
-                  'custom'
-                    ? 'Preview & Print My Report'
-                    : 'Preview & Print Report'
-                "
-                icon="i-lucide-printer"
-                color="primary"
-                block
-                size="lg"
-                :loading="
-                  isPrinting ||
-                  isGenerating
-                "
-                :disabled="
-                  reportActionDisabled
-                "
-                @click="
-                  previewAndPrintReport
-                "
-              />
-
-              <p
-                class="text-center text-xs leading-relaxed text-muted"
-              >
-                {{
-                  reportMode ===
-                  'custom'
-                    ? 'Only the information you selected will appear in the print preview and saved files.'
-                    : 'Review the report in the browser print preview before printing or saving it.'
-                }}
-              </p>
-            </div>
-
-            <template #footer>
-              <div class="space-y-3">
-                <p
-                  class="text-xs font-semibold uppercase tracking-wide text-muted"
-                >
-                  Save Report as a File
-                </p>
+                <UButton
+                  label="Preview and Print"
+                  icon="i-lucide-printer"
+                  color="primary"
+                  size="lg"
+                  block
+                  :loading="
+                    isPrinting ||
+                    isGenerating
+                  "
+                  :disabled="
+                    reportActionDisabled
+                  "
+                  @click="
+                    previewAndPrint
+                  "
+                />
 
                 <div
                   class="grid grid-cols-3 gap-2"
                 >
                   <UButton
-                    v-for="
-                      option in
-                      formatOptions
-                    "
-                    :key="
-                      option.value
-                    "
-                    :label="
-                      option.label
-                    "
-                    :icon="
-                      option.icon
-                    "
+                    label="PDF"
+                    icon="i-lucide-file-down"
                     color="neutral"
                     variant="outline"
                     block
                     :loading="
                       exportingFormat ===
-                      option.value
+                      'pdf'
                     "
                     :disabled="
                       reportActionDisabled
                     "
                     @click="
                       downloadReport(
-                        option.value,
+                        'pdf',
                       )
                     "
                   />
-                </div>
-              </div>
-            </template>
-          </UCard>
 
-          <UCard>
-            <template #header>
-              <div>
-                <h2
-                  class="font-semibold text-highlighted"
-                >
-                  Quick Report Summary
-                </h2>
-                <p
-                  class="text-xs text-muted"
-                >
-                  A simple view of the current Library totals
-                </p>
-              </div>
-            </template>
-
-            <div
-              v-if="
-                chartData.length > 0
-              "
-              class="space-y-4"
-            >
-              <div
-                v-for="
-                  item in
-                  chartData
-                "
-                :key="item.label"
-              >
-                <div
-                  class="mb-1 flex items-center justify-between gap-3 text-xs"
-                >
-                  <span
-                    class="truncate text-muted"
-                  >
-                    {{ item.label }}
-                  </span>
-
-                  <span
-                    class="font-semibold text-highlighted"
-                  >
-                    {{
-                      formatCell(
-                        item.value,
-                        'number',
-                      )
-                    }}
-                  </span>
-                </div>
-
-                <div
-                  class="h-2 overflow-hidden rounded-full bg-muted"
-                >
-                  <div
-                    class="h-full rounded-full bg-primary transition-all"
-                    :style="{
-                      width:
-                        `${Math.max(
-                          (item.value /
-                            chartMax) *
-                            100,
-                          2,
-                        )}%`,
-                    }"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <UEmpty
-              v-else
-              icon="i-lucide-chart-bar"
-              title="No summary data yet"
-              description="Library records will appear here when data is available."
-            />
-          </UCard>
-        </div>
-
-        <div class="space-y-6">
-          <UCard>
-            <template #header>
-              <div
-                class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
-              >
-                <div>
-                  <h2
-                    class="font-semibold text-highlighted"
-                  >
-                    Reports You Can Print or Save
-                  </h2>
-
-                  <p
-                    class="mt-1 text-sm text-muted"
-                  >
-                    Choose a report below to see what information it contains before printing or saving it.
-                  </p>
-                </div>
-
-                <UBadge
-                  color="primary"
-                  variant="soft"
-                  size="lg"
-                >
-                  {{
-                    catalog.length
-                  }}
-                  available reports
-                </UBadge>
-              </div>
-            </template>
-
-            <div
-              class="space-y-6"
-            >
-              <section
-                v-for="
-                  group in
-                  groupedCatalog
-                "
-                :key="
-                  group.category
-                "
-              >
-                <div
-                  class="mb-3 flex items-center gap-3"
-                >
-                  <h3
-                    class="font-semibold text-highlighted"
-                  >
-                    {{
-                      categoryLabel(
-                        group.category,
-                      )
-                    }}
-                  </h3>
-
-                  <div
-                    class="h-px flex-1 bg-default"
-                  />
-                </div>
-
-                <div
-                  class="grid gap-3 md:grid-cols-2"
-                >
-                  <button
-                    v-for="
-                      item in
-                      group.items
+                  <UButton
+                    label="Word"
+                    icon="i-lucide-file-text"
+                    color="neutral"
+                    variant="outline"
+                    block
+                    :loading="
+                      exportingFormat ===
+                      'docx'
                     "
-                    :key="
-                      item.value
-                    "
-                    type="button"
-                    class="group rounded-xl border p-3 text-left transition"
-                    :class="
-                      selectedType ===
-                      item.value
-                        ? 'border-primary/50 bg-primary/5'
-                        : 'border-default bg-elevated/20 hover:border-primary/30 hover:bg-elevated/60'
+                    :disabled="
+                      reportActionDisabled
                     "
                     @click="
-                      chooseReport(
-                        item,
+                      downloadReport(
+                        'docx',
                       )
                     "
-                  >
-                    <div
-                      class="flex items-start gap-3"
-                    >
-                      <div
-                        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-                      >
-                        <UIcon
-                          :name="
-                            item.icon
-                          "
-                          class="size-5"
-                        />
-                      </div>
+                  />
 
-                      <div
-                        class="min-w-0"
-                      >
-                        <p
-                          class="font-semibold text-highlighted"
-                        >
-                          {{
-                            item.label
-                          }}
-                        </p>
-
-                        <p
-                          class="mt-1 line-clamp-2 text-xs leading-relaxed text-muted"
-                        >
-                          {{
-                            item.description
-                          }}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
+                  <UButton
+                    label="Excel"
+                    icon="i-lucide-sheet"
+                    color="neutral"
+                    variant="outline"
+                    block
+                    :loading="
+                      exportingFormat ===
+                      'xlsx'
+                    "
+                    :disabled="
+                      reportActionDisabled
+                    "
+                    @click="
+                      downloadReport(
+                        'xlsx',
+                      )
+                    "
+                  />
                 </div>
-              </section>
+              </div>
             </div>
           </UCard>
-        </div>
+
+          <UAlert
+            v-if="
+              reportMode ===
+                'custom' &&
+              customSections.length ===
+                0
+            "
+            color="neutral"
+            variant="soft"
+            icon="i-lucide-list-tree"
+            title="Custom sections are not loaded"
+            description="Select Library areas and click Load Available Sections before generating the consolidated report."
+          />
+        </aside>
       </div>
-
-      <UCard>
-        <template #header>
-          <div
-            class="flex items-center justify-between gap-4"
-          >
-            <div>
-              <h2
-                class="font-semibold text-highlighted"
-              >
-                Recently Saved Reports
-              </h2>
-
-              <p
-                class="text-xs text-muted"
-              >
-                Reports recently saved as PDF, Word, or Excel in this browser
-              </p>
-            </div>
-
-            <UBadge
-              color="neutral"
-              variant="soft"
-            >
-              {{
-                recentExports.length
-              }}
-            </UBadge>
-          </div>
-        </template>
-
-        <UEmpty
-          v-if="
-            recentExports.length ===
-            0
-          "
-          icon="i-lucide-file-clock"
-          title="No saved reports yet"
-          description="Reports saved as PDF, Word, or Excel will appear here."
-        />
-
-        <div
-          v-else
-          class="divide-y divide-default"
-        >
-          <div
-            v-for="
-              item in
-              recentExports
-            "
-            :key="
-              item.id
-            "
-            class="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div
-              class="flex min-w-0 items-center gap-3"
-            >
-              <div
-                class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-              >
-                <UIcon
-                  :name="
-                    item.format ===
-                    'xlsx'
-                      ? 'i-lucide-sheet'
-                      : item.format ===
-                          'docx'
-                        ? 'i-lucide-file-text'
-                        : 'i-lucide-file-type-2'
-                  "
-                  class="size-5"
-                />
-              </div>
-
-              <div class="min-w-0">
-                <p
-                  class="truncate font-medium text-highlighted"
-                >
-                  {{
-                    item.title
-                  }}
-                </p>
-
-                <p
-                  class="mt-1 text-xs text-muted"
-                >
-                  {{
-                    item.periodLabel
-                  }}
-                  ·
-                  {{
-                    formatCell(
-                      item.generatedAt,
-                      'datetime',
-                    )
-                  }}
-                </p>
-              </div>
-            </div>
-
-            <UBadge
-              color="neutral"
-              variant="soft"
-              class="uppercase"
-            >
-              {{
-                item.format
-              }}
-            </UBadge>
-          </div>
-        </div>
-      </UCard>
     </div>
 
     <UModal
@@ -2598,7 +2550,9 @@ onMounted(async () => {
       }"
     >
       <template #content>
-        <div class="p-5 sm:p-6">
+        <div
+          class="p-5 sm:p-6"
+        >
           <div
             class="flex items-start justify-between gap-4"
           >
@@ -2606,13 +2560,13 @@ onMounted(async () => {
               <h2
                 class="text-xl font-bold text-highlighted"
               >
-                Report Branding
+                Report Header and Approval
               </h2>
 
               <p
                 class="mt-1 text-sm text-muted"
               >
-                Configure the common header used by PDF, Word, and Excel reports.
+                These details appear in the official report header and signature section.
               </p>
             </div>
 
@@ -2621,7 +2575,7 @@ onMounted(async () => {
               color="neutral"
               variant="ghost"
               square
-              aria-label="Close branding settings"
+              aria-label="Close report settings"
               @click="
                 brandingOpen =
                   false
@@ -2633,7 +2587,7 @@ onMounted(async () => {
             class="mt-6 grid gap-4 sm:grid-cols-2"
           >
             <UFormField
-              label="School Name"
+              label="Institution Name"
               class="sm:col-span-2"
             >
               <UInput
@@ -2645,7 +2599,7 @@ onMounted(async () => {
             </UFormField>
 
             <UFormField
-              label="Office / Library Name"
+              label="Office or Library Name"
               class="sm:col-span-2"
             >
               <UInput
@@ -2657,36 +2611,12 @@ onMounted(async () => {
             </UFormField>
 
             <UFormField
-              label="Address"
+              label="Institution Address"
               class="sm:col-span-2"
             >
               <UInput
                 v-model="
                   branding.address
-                "
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Institution Logo URL"
-              description="Example: /sncbt-logo.png"
-            >
-              <UInput
-                v-model="
-                  branding.institutionLogoUrl
-                "
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Library Logo URL"
-              description="Example: /sncbt-library-logo.png or a Strapi upload URL"
-            >
-              <UInput
-                v-model="
-                  branding.libraryLogoUrl
                 "
                 class="w-full"
               />
@@ -2704,7 +2634,7 @@ onMounted(async () => {
             </UFormField>
 
             <UFormField
-              label="Signatory Name"
+              label="Approved or Certified By"
             >
               <UInput
                 v-model="
@@ -2715,7 +2645,7 @@ onMounted(async () => {
             </UFormField>
 
             <UFormField
-              label="Signatory Title"
+              label="Position or Designation"
               class="sm:col-span-2"
             >
               <UInput
@@ -2731,9 +2661,9 @@ onMounted(async () => {
             class="mt-5"
             color="info"
             variant="soft"
-            icon="i-lucide-image"
-            title="Logo files"
-            description="Place the logos in the Nuxt public directory or enter complete Strapi media URLs. Missing logos are omitted without preventing report generation."
+            icon="i-lucide-images"
+            title="Official logos"
+            description="The report uses /sncbt-logo.png and /sncbt-library-logo.png from the Nuxt public folder."
           />
 
           <div
@@ -2750,7 +2680,7 @@ onMounted(async () => {
             />
 
             <UButton
-              label="Save Branding"
+              label="Save Report Header"
               icon="i-lucide-save"
               color="primary"
               @click="

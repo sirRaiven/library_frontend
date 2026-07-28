@@ -1,4 +1,3 @@
-
 export type LibraryReportKey =
   | "custom-summary"
   | "executive-summary"
@@ -23,7 +22,10 @@ export type LibraryReportCategory =
   | "Membership"
   | "Collection"
   | "Circulation"
-  | "Transactions";
+  | "Transactions"
+  | "Administration"
+  | "Members"
+  | "Library Visits";
 
 export type ReportCellFormat =
   | "text"
@@ -41,6 +43,14 @@ export interface LibraryReportCatalogItem {
   description: string;
   icon: string;
   recommendedOrientation?: "portrait" | "landscape";
+
+  /**
+   * Optional presentation metadata used by the formal report catalog.
+   * Existing API responses remain compatible when these fields are absent.
+   */
+  purpose?: string;
+  contents?: string[];
+  official?: boolean;
 }
 
 export interface LibraryReportFilter {
