@@ -5,6 +5,8 @@ import type {
   ReservationBook,
   ReservationStatus,
 } from "~/composables/useLibraryCirculation";
+import LiveBarcodeScanner from "~/components/librarian/visits/LiveBarcodeScanner.vue";
+import type { BarcodeScanResult } from "~/composables/useBarcodeScanResult";
 
 definePageMeta({
   layout: "librarian",
@@ -41,9 +43,11 @@ const bookSearch = ref("");
 const bookResults = ref<ReservationBook[]>(
   [],
 );
-const selectedBook =
-  ref<ReservationBook | null>(null);
+const selectedBooks = ref<ReservationBook[]>(
+  [],
+);
 const isSearchingBooks = ref(false);
+const isLookingUpBookBarcode = ref(false);
 
 const remarks = ref("");
 
@@ -124,10 +128,20 @@ const expiringCount = computed(() => {
   ).length;
 });
 
+const selectedBookCount = computed(
+  () => selectedBooks.value.length,
+);
+
+const createButtonLabel = computed(() =>
+  selectedBookCount.value === 1
+    ? "Create 1 Reservation"
+    : `Create ${selectedBookCount.value} Reservations`,
+);
+
 const canCreateReservation = computed(
   () =>
     Boolean(reservationMember.value) &&
-    Boolean(selectedBook.value) &&
+    selectedBookCount.value > 0 &&
     Boolean(expirationDate.value) &&
     reservationMember.value?.canBorrow !==
       false &&
@@ -189,7 +203,7 @@ function resetCreateForm() {
   reservationMember.value = null;
   bookSearch.value = "";
   bookResults.value = [];
-  selectedBook.value = null;
+  selectedBooks.value = [];
   expirationDate.value =
     defaultExpirationDate();
   remarks.value = "";
@@ -237,13 +251,27 @@ async function lookupReservationMember() {
   isLookingUpMember.value = true;
 
   try {
-    reservationMember.value =
+    const previousMemberId =
+      reservationMember.value?.documentId;
+
+    const verifiedMember =
       await circulation.lookupMember(
         barcode,
       );
 
+    reservationMember.value =
+      verifiedMember;
+
     if (
-      !reservationMember.value.canBorrow
+      previousMemberId &&
+      previousMemberId !==
+        verifiedMember.documentId
+    ) {
+      selectedBooks.value = [];
+    }
+
+    if (
+      !verifiedMember.canBorrow
     ) {
       toast.add({
         title: "Member has restrictions",
@@ -279,7 +307,6 @@ async function searchBooksForReservation() {
   }
 
   isSearchingBooks.value = true;
-  selectedBook.value = null;
 
   try {
     bookResults.value =
@@ -309,56 +336,313 @@ async function searchBooksForReservation() {
   }
 }
 
-function selectReservationBook(
+function isBookSelected(
+  book: ReservationBook,
+): boolean {
+  return selectedBooks.value.some(
+    (selected) =>
+      selected.documentId === book.documentId,
+  );
+}
+
+function addReservationBook(
+  book: ReservationBook,
+  options: {
+    showToast?: boolean;
+  } = {},
+) {
+  if (isBookSelected(book)) {
+    if (options.showToast !== false) {
+      toast.add({
+        title: "Book already selected",
+        description:
+          `${book.title} is already included in this reservation request.`,
+        color: "info",
+        icon: "i-lucide-copy-check",
+      });
+    }
+
+    return false;
+  }
+
+  selectedBooks.value.push(book);
+
+  if (options.showToast !== false) {
+    toast.add({
+      title: "Book added",
+      description:
+        `${book.title} was added to the selected books.`,
+      color: "success",
+      icon: "i-lucide-book-plus",
+    });
+  }
+
+  return true;
+}
+
+function toggleReservationBook(
   book: ReservationBook,
 ) {
-  selectedBook.value = book;
+  if (isBookSelected(book)) {
+    selectedBooks.value =
+      selectedBooks.value.filter(
+        (selected) =>
+          selected.documentId !==
+          book.documentId,
+      );
+
+    return;
+  }
+
+  addReservationBook(book, {
+    showToast: false,
+  });
+}
+
+function removeReservationBook(
+  documentId: string,
+) {
+  selectedBooks.value =
+    selectedBooks.value.filter(
+      (book) =>
+        book.documentId !== documentId,
+    );
+}
+
+async function handleMemberCameraDetected(
+  result: BarcodeScanResult,
+) {
+  const barcode = result.value
+    .trim()
+    .toUpperCase();
+
+  if (
+    !barcode ||
+    isLookingUpMember.value ||
+    isSaving.value
+  ) {
+    return;
+  }
+
+  memberBarcode.value = barcode;
+  await nextTick();
+  await lookupReservationMember();
+}
+
+async function handleBookCameraDetected(
+  result: BarcodeScanResult,
+) {
+  const barcode = result.value
+    .trim()
+    .toUpperCase();
+
+  if (
+    !barcode ||
+    isLookingUpBookBarcode.value ||
+    isSearchingBooks.value ||
+    isSaving.value
+  ) {
+    return;
+  }
+
+  isLookingUpBookBarcode.value = true;
+  bookSearch.value = barcode;
+
+  try {
+    const physicalCopy =
+      await circulation.lookupCopy(barcode);
+
+    const bookDocumentId =
+      physicalCopy.book.documentId;
+
+    const matchingBooks =
+      await circulation.searchReservationBooks(
+        physicalCopy.book.title,
+      );
+
+    const matchedBook =
+      matchingBooks.find(
+        (book) =>
+          book.documentId ===
+          bookDocumentId,
+      ) ??
+      matchingBooks.find(
+        (book) =>
+          book.title.trim().toLowerCase() ===
+            physicalCopy.book.title
+              .trim()
+              .toLowerCase() &&
+          book.author.trim().toLowerCase() ===
+            physicalCopy.book.author
+              .trim()
+              .toLowerCase(),
+      ) ??
+      matchingBooks[0];
+
+    const reservationBook:
+      ReservationBook | null =
+      matchedBook ??
+      (bookDocumentId
+        ? {
+            documentId: bookDocumentId,
+            title:
+              physicalCopy.book.title,
+            author:
+              physicalCopy.book.author,
+            category:
+              physicalCopy.book.category,
+            totalCopies: 1,
+            availableCopies:
+              physicalCopy.available
+                ? 1
+                : 0,
+          }
+        : null);
+
+    if (!reservationBook) {
+      throw new Error(
+        "The physical copy exists, but its book title record could not be identified.",
+      );
+    }
+
+    bookResults.value =
+      matchingBooks.length > 0
+        ? matchingBooks
+        : [reservationBook];
+
+    addReservationBook(
+      reservationBook,
+      {
+        showToast: false,
+      },
+    );
+
+    toast.add({
+      title: "Physical book found",
+      description:
+        `${reservationBook.title} was added using ${
+          physicalCopy.controlNumber ||
+          physicalCopy.accessionNumber ||
+          barcode
+        }.`,
+      color: "success",
+      icon: "i-lucide-scan-barcode",
+    });
+  } catch (error) {
+    toast.add({
+      title: "Physical book was not found",
+      description:
+        auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-book-x",
+    });
+  } finally {
+    isLookingUpBookBarcode.value = false;
+  }
 }
 
 async function createReservation() {
   if (
     !reservationMember.value ||
-    !selectedBook.value ||
+    selectedBooks.value.length === 0 ||
     !canCreateReservation.value
   ) {
     return;
   }
 
+  const member =
+    reservationMember.value;
+
   isSaving.value = true;
 
+  const booksToCreate = [
+    ...selectedBooks.value,
+  ];
+  const created: Array<{
+    book: ReservationBook;
+    reservationNo: string;
+  }> = [];
+  const failed: Array<{
+    book: ReservationBook;
+    message: string;
+  }> = [];
+
   try {
-    const result =
-      await circulation.createReservation({
-        memberType:
-          reservationMember.value.type,
-        memberDocumentId:
-          reservationMember.value
-            .documentId,
-        bookDocumentId:
-          selectedBook.value.documentId,
-        expirationDate:
-          expirationDate.value,
-        remarks: remarks.value.trim(),
+    for (const book of booksToCreate) {
+      try {
+        const result =
+          await circulation.createReservation({
+            memberType:
+              member.type,
+            memberDocumentId:
+              member.documentId,
+            bookDocumentId:
+              book.documentId,
+            expirationDate:
+              expirationDate.value,
+            remarks: remarks.value.trim(),
+          });
+
+        created.push({
+          book,
+          reservationNo:
+            result.reservationNo,
+        });
+      } catch (error) {
+        failed.push({
+          book,
+          message:
+            auth.getErrorMessage(error),
+        });
+      }
+    }
+
+    if (created.length > 0) {
+      toast.add({
+        title:
+          created.length === 1
+            ? "Reservation created"
+            : `${created.length} reservations created`,
+        description:
+          created.length === 1
+            ? `${created[0]?.reservationNo} was added to the queue.`
+            : `${created.length} selected book titles were added to the reservation queue.`,
+        color: "success",
+        icon: "i-lucide-calendar-check-2",
       });
 
-    toast.add({
-      title: "Reservation created",
-      description: `${result.reservationNo} was added to the queue.`,
-      color: "success",
-      icon: "i-lucide-calendar-check-2",
-    });
+      page.value = 1;
+      await loadReservations();
+    }
 
-    isCreateOpen.value = false;
-    resetCreateForm();
-    page.value = 1;
-    await loadReservations();
-  } catch (error) {
+    if (failed.length === 0) {
+      isCreateOpen.value = false;
+      resetCreateForm();
+      return;
+    }
+
+    selectedBooks.value =
+      failed.map((item) => item.book);
+
     toast.add({
-      title: "Reservation failed",
+      title:
+        created.length > 0
+          ? "Some reservations were not created"
+          : "Reservations were not created",
       description:
-        auth.getErrorMessage(error),
-      color: "error",
-      icon: "i-lucide-circle-x",
+        `${failed.length} ${
+          failed.length === 1
+            ? "book needs"
+            : "books need"
+        } review. ${failed
+          .slice(0, 2)
+          .map(
+            (item) =>
+              `${item.book.title}: ${item.message}`,
+          )
+          .join(" • ")}`,
+      color: "warning",
+      icon: "i-lucide-triangle-alert",
     });
   } finally {
     isSaving.value = false;
@@ -887,10 +1171,10 @@ onMounted(() => {
 
   <UModal
     v-model:open="isCreateOpen"
-    :dismissible="!isSaving"
+    :dismissible="isSaving"
     :ui="{
       content:
-        'sm:max-w-3xl max-h-[90dvh] overflow-y-auto',
+        'sm:max-w-4xl max-h-[90dvh] overflow-y-auto',
     }"
   >
     <template #content>
@@ -907,8 +1191,9 @@ onMounted(() => {
             <p
               class="mt-1 text-sm text-muted"
             >
-              Verify the member, select a book,
-              and set the pickup expiration.
+              Verify the member, select one or
+              more book titles, and set the pickup
+              expiration.
             </p>
           </div>
 
@@ -954,31 +1239,66 @@ onMounted(() => {
             </div>
 
             <form
-              class="mt-4 flex flex-col gap-3 sm:flex-row"
+              class="mt-4 space-y-3"
               @submit.prevent="
                 lookupReservationMember
               "
             >
-              <UInput
-                v-model="memberBarcode"
-                icon="i-lucide-id-card"
-                placeholder="Member barcode"
-                autocomplete="off"
-                class="min-w-0 flex-1"
-              />
+              <div
+                class="flex flex-col gap-3 sm:flex-row sm:items-stretch"
+              >
+                <UInput
+                  v-model="memberBarcode"
+                  icon="i-lucide-id-card"
+                  placeholder="Member barcode"
+                  autocomplete="off"
+                  :loading="isLookingUpMember"
+                  class="min-w-0 flex-1"
+                >
+                  <template #trailing>
+                    <UKbd>Enter</UKbd>
+                  </template>
+                </UInput>
 
-              <UButton
-                type="submit"
-                label="Verify Member"
-                icon="i-lucide-user-check"
-                color="success"
-                :loading="
-                  isLookingUpMember
-                "
-                :disabled="
-                  !memberBarcode.trim()
-                "
-              />
+                <LiveBarcodeScanner
+                  :disabled="
+                    isLookingUpMember ||
+                    isLookingUpBookBarcode ||
+                    isSaving
+                  "
+                  title="Scan Member Barcode"
+                  button-label="Scan Member"
+                  ready-description="Place the Student Library Card or Faculty ID barcode inside the guide."
+                  processing-label="Verifying member"
+                  processing-description="Please wait while the member record and reservation eligibility are checked."
+                  storage-key="sncbt-reservation-member-camera"
+                  :duplicate-cooldown-ms="5000"
+                  :detection-hold-ms="800"
+                  @detected="
+                    handleMemberCameraDetected
+                  "
+                />
+
+                <UButton
+                  type="submit"
+                  label="Verify Member"
+                  icon="i-lucide-user-check"
+                  color="success"
+                  :loading="
+                    isLookingUpMember
+                  "
+                  :disabled="
+                    !memberBarcode.trim() ||
+                    isSaving
+                  "
+                  class="shrink-0"
+                />
+              </div>
+
+              <p class="text-xs text-muted">
+                Use a physical scanner, the camera,
+                or enter the member barcode manually.
+              </p>
             </form>
 
             <div
@@ -1060,43 +1380,165 @@ onMounted(() => {
                 <h3
                   class="font-semibold text-highlighted"
                 >
-                  Book Title
+                  Book Titles
                 </h3>
                 <p
                   class="text-xs text-muted"
                 >
-                  Reserve a title, not a specific
-                  physical copy.
+                  Select one or more titles. A
+                  scanned physical-copy barcode is
+                  matched to its book title.
                 </p>
               </div>
             </div>
 
             <form
-              class="mt-4 flex flex-col gap-3 sm:flex-row"
+              class="mt-4 space-y-3"
               @submit.prevent="
                 searchBooksForReservation
               "
             >
-              <UInput
-                v-model="bookSearch"
-                icon="i-lucide-search"
-                placeholder="Title, author, or ISBN"
-                class="min-w-0 flex-1"
-              />
+              <div
+                class="flex flex-col gap-3 sm:flex-row sm:items-stretch"
+              >
+                <UInput
+                  v-model="bookSearch"
+                  icon="i-lucide-search"
+                  placeholder="Title, author, ISBN, or physical book barcode"
+                  :loading="
+                    isSearchingBooks ||
+                    isLookingUpBookBarcode
+                  "
+                  class="min-w-0 flex-1"
+                >
+                  <template #trailing>
+                    <UKbd>Enter</UKbd>
+                  </template>
+                </UInput>
 
-              <UButton
-                type="submit"
-                label="Search Books"
-                icon="i-lucide-search"
-                color="info"
-                :loading="
-                  isSearchingBooks
-                "
-                :disabled="
-                  bookSearch.trim().length < 2
-                "
-              />
+                <LiveBarcodeScanner
+                  :disabled="
+                    !reservationMember ||
+                    isLookingUpMember ||
+                    isLookingUpBookBarcode ||
+                    isSearchingBooks ||
+                    isSaving
+                  "
+                  title="Scan Physical Book Barcode"
+                  button-label="Scan Book"
+                  ready-description="Place the physical book control-number or accession-number barcode inside the guide."
+                  processing-label="Finding book title"
+                  processing-description="Please wait while the physical copy is matched with its book title."
+                  storage-key="sncbt-reservation-book-camera"
+                  :duplicate-cooldown-ms="5000"
+                  :detection-hold-ms="800"
+                  @detected="
+                    handleBookCameraDetected
+                  "
+                />
+
+                <UButton
+                  type="submit"
+                  label="Search Books"
+                  icon="i-lucide-search"
+                  color="info"
+                  :loading="
+                    isSearchingBooks
+                  "
+                  :disabled="
+                    bookSearch.trim().length < 2 ||
+                    isLookingUpBookBarcode
+                  "
+                  class="shrink-0"
+                />
+              </div>
+
+              <p class="text-xs text-muted">
+                Search by title, author, or ISBN, or
+                scan any physical copy to select its
+                title.
+              </p>
             </form>
+
+            <div
+              v-if="selectedBooks.length"
+              class="mt-4 rounded-xl border border-success/30 bg-success/5 p-4"
+            >
+              <div
+                class="flex flex-wrap items-center justify-between gap-3"
+              >
+                <div>
+                  <p
+                    class="font-semibold text-highlighted"
+                  >
+                    Selected Books
+                  </p>
+                  <p
+                    class="text-xs text-muted"
+                  >
+                    {{
+                      selectedBookCount
+                    }}
+                    {{
+                      selectedBookCount === 1
+                        ? "title"
+                        : "titles"
+                    }}
+                    will receive separate reservation
+                    records.
+                  </p>
+                </div>
+
+                <UBadge
+                  color="success"
+                  variant="soft"
+                >
+                  {{ selectedBookCount }} selected
+                </UBadge>
+              </div>
+
+              <div class="mt-3 space-y-2">
+                <div
+                  v-for="book in selectedBooks"
+                  :key="`selected-${book.documentId}`"
+                  class="flex items-start gap-3 rounded-lg bg-default p-3"
+                >
+                  <UIcon
+                    name="i-lucide-book-check"
+                    class="mt-0.5 size-4 shrink-0 text-success"
+                  />
+
+                  <div class="min-w-0 flex-1">
+                    <p
+                      class="truncate text-sm font-semibold text-highlighted"
+                    >
+                      {{ book.title }}
+                    </p>
+                    <p
+                      class="truncate text-xs text-muted"
+                    >
+                      {{ book.author }}
+                    </p>
+                  </div>
+
+                  <UButton
+                    type="button"
+                    icon="i-lucide-x"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    square
+                    :aria-label="`Remove ${book.title}`"
+                    :disabled="isSaving"
+                    @click="
+                      removeReservationBook(
+                        book.documentId,
+                      )
+                    "
+                  />
+                </div>
+              </div>
+            </div>
 
             <div
               v-if="bookResults.length"
@@ -1108,22 +1550,37 @@ onMounted(() => {
                 type="button"
                 class="rounded-xl border p-4 text-left transition"
                 :class="
-                  selectedBook?.documentId ===
-                  book.documentId
+                  isBookSelected(book)
                     ? 'border-success bg-success/5 ring-2 ring-success/20'
                     : 'border-default hover:bg-elevated'
                 "
+                :aria-pressed="
+                  isBookSelected(book)
+                "
                 @click="
-                  selectReservationBook(
+                  toggleReservationBook(
                     book,
                   )
                 "
               >
-                <p
-                  class="line-clamp-2 font-semibold text-highlighted"
+                <div
+                  class="flex items-start justify-between gap-3"
                 >
-                  {{ book.title }}
-                </p>
+                  <p
+                    class="line-clamp-2 font-semibold text-highlighted"
+                  >
+                    {{ book.title }}
+                  </p>
+
+                  <UBadge
+                    v-if="isBookSelected(book)"
+                    color="success"
+                    variant="soft"
+                    size="sm"
+                  >
+                    Selected
+                  </UBadge>
+                </div>
                 <p
                   class="mt-1 truncate text-sm text-muted"
                 >
@@ -1180,7 +1637,8 @@ onMounted(() => {
                 <p
                   class="text-xs text-muted"
                 >
-                  Set the reservation expiration.
+                  Apply the same expiration and
+                  remarks to all selected titles.
                 </p>
               </div>
             </div>
@@ -1227,7 +1685,7 @@ onMounted(() => {
           />
 
           <UButton
-            label="Create Reservation"
+            :label="createButtonLabel"
             icon="i-lucide-calendar-plus"
             color="success"
             :loading="isSaving"
