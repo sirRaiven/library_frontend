@@ -142,6 +142,19 @@ onMounted(refresh);
     >
       <template #actions>
         <UButton
+          to="/student/books"
+          label="Browse Books"
+          icon="i-lucide-books"
+          color="primary"
+        />
+        <UButton
+          to="/student/reservations"
+          label="My Reservations"
+          icon="i-lucide-bookmark-check"
+          color="neutral"
+          variant="outline"
+        />
+        <UButton
           label="Refresh"
           icon="i-lucide-refresh-cw"
           color="neutral"

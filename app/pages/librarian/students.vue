@@ -4,6 +4,7 @@ import type {
   StudentMember,
   StudentRegistrationInput,
   StudentStatus,
+  StudentPortalCredentials,
 } from "~/composables/useLibraryMembers";
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
 import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
@@ -21,7 +22,6 @@ import {
 definePageMeta({ layout: "librarian", title: "Students" });
 
 const members = useLibraryMembers();
-const librarySettings = useLibrarySettings();
 const auth = useAuth();
 const toast = useToast();
 const route = useRoute();
@@ -44,6 +44,12 @@ const submitting = ref(false);
 const registrationOpen = ref(false);
 const editOpen = ref(false);
 const cardOpen = ref(false);
+const portalCredentials =
+  ref<StudentPortalCredentials | null>(
+    null,
+  );
+const showTemporaryPassword =
+  ref(false);
 
 const registrationPhoto =
   ref<CroppedStudentPhoto | null>(
@@ -106,27 +112,40 @@ const registrationForm = reactive<StudentRegistrationInput>({
     contactNo: "",
     address: "",
     libraryCardStatus:
-      librarySettings.settings.value.membership.defaultLibraryCardStatus,
+      "On Process",
     libraryCardReleaseDate:
       "",
   },
   membership: {
-    academicYear:
-      librarySettings.settings.value.general.currentAcademicYear ||
-      defaultAcademicYear(),
-    semester:
-      librarySettings.settings.value.general.currentSemester ||
-      defaultSemester(),
+    academicYear: defaultAcademicYear(),
+    semester: defaultSemester(),
     issuedDate: today,
-    expiryDate: librarySettings.membershipExpiryDate(
-      new Date(`${today}T00:00:00`),
-    ),
-    enrollmentVerified:
-      !librarySettings.settings.value.membership.requireEnrollmentVerification,
+    expiryDate: defaultExpiryDate(),
+    enrollmentVerified: false,
     enrollmentReference: "",
     remarks: "",
   },
+  portalAccount: {
+    create: true,
+    username: "",
+  },
 });
+
+const suggestedPortalUsername = computed(() =>
+  registrationForm.student.studentNo
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9._-]/g, "")
+    .slice(0, 100),
+);
+
+const displayedPortalUsername = computed(() =>
+  registrationForm.portalAccount.username
+    ?.trim() ||
+  suggestedPortalUsername.value ||
+  "Generated from Student number",
+);
 
 const editForm = reactive({
   firstName: "",
@@ -331,10 +350,32 @@ function validate(state: StudentRegistrationInput): FormError[] {
   if (!registrationPhoto.value) errors.push({ name: "student.photo", message: "Upload and crop the Student photo for the Library Card." });
   if (!/^\d{4}-\d{4}$/.test(state.membership.academicYear)) errors.push({ name: "membership.academicYear", message: "Use YYYY-YYYY format." });
   if (!state.membership.expiryDate) errors.push({ name: "membership.expiryDate", message: "Expiry date is required." });
-  if (
-    librarySettings.settings.value.membership.requireEnrollmentVerification &&
-    !state.membership.enrollmentVerified
-  ) errors.push({ name: "membership.enrollmentVerified", message: "Verify the enrollment document." });
+  if (!state.membership.enrollmentVerified) errors.push({ name: "membership.enrollmentVerified", message: "Verify the enrollment document." });
+  if (state.portalAccount.create) {
+    if (!state.student.email?.trim()) {
+      errors.push({
+        name: "student.email",
+        message:
+          "A valid email address is required to create the Student Portal account.",
+      });
+    }
+
+    const username =
+      state.portalAccount.username?.trim() ||
+      state.student.studentNo
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9._-]/g, "");
+
+    if (username.length < 3) {
+      errors.push({
+        name: "portalAccount.username",
+        message:
+          "Portal username must contain at least 3 valid characters.",
+      });
+    }
+  }
   return errors;
 }
 
@@ -400,25 +441,22 @@ function resetRegistration() {
     contactNo: "",
     address: "",
     libraryCardStatus:
-      librarySettings.settings.value.membership.defaultLibraryCardStatus,
+      "On Process",
     libraryCardReleaseDate:
       "",
   });
   Object.assign(registrationForm.membership, {
-    academicYear:
-      librarySettings.settings.value.general.currentAcademicYear ||
-      defaultAcademicYear(),
-    semester:
-      librarySettings.settings.value.general.currentSemester ||
-      defaultSemester(),
+    academicYear: defaultAcademicYear(),
+    semester: defaultSemester(),
     issuedDate: today,
-    expiryDate: librarySettings.membershipExpiryDate(
-      new Date(`${today}T00:00:00`),
-    ),
-    enrollmentVerified:
-      !librarySettings.settings.value.membership.requireEnrollmentVerification,
+    expiryDate: defaultExpiryDate(),
+    enrollmentVerified: false,
     enrollmentReference: "",
     remarks: "",
+  });
+  Object.assign(registrationForm.portalAccount, {
+    create: true,
+    username: "",
   });
 
   releasePhotoSelection(
@@ -426,6 +464,47 @@ function resetRegistration() {
   );
   registrationPhoto.value =
     null;
+}
+
+async function copyPortalCredentials() {
+  if (!portalCredentials.value) {
+    return;
+  }
+
+  const credentials = [
+    "SNCBT Student Portal",
+    `Username: ${portalCredentials.value.username}`,
+    `Email: ${portalCredentials.value.email}`,
+    `Temporary password: ${portalCredentials.value.temporaryPassword}`,
+    "Sign in and change this temporary password immediately.",
+  ].join("\n");
+
+  try {
+    await navigator.clipboard.writeText(
+      credentials,
+    );
+    toast.add({
+      title: "Credentials copied",
+      description:
+        "The one-time Student Portal credentials were copied to the clipboard.",
+      color: "success",
+      icon: "i-lucide-copy-check",
+    });
+  } catch {
+    toast.add({
+      title: "Unable to copy credentials",
+      description:
+        "Copy the username and temporary password manually.",
+      color: "warning",
+      icon: "i-lucide-triangle-alert",
+    });
+  }
+}
+
+function closeCardPreview() {
+  cardOpen.value = false;
+  portalCredentials.value = null;
+  showTemporaryPassword.value = false;
 }
 
 async function registerStudent(_event: FormSubmitEvent<StudentRegistrationInput>) {
@@ -459,10 +538,21 @@ async function registerStudent(_event: FormSubmitEvent<StudentRegistrationInput>
         membership: {
           ...registrationForm.membership,
         },
+        portalAccount: {
+          ...registrationForm.portalAccount,
+          username:
+            registrationForm.portalAccount.username
+              ?.trim() ||
+            suggestedPortalUsername.value,
+        },
       });
 
     selectedStudent.value =
       response.data.student;
+    portalCredentials.value =
+      response.data.portalAccount;
+    showTemporaryPassword.value =
+      false;
 
     cardPrintQueue.setPrintQueue(
       [
@@ -475,7 +565,9 @@ async function registerStudent(_event: FormSubmitEvent<StudentRegistrationInput>
     cardOpen.value = true;
     toast.add({
       title: "Student registered",
-      description: `${response.data.student.fullName} now has an active Library Card that is ready for preview, download, or printing.`,
+      description: response.data.portalAccount
+        ? `${response.data.student.fullName} now has an active Library Card and a linked Student Portal account.`
+        : `${response.data.student.fullName} now has an active Library Card that is ready for preview, download, or printing.`,
       color: "success",
       icon: "i-lucide-circle-check",
     });
@@ -831,16 +923,7 @@ watch(
   },
 );
 watch(page, () => void loadStudents());
-onMounted(async () => {
-  try {
-    await librarySettings.load();
-    resetRegistration();
-  } catch (error) {
-    console.warn("Operational Library settings could not be loaded.", error);
-  }
-
-  void loadStudents();
-});
+onMounted(() => void loadStudents());
 
 onBeforeUnmount(() => {
   releasePhotoSelection(
@@ -854,7 +937,7 @@ onBeforeUnmount(() => {
 
 <template>
   <UContainer class="py-6 sm:py-8">
-    <div class="mx-auto max-w-375 space-y-6">
+    <div class="mx-auto max-w-[1500px] space-y-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex items-center gap-3">
           <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -1201,10 +1284,20 @@ onBeforeUnmount(() => {
                 />
               </UFormField>
 
-              <UFormField name="student.email" label="Email">
+              <UFormField
+                name="student.email"
+                label="Email"
+                :required="registrationForm.portalAccount.create"
+                :description="
+                  registrationForm.portalAccount.create
+                    ? 'Required for Student Portal sign-in and account recovery.'
+                    : 'Optional when no Student Portal account will be created.'
+                "
+              >
                 <UInput
                   v-model="registrationForm.student.email"
                   type="email"
+                  autocomplete="email"
                   class="w-full"
                 />
               </UFormField>
@@ -1229,6 +1322,74 @@ onBeforeUnmount(() => {
                   class="w-full"
                 />
               </UFormField>
+            </div>
+
+            <div class="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                  <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <UIcon
+                      name="i-lucide-user-round-check"
+                      class="size-5"
+                    />
+                  </div>
+
+                  <div class="min-w-0">
+                    <h3 class="font-semibold text-highlighted">
+                      Student Portal Account
+                    </h3>
+                    <p class="mt-1 text-xs leading-relaxed text-muted">
+                      Create and securely link the Student login account to this Library profile. A unique temporary password will be generated and displayed only after registration.
+                    </p>
+                  </div>
+                </div>
+
+                <USwitch
+                  v-model="registrationForm.portalAccount.create"
+                  :disabled="submitting"
+                  label="Create account"
+                />
+              </div>
+
+              <div
+                v-if="registrationForm.portalAccount.create"
+                class="mt-4 grid gap-4 md:grid-cols-2"
+              >
+                <UFormField
+                  name="portalAccount.username"
+                  label="Portal Username"
+                  description="Leave blank to use the Student number automatically."
+                >
+                  <UInput
+                    v-model="registrationForm.portalAccount.username"
+                    :placeholder="displayedPortalUsername"
+                    autocomplete="off"
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <div class="rounded-xl border border-default bg-default/70 p-4">
+                  <p class="text-xs font-medium uppercase tracking-wide text-muted">
+                    Account preview
+                  </p>
+                  <p class="mt-2 break-all font-mono text-sm font-semibold text-highlighted">
+                    {{ displayedPortalUsername }}
+                  </p>
+                  <p class="mt-1 break-all text-xs text-muted">
+                    {{ registrationForm.student.email || 'Enter the Student email address' }}
+                  </p>
+                </div>
+              </div>
+
+              <UAlert
+                v-if="registrationForm.portalAccount.create"
+                class="mt-4"
+                color="warning"
+                variant="soft"
+                icon="i-lucide-key-round"
+                title="One-time temporary password"
+                description="The system will generate a random password instead of using a shared default password. Give it only to the registered Student and instruct the Student to change it immediately after signing in."
+              />
             </div>
 
             <div class="rounded-2xl border border-default bg-elevated/50 p-5">
@@ -1335,7 +1496,7 @@ onBeforeUnmount(() => {
                 </UFormField>
               </div>
               <UFormField name="membership.enrollmentVerified" class="mt-4">
-                <UCheckbox v-if="librarySettings.settings.value.membership.requireEnrollmentVerification" v-model="registrationForm.membership.enrollmentVerified" label="I verified the student's enrollment document for this semester." />
+                <UCheckbox v-model="registrationForm.membership.enrollmentVerified" label="I verified the student's enrollment document for this semester." />
               </UFormField>
             </div>
 
@@ -1350,7 +1511,7 @@ onBeforeUnmount(() => {
 
     <UModal v-model:open="cardOpen" :ui="{ content: 'sm:max-w-6xl max-h-[94dvh] overflow-y-auto' }">
       <template #content>
-        <div class="bg-default p-6 sm:p-2">
+        <div class="bg-default p-6 sm:p-8">
           <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 class="text-xl font-bold text-highlighted">
@@ -1373,10 +1534,101 @@ onBeforeUnmount(() => {
                 variant="ghost"
                 square
                 aria-label="Close Library Card preview"
-                @click="() => { cardOpen = false }"
+                @click="closeCardPreview"
               />
             </div>
           </div>
+
+          <div
+            v-if="portalCredentials"
+            class="mb-6 rounded-2xl border border-success/40 bg-success/5 p-5"
+          >
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div class="flex min-w-0 items-start gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+                  <UIcon
+                    name="i-lucide-shield-check"
+                    class="size-5"
+                  />
+                </div>
+                <div>
+                  <h3 class="font-semibold text-highlighted">
+                    Student Portal Account Created
+                  </h3>
+                  <p class="mt-1 text-sm text-muted">
+                    These credentials are shown only in this registration result. Copy them before closing this window.
+                  </p>
+                </div>
+              </div>
+
+              <UButton
+                label="Copy Credentials"
+                icon="i-lucide-copy"
+                color="success"
+                variant="soft"
+                @click="copyPortalCredentials"
+              />
+            </div>
+
+            <div class="mt-5 grid gap-4 md:grid-cols-2">
+              <UFormField label="Username">
+                <UInput
+                  :model-value="portalCredentials.username"
+                  readonly
+                  class="w-full font-mono"
+                />
+              </UFormField>
+
+              <UFormField label="Email">
+                <UInput
+                  :model-value="portalCredentials.email"
+                  readonly
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Temporary Password"
+                class="md:col-span-2"
+              >
+                <UInput
+                  :model-value="portalCredentials.temporaryPassword"
+                  :type="showTemporaryPassword ? 'text' : 'password'"
+                  readonly
+                  class="w-full font-mono"
+                >
+                  <template #trailing>
+                    <UButton
+                      :icon="
+                        showTemporaryPassword
+                          ? 'i-lucide-eye-off'
+                          : 'i-lucide-eye'
+                      "
+                      color="neutral"
+                      variant="ghost"
+                      square
+                      :aria-label="
+                        showTemporaryPassword
+                          ? 'Hide temporary password'
+                          : 'Show temporary password'
+                      "
+                      @click="showTemporaryPassword = !showTemporaryPassword"
+                    />
+                  </template>
+                </UInput>
+              </UFormField>
+            </div>
+
+            <UAlert
+              class="mt-4"
+              color="warning"
+              variant="soft"
+              icon="i-lucide-triangle-alert"
+              title="Confidential credentials"
+              description="Do not place the temporary password on the public side of the Library Card. Give it privately to the Student and require an immediate password change."
+            />
+          </div>
+
           <StudentLibraryCard
             v-if="selectedStudent"
             :student="selectedStudent"

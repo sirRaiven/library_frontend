@@ -48,9 +48,10 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     { label: "Library Services", type: "label" },
     {
-      label: "Book Collection — Coming Soon",
+      label: "Book Collection",
       icon: "i-lucide-books",
-      disabled: true,
+      to: "/student/books",
+      active: active("/student/books"),
     },
     {
       label: "My Borrowed Books — Coming Soon",
@@ -58,9 +59,10 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       disabled: true,
     },
     {
-      label: "My Reservations — Coming Soon",
+      label: "My Reservations",
       icon: "i-lucide-bookmark-check",
-      disabled: true,
+      to: "/student/reservations",
+      active: active("/student/reservations"),
     },
     {
       label: "Library Card — Coming Soon",

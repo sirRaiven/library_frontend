@@ -184,6 +184,13 @@ export interface MembershipListResponse {
   };
 }
 
+export interface StudentPortalCredentials {
+  created: true;
+  username: string;
+  email: string;
+  temporaryPassword: string;
+}
+
 export interface StudentRegistrationInput {
   student: {
     studentNo: string;
@@ -214,6 +221,10 @@ export interface StudentRegistrationInput {
     enrollmentVerified: boolean;
     enrollmentReference?: string;
     remarks?: string;
+  };
+  portalAccount: {
+    create: boolean;
+    username?: string;
   };
 }
 
@@ -436,6 +447,7 @@ export function useLibraryMembers() {
           data: {
             student: StudentMember;
             membership: MembershipRecord;
+            portalAccount: StudentPortalCredentials | null;
           };
         }>(
           "/api/library-members/students",

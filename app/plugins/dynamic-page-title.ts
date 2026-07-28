@@ -44,7 +44,8 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
 
   // Student Portal pages
   { pattern: /^\/student\/dashboard\/?$/, title: "Student Dashboard" },
-  { pattern: /^\/student\/books(?:\/.*)?\/?$/, title: "Book Collection" },
+  { pattern: /^\/student\/books\/[^/]+\/?$/, title: "Book Details" },
+  { pattern: /^\/student\/books\/?$/, title: "Book Collection" },
   { pattern: /^\/student\/borrowings\/?$/, title: "My Borrowed Books" },
   { pattern: /^\/student\/borrowing-history\/?$/, title: "Borrowing History" },
   { pattern: /^\/student\/reservations\/?$/, title: "My Reservations" },
