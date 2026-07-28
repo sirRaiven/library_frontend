@@ -2,6 +2,8 @@
 import type { MembershipListItem, StudentMember } from "~/composables/useLibraryMembers";
 import type { TableColumn } from "@nuxt/ui";
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
+import LiveBarcodeScanner from "~/components/librarian/visits/LiveBarcodeScanner.vue";
+import type { BarcodeScanResult } from "~/composables/useBarcodeScanResult";
 
 definePageMeta({ layout: "librarian", title: "Library Cards" });
 
@@ -102,6 +104,23 @@ async function lookupCard() {
   } finally {
     lookupLoading.value = false;
   }
+}
+
+async function handleCameraBarcodeDetected(
+  result: BarcodeScanResult,
+) {
+  const detectedBarcode = result.value.trim();
+
+  if (
+    !detectedBarcode ||
+    lookupLoading.value ||
+    renewing.value
+  ) {
+    return;
+  }
+
+  barcode.value = detectedBarcode;
+  await lookupCard();
 }
 
 async function renewMembership() {
@@ -250,9 +269,56 @@ onMounted(async () => {
             </div>
           </template>
 
-          <form class="flex flex-col gap-3 sm:flex-row" @submit.prevent="lookupCard">
-            <UInput v-model="barcode" icon="i-lucide-scan-barcode" placeholder="Scan barcode, card number, or student number" autocomplete="off" size="xl" autofocus class="flex-1" />
-            <UButton type="submit" label="Find Student" icon="i-lucide-search" color="success" size="xl" :loading="lookupLoading" />
+          <form
+            class="space-y-3"
+            @submit.prevent="lookupCard"
+          >
+            <div
+              class="flex flex-col gap-3 sm:flex-row sm:items-stretch"
+            >
+              <UInput
+                v-model="barcode"
+                icon="i-lucide-scan-barcode"
+                placeholder="Scan barcode, card number, or student number"
+                autocomplete="off"
+                size="xl"
+                autofocus
+                :loading="lookupLoading"
+                class="min-w-0 flex-1"
+              >
+                <template #trailing>
+                  <UKbd>Enter</UKbd>
+                </template>
+              </UInput>
+
+              <LiveBarcodeScanner
+                :disabled="lookupLoading || renewing"
+                title="Scan Student Library Card"
+                button-label="Use Camera"
+                ready-description="Place the complete permanent Library Card barcode inside the guide."
+                processing-label="Finding student"
+                processing-description="Please wait while the student and membership record are being checked."
+                storage-key="sncbt-membership-renewal-camera"
+                :duplicate-cooldown-ms="60000"
+                :detection-hold-ms="900"
+                @detected="handleCameraBarcodeDetected"
+              />
+
+              <UButton
+                type="submit"
+                label="Find Student"
+                icon="i-lucide-search"
+                color="success"
+                size="xl"
+                :loading="lookupLoading"
+                :disabled="!barcode.trim() || lookupLoading"
+                class="shrink-0"
+              />
+            </div>
+
+            <p class="text-xs text-muted">
+              Use a physical barcode scanner, the camera scanner, or type the student number manually.
+            </p>
           </form>
 
           <div

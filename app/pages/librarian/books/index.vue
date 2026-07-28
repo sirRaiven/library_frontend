@@ -3,6 +3,8 @@ import type { InventoryExportRow } from "~/composables/useLibraryInventoryExcel"
 import { useLibraryInventoryExcel } from "~/composables/useLibraryInventoryExcel";
 import { useBarcodePrintQueue } from "~/composables/useBarcodePrintQueue";
 import { useAuth } from "~/composables/useAuth";
+import LiveBarcodeScanner from "~/components/librarian/visits/LiveBarcodeScanner.vue";
+import type { BarcodeScanResult } from "~/composables/useBarcodeScanResult";
 definePageMeta({
   layout: "librarian",
   title: "Library Collection",
@@ -81,6 +83,9 @@ const pageSize = 12;
 
 const isLoading = ref(true);
 const isExporting = ref(false);
+const isBarcodeSearching = ref(false);
+const isApplyingBarcodeSearch = ref(false);
+const lastScannedBarcode = ref("");
 const loadError = ref("");
 const books = ref<CatalogBook[]>([]);
 const totalBooks = ref(0);
@@ -180,7 +185,9 @@ function normalizeBook(
   };
 }
 
-function buildQuery(): Record<string, unknown> {
+function buildQuery(
+  physicalBarcode = "",
+): Record<string, unknown> {
   const query: Record<string, unknown> = {
     "sort[0]": "createdAt:desc",
     "pagination[page]": page.value,
@@ -197,9 +204,17 @@ function buildQuery(): Record<string, unknown> {
       "condition",
   };
 
+  const barcode = physicalBarcode.trim();
   const keyword = search.value.trim();
 
-  if (keyword) {
+  if (barcode) {
+    query[
+      "filters[$or][0][book_copies][control_number][$eqi]"
+    ] = barcode;
+    query[
+      "filters[$or][1][book_copies][accession_number][$eqi]"
+    ] = barcode;
+  } else if (keyword) {
     query[
       "filters[$or][0][title][$containsi]"
     ] = keyword;
@@ -208,6 +223,12 @@ function buildQuery(): Record<string, unknown> {
     ] = keyword;
     query[
       "filters[$or][2][isbn][$containsi]"
+    ] = keyword;
+    query[
+      "filters[$or][3][book_copies][control_number][$containsi]"
+    ] = keyword;
+    query[
+      "filters[$or][4][book_copies][accession_number][$containsi]"
     ] = keyword;
   }
 
@@ -222,7 +243,14 @@ function buildQuery(): Record<string, unknown> {
   return query;
 }
 
-async function loadBooks() {
+async function loadBooks(
+  physicalBarcode: string | Event = "",
+) {
+  const barcodeFilter =
+    typeof physicalBarcode === "string"
+      ? physicalBarcode
+      : "";
+
   isLoading.value = true;
   loadError.value = "";
 
@@ -232,7 +260,7 @@ async function loadBooks() {
         "/api/books",
         {
           method: "GET",
-          query: buildQuery(),
+          query: buildQuery(barcodeFilter),
         },
       );
 
@@ -386,8 +414,101 @@ async function exportInventory(): Promise<void> {
   }
 }
 
+function normalizeBarcode(value: unknown) {
+  return String(value ?? "")
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function findMatchingCopy(
+  book: CatalogBook,
+  barcode = lastScannedBarcode.value,
+): BookCopy | undefined {
+  const normalizedBarcode = normalizeBarcode(barcode);
+
+  if (!normalizedBarcode) {
+    return undefined;
+  }
+
+  return book.copies.find((copy) =>
+    [
+      copy.control_number,
+      copy.accession_number,
+    ].some(
+      (value) =>
+        normalizeBarcode(value) === normalizedBarcode,
+    ),
+  );
+}
+
+async function handlePhysicalBookBarcodeDetected(
+  result: BarcodeScanResult,
+) {
+  const barcode = result.value.trim();
+
+  if (
+    !barcode ||
+    isBarcodeSearching.value ||
+    isLoading.value
+  ) {
+    return;
+  }
+
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+    searchTimer = undefined;
+  }
+
+  isBarcodeSearching.value = true;
+  isApplyingBarcodeSearch.value = true;
+  lastScannedBarcode.value = barcode;
+  search.value = barcode;
+  selectedCategory.value = "All Categories";
+  page.value = 1;
+
+  try {
+    await nextTick();
+    await loadBooks(barcode);
+
+    const matchingBook = books.value.find((book) =>
+      findMatchingCopy(book, barcode),
+    );
+    const matchingCopy = matchingBook
+      ? findMatchingCopy(matchingBook, barcode)
+      : undefined;
+
+    if (matchingBook && matchingCopy) {
+      toast.add({
+        title: "Physical book found",
+        description: `${matchingBook.title} • ${
+          matchingCopy.control_number ||
+          matchingCopy.accession_number ||
+          barcode
+        } • ${matchingCopy.copy_status}`,
+        color: "success",
+        icon: "i-lucide-book-check",
+      });
+    } else {
+      toast.add({
+        title: "Physical book not found",
+        description:
+          "No book copy in the collection matches the scanned barcode or accession number.",
+        color: "warning",
+        icon: "i-lucide-scan-search",
+      });
+    }
+  } finally {
+    isBarcodeSearching.value = false;
+
+    await nextTick();
+    isApplyingBarcodeSearch.value = false;
+  }
+}
+
 function clearFilters() {
   search.value = "";
+  lastScannedBarcode.value = "";
   selectedCategory.value =
     "All Categories";
   page.value = 1;
@@ -398,6 +519,12 @@ let searchTimer:
   | undefined;
 
 watch(search, () => {
+  if (isApplyingBarcodeSearch.value) {
+    return;
+  }
+
+  lastScannedBarcode.value = "";
+
   if (searchTimer) {
     clearTimeout(searchTimer);
   }
@@ -409,11 +536,19 @@ watch(search, () => {
 });
 
 watch(selectedCategory, () => {
+  if (isApplyingBarcodeSearch.value) {
+    return;
+  }
+
   page.value = 1;
   void loadBooks();
 });
 
 watch(page, () => {
+  if (isApplyingBarcodeSearch.value) {
+    return;
+  }
+
   void loadBooks();
 });
 
@@ -503,13 +638,41 @@ onBeforeUnmount(() => {
         <div
           class="grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem_auto]"
         >
-          <UInput
-            v-model="search"
-            icon="i-lucide-search"
-            placeholder="Search title, author, or ISBN"
-            size="lg"
-            class="w-full"
-          />
+          <div class="space-y-2">
+            <div
+              class="flex flex-col gap-3 sm:flex-row sm:items-stretch"
+            >
+              <UInput
+                v-model="search"
+                icon="i-lucide-search"
+                placeholder="Search title, author, ISBN, accession no., or book barcode"
+                size="lg"
+                :loading="isLoading"
+                class="min-w-0 flex-1"
+              >
+                <template #trailing>
+                  <UKbd>Enter</UKbd>
+                </template>
+              </UInput>
+
+              <LiveBarcodeScanner
+                :disabled="isLoading || isBarcodeSearching"
+                title="Scan Physical Book Barcode"
+                button-label="Scan Book"
+                ready-description="Place the complete physical book barcode inside the guide."
+                processing-label="Searching collection"
+                processing-description="Please wait while the physical book is being located."
+                storage-key="sncbt-book-collection-camera"
+                :duplicate-cooldown-ms="5000"
+                :detection-hold-ms="900"
+                @detected="handlePhysicalBookBarcodeDetected"
+              />
+            </div>
+
+            <p class="text-xs text-muted">
+              Search by book information, scan a physical copy, or enter its control or accession number manually.
+            </p>
+          </div>
 
           <USelect
             v-model="selectedCategory"
@@ -798,6 +961,40 @@ onBeforeUnmount(() => {
               </div>
 
               <div
+                v-if="findMatchingCopy(book)"
+                class="mt-4 flex items-start gap-3 rounded-xl border border-success/30 bg-success/5 p-3"
+              >
+                <div
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"
+                >
+                  <UIcon
+                    name="i-lucide-scan-barcode"
+                    class="size-4.5"
+                  />
+                </div>
+
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-success">
+                    Matching physical copy found
+                  </p>
+                  <p class="mt-1 break-all font-mono text-sm font-semibold text-highlighted">
+                    {{
+                      findMatchingCopy(book)?.control_number ||
+                      findMatchingCopy(book)?.accession_number
+                    }}
+                  </p>
+                  <p class="mt-1 text-xs text-muted">
+                    Accession:
+                    {{ findMatchingCopy(book)?.accession_number || "Not provided" }}
+                    · Status:
+                    {{ findMatchingCopy(book)?.copy_status }}
+                    · Shelf:
+                    {{ findMatchingCopy(book)?.shelf_location || "Not assigned" }}
+                  </p>
+                </div>
+              </div>
+
+              <div
                 class="mt-5 flex flex-wrap gap-2"
               >
                 <UButton
@@ -849,15 +1046,21 @@ onBeforeUnmount(() => {
           <h2
             class="mt-4 font-semibold text-highlighted"
           >
-            No books found
+            {{
+              lastScannedBarcode
+                ? "Physical book not found"
+                : "No books found"
+            }}
           </h2>
 
           <p
             class="mt-1 max-w-md text-sm text-muted"
           >
-            Change the search filters or register a
-            new book to begin building the library
-            collection.
+            {{
+              lastScannedBarcode
+                ? `No physical copy matches ${lastScannedBarcode}. Check the barcode or register the book copy first.`
+                : "Change the search filters or register a new book to begin building the library collection."
+            }}
           </p>
 
           <div
