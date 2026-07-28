@@ -210,6 +210,10 @@ export function useAuth() {
     role.value === "super-administrator",
   );
 
+  const isStudent = computed(() => role.value === "student");
+  const isFaculty = computed(() => role.value === "faculty");
+  const isLibrarian = computed(() => role.value === "librarian");
+
   const homeRoute = computed(() => {
     switch (role.value) {
       case "administrator":
@@ -439,6 +443,9 @@ export function useAuth() {
     isAuthenticated,
     isAdministrator,
     isSuperAdministrator,
+    isStudent,
+    isFaculty,
+    isLibrarian,
     homeRoute,
     login,
     logout,

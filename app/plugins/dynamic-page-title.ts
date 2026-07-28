@@ -42,8 +42,18 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/librarian\/reports\/?$/, title: "Library Reports" },
   { pattern: /^\/librarian\/circulation\/?$/, title: "Borrowing and Returning" },
 
+  // Student Portal pages
+  { pattern: /^\/student\/dashboard\/?$/, title: "Student Dashboard" },
+  { pattern: /^\/student\/books(?:\/.*)?\/?$/, title: "Book Collection" },
+  { pattern: /^\/student\/borrowings\/?$/, title: "My Borrowed Books" },
+  { pattern: /^\/student\/borrowing-history\/?$/, title: "Borrowing History" },
+  { pattern: /^\/student\/reservations\/?$/, title: "My Reservations" },
+  { pattern: /^\/student\/library-card\/?$/, title: "My Library Card" },
+  { pattern: /^\/student\/notifications\/?$/, title: "Notifications" },
+  { pattern: /^\/student\/security\/?$/, title: "Security and Devices" },
+
   // Common role pages
-  { pattern: /^\/(?:admin|student|faculty)\/dashboard\/?$/, title: "Dashboard" },
+  { pattern: /^\/(?:admin|faculty)\/dashboard\/?$/, title: "Dashboard" },
   { pattern: /^\/(?:admin|student|faculty)\/profile\/?$/, title: "My Profile" },
   { pattern: /^\/(?:student|faculty)\/catalog\/?$/, title: "Book Catalog" },
   { pattern: /^\/(?:student|faculty)\/borrowed\/?$/, title: "My Borrowed Books" },
