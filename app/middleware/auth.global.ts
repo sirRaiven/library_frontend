@@ -3,6 +3,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
+  const nuxtApp = useNuxtApp();
+
+  // Keep the browser's first hydration render identical to the SSR output.
+  // The client plugin restores the HttpOnly refresh-token session after mount.
+  if (
+    nuxtApp.isHydrating &&
+    nuxtApp.payload.serverRendered
+  ) {
+    return;
+  }
+
   const auth = useAuth();
 
   if (!auth.initialized.value) {
@@ -28,15 +39,31 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const role = auth.role.value;
 
-  if (to.path.startsWith("/librarian") && role !== "librarian") {
+  if (
+    to.path.startsWith("/admin") &&
+    !auth.isAdministrator.value
+  ) {
     return navigateTo(auth.homeRoute.value);
   }
 
-  if (to.path.startsWith("/student") && role !== "student") {
+  if (
+    to.path.startsWith("/librarian") &&
+    role !== "librarian"
+  ) {
     return navigateTo(auth.homeRoute.value);
   }
 
-  if (to.path.startsWith("/faculty") && role !== "faculty") {
+  if (
+    to.path.startsWith("/student") &&
+    role !== "student"
+  ) {
+    return navigateTo(auth.homeRoute.value);
+  }
+
+  if (
+    to.path.startsWith("/faculty") &&
+    role !== "faculty"
+  ) {
     return navigateTo(auth.homeRoute.value);
   }
 });

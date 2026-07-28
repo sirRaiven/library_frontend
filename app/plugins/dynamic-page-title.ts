@@ -49,7 +49,11 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/(?:student|faculty)\/borrowed\/?$/, title: "My Borrowed Books" },
   { pattern: /^\/(?:student|faculty)\/reservations\/?$/, title: "My Reservations" },
   { pattern: /^\/admin\/users\/?$/, title: "User Accounts" },
+  { pattern: /^\/admin\/librarians\/create\/?$/, title: "Add Librarian" },
+  { pattern: /^\/admin\/librarians\/?$/, title: "Librarian Accounts" },
+  { pattern: /^\/admin\/roles\/[^/]+\/?$/, title: "Role Details" },
   { pattern: /^\/admin\/roles\/?$/, title: "Roles and Permissions" },
+  { pattern: /^\/admin\/audit-logs\/?$/, title: "Audit Logs" },
   { pattern: /^\/admin\/settings\/?$/, title: "System Settings" },
   { pattern: /^\/admin\/reports\/?$/, title: "System Reports" },
 ];

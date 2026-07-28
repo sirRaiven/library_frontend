@@ -1,13 +1,482 @@
-<template>
-  <div>
-    
-  </div>
-</template>
+<script setup lang="ts">
+import type { TableColumn } from "@nuxt/ui";
+import type {
+  AdminRoleSummary,
+  AdminUserRecord,
+} from "~/composables/useAdminUsers";
 
-<script lang="ts" setup>
+definePageMeta({
+  layout: "admin",
+  middleware: ["admin"],
+  title: "User Accounts",
+});
 
+const usersApi = useAdminUsers();
+const rolesApi = useAdminRoles();
+const auth = useAuth();
+const toast = useToast();
+
+const records = ref<AdminUserRecord[]>([]);
+const roles = ref<AdminRoleSummary[]>([]);
+const loading = ref(false);
+const saving = ref(false);
+const page = ref(1);
+const pageSize = 25;
+const total = ref(0);
+const search = ref("");
+const roleFilter = ref("all");
+const statusFilter = ref<"all" | "active" | "blocked" | "unconfirmed">(
+  (useRoute().query.status as any) || "all",
+);
+const selectedUser = ref<AdminUserRecord | null>(null);
+const editOpen = ref(false);
+const createOpen = ref(false);
+const statusOpen = ref(false);
+const pendingBlockedState = ref(false);
+
+const createForm = reactive({
+  username: "",
+  email: "",
+  password: "",
+  roleId: 0,
+  confirmed: true,
+});
+
+const editForm = reactive({
+  username: "",
+  email: "",
+  roleId: 0,
+});
+
+const columns: TableColumn<AdminUserRecord>[] = [
+  { id: "account", header: "Account" },
+  { id: "role", header: "Role" },
+  { id: "status", header: "Account Status" },
+  { id: "created", header: "Created" },
+  { id: "actions", header: "" },
+];
+
+const roleOptions = computed(() => [
+  { label: "All roles", value: "all" },
+  ...roles.value.map(role => ({
+    label: role.name,
+    value: role.type,
+  })),
+]);
+
+const createRoleOptions = computed(() =>
+  roles.value
+    .filter(role => role.type !== "public")
+    .filter(role =>
+      auth.isSuperAdministrator.value ||
+      !["administrator", "system-administrator", "super-administrator", "admin"].includes(role.type),
+    )
+    .map(role => ({ label: role.name, value: role.id })),
+);
+
+const statusOptions = [
+  { label: "All account statuses", value: "all" },
+  { label: "Active", value: "active" },
+  { label: "Blocked", value: "blocked" },
+  { label: "Unconfirmed", value: "unconfirmed" },
+];
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeZone: "Asia/Manila",
+  }).format(new Date(value));
+}
+
+function accountStatus(record: AdminUserRecord) {
+  if (record.blocked) return "Blocked";
+  if (!record.confirmed) return "Unconfirmed";
+  return "Active";
+}
+
+function resetCreateForm() {
+  Object.assign(createForm, {
+    username: "",
+    email: "",
+    password: "",
+    roleId: createRoleOptions.value[0]?.value ?? 0,
+    confirmed: true,
+  });
+}
+
+async function loadRoles() {
+  roles.value = await rolesApi.list();
+  if (!createForm.roleId) {
+    createForm.roleId = createRoleOptions.value[0]?.value ?? 0;
+  }
+}
+
+async function loadUsers() {
+  loading.value = true;
+
+  try {
+    const response = await usersApi.list({
+      search: search.value,
+      role: roleFilter.value,
+      status: statusFilter.value,
+      page: page.value,
+      pageSize,
+    });
+    records.value = response.data;
+    total.value = response.meta.total;
+  } catch (error) {
+    toast.add({
+      title: "Unable to load user accounts",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    loading.value = false;
+  }
+}
+
+function openCreate() {
+  resetCreateForm();
+  createOpen.value = true;
+}
+
+function openEdit(record: AdminUserRecord) {
+  selectedUser.value = record;
+  Object.assign(editForm, {
+    username: record.username,
+    email: record.email,
+    roleId: record.role?.id ?? 0,
+  });
+  editOpen.value = true;
+}
+
+function openStatus(record: AdminUserRecord, blocked: boolean) {
+  selectedUser.value = record;
+  pendingBlockedState.value = blocked;
+  statusOpen.value = true;
+}
+
+async function createAccount() {
+  if (saving.value) return;
+
+  if (
+    createForm.username.trim().length < 3 ||
+    !createForm.email.includes("@") ||
+    createForm.password.length < 12 ||
+    !createForm.roleId
+  ) {
+    toast.add({
+      title: "Complete the required account information",
+      description: "Use a valid email, a username of at least 3 characters, and a temporary password of at least 12 characters.",
+      color: "warning",
+      icon: "i-lucide-triangle-alert",
+    });
+    return;
+  }
+
+  saving.value = true;
+  try {
+    await usersApi.create({ ...createForm });
+    createOpen.value = false;
+    await loadUsers();
+    toast.add({
+      title: "User account created",
+      description: "The new account was created with the selected role.",
+      color: "success",
+      icon: "i-lucide-user-check",
+    });
+  } catch (error) {
+    toast.add({
+      title: "Unable to create account",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function saveAccount() {
+  if (!selectedUser.value || saving.value) return;
+  saving.value = true;
+
+  try {
+    await usersApi.update(selectedUser.value.id, {
+      username: editForm.username,
+      email: editForm.email,
+    });
+
+    if (editForm.roleId && editForm.roleId !== selectedUser.value.role?.id) {
+      await usersApi.assignRole(selectedUser.value.id, editForm.roleId);
+    }
+
+    editOpen.value = false;
+    await loadUsers();
+    toast.add({
+      title: "Account updated",
+      description: "The account information and assigned role were saved.",
+      color: "success",
+      icon: "i-lucide-circle-check",
+    });
+  } catch (error) {
+    toast.add({
+      title: "Unable to update account",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function confirmStatusChange() {
+  if (!selectedUser.value || saving.value) return;
+  saving.value = true;
+
+  try {
+    await usersApi.changeStatus(selectedUser.value.id, {
+      blocked: pendingBlockedState.value,
+    });
+    statusOpen.value = false;
+    await loadUsers();
+    toast.add({
+      title: pendingBlockedState.value ? "Account blocked" : "Account restored",
+      description: pendingBlockedState.value
+        ? "The user can no longer sign in."
+        : "The user can sign in again.",
+      color: pendingBlockedState.value ? "warning" : "success",
+      icon: pendingBlockedState.value
+        ? "i-lucide-user-round-x"
+        : "i-lucide-user-round-check",
+    });
+  } catch (error) {
+    toast.add({
+      title: "Unable to change account status",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    saving.value = false;
+  }
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+watch([roleFilter, statusFilter], () => {
+  page.value = 1;
+  loadUsers();
+});
+watch(page, loadUsers);
+watch(search, () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    page.value = 1;
+    loadUsers();
+  }, 350);
+});
+
+onMounted(async () => {
+  await loadRoles();
+  await loadUsers();
+});
 </script>
 
-<style>
+<template>
+  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+    <AdminPageHeader
+      eyebrow="Accounts and Access"
+      title="User Account Management"
+      description="Create accounts, assign application roles, confirm access, and block compromised or inactive accounts. Passwords and refresh tokens are never displayed in this panel."
+      icon="i-lucide-users"
+    >
+      <template #actions>
+        <UButton
+          label="Add User Account"
+          icon="i-lucide-user-plus"
+          @click="openCreate"
+        />
+      </template>
+    </AdminPageHeader>
 
-</style>
+    <UAlert
+      color="primary"
+      variant="soft"
+      icon="i-lucide-shield-check"
+      title="Protected account administration"
+      description="Administrator actions are checked again by Strapi and written to the audit log. Regular administrators cannot assign administrator roles or modify other administrator accounts."
+    />
+
+    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <template #header>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 class="font-semibold text-highlighted">Application User Accounts</h2>
+            <p class="mt-1 text-xs text-muted">{{ total }} account{{ total === 1 ? '' : 's' }} found</p>
+          </div>
+          <div class="grid gap-2 sm:grid-cols-3 lg:w-[48rem]">
+            <UInput
+              v-model="search"
+              icon="i-lucide-search"
+              placeholder="Search username or email"
+              autocomplete="off"
+            />
+            <USelect v-model="roleFilter" :items="roleOptions" />
+            <USelect v-model="statusFilter" :items="statusOptions" />
+          </div>
+        </div>
+      </template>
+
+      <div v-if="loading" class="space-y-3 p-5 sm:p-6">
+        <USkeleton v-for="index in 6" :key="index" class="h-16 w-full" />
+      </div>
+
+      <div v-else-if="!records.length" class="px-6 py-16 text-center">
+        <UIcon name="i-lucide-users" class="mx-auto size-11 text-dimmed" />
+        <h3 class="mt-3 font-semibold text-highlighted">No matching user accounts</h3>
+        <p class="mt-1 text-sm text-muted">Adjust the search or account-status filters.</p>
+      </div>
+
+      <UTable v-else :data="records" :columns="columns">
+        <template #account-cell="{ row }">
+          <div class="flex items-center gap-3">
+            <UAvatar :text="row.original.username.slice(0, 2).toUpperCase()" size="sm" />
+            <div class="min-w-0">
+              <p class="truncate font-semibold text-highlighted">{{ row.original.username }}</p>
+              <p class="truncate text-xs text-muted">{{ row.original.email }}</p>
+            </div>
+          </div>
+        </template>
+        <template #role-cell="{ row }">
+          <UBadge
+            :label="row.original.role?.name || 'No role assigned'"
+            :color="row.original.role ? 'primary' : 'warning'"
+            variant="soft"
+          />
+        </template>
+        <template #status-cell="{ row }">
+          <AdminStatusBadge :label="accountStatus(row.original)" />
+        </template>
+        <template #created-cell="{ row }">
+          <p class="text-sm text-default">{{ formatDate(row.original.createdAt) }}</p>
+          <p class="text-xs text-muted">{{ row.original.provider || 'local' }} provider</p>
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end gap-1">
+            <UTooltip text="Edit account and role">
+              <UButton
+                icon="i-lucide-pencil"
+                color="neutral"
+                variant="ghost"
+                square
+                @click="openEdit(row.original)"
+              />
+            </UTooltip>
+            <UTooltip :text="row.original.blocked ? 'Restore account' : 'Block account'">
+              <UButton
+                :icon="row.original.blocked ? 'i-lucide-user-round-check' : 'i-lucide-user-round-x'"
+                :color="row.original.blocked ? 'success' : 'error'"
+                variant="ghost"
+                square
+                @click="openStatus(row.original, !row.original.blocked)"
+              />
+            </UTooltip>
+          </div>
+        </template>
+      </UTable>
+
+      <template #footer>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm text-muted">Showing up to {{ pageSize }} records per page</p>
+          <UPagination v-model:page="page" :total="total" :items-per-page="pageSize" />
+        </div>
+      </template>
+    </UCard>
+  </div>
+
+  <UModal v-model:open="createOpen" :ui="{ content: 'sm:max-w-xl' }">
+    <template #content>
+      <form class="space-y-5 bg-default p-6" @submit.prevent="createAccount">
+        <div>
+          <h2 class="text-xl font-bold text-highlighted">Create User Account</h2>
+          <p class="mt-1 text-sm text-muted">Create a secured application account and assign its initial role.</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UFormField label="Username" required>
+            <UInput v-model="createForm.username" autocomplete="off" class="w-full" />
+          </UFormField>
+          <UFormField label="Email Address" required>
+            <UInput v-model="createForm.email" type="email" autocomplete="off" class="w-full" />
+          </UFormField>
+          <UFormField label="Temporary Password" required class="sm:col-span-2" help="Use at least 12 characters and share it through a secure channel.">
+            <UInput v-model="createForm.password" type="password" autocomplete="new-password" class="w-full" />
+          </UFormField>
+          <UFormField label="Application Role" required class="sm:col-span-2">
+            <USelect v-model="createForm.roleId" :items="createRoleOptions" class="w-full" />
+          </UFormField>
+          <UCheckbox v-model="createForm.confirmed" label="Mark account as confirmed" class="sm:col-span-2" />
+        </div>
+        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="createOpen = false" />
+          <UButton type="submit" label="Create Account" icon="i-lucide-user-plus" :loading="saving" />
+        </div>
+      </form>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="editOpen" :ui="{ content: 'sm:max-w-lg' }">
+    <template #content>
+      <form class="space-y-5 bg-default p-6" @submit.prevent="saveAccount">
+        <div>
+          <h2 class="text-xl font-bold text-highlighted">Edit User Account</h2>
+          <p class="mt-1 text-sm text-muted">Update the account identity and application role.</p>
+        </div>
+        <UFormField label="Username" required>
+          <UInput v-model="editForm.username" class="w-full" />
+        </UFormField>
+        <UFormField label="Email Address" required>
+          <UInput v-model="editForm.email" type="email" class="w-full" />
+        </UFormField>
+        <UFormField label="Application Role" required>
+          <USelect v-model="editForm.roleId" :items="createRoleOptions" class="w-full" />
+        </UFormField>
+        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="editOpen = false" />
+          <UButton type="submit" label="Save Changes" icon="i-lucide-save" :loading="saving" />
+        </div>
+      </form>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="statusOpen" :ui="{ content: 'sm:max-w-md' }">
+    <template #content>
+      <div class="space-y-5 bg-default p-6">
+        <div class="mx-auto flex size-14 items-center justify-center rounded-2xl" :class="pendingBlockedState ? 'bg-error/10 text-error' : 'bg-success/10 text-success'">
+          <UIcon :name="pendingBlockedState ? 'i-lucide-user-round-x' : 'i-lucide-user-round-check'" class="size-7" />
+        </div>
+        <div class="text-center">
+          <h2 class="text-xl font-bold text-highlighted">
+            {{ pendingBlockedState ? 'Block this account?' : 'Restore this account?' }}
+          </h2>
+          <p class="mt-2 text-sm leading-6 text-muted">
+            {{ pendingBlockedState
+              ? `${selectedUser?.username} will be prevented from signing in until an administrator restores the account.`
+              : `${selectedUser?.username} will be allowed to sign in again.` }}
+          </p>
+        </div>
+        <div class="flex flex-col-reverse gap-2 sm:flex-row">
+          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="statusOpen = false" />
+          <UButton
+            :label="pendingBlockedState ? 'Block Account' : 'Restore Account'"
+            :color="pendingBlockedState ? 'error' : 'success'"
+            block
+            :loading="saving"
+            @click="confirmStatusChange"
+          />
+        </div>
+      </div>
+    </template>
+  </UModal>
+</template>

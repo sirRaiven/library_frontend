@@ -66,6 +66,8 @@ async function handleLogin(
     );
 
     if (
+      auth.role.value !== "super-administrator" &&
+      auth.role.value !== "administrator" &&
       auth.role.value !== "librarian" &&
       auth.role.value !== "student" &&
       auth.role.value !== "faculty"
@@ -79,7 +81,7 @@ async function handleLogin(
 
       loginError.value =
         `Your Strapi account returned the role "${returnedRole}". ` +
-        "Assign the account to Librarian, Student, or Faculty.";
+        "Assign the account to Administrator, Librarian, Student, or Faculty.";
 
       return;
     }
@@ -124,8 +126,16 @@ async function handleLogin(
         <!-- Header Section (With subtle gradient background) -->
         <div class="bg-[linear-gradient(180deg,rgba(16,185,129,0.05)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(16,185,129,0.05)_0%,rgba(23,23,23,0)_100%)] pt-12 pb-8 px-8 flex flex-col items-center text-center border-b border-neutral-100 dark:border-neutral-800">
           
-          <div class="w-16 h-16 rounded-[1.25rem] bg-linear-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-6">
-            <UIcon name="i-lucide-library-big" class="w-8 h-8" />
+          <div class="mb-6 flex size-16 items-center justify-center overflow-hidden rounded-[1.25rem] border border-emerald-100 bg-white p-2 shadow-lg shadow-emerald-500/20 dark:border-emerald-900/50 dark:bg-neutral-950">
+            <img
+              src="/sncbt-library-logo.png"
+              alt="SNCBT Library logo"
+              width="64"
+              height="64"
+              class="size-full object-contain"
+              decoding="async"
+              draggable="false"
+            >
           </div>
           
           <h1 class="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight mb-2">

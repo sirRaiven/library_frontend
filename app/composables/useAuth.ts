@@ -43,6 +43,8 @@ interface RefreshResponse {
 }
 
 export type ApplicationRole =
+  | "super-administrator"
+  | "administrator"
   | "librarian"
   | "student"
   | "faculty"
@@ -134,21 +136,42 @@ function normalizeUser(user: RawAuthUser): AuthUser {
 }
 
 function normalizeRole(role?: StrapiRole | null): ApplicationRole {
-  const roleValue = role?.type || role?.name;
-
-  if (!roleValue) {
-    return null;
-  }
-
-  const normalized = roleValue.trim().toLowerCase();
+  const roleCandidates = [
+    role?.type,
+    role?.name,
+  ]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .map(value =>
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-"),
+    );
 
   if (
-    normalized === "librarian" ||
-    normalized === "student" ||
-    normalized === "faculty" ||
-    normalized === "authenticated"
+    roleCandidates.includes("super-administrator") ||
+    roleCandidates.includes("super-admin")
   ) {
-    return normalized;
+    return "super-administrator";
+  }
+
+  if (
+    roleCandidates.includes("administrator") ||
+    roleCandidates.includes("system-administrator") ||
+    roleCandidates.includes("admin")
+  ) {
+    return "administrator";
+  }
+
+  for (const supportedRole of [
+    "librarian",
+    "student",
+    "faculty",
+    "authenticated",
+  ] as const) {
+    if (roleCandidates.includes(supportedRole)) {
+      return supportedRole;
+    }
   }
 
   return null;
@@ -178,8 +201,21 @@ export function useAuth() {
     Boolean(accessToken.value && user.value && role.value),
   );
 
+  const isAdministrator = computed(() =>
+    role.value === "administrator" ||
+    role.value === "super-administrator",
+  );
+
+  const isSuperAdministrator = computed(() =>
+    role.value === "super-administrator",
+  );
+
   const homeRoute = computed(() => {
     switch (role.value) {
+      case "administrator":
+      case "super-administrator":
+        return "/admin/dashboard";
+
       case "librarian":
         return "/librarian/dashboard";
 
@@ -225,13 +261,13 @@ export function useAuth() {
 
     const currentUser = normalizeUser(response);
 
-    // if (!currentUser.role) {
-    //   throw createError({
-    //     statusCode: 403,
-    //     statusMessage:
-    //       "Strapi did not return the user's role. In the Librarian role permissions, enable Users & Permissions Plugin → User → me and Role → find, then confirm that this user is assigned to the Librarian role.",
-    //   });
-    // }
+    if (!currentUser.role) {
+      throw createError({
+        statusCode: 403,
+        statusMessage:
+          "Strapi authenticated the account but did not return its application role. In Users & Permissions → Roles, open the assigned role and enable User → me plus Role → find and findOne, then confirm that the account is assigned to that role.",
+      });
+    }
 
     return currentUser;
   }
@@ -401,6 +437,8 @@ export function useAuth() {
     role,
     initialized,
     isAuthenticated,
+    isAdministrator,
+    isSuperAdministrator,
     homeRoute,
     login,
     logout,
