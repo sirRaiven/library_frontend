@@ -46,6 +46,14 @@ const pendingStatusAction = ref<{
   nextStatus: ReservationStatus;
 } | null>(null);
 
+const isCheckoutOpen = ref(false);
+const selectedCheckoutReservation =
+  ref<ManagedReservation | null>(null);
+const checkoutCopyBarcode = ref("");
+const checkoutDueDate = ref("");
+const checkoutRemarks = ref("");
+const isCheckingOut = ref(false);
+
 const memberBarcode = ref("");
 const reservationMember =
   ref<CirculationMember | null>(null);
@@ -643,6 +651,84 @@ async function createReservation() {
   }
 }
 
+function defaultCheckoutDueDate(
+  memberType: "Student" | "Faculty",
+): string {
+  const date = new Date();
+  date.setDate(
+    date.getDate() +
+      (memberType === "Student" ? 7 : 14),
+  );
+  return dateInputValue(date);
+}
+
+function openReservedCheckout(
+  reservation: ManagedReservation,
+) {
+  selectedCheckoutReservation.value = reservation;
+  checkoutCopyBarcode.value = "";
+  checkoutDueDate.value = defaultCheckoutDueDate(
+    reservation.member.type,
+  );
+  checkoutRemarks.value =
+    `Checked out from reservation ${reservation.reservationNo}.`;
+  isCheckoutOpen.value = true;
+}
+
+async function handleCheckoutBarcodeDetected(
+  result: BarcodeScanResult,
+) {
+  if (isCheckingOut.value) return;
+  checkoutCopyBarcode.value = result.value
+    .trim()
+    .toUpperCase();
+}
+
+async function confirmReservedCheckout() {
+  const reservation = selectedCheckoutReservation.value;
+  const copyBarcode = checkoutCopyBarcode.value
+    .trim()
+    .toUpperCase();
+
+  if (!reservation || !copyBarcode || isCheckingOut.value) {
+    return;
+  }
+
+  isCheckingOut.value = true;
+
+  try {
+    const result = await circulation.checkoutReservation(
+      reservation.documentId,
+      {
+        copyBarcode,
+        dueDate: checkoutDueDate.value || undefined,
+        remarks: checkoutRemarks.value.trim() || undefined,
+      },
+    );
+
+    toast.add({
+      title: "Reserved book checked out",
+      description: `${result.transaction.title} was issued under ${result.transaction.borrowNo}. The reservation is now Completed.`,
+      color: "success",
+      icon: "i-lucide-book-check",
+    });
+
+    isCheckoutOpen.value = false;
+    selectedCheckoutReservation.value = null;
+    checkoutCopyBarcode.value = "";
+    await loadReservations();
+  } catch (error) {
+    toast.add({
+      title: "Checkout failed",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-x",
+    });
+  } finally {
+    isCheckingOut.value = false;
+  }
+}
+
 function availableActions(
   status: ReservationStatus,
 ): Array<{
@@ -689,16 +775,8 @@ function availableActions(
     ];
   }
 
-  if (
-    status === "Ready for Pickup"
-  ) {
+  if (status === "Ready for Pickup") {
     return [
-      {
-        label: "Complete",
-        status: "Completed",
-        icon: "i-lucide-circle-check-big",
-        color: "success",
-      },
       {
         label: "Cancel",
         status: "Cancelled",
@@ -1128,11 +1206,34 @@ onMounted(() => {
               >
                 {{ reservation.status }}
               </UBadge>
+
+              <p
+                v-if="reservation.checkout?.borrowTransaction"
+                class="mt-2 text-xs text-success"
+              >
+                Borrowed as
+                {{ reservation.checkout.borrowTransaction.borrowNo }}
+              </p>
             </div>
 
             <div
               class="flex flex-wrap items-start gap-2 lg:justify-end"
             >
+              <UButton
+                v-if="reservation.checkout?.required"
+                :label="
+                  reservation.checkout?.legacyMissingBorrow
+                    ? 'Create Missing Borrow Record'
+                    : 'Checkout Reserved Book'
+                "
+                icon="i-lucide-book-check"
+                color="success"
+                variant="solid"
+                size="sm"
+                :disabled="updatingReservationId !== null || isCheckingOut"
+                @click="openReservedCheckout(reservation)"
+              />
+
               <UButton
                 v-for="action in availableActions(
                   reservation.status,
@@ -1183,6 +1284,110 @@ onMounted(() => {
       </UCard>
     </div>
   </UContainer>
+
+  <UModal v-model:open="isCheckoutOpen">
+    <template #content>
+      <div class="p-6">
+        <div class="flex items-start gap-4">
+          <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
+            <UIcon name="i-lucide-book-check" class="size-5" />
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-lg font-bold text-highlighted">
+              {{
+                selectedCheckoutReservation?.checkout?.legacyMissingBorrow
+                  ? "Create Missing Borrow Record"
+                  : "Checkout Reserved Book"
+              }}
+            </h2>
+            <p class="mt-1 text-sm text-muted">
+              Scan one available physical copy of the reserved title. The system will create the missing Borrow Transaction and connect it to the reservation.
+            </p>
+          </div>
+        </div>
+
+        <div v-if="selectedCheckoutReservation" class="mt-5 rounded-xl border border-default bg-elevated/50 p-4">
+          <p class="font-semibold text-highlighted">
+            {{ selectedCheckoutReservation.book.title }}
+          </p>
+          <p class="mt-1 text-sm text-muted">
+            {{ selectedCheckoutReservation.member.fullName }} ·
+            {{ selectedCheckoutReservation.reservationNo }}
+          </p>
+        </div>
+
+        <div class="mt-5 space-y-4">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-highlighted">
+              Physical book barcode
+            </label>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <UInput
+                v-model="checkoutCopyBarcode"
+                placeholder="Scan control or accession number"
+                icon="i-lucide-barcode"
+                size="lg"
+                autocomplete="off"
+                class="min-w-0 flex-1"
+                @keyup.enter="confirmReservedCheckout"
+              />
+              <LiveBarcodeScanner
+                :disabled="isCheckingOut"
+                title="Scan Reserved Book Copy"
+                button-label="Use Camera"
+                ready-description="Place the physical copy barcode inside the guide."
+                processing-label="Reading book barcode"
+                processing-description="The barcode will be verified during checkout."
+                storage-key="sncbt-reservation-checkout-camera"
+                :duplicate-cooldown-ms="5000"
+                :detection-hold-ms="800"
+                @detected="handleCheckoutBarcodeDetected"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <UFormField label="Due date" required>
+              <UInput v-model="checkoutDueDate" type="date" />
+            </UFormField>
+            <UFormField label="Transaction remarks">
+              <UInput
+                v-model="checkoutRemarks"
+                placeholder="Optional checkout note"
+                icon="i-lucide-message-square-text"
+              />
+            </UFormField>
+          </div>
+
+          <UAlert
+            color="info"
+            variant="soft"
+            icon="i-lucide-info"
+            title="Checkout completes the reservation"
+            description="The system will verify member eligibility, create the Borrow Transaction, mark the physical copy as Borrowed, and then set the reservation to Completed."
+          />
+        </div>
+
+        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <UButton
+            label="Cancel"
+            color="neutral"
+            variant="outline"
+            :disabled="isCheckingOut"
+            @click="isCheckoutOpen = false"
+          />
+          <UButton
+            label="Confirm Checkout"
+            icon="i-lucide-book-check"
+            color="success"
+            :loading="isCheckingOut"
+            :disabled="!checkoutCopyBarcode.trim() || !checkoutDueDate"
+            @click="confirmReservedCheckout"
+          />
+        </div>
+      </div>
+    </template>
+  </UModal>
 
   <UModal v-model:open="isStatusConfirmOpen">
     <template #content>

@@ -13,9 +13,15 @@ export interface CirculationMember {
   membershipExpiry?: string | null;
   programOrDepartment?: string;
   borrowLimit: number;
+  loanDays?: number;
+  suggestedDueDate?: string;
   activeBorrowCount: number;
+  overdueBorrowCount?: number;
   remainingSlots: number;
   canBorrow: boolean;
+  enrollmentVerified?: boolean;
+  restrictionReason?: string | null;
+  restrictionReasons?: string[];
 }
 
 export interface CirculationBookCopy {
@@ -45,6 +51,8 @@ export interface BorrowResult {
     title: string;
     author: string;
     dueDate: string;
+    fulfilledReservationDocumentId?: string | null;
+    fulfilledReservationNo?: string | null;
   }>;
 }
 
@@ -198,6 +206,19 @@ export interface ManagedReservation {
     author: string;
     category?: string;
   };
+  checkout?: {
+    required: boolean;
+    completed: boolean;
+    legacyMissingBorrow?: boolean;
+    borrowTransaction?: {
+      documentId: string;
+      borrowNo: string;
+      checkoutReference: string;
+      borrowDate: string;
+      dueDate: string;
+      status: string;
+    } | null;
+  };
 }
 
 export interface ReservationListResponse {
@@ -208,6 +229,13 @@ export interface ReservationListResponse {
       pageSize: number;
       pageCount: number;
       total: number;
+    };
+    summary?: {
+      totalCount: number;
+      activeCount: number;
+      pendingCount: number;
+      readyCount: number;
+      expiringCount: number;
     };
   };
 }
@@ -401,7 +429,11 @@ export function useLibraryCirculation() {
       ReservationListResponse
     >("/api/circulation/reservations", {
       method: "GET",
-      query: input,
+      query: {
+        ...input,
+        _refresh: Date.now(),
+      },
+      cache: "no-store",
     });
   }
 
@@ -478,6 +510,37 @@ export function useLibraryCirculation() {
     return response.data;
   }
 
+  async function checkoutReservation(
+    documentId: string,
+    input: {
+      copyBarcode: string;
+      dueDate?: string;
+      remarks?: string;
+    },
+  ) {
+    const response = await auth.authFetch<
+      DataResponse<{
+        reservation: {
+          documentId: string;
+          reservationNo: string;
+          status: "Completed";
+        };
+        checkoutReference: string;
+        transaction: BorrowResult["transactions"][number];
+      }>
+    >(
+      `/api/circulation/reservations/${encodePath(
+        documentId,
+      )}/checkout`,
+      {
+        method: "POST",
+        body: { data: input },
+      },
+    );
+
+    return response.data;
+  }
+
   return {
     lookupMember,
     lookupCopy,
@@ -492,5 +555,6 @@ export function useLibraryCirculation() {
     searchReservationBooks,
     createReservation,
     updateReservationStatus,
+    checkoutReservation,
   };
 }

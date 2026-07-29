@@ -13,7 +13,6 @@ definePageMeta({
 });
 
 const circulation = useLibraryCirculation();
-const librarySettings = useLibrarySettings();
 const auth = useAuth();
 const toast = useToast();
 
@@ -126,13 +125,21 @@ async function scanMember(code: string) {
 
   member.value = result;
   copies.value = [];
-  dueDate.value = librarySettings.dueDateFor(result.type);
+
+  if (result.suggestedDueDate) {
+    dueDate.value = result.suggestedDueDate;
+  } else if (result.loanDays) {
+    const nextDue = new Date();
+    nextDue.setDate(nextDue.getDate() + result.loanDays);
+    dueDate.value = dateInputValue(nextDue);
+  }
 
   if (!result.canBorrow) {
     toast.add({
       title: "Borrowing is not allowed",
       description:
-        "The member is inactive, suspended, expired, or has reached the borrowing limit.",
+        result.restrictionReason ||
+        "The member is not currently eligible to borrow books.",
       color: "warning",
       icon: "i-lucide-shield-alert",
     });
@@ -157,7 +164,8 @@ async function scanCopy(code: string) {
 
   if (!member.value.canBorrow) {
     throw new Error(
-      "This member cannot borrow books.",
+      member.value.restrictionReason ||
+        "This member cannot borrow books.",
     );
   }
 
@@ -273,7 +281,7 @@ function clearTransaction() {
   member.value = null;
   copies.value = [];
   remarks.value = "";
-  dueDate.value = librarySettings.dueDateFor("Student");
+  dueDate.value = defaultDueDate();
   scannerInput.value = "";
   focusScanner();
 }
@@ -300,11 +308,19 @@ async function confirmBorrowing() {
 
     toast.add({
       title: "Borrowing completed",
-      description: `${result.transactions.length} ${
-        result.transactions.length === 1
-          ? "book was"
-          : "books were"
-      } issued under ${result.checkoutReference}.`,
+      description: (() => {
+        const fulfilled = result.transactions
+          .map((transaction) => transaction.fulfilledReservationNo)
+          .filter(Boolean);
+        const base = `${result.transactions.length} ${
+          result.transactions.length === 1
+            ? "book was"
+            : "books were"
+        } issued under ${result.checkoutReference}.`;
+        return fulfilled.length > 0
+          ? `${base} Reserved request ${fulfilled.join(", ")} was completed automatically.`
+          : base;
+      })(),
       color: "success",
       icon: "i-lucide-circle-check-big",
     });
@@ -356,14 +372,7 @@ function statusColor(
   return "neutral";
 }
 
-onMounted(async () => {
-  try {
-    await librarySettings.load();
-    dueDate.value = librarySettings.dueDateFor("Student");
-  } catch (error) {
-    console.warn("Operational Library settings could not be loaded.", error);
-  }
-
+onMounted(() => {
   focusScanner();
   void loadRecentTransactions();
 });
@@ -716,8 +725,21 @@ onMounted(async () => {
               </div>
             </div>
 
+            <UAlert
+              v-if="member && !member.canBorrow"
+              class="mt-5"
+              color="warning"
+              variant="soft"
+              icon="i-lucide-shield-alert"
+              title="Borrowing is currently restricted"
+              :description="
+                member.restrictionReason ||
+                'Review the member profile, active membership, enrollment verification, overdue records, and borrowing limit.'
+              "
+            />
+
             <div
-              v-else
+              v-else-if="!member"
               class="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-default bg-elevated/40 p-6 text-center"
             >
               <div
