@@ -14,7 +14,6 @@ definePageMeta({
 });
 
 const circulation = useLibraryCirculation();
-const librarySettings = useLibrarySettings();
 const auth = useAuth();
 const toast = useToast();
 
@@ -28,12 +27,24 @@ const reservations = ref<ManagedReservation[]>(
 );
 const total = ref(0);
 const pageCount = ref(1);
+const queueSummary = ref({
+  totalCount: 0,
+  activeCount: 0,
+  pendingCount: 0,
+  readyCount: 0,
+  expiringCount: 0,
+});
 
 const isLoading = ref(false);
 const isCreateOpen = ref(false);
 const isSaving = ref(false);
 const updatingReservationId =
   ref<string | null>(null);
+const isStatusConfirmOpen = ref(false);
+const pendingStatusAction = ref<{
+  reservation: ManagedReservation;
+  nextStatus: ReservationStatus;
+} | null>(null);
 
 const memberBarcode = ref("");
 const reservationMember =
@@ -77,56 +88,27 @@ const statusOptions = [
   "Expired",
 ];
 
-const activeCount = computed(
-  () =>
-    reservations.value.filter((item) =>
-      [
-        "Pending",
-        "Approved",
-        "Ready for Pickup",
-      ].includes(item.status),
-    ).length,
-);
+const activeCount = computed(() => queueSummary.value.activeCount);
+const readyCount = computed(() => queueSummary.value.readyCount);
+const expiringCount = computed(() => queueSummary.value.expiringCount);
 
-const readyCount = computed(
-  () =>
-    reservations.value.filter(
-      (item) =>
-        item.status === "Ready for Pickup",
-    ).length,
-);
+const statusConfirmationTitle = computed(() => {
+  const action = pendingStatusAction.value;
+  if (!action) return "Update reservation";
+  return action.nextStatus === "Cancelled"
+    ? "Cancel reservation?"
+    : `Mark as ${action.nextStatus}?`;
+});
 
-const expiringCount = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const nextTwoDays = new Date(today);
-  nextTwoDays.setDate(
-    nextTwoDays.getDate() + 2,
-  );
-
-  return reservations.value.filter(
-    (item) => {
-      if (
-        ![
-          "Pending",
-          "Approved",
-          "Ready for Pickup",
-        ].includes(item.status)
-      ) {
-        return false;
-      }
-
-      const expiration = new Date(
-        `${item.expirationDate}T00:00:00`,
-      );
-
-      return (
-        expiration >= today &&
-        expiration <= nextTwoDays
-      );
-    },
-  ).length;
+const statusConfirmationDescription = computed(() => {
+  const action = pendingStatusAction.value;
+  if (!action) return "";
+  const reservation = action.reservation;
+  const actionText =
+    action.nextStatus === "Cancelled"
+      ? "cancel"
+      : `change the status to ${action.nextStatus}`;
+  return `You are about to ${actionText} for ${reservation.reservationNo}. This change will immediately appear in the member's portal.`;
 });
 
 const selectedBookCount = computed(
@@ -148,7 +130,6 @@ const canCreateReservation = computed(
       false &&
     !isSaving.value,
 );
-
 
 function formatDate(value?: string): string {
   if (!value) {
@@ -207,7 +188,7 @@ function resetCreateForm() {
   bookResults.value = [];
   selectedBooks.value = [];
   expirationDate.value =
-    librarySettings.reservationExpirationDate();
+    defaultExpirationDate();
   remarks.value = "";
 }
 
@@ -228,6 +209,17 @@ async function loadReservations() {
       result.meta.pagination.total;
     pageCount.value =
       result.meta.pagination.pageCount;
+
+    const fallbackActive = result.data.filter((item) =>
+      ["Pending", "Approved", "Ready for Pickup"].includes(item.status),
+    ).length;
+    queueSummary.value = result.meta.summary ?? {
+      totalCount: result.meta.pagination.total,
+      activeCount: fallbackActive,
+      pendingCount: result.data.filter((item) => item.status === "Pending").length,
+      readyCount: result.data.filter((item) => item.status === "Ready for Pickup").length,
+      expiringCount: 0,
+    };
   } catch (error) {
     toast.add({
       title: "Reservations unavailable",
@@ -719,22 +711,44 @@ function availableActions(
   return [];
 }
 
-async function updateStatus(
+function requestStatusUpdate(
   reservation: ManagedReservation,
   nextStatus: ReservationStatus,
 ) {
-  updatingReservationId.value =
-    reservation.documentId;
+  if (updatingReservationId.value) return;
+  pendingStatusAction.value = { reservation, nextStatus };
+  isStatusConfirmOpen.value = true;
+}
+
+async function confirmStatusUpdate() {
+  const action = pendingStatusAction.value;
+  if (!action || updatingReservationId.value) return;
+
+  const { reservation, nextStatus } = action;
+  updatingReservationId.value = reservation.documentId;
 
   try {
-    await circulation.updateReservationStatus(
+    const updated = await circulation.updateReservationStatus(
       reservation.documentId,
       nextStatus,
     );
 
+    const index = reservations.value.findIndex(
+      (item) => item.documentId === reservation.documentId,
+    );
+    if (index >= 0) {
+      reservations.value[index] = {
+        ...reservations.value[index]!,
+        status: updated.status,
+      };
+    }
+
+    isStatusConfirmOpen.value = false;
+    pendingStatusAction.value = null;
+
     toast.add({
       title: "Reservation updated",
-      description: `${reservation.reservationNo} is now ${nextStatus}.`,
+      description: `${reservation.reservationNo} is now ${updated.status}.`,
       color: "success",
       icon: "i-lucide-circle-check",
     });
@@ -743,8 +757,7 @@ async function updateStatus(
   } catch (error) {
     toast.add({
       title: "Update failed",
-      description:
-        auth.getErrorMessage(error),
+      description: auth.getErrorMessage(error),
       color: "error",
       icon: "i-lucide-circle-x",
     });
@@ -773,15 +786,7 @@ watch(isCreateOpen, (open) => {
   }
 });
 
-onMounted(async () => {
-  try {
-    await librarySettings.load();
-    expirationDate.value =
-      librarySettings.reservationExpirationDate();
-  } catch (error) {
-    console.warn("Operational Library settings could not be loaded.", error);
-  }
-
+onMounted(() => {
   void loadReservations();
 });
 </script>
@@ -850,7 +855,7 @@ onMounted(async () => {
               <p
                 class="text-2xl font-bold text-highlighted"
               >
-                {{ total }}
+                {{ queueSummary.totalCount }}
               </p>
               <p class="text-sm text-muted">
                 Total records
@@ -879,7 +884,7 @@ onMounted(async () => {
                 {{ activeCount }}
               </p>
               <p class="text-sm text-muted">
-                Active on this page
+                Active reservations
               </p>
             </div>
           </div>
@@ -1147,7 +1152,7 @@ onMounted(async () => {
                   null
                 "
                 @click="
-                  updateStatus(
+                  requestStatusUpdate(
                     reservation,
                     action.status,
                   )
@@ -1178,6 +1183,59 @@ onMounted(async () => {
       </UCard>
     </div>
   </UContainer>
+
+  <UModal v-model:open="isStatusConfirmOpen">
+    <template #content>
+      <div class="p-6">
+        <div class="flex items-start gap-4">
+          <div
+            class="flex size-11 shrink-0 items-center justify-center rounded-xl"
+            :class="pendingStatusAction?.nextStatus === 'Cancelled'
+              ? 'bg-error/10 text-error'
+              : 'bg-success/10 text-success'"
+          >
+            <UIcon
+              :name="pendingStatusAction?.nextStatus === 'Cancelled'
+                ? 'i-lucide-circle-x'
+                : 'i-lucide-circle-check'"
+              class="size-5"
+            />
+          </div>
+          <div class="min-w-0 flex-1">
+            <h2 class="text-lg font-semibold text-highlighted">
+              {{ statusConfirmationTitle }}
+            </h2>
+            <p class="mt-2 text-sm leading-6 text-muted">
+              {{ statusConfirmationDescription }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <UButton
+            label="Go Back"
+            color="neutral"
+            variant="ghost"
+            :disabled="Boolean(updatingReservationId)"
+            @click="isStatusConfirmOpen = false"
+          />
+          <UButton
+            :label="pendingStatusAction?.nextStatus === 'Cancelled'
+              ? 'Confirm Cancellation'
+              : 'Confirm Update'"
+            :icon="pendingStatusAction?.nextStatus === 'Cancelled'
+              ? 'i-lucide-x'
+              : 'i-lucide-check'"
+            :color="pendingStatusAction?.nextStatus === 'Cancelled'
+              ? 'error'
+              : 'success'"
+            :loading="Boolean(updatingReservationId)"
+            @click="confirmStatusUpdate"
+          />
+        </div>
+      </div>
+    </template>
+  </UModal>
 
   <UModal
     v-model:open="isCreateOpen"
