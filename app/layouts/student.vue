@@ -49,14 +49,15 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
     { label: "Library Services", type: "label" },
     {
       label: "Book Collection",
-      icon: "i-lucide-books",
+      icon: "i-lucide-book-open",
       to: "/student/books",
       active: active("/student/books"),
     },
     {
-      label: "My Borrowed Books — Coming Soon",
+      label: "My Borrowed Books",
       icon: "i-lucide-book-open-check",
-      disabled: true,
+      to: "/student/borrowings",
+      active: active("/student/borrowings"),
     },
     {
       label: "My Reservations",
@@ -65,9 +66,10 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       active: active("/student/reservations"),
     },
     {
-      label: "Library Card — Coming Soon",
+      label: "Digital Library Card",
       icon: "i-lucide-id-card",
-      disabled: true,
+      to: "/student/library-card",
+      active: active("/student/library-card"),
     },
   ],
   [
@@ -89,7 +91,7 @@ function pageInformation() {
   const path = route.path;
 
   if (path.startsWith("/student/books")) {
-    return { title: "Book Collection", icon: "i-lucide-books" };
+    return { title: "Book Collection", icon: "i-lucide-book-open" };
   }
   if (path.startsWith("/student/borrowings")) {
     return { title: "My Borrowed Books", icon: "i-lucide-book-open-check" };

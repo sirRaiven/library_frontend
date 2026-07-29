@@ -144,8 +144,22 @@ onMounted(refresh);
         <UButton
           to="/student/books"
           label="Browse Books"
-          icon="i-lucide-books"
+          icon="i-lucide-book-open"
           color="primary"
+        />
+        <UButton
+          to="/student/library-card"
+          label="Library Card"
+          icon="i-lucide-id-card"
+          color="neutral"
+          variant="outline"
+        />
+        <UButton
+          to="/student/borrowings"
+          label="My Borrowed Books"
+          icon="i-lucide-book-open-check"
+          color="neutral"
+          variant="outline"
         />
         <UButton
           to="/student/reservations"
@@ -285,6 +299,17 @@ onMounted(refresh);
             <StudentStatusBadge :status="dashboard.student.value?.libraryCardStatus || 'Checking'" />
           </div>
         </div>
+
+        <div class="border-t border-default p-4 sm:px-6">
+          <UButton
+            to="/student/library-card"
+            label="Open Digital Library Card"
+            icon="i-lucide-id-card"
+            color="primary"
+            variant="soft"
+            block
+          />
+        </div>
       </UCard>
 
       <UCard :ui="{ body: 'p-0 sm:p-0' }">
@@ -333,7 +358,7 @@ onMounted(refresh);
 
     <div class="grid gap-6 xl:grid-cols-2">
       <UCard :ui="{ body: 'p-0 sm:p-0' }">
-        <div class="border-b border-default p-5 sm:p-6">
+        <div class="flex items-center justify-between gap-4 border-b border-default p-5 sm:p-6">
           <div class="flex items-center gap-3">
             <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <UIcon name="i-lucide-book-open-check" class="size-5" />
@@ -343,6 +368,14 @@ onMounted(refresh);
               <p class="text-xs text-muted">Books still issued to your Student account.</p>
             </div>
           </div>
+          <UButton
+            to="/student/borrowings"
+            label="View All"
+            icon="i-lucide-arrow-right"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+          />
         </div>
 
         <div v-if="dashboard.loading.value && !dashboard.data.value.generatedAt" class="space-y-4 p-5 sm:p-6">

@@ -52,6 +52,11 @@ const props = withDefaults(
   },
 );
 
+const emit = defineEmits<{
+  downloaded: [side: DownloadSide];
+  printed: [side: DownloadSide];
+}>();
+
 const toast = useToast();
 const designStore =
   useLibraryCardDesign();
@@ -454,33 +459,49 @@ function downloadTarget(
   return bothCards.value;
 }
 
-async function downloadCard(
+async function captureCard(
   side: DownloadSide,
-) {
+): Promise<string> {
   const target = downloadTarget(side);
 
   if (
     !import.meta.client ||
     !target
   ) {
-    return;
+    throw new Error(
+      "The Library Card preview is not ready.",
+    );
+  }
+
+  await nextTick();
+  await renderBarcodeWhenReady();
+
+  const { toPng } =
+    await import("html-to-image");
+
+  return await toPng(
+    target,
+    {
+      backgroundColor: "#FFFFFF",
+      cacheBust: false,
+      pixelRatio: 3,
+      skipFonts: true,
+    },
+  );
+}
+
+async function downloadCard(
+  side: DownloadSide,
+): Promise<boolean> {
+  if (downloading.value) {
+    return false;
   }
 
   downloading.value = side;
 
   try {
-    const { toPng } =
-      await import("html-to-image");
-
-    const dataUrl = await toPng(
-      target,
-      {
-        backgroundColor: "#FFFFFF",
-        cacheBust: false,
-        pixelRatio: 3,
-        skipFonts: true,
-      },
-    );
+    const dataUrl =
+      await captureCard(side);
 
     const link =
       document.createElement("a");
@@ -490,22 +511,31 @@ async function downloadCard(
         ? "front-and-back"
         : side;
 
+    const cardNumber =
+      props.student.libraryCardNo ||
+      props.student.studentNo ||
+      "student-library-card";
+
     link.href = dataUrl;
     link.download =
-      `${props.student.libraryCardNo}-${suffix}.png`;
+      `${cardNumber}-${suffix}.png`;
 
     document.body.appendChild(link);
     link.click();
     link.remove();
 
+    emit("downloaded", side);
+
     toast.add({
       title:
         "Library card downloaded",
       description:
-        `${props.student.libraryCardNo}-${suffix}.png was created.`,
+        `${cardNumber}-${suffix}.png was created.`,
       color: "success",
       icon: "i-lucide-download",
     });
+
+    return true;
   } catch (error) {
     toast.add({
       title: "Download failed",
@@ -516,6 +546,143 @@ async function downloadCard(
       color: "error",
       icon: "i-lucide-circle-alert",
     });
+
+    return false;
+  } finally {
+    downloading.value = null;
+  }
+}
+
+async function printCard(
+  side: DownloadSide = "both",
+): Promise<boolean> {
+  if (
+    !import.meta.client ||
+    downloading.value
+  ) {
+    return false;
+  }
+
+  downloading.value = side;
+
+  try {
+    const dataUrl =
+      await captureCard(side);
+
+    const frame =
+      document.createElement("iframe");
+
+    frame.setAttribute(
+      "title",
+      "Library Card print preview",
+    );
+    frame.style.position = "fixed";
+    frame.style.inset = "0";
+    frame.style.width = "1px";
+    frame.style.height = "1px";
+    frame.style.border = "0";
+    frame.style.opacity = "0";
+    frame.style.pointerEvents = "none";
+
+    document.body.appendChild(frame);
+
+    const printDocument =
+      frame.contentDocument;
+    const printWindow =
+      frame.contentWindow;
+
+    if (
+      !printDocument ||
+      !printWindow
+    ) {
+      frame.remove();
+      throw new Error(
+        "The browser could not create the print preview.",
+      );
+    }
+
+    printDocument.title =
+      "Student Library Card";
+
+    const style =
+      printDocument.createElement("style");
+    style.textContent = `
+      @page {
+        size: landscape;
+        margin: 10mm;
+      }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: #ffffff;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        max-width: ${
+          side === "both"
+            ? "1120px"
+            : "560px"
+        };
+        height: auto;
+      }
+    `;
+
+    const image =
+      printDocument.createElement("img");
+    image.alt =
+      "Student Library Card";
+    image.src = dataUrl;
+
+    printDocument.head.appendChild(style);
+    printDocument.body.appendChild(image);
+
+    await new Promise<void>((resolve, reject) => {
+      image.addEventListener(
+        "load",
+        () => resolve(),
+        { once: true },
+      );
+      image.addEventListener(
+        "error",
+        () => reject(
+          new Error(
+            "The Library Card print image could not be prepared.",
+          ),
+        ),
+        { once: true },
+      );
+    });
+
+    printWindow.focus();
+    printWindow.print();
+
+    window.setTimeout(
+      () => frame.remove(),
+      1500,
+    );
+
+    emit("printed", side);
+    return true;
+  } catch (error) {
+    toast.add({
+      title: "Print preparation failed",
+      description:
+        error instanceof Error
+          ? error.message
+          : "Unable to prepare the Library Card for printing.",
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+
+    return false;
   } finally {
     downloading.value = null;
   }
@@ -576,7 +743,9 @@ watch(
 );
 
 defineExpose({
+  captureCard,
   downloadCard,
+  printCard,
   renderBarcode,
 });
 </script>
