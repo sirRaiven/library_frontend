@@ -169,6 +169,13 @@ onMounted(refresh);
           variant="outline"
         />
         <UButton
+          to="/student/notifications"
+          label="Notifications"
+          icon="i-lucide-bell"
+          color="neutral"
+          variant="outline"
+        />
+        <UButton
           label="Refresh"
           icon="i-lucide-refresh-cw"
           color="neutral"

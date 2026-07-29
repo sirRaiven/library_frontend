@@ -8,6 +8,7 @@ const route = useRoute();
 const auth = useAuth();
 const dashboard = useStudentDashboard();
 const monitoring = useStudentSession();
+const notificationCenter = useStudentNotifications();
 const toast = useToast();
 
 const sidebarOpen = ref(false);
@@ -75,9 +76,12 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     { label: "Account", type: "label" },
     {
-      label: "Notifications — Coming Soon",
+      label: notificationCenter.summary.value.unread > 0
+        ? `Notifications (${notificationCenter.summary.value.unread})`
+        : "Notifications",
       icon: "i-lucide-bell",
-      disabled: true,
+      to: "/student/notifications",
+      active: active("/student/notifications"),
     },
     {
       label: "Profile and Security — Coming Soon",
@@ -101,6 +105,9 @@ function pageInformation() {
   }
   if (path.startsWith("/student/library-card")) {
     return { title: "Library Card", icon: "i-lucide-id-card" };
+  }
+  if (path.startsWith("/student/notifications")) {
+    return { title: "Notifications", icon: "i-lucide-bell" };
   }
   if (path.startsWith("/student/security")) {
     return { title: "Security and Devices", icon: "i-lucide-shield-user" };
@@ -175,6 +182,7 @@ async function signOut() {
 
 onMounted(async () => {
   await initializeMonitoring();
+  notificationCenter.startPolling();
   heartbeat = setInterval(() => {
     void monitoring.touch();
   }, 4 * 60 * 1000);
@@ -189,6 +197,7 @@ watch(
 
 onBeforeUnmount(() => {
   if (heartbeat) clearInterval(heartbeat);
+  notificationCenter.stopPolling();
 });
 </script>
 
