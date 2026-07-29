@@ -84,9 +84,10 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       active: active("/student/notifications"),
     },
     {
-      label: "Profile and Security — Coming Soon",
+      label: "Profile and Security",
       icon: "i-lucide-shield-user",
-      disabled: true,
+      to: "/student/security",
+      active: active("/student/security"),
     },
   ],
 ]);
@@ -131,6 +132,11 @@ const accountItems = computed<DropdownMenuItem[][]>(() => [
     },
   ],
   [
+    {
+      label: "Profile and Security",
+      icon: "i-lucide-shield-user",
+      to: "/student/security",
+    },
     {
       label: "Change color mode",
       icon: "i-lucide-sun-moon",

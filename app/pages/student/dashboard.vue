@@ -176,6 +176,13 @@ onMounted(refresh);
           variant="outline"
         />
         <UButton
+          to="/student/security"
+          label="Profile and Security"
+          icon="i-lucide-shield-user"
+          color="neutral"
+          variant="outline"
+        />
+        <UButton
           label="Refresh"
           icon="i-lucide-refresh-cw"
           color="neutral"
