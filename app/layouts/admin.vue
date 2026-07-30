@@ -65,6 +65,12 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       active: active("/admin/librarians"),
     },
     {
+      label: "Accounts Needing Review",
+      icon: "i-lucide-list-checks",
+      to: "/admin/accounts-review",
+      active: active("/admin/accounts-review"),
+    },
+    {
       label: "Roles and Permissions",
       icon: "i-lucide-shield-check",
       to: "/admin/roles",
@@ -105,6 +111,9 @@ function pageInformation() {
   }
   if (path.startsWith("/admin/librarians")) {
     return { title: "Librarian Accounts", icon: "i-lucide-user-round-cog" };
+  }
+  if (path.startsWith("/admin/accounts-review")) {
+    return { title: "Accounts Needing Review", icon: "i-lucide-list-checks" };
   }
   if (path.startsWith("/admin/roles")) {
     return { title: "Roles and Permissions", icon: "i-lucide-shield-check" };

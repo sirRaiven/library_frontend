@@ -479,14 +479,21 @@ async function captureCard(
   const { toPng } =
     await import("html-to-image");
 
+  const captureOptions = {
+    cacheBust: false,
+    pixelRatio: 3,
+    skipFonts: true,
+    // Apply white only to the wrapper used by the combined export.
+    // Setting it on the Back card itself overrides the configured
+    // navy, light, or gradient background in html-to-image.
+    ...(side === "both"
+      ? { backgroundColor: "#FFFFFF" }
+      : {}),
+  };
+
   return await toPng(
     target,
-    {
-      backgroundColor: "#FFFFFF",
-      cacheBust: false,
-      pixelRatio: 3,
-      skipFonts: true,
-    },
+    captureOptions,
   );
 }
 

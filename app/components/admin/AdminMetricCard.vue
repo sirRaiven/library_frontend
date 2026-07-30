@@ -32,33 +32,19 @@ const toneClasses = computed(() => {
 </script>
 
 <template>
-  <component
-    :is="to ? resolveComponent('NuxtLink') : 'div'"
+  <NuxtLink
+    v-if="to"
     :to="to"
-    class="group block rounded-2xl border border-default bg-default p-5 shadow-sm transition duration-200"
-    :class="to ? 'hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md' : ''"
+    class="group block rounded-2xl border border-default bg-default p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
-        <p class="text-sm font-medium text-muted">
-          {{ label }}
-        </p>
-
-        <USkeleton
-          v-if="loading"
-          class="mt-3 h-9 w-24"
-        />
-        <p
-          v-else
-          class="mt-2 text-3xl font-bold tracking-tight text-highlighted"
-        >
+        <p class="text-sm font-medium text-muted">{{ label }}</p>
+        <USkeleton v-if="loading" class="mt-3 h-9 w-24" />
+        <p v-else class="mt-2 text-3xl font-bold tracking-tight text-highlighted">
           {{ value }}
         </p>
-
-        <p
-          v-if="description"
-          class="mt-2 text-xs leading-relaxed text-muted"
-        >
+        <p v-if="description" class="mt-2 text-xs leading-relaxed text-muted">
           {{ description }}
         </p>
       </div>
@@ -67,11 +53,33 @@ const toneClasses = computed(() => {
         class="flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
         :class="toneClasses"
       >
-        <UIcon
-          :name="icon"
-          class="size-5"
-        />
+        <UIcon :name="icon" class="size-5" />
       </div>
     </div>
-  </component>
+  </NuxtLink>
+
+  <div
+    v-else
+    class="group block rounded-2xl border border-default bg-default p-5 shadow-sm transition duration-200"
+  >
+    <div class="flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-muted">{{ label }}</p>
+        <USkeleton v-if="loading" class="mt-3 h-9 w-24" />
+        <p v-else class="mt-2 text-3xl font-bold tracking-tight text-highlighted">
+          {{ value }}
+        </p>
+        <p v-if="description" class="mt-2 text-xs leading-relaxed text-muted">
+          {{ description }}
+        </p>
+      </div>
+
+      <div
+        class="flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
+        :class="toneClasses"
+      >
+        <UIcon :name="icon" class="size-5" />
+      </div>
+    </div>
+  </div>
 </template>

@@ -28,11 +28,15 @@ const roleFilter = ref("all");
 const statusFilter = ref<"all" | "active" | "blocked" | "unconfirmed">(
   (useRoute().query.status as any) || "all",
 );
+const profileFilter = ref<
+  "all" | "linked" | "missing" | "mismatch" | "not-required" | "unsupported-role"
+>((useRoute().query.profile as any) || "all");
 const selectedUser = ref<AdminUserRecord | null>(null);
 const editOpen = ref(false);
 const createOpen = ref(false);
 const statusOpen = ref(false);
 const pendingBlockedState = ref(false);
+const statusReason = ref("");
 
 const createForm = reactive({
   username: "",
@@ -52,6 +56,7 @@ const columns: TableColumn<AdminUserRecord>[] = [
   { id: "account", header: "Account" },
   { id: "role", header: "Role" },
   { id: "status", header: "Account Status" },
+  { id: "profile", header: "Profile Connection" },
   { id: "created", header: "Created" },
   { id: "actions", header: "" },
 ];
@@ -69,7 +74,8 @@ const createRoleOptions = computed(() =>
     .filter(role => role.type !== "public")
     .filter(role =>
       auth.isSuperAdministrator.value ||
-      !["administrator", "system-administrator", "super-administrator", "admin"].includes(role.type),
+      !["administrator", "system-administrator", "super-administrator", "admin"].includes(role.type) ||
+      role.id === selectedUser.value?.role?.id,
     )
     .map(role => ({ label: role.name, value: role.id })),
 );
@@ -79,6 +85,15 @@ const statusOptions = [
   { label: "Active", value: "active" },
   { label: "Blocked", value: "blocked" },
   { label: "Unconfirmed", value: "unconfirmed" },
+];
+
+const profileOptions = [
+  { label: "All profile connections", value: "all" },
+  { label: "Profile linked", value: "linked" },
+  { label: "Profile missing", value: "missing" },
+  { label: "Profile mismatch", value: "mismatch" },
+  { label: "Profile not required", value: "not-required" },
+  { label: "Role not managed", value: "unsupported-role" },
 ];
 
 function formatDate(value: string) {
@@ -119,6 +134,7 @@ async function loadUsers() {
       search: search.value,
       role: roleFilter.value,
       status: statusFilter.value,
+      profileStatus: profileFilter.value,
       page: page.value,
       pageSize,
     });
@@ -137,6 +153,7 @@ async function loadUsers() {
 }
 
 function openCreate() {
+  selectedUser.value = null;
   resetCreateForm();
   createOpen.value = true;
 }
@@ -154,6 +171,7 @@ function openEdit(record: AdminUserRecord) {
 function openStatus(record: AdminUserRecord, blocked: boolean) {
   selectedUser.value = record;
   pendingBlockedState.value = blocked;
+  statusReason.value = "";
   statusOpen.value = true;
 }
 
@@ -177,15 +195,18 @@ async function createAccount() {
 
   saving.value = true;
   try {
-    await usersApi.create({ ...createForm });
+    const created = await usersApi.create({ ...createForm });
     createOpen.value = false;
     await loadUsers();
     toast.add({
       title: "User account created",
-      description: "The new account was created with the selected role.",
+      description: created.profileGovernance?.required
+        ? "The account was created. Connect it to the correct institutional profile next."
+        : "The new account was created with the selected role.",
       color: "success",
       icon: "i-lucide-user-check",
     });
+    await navigateTo(`/admin/users/${created.id}`);
   } catch (error) {
     toast.add({
       title: "Unable to create account",
@@ -234,11 +255,21 @@ async function saveAccount() {
 
 async function confirmStatusChange() {
   if (!selectedUser.value || saving.value) return;
+  if (statusReason.value.trim().length < 5) {
+    toast.add({
+      title: "Reason required",
+      description: "Provide a clear reason containing at least 5 characters.",
+      color: "warning",
+      icon: "i-lucide-triangle-alert",
+    });
+    return;
+  }
   saving.value = true;
 
   try {
     await usersApi.changeStatus(selectedUser.value.id, {
       blocked: pendingBlockedState.value,
+      reason: statusReason.value.trim(),
     });
     statusOpen.value = false;
     await loadUsers();
@@ -265,7 +296,7 @@ async function confirmStatusChange() {
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
-watch([roleFilter, statusFilter], () => {
+watch([roleFilter, statusFilter, profileFilter], () => {
   page.value = 1;
   loadUsers();
 });
@@ -316,7 +347,7 @@ onMounted(async () => {
             <h2 class="font-semibold text-highlighted">Application User Accounts</h2>
             <p class="mt-1 text-xs text-muted">{{ total }} account{{ total === 1 ? '' : 's' }} found</p>
           </div>
-          <div class="grid gap-2 sm:grid-cols-3 lg:w-[48rem]">
+          <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 xl:w-[64rem]">
             <UInput
               v-model="search"
               icon="i-lucide-search"
@@ -325,6 +356,7 @@ onMounted(async () => {
             />
             <USelect v-model="roleFilter" :items="roleOptions" />
             <USelect v-model="statusFilter" :items="statusOptions" />
+            <USelect v-model="profileFilter" :items="profileOptions" />
           </div>
         </div>
       </template>
@@ -359,12 +391,34 @@ onMounted(async () => {
         <template #status-cell="{ row }">
           <AdminStatusBadge :label="accountStatus(row.original)" />
         </template>
+        <template #profile-cell="{ row }">
+          <div class="space-y-1">
+            <AdminProfileStatusBadge
+              :status="row.original.profileGovernance?.status ?? 'Unavailable'"
+            />
+            <p
+              v-if="row.original.profileGovernance?.profile"
+              class="max-w-48 truncate text-xs text-muted"
+            >
+              {{ row.original.profileGovernance?.profile?.fullName || 'Profile details unavailable' }}
+            </p>
+          </div>
+        </template>
         <template #created-cell="{ row }">
           <p class="text-sm text-default">{{ formatDate(row.original.createdAt) }}</p>
           <p class="text-xs text-muted">{{ row.original.provider || 'local' }} provider</p>
         </template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end gap-1">
+            <UTooltip text="Open account details">
+              <UButton
+                icon="i-lucide-external-link"
+                color="primary"
+                variant="ghost"
+                square
+                :to="`/admin/users/${row.original.id}`"
+              />
+            </UTooltip>
             <UTooltip text="Edit account and role">
               <UButton
                 icon="i-lucide-pencil"
@@ -401,7 +455,7 @@ onMounted(async () => {
       <form class="space-y-5 bg-default p-6" @submit.prevent="createAccount">
         <div>
           <h2 class="text-xl font-bold text-highlighted">Create User Account</h2>
-          <p class="mt-1 text-sm text-muted">Create a secured application account and assign its initial role.</p>
+          <p class="mt-1 text-sm text-muted">Create a secured application account and assign its initial role. Student and Librarian accounts can be connected to their institutional profile after creation.</p>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           <UFormField label="Username" required>
@@ -466,6 +520,14 @@ onMounted(async () => {
               : `${selectedUser?.username} will be allowed to sign in again.` }}
           </p>
         </div>
+        <UFormField label="Reason for this account-status change" required help="The reason is stored in the administrator audit trail.">
+          <UTextarea
+            v-model="statusReason"
+            :rows="3"
+            class="w-full"
+            :placeholder="pendingBlockedState ? 'Example: Account reported as compromised' : 'Example: Identity and access have been verified'"
+          />
+        </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row">
           <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="statusOpen = false" />
           <UButton
