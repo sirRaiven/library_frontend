@@ -252,7 +252,7 @@ onMounted(async () => {
           icon="i-lucide-calendar-plus"
           color="primary"
           :disabled="!policy?.canCreate"
-          @click="createOpen = true"
+          @click="() => { createOpen = true }"
         />
         <UButton
           label="Refresh"
@@ -374,7 +374,7 @@ onMounted(async () => {
           icon="i-lucide-calendar-plus"
           color="primary"
           class="mt-5"
-          @click="createOpen = true"
+          @click="() => { createOpen = true }"
         />
       </div>
     </UCard>
@@ -410,7 +410,7 @@ onMounted(async () => {
             square
             :disabled="reservations.creating.value"
             aria-label="Close reservation form"
-            @click="createOpen = false"
+            @click="() => { createOpen = false }"
           />
         </div>
 
@@ -537,7 +537,7 @@ onMounted(async () => {
             color="neutral"
             variant="ghost"
             :disabled="reservations.creating.value"
-            @click="createOpen = false"
+            @click="() => { createOpen = false }"
           />
           <UButton
             :label="selectedCount === 1 ? 'Create 1 Reservation' : `Create ${selectedCount} Reservations`"
@@ -574,7 +574,7 @@ onMounted(async () => {
             color="neutral"
             variant="ghost"
             :disabled="Boolean(reservations.cancellingId.value)"
-            @click="cancelOpen = false"
+            @click="() => { cancelOpen = false }"
           />
           <UButton
             label="Cancel Reservation"

@@ -1146,10 +1146,10 @@ onMounted(() => {
           icon="i-lucide-user-plus"
           color="success"
           size="lg"
-          @click="
+          @click="() => {
             registrationOpen =
               true
-          "
+          }"
         />
       </header>
 
@@ -1586,9 +1586,9 @@ onMounted(() => {
                   :loading="
                     credentialChecking
                   "
-                  @click="
+                  @click="() => {
                     verifyCredential
-                  "
+                  }"
                 />
               </div>
 
@@ -1875,10 +1875,10 @@ onMounted(() => {
                 :disabled="
                   submitting
                 "
-                @click="
+                @click="() => {
                   registrationOpen =
                     false
-                "
+                }"
               />
 
               <UButton

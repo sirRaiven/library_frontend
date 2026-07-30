@@ -353,16 +353,21 @@ const navigationItems =
         active: isRouteActive(
           "/librarian/notifications",
         ),
-        badge:
+        chip:
           notificationCenter
             .badgeCount.value > 0
-            ? String(
-                Math.min(
+            ? {
+                color:
                   notificationCenter
-                    .badgeCount.value,
-                  99,
-                ),
-              )
+                    .chipColor.value,
+                text:
+                  notificationCenter
+                    .chipText.value,
+                size:
+                  "md",
+                inset:
+                  false,
+              }
             : undefined,
       },
     ],
@@ -381,20 +386,13 @@ const accountMenuItems =
         to: "/librarian/dashboard",
       },
       {
-        label: "Notifications",
-        icon: "i-lucide-bell",
-        to: "/librarian/notifications",
-        badge:
+        label:
           notificationCenter
             .badgeCount.value > 0
-            ? String(
-                Math.min(
-                  notificationCenter
-                    .badgeCount.value,
-                  99,
-                ),
-              )
-            : undefined,
+            ? `Notifications (${notificationCenter.chipText.value})`
+            : "Notifications",
+        icon: "i-lucide-bell",
+        to: "/librarian/notifications",
       },
     ],
     [
@@ -486,6 +484,9 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  notificationCenter
+    .stopPolling();
+
   desktopMediaQuery?.removeEventListener(
     "change",
     closeMobileSidebarOnDesktop,
@@ -821,39 +822,45 @@ watch(
                 sideOffset: 8,
               }"
             >
-              <div class="relative">
+              <UChip
+                v-if="
+                  notificationCenter
+                    .badgeCount.value > 0
+                "
+                :text="
+                  notificationCenter
+                    .chipText.value
+                "
+                :color="
+                  notificationCenter
+                    .chipColor.value
+                "
+                size="lg"
+                position="top-right"
+              >
                 <UButton
                   to="/librarian/notifications"
                   icon="i-lucide-bell"
                   color="neutral"
                   variant="ghost"
+                  size="lg"
                   square
-                  aria-label="Open notifications"
+                  class="size-11 rounded-xl"
+                  :aria-label="`Open notifications. ${notificationCenter.badgeCount.value} unread notification${notificationCenter.badgeCount.value === 1 ? '' : 's'}.`"
                 />
+              </UChip>
 
-                <span
-                  v-if="
-                    notificationCenter
-                      .badgeCount.value > 0
-                  "
-                  class="pointer-events-none absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-4 text-white"
-                  :class="
-                    notificationCenter
-                      .hasCritical.value
-                      ? 'bg-error'
-                      : 'bg-warning'
-                  "
-                  aria-hidden="true"
-                >
-                  {{
-                    notificationCenter
-                      .badgeCount.value > 99
-                      ? "99+"
-                      : notificationCenter
-                          .badgeCount.value
-                  }}
-                </span>
-              </div>
+              <UButton
+                v-else
+                to="/librarian/notifications"
+                icon="i-lucide-bell"
+                color="neutral"
+                variant="ghost"
+                size="lg"
+                square
+                class="size-11 rounded-xl"
+                aria-label="Open notifications"
+              />
             </UTooltip>
 
             <UTooltip

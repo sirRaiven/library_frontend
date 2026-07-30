@@ -76,12 +76,26 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     { label: "Account", type: "label" },
     {
-      label: notificationCenter.summary.value.unread > 0
-        ? `Notifications (${notificationCenter.summary.value.unread})`
-        : "Notifications",
+      label: "Notifications",
       icon: "i-lucide-bell",
       to: "/student/notifications",
       active: active("/student/notifications"),
+      chip:
+        notificationCenter
+          .badgeCount.value > 0
+          ? {
+              color:
+                notificationCenter
+                  .chipColor.value,
+              text:
+                notificationCenter
+                  .chipText.value,
+              size:
+                "md",
+              inset:
+                false,
+            }
+          : undefined,
     },
     {
       label: "Profile and Security",
@@ -132,6 +146,15 @@ const accountItems = computed<DropdownMenuItem[][]>(() => [
     },
   ],
   [
+    {
+      label:
+        notificationCenter
+          .badgeCount.value > 0
+          ? `Notifications (${notificationCenter.chipText.value})`
+          : "Notifications",
+      icon: "i-lucide-bell",
+      to: "/student/notifications",
+    },
     {
       label: "Profile and Security",
       icon: "i-lucide-shield-user",
@@ -188,7 +211,7 @@ async function signOut() {
 
 onMounted(async () => {
   await initializeMonitoring();
-  notificationCenter.startPolling();
+  notificationCenter.startPolling(30_000);
   heartbeat = setInterval(() => {
     void monitoring.touch();
   }, 4 * 60 * 1000);
@@ -366,6 +389,48 @@ onBeforeUnmount(() => {
           </template>
 
           <template #right>
+            <UTooltip text="Open notifications">
+              <UChip
+                v-if="
+                  notificationCenter
+                    .badgeCount.value > 0
+                "
+                :text="
+                  notificationCenter
+                    .chipText.value
+                "
+                :color="
+                  notificationCenter
+                    .chipColor.value
+                "
+                size="lg"
+                position="top-right"
+              >
+                <UButton
+                  to="/student/notifications"
+                  icon="i-lucide-bell"
+                  color="neutral"
+                  variant="ghost"
+                  size="lg"
+                  square
+                  class="size-11 rounded-xl"
+                  :aria-label="`Open notifications. ${notificationCenter.badgeCount.value} unread notification${notificationCenter.badgeCount.value === 1 ? '' : 's'}.`"
+                />
+              </UChip>
+
+              <UButton
+                v-else
+                to="/student/notifications"
+                icon="i-lucide-bell"
+                color="neutral"
+                variant="ghost"
+                size="lg"
+                square
+                class="size-11 rounded-xl"
+                aria-label="Open notifications"
+              />
+            </UTooltip>
+
             <UBadge
               label="Student"
               color="primary"

@@ -1,4 +1,3 @@
-
 export type NotificationSeverity =
   | "Info"
   | "Success"
@@ -49,7 +48,6 @@ export interface NotificationSummary {
 
 export interface NotificationFilters {
   view:
-    | "attention"
     | "unread"
     | "active"
     | "all"
@@ -85,8 +83,9 @@ let pollingTimer:
   ReturnType<typeof setInterval> |
   null = null;
 
-let visibilityHandlerInstalled =
-  false;
+let visibilityHandler:
+  (() => void) |
+  null = null;
 
 export function useLibraryNotifications() {
   const auth = useAuth();
@@ -145,13 +144,26 @@ export function useLibraryNotifications() {
       () => null,
     );
 
+  // The navigation chip represents unread notifications only.
+  // Action-required records remain visible inside the Notification Center,
+  // but they no longer keep the global chip visible after being read.
   const badgeCount = computed(
+    () => summary.value.unread,
+  );
+
+  const chipText = computed(
     () =>
-      summary.value
-        .attentionRequired > 0
-        ? summary.value
-            .attentionRequired
-        : summary.value.unread,
+      badgeCount.value > 99
+        ? "99+"
+        : String(badgeCount.value),
+  );
+
+  const chipColor = computed<
+    "error" | "primary"
+  >(() =>
+    badgeCount.value > 0
+      ? "error"
+      : "primary",
   );
 
   const hasCritical = computed(
@@ -162,9 +174,7 @@ export function useLibraryNotifications() {
   async function loadSummary(
     sync = true,
   ): Promise<NotificationSummary> {
-    if (
-      isLoadingSummary.value
-    ) {
+    if (isLoadingSummary.value) {
       return summary.value;
     }
 
@@ -178,11 +188,14 @@ export function useLibraryNotifications() {
           "/api/notification-center/summary",
           {
             method: "GET",
+            cache: "no-store",
             query: {
               sync:
                 sync
                   ? "true"
                   : "false",
+              timestamp:
+                Date.now(),
             },
           },
         );
@@ -190,8 +203,7 @@ export function useLibraryNotifications() {
       summary.value =
         response.data;
       lastUpdatedAt.value =
-        new Date()
-          .toISOString();
+        new Date().toISOString();
 
       return response.data;
     } finally {
@@ -211,6 +223,7 @@ export function useLibraryNotifications() {
           "/api/notification-center",
           {
             method: "GET",
+            cache: "no-store",
             query: {
               view:
                 filters.view,
@@ -218,19 +231,19 @@ export function useLibraryNotifications() {
                 filters.search ||
                 undefined,
               category:
-                filters.category !==
-                "all"
+                filters.category !== "all"
                   ? filters.category
                   : undefined,
               severity:
-                filters.severity !==
-                "all"
+                filters.severity !== "all"
                   ? filters.severity
                   : undefined,
               page:
                 filters.page,
               pageSize:
                 filters.pageSize,
+              timestamp:
+                Date.now(),
             },
           },
         );
@@ -239,6 +252,8 @@ export function useLibraryNotifications() {
         response.data;
       pagination.value =
         response.meta.pagination;
+      lastUpdatedAt.value =
+        new Date().toISOString();
 
       return response;
     } finally {
@@ -274,12 +289,12 @@ export function useLibraryNotifications() {
       summary.value =
         response.data.summary;
       lastUpdatedAt.value =
-        new Date()
-          .toISOString();
+        new Date().toISOString();
 
       return response.data;
     } finally {
-      isSyncing.value = false;
+      isSyncing.value =
+        false;
     }
   }
 
@@ -287,22 +302,6 @@ export function useLibraryNotifications() {
     documentId: string,
     isRead: boolean,
   ) {
-    const response =
-      await auth.authFetch<
-        DataResponse<LibraryNotification>
-      >(
-        `/api/notification-center/${encodeURIComponent(
-          documentId,
-        )}/${
-          isRead
-            ? "read"
-            : "unread"
-        }`,
-        {
-          method: "PATCH",
-        },
-      );
-
     const index =
       notifications.value.findIndex(
         (item) =>
@@ -310,14 +309,68 @@ export function useLibraryNotifications() {
           documentId,
       );
 
-    if (index >= 0) {
-      notifications.value[index] =
-        response.data;
+    const previousNotification =
+      index >= 0
+        ? notifications.value[index]
+        : undefined;
+    const previousSummary = {
+      ...summary.value,
+    };
+
+    // Update the visible card and global chip immediately. The authoritative
+    // summary is still reloaded after the backend confirms the change.
+    if (
+      previousNotification &&
+      previousNotification.isRead !== isRead
+    ) {
+      notifications.value[index] = {
+        ...previousNotification,
+        isRead,
+      };
+
+      summary.value = {
+        ...summary.value,
+        unread: Math.max(
+          0,
+          summary.value.unread +
+            (isRead ? -1 : 1),
+        ),
+      };
     }
 
-    await loadSummary(false);
+    try {
+      const response =
+        await auth.authFetch<
+          DataResponse<LibraryNotification>
+        >(
+          `/api/notification-center/${encodeURIComponent(
+            documentId,
+          )}/${isRead ? "read" : "unread"}`,
+          {
+            method: "PATCH",
+          },
+        );
 
-    return response.data;
+      if (index >= 0) {
+        notifications.value[index] =
+          response.data;
+      }
+
+      await loadSummary(false);
+
+      return response.data;
+    } catch (error) {
+      if (
+        index >= 0 &&
+        previousNotification
+      ) {
+        notifications.value[index] =
+          previousNotification;
+      }
+
+      summary.value = previousSummary;
+      throw error;
+    }
   }
 
   async function markAllRead() {
@@ -377,8 +430,7 @@ export function useLibraryNotifications() {
   }
 
   function startPolling(
-    intervalMilliseconds =
-      60_000,
+    intervalMilliseconds = 30_000,
   ) {
     if (!import.meta.client) {
       return;
@@ -394,34 +446,48 @@ export function useLibraryNotifications() {
               document.visibilityState ===
               "visible"
             ) {
-              void loadSummary(
-                true,
-              );
+              void loadSummary(true);
             }
           },
           intervalMilliseconds,
         );
     }
 
-    if (
-      !visibilityHandlerInstalled
-    ) {
+    if (!visibilityHandler) {
+      visibilityHandler = () => {
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          void loadSummary(true);
+        }
+      };
+
       document.addEventListener(
         "visibilitychange",
-        () => {
-          if (
-            document.visibilityState ===
-            "visible"
-          ) {
-            void loadSummary(
-              true,
-            );
-          }
-        },
+        visibilityHandler,
       );
+    }
+  }
 
-      visibilityHandlerInstalled =
-        true;
+  function stopPolling() {
+    if (!import.meta.client) {
+      return;
+    }
+
+    if (pollingTimer) {
+      window.clearInterval(
+        pollingTimer,
+      );
+      pollingTimer = null;
+    }
+
+    if (visibilityHandler) {
+      document.removeEventListener(
+        "visibilitychange",
+        visibilityHandler,
+      );
+      visibilityHandler = null;
     }
   }
 
@@ -434,6 +500,8 @@ export function useLibraryNotifications() {
     isSyncing,
     lastUpdatedAt,
     badgeCount,
+    chipText,
+    chipColor,
     hasCritical,
     loadSummary,
     loadNotifications,
@@ -442,5 +510,6 @@ export function useLibraryNotifications() {
     markAllRead,
     dismiss,
     startPolling,
+    stopPolling,
   };
 }

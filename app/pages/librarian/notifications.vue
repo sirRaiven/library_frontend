@@ -20,7 +20,7 @@ const toast = useToast();
 
 const filters =
   reactive<NotificationFilters>({
-    view: "attention",
+    view: "unread",
     search: "",
     category: "all",
     severity: "all",
@@ -37,14 +37,14 @@ const isDetailsOpen = ref(false);
 const isMarkingAll = ref(false);
 const actingDocumentId =
   ref<string | null>(null);
+const lastLiveRefreshAt =
+  ref<string | null>(null);
+
+let liveRefreshTimer:
+  ReturnType<typeof setInterval> |
+  null = null;
 
 const viewOptions = [
-  {
-    value: "attention",
-    label: "Needs Attention",
-    icon:
-      "i-lucide-triangle-alert",
-  },
   {
     value: "unread",
     label: "Unread",
@@ -162,17 +162,16 @@ const summaryCards = computed(
   () => [
     {
       label:
-        "Needs Attention",
+        "Unread",
       value:
         notificationCenter
-          .summary.value
-          .attentionRequired,
+          .summary.value.unread,
       icon:
-        "i-lucide-triangle-alert",
+        "i-lucide-mail",
       class:
-        "text-warning",
+        "text-primary",
       description:
-        "Active items requiring Librarian action",
+        "New notifications not yet opened",
     },
     {
       label:
@@ -190,20 +189,7 @@ const summaryCards = computed(
     },
     {
       label:
-        "Unread",
-      value:
-        notificationCenter
-          .summary.value.unread,
-      icon:
-        "i-lucide-mail",
-      class:
-        "text-primary",
-      description:
-        "Notifications not yet reviewed",
-    },
-    {
-      label:
-        "Active Alerts",
+        "Active Notices",
       value:
         notificationCenter
           .summary.value
@@ -213,7 +199,20 @@ const summaryCards = computed(
       class:
         "text-success",
       description:
-        "Current alerts across all modules",
+        "Current notices across Library modules",
+    },
+    {
+      label:
+        "Resolved",
+      value:
+        notificationCenter
+          .summary.value.resolved,
+      icon:
+        "i-lucide-circle-check",
+      class:
+        "text-muted",
+      description:
+        "Previously completed or cleared notices",
     },
   ],
 );
@@ -241,6 +240,26 @@ const activeViewLabel = computed(
     "Notifications",
 );
 
+const lastLiveRefreshLabel =
+  computed(() => {
+    if (!lastLiveRefreshAt.value) {
+      return "Waiting for the first update";
+    }
+
+    return new Intl.DateTimeFormat(
+      "en-PH",
+      {
+        timeStyle: "short",
+        timeZone:
+          "Asia/Manila",
+      },
+    ).format(
+      new Date(
+        lastLiveRefreshAt.value,
+      ),
+    );
+  });
+
 let searchTimer:
   ReturnType<typeof setTimeout> |
   null = null;
@@ -262,6 +281,9 @@ async function loadPage(
       notificationCenter
         .loadSummary(false),
     ]);
+
+    lastLiveRefreshAt.value =
+      new Date().toISOString();
   } catch (error) {
     toast.add({
       title:
@@ -322,16 +344,28 @@ async function toggleRead(
     notification.documentId;
 
   try {
-    await notificationCenter
-      .updateReadState(
-        notification.documentId,
-        !notification.isRead,
-      );
+    const nextReadState =
+      !notification.isRead;
+    const updatedNotification =
+      await notificationCenter
+        .updateReadState(
+          notification.documentId,
+          nextReadState,
+        );
+
+    if (
+      selectedNotification.value
+        ?.documentId ===
+      notification.documentId
+    ) {
+      selectedNotification.value =
+        updatedNotification;
+    }
 
     if (
       filters.view ===
         "unread" &&
-      !notification.isRead
+      nextReadState
     ) {
       await notificationCenter
         .loadNotifications(
@@ -478,11 +512,21 @@ async function openAction(
     LibraryNotification,
 ) {
   if (!notification.isRead) {
-    await notificationCenter
-      .updateReadState(
-        notification.documentId,
-        true,
-      );
+    const updatedNotification =
+      await notificationCenter
+        .updateReadState(
+          notification.documentId,
+          true,
+        );
+
+    if (
+      selectedNotification.value
+        ?.documentId ===
+      notification.documentId
+    ) {
+      selectedNotification.value =
+        updatedNotification;
+    }
   }
 
   if (
@@ -625,9 +669,31 @@ watch(
 
 onMounted(() => {
   notificationCenter
-    .startPolling();
+    .startPolling(30_000);
 
   void loadPage(true);
+
+  liveRefreshTimer =
+    window.setInterval(
+      () => {
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          void loadPage();
+        }
+      },
+      30_000,
+    );
+});
+
+onBeforeUnmount(() => {
+  if (liveRefreshTimer) {
+    window.clearInterval(
+      liveRefreshTimer,
+    );
+    liveRefreshTimer = null;
+  }
 });
 </script>
 
@@ -642,7 +708,34 @@ onMounted(() => {
         <div
           class="flex items-start gap-3"
         >
+          <UChip
+            v-if="
+              notificationCenter
+                .badgeCount.value > 0
+            "
+            :text="
+              notificationCenter
+                .chipText.value
+            "
+            :color="
+              notificationCenter
+                .chipColor.value
+            "
+            size="lg"
+            position="top-right"
+          >
+            <div
+              class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-warning/10 text-warning"
+            >
+              <UIcon
+                name="i-lucide-bell-ring"
+                class="size-6"
+              />
+            </div>
+          </UChip>
+
           <div
+            v-else
             class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-warning/10 text-warning"
           >
             <UIcon
@@ -660,32 +753,12 @@ onMounted(() => {
               >
                 Notification
               </h1>
-
-              <UBadge
-                v-if="
-                  notificationCenter
-                    .badgeCount.value > 0
-                "
-                :color="
-                  notificationCenter
-                    .hasCritical.value
-                    ? 'error'
-                    : 'warning'
-                "
-                variant="soft"
-              >
-                {{
-                  notificationCenter
-                    .badgeCount.value
-                }}
-                needs review
-              </UBadge>
             </div>
 
             <p
               class="mt-1 max-w-3xl text-sm leading-relaxed text-muted"
             >
-              Review overdue loans, expiring reservations and memberships, Library Card processing, and damaged or lost inventory.
+              Review Library updates. Opening a notification automatically marks it as read and updates the unread counter.
             </p>
           </div>
         </div>
@@ -721,6 +794,14 @@ onMounted(() => {
           />
         </div>
       </header>
+
+      <UAlert
+        color="info"
+        variant="soft"
+        icon="i-lucide-radio"
+        title="Live circulation notices"
+        :description="`New reservation, checkout, return, membership, and inventory events are checked every 30 seconds. Last updated: ${lastLiveRefreshLabel}.`"
+      />
 
       <section
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
@@ -1060,17 +1141,6 @@ onMounted(() => {
                         {{
                           notification.category
                         }}
-                      </UBadge>
-
-                      <UBadge
-                        v-if="
-                          notification.requiresAction
-                        "
-                        color="warning"
-                        variant="solid"
-                        size="sm"
-                      >
-                        Action Needed
                       </UBadge>
                     </div>
 

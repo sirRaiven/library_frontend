@@ -20,6 +20,22 @@ interface StrapiListResponse<T> {
   };
 }
 
+interface ReservationDashboardResponse {
+  data: unknown[];
+  meta?: {
+    pagination?: StrapiPagination;
+    summary?: {
+      pendingCount?: number;
+    };
+  };
+}
+
+interface NotificationSummaryResponse {
+  data: {
+    unread?: number;
+  };
+}
+
 interface BookRecord {
   id?: number;
   documentId?: string;
@@ -229,6 +245,46 @@ async function getCollectionCount(
   );
 }
 
+async function getPendingReservationCount(): Promise<number> {
+  const response =
+    await auth.authFetch<ReservationDashboardResponse>(
+      "/api/circulation/reservations",
+      {
+        method: "GET",
+        cache: "no-store",
+        query: {
+          status: "Pending",
+          page: 1,
+          pageSize: 1,
+          _refresh: Date.now(),
+        },
+      },
+    );
+
+  return (
+    response.meta?.summary?.pendingCount ??
+    response.meta?.pagination?.total ??
+    response.data.length
+  );
+}
+
+async function getUnreadNotificationCount(): Promise<number> {
+  const response =
+    await auth.authFetch<NotificationSummaryResponse>(
+      "/api/notification-center/summary",
+      {
+        method: "GET",
+        cache: "no-store",
+        query: {
+          sync: "false",
+          timestamp: Date.now(),
+        },
+      },
+    );
+
+  return response.data.unread ?? 0;
+}
+
 function normalizeRecentActivity(
   transaction: BorrowTransactionRecord,
   index: number,
@@ -340,6 +396,24 @@ async function loadDashboard(): Promise<DashboardData> {
     }
   }
 
+  async function safePendingReservations() {
+    try {
+      return await getPendingReservationCount();
+    } catch {
+      unavailableModules.push("Reservations");
+      return 0;
+    }
+  }
+
+  async function safeUnreadNotifications() {
+    try {
+      return await getUnreadNotificationCount();
+    } catch {
+      unavailableModules.push("New notifications");
+      return 0;
+    }
+  }
+
   async function safeRecentActivity() {
     try {
       return await getRecentActivity();
@@ -421,21 +495,8 @@ async function loadDashboard(): Promise<DashboardData> {
           "Overdue",
       },
     ),
-    safeCount(
-      "Reservations",
-      "/api/reservations",
-      {
-        "filters[reservation_status][$eq]":
-          "Pending",
-      },
-    ),
-    safeCount(
-      "New notifications",
-      "/api/notifications",
-      {
-        "filters[is_read][$eq]": false,
-      },
-    ),
+    safePendingReservations(),
+    safeUnreadNotifications(),
     safeCount(
       "Damaged books",
       "/api/book-copies",
