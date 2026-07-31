@@ -5,6 +5,7 @@ import type {
   StudentRegistrationInput,
   StudentStatus,
   StudentPortalCredentials,
+  StudentPortalPasswordMode,
 } from "~/composables/useLibraryMembers";
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
 import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
@@ -49,6 +50,12 @@ const portalCredentials =
     null,
   );
 const showTemporaryPassword =
+  ref(false);
+const portalPasswordConfirmation =
+  ref("");
+const showRegistrationPassword =
+  ref(false);
+const showRegistrationPasswordConfirmation =
   ref(false);
 
 const registrationPhoto =
@@ -128,6 +135,8 @@ const registrationForm = reactive<StudentRegistrationInput>({
   portalAccount: {
     create: true,
     username: "",
+    passwordMode: "Generated",
+    temporaryPassword: "",
   },
 });
 
@@ -145,6 +154,182 @@ const displayedPortalUsername = computed(() =>
     ?.trim() ||
   suggestedPortalUsername.value ||
   "Generated from Student number",
+);
+
+function manualPasswordIssues(
+  password: string,
+  username: string,
+  email: string,
+  studentNo: string,
+): string[] {
+  const issues: string[] = [];
+
+  if (password.length < 12) {
+    issues.push(
+      "Use at least 12 characters.",
+    );
+  }
+
+  if (password.length > 128) {
+    issues.push(
+      "Use no more than 128 characters.",
+    );
+  }
+
+  if (password !== password.trim()) {
+    issues.push(
+      "Remove spaces at the beginning or end.",
+    );
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    issues.push(
+      "Add at least one uppercase letter.",
+    );
+  }
+
+  if (!/[a-z]/.test(password)) {
+    issues.push(
+      "Add at least one lowercase letter.",
+    );
+  }
+
+  if (!/\d/.test(password)) {
+    issues.push(
+      "Add at least one number.",
+    );
+  }
+
+  if (!/[^A-Za-z0-9\s]/.test(password)) {
+    issues.push(
+      "Add at least one symbol.",
+    );
+  }
+
+  const loweredPassword =
+    password.toLowerCase();
+  const identifiers = [
+    username,
+    studentNo,
+    email.split("@")[0] ?? "",
+  ]
+    .map((value) =>
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, ""),
+    )
+    .filter((value) =>
+      value.length >= 4,
+    );
+  const comparablePassword =
+    loweredPassword.replace(
+      /[^a-z0-9]/g,
+      "",
+    );
+
+  if (
+    identifiers.some((identifier) =>
+      comparablePassword.includes(
+        identifier,
+      ),
+    )
+  ) {
+    issues.push(
+      "Do not include the username, Student number, or email name.",
+    );
+  }
+
+  return issues;
+}
+
+const manualPortalPasswordIssues =
+  computed(() =>
+    manualPasswordIssues(
+      registrationForm.portalAccount
+        .temporaryPassword ?? "",
+      displayedPortalUsername.value,
+      registrationForm.student.email ??
+        "",
+      registrationForm.student.studentNo,
+    ),
+  );
+
+const manualPasswordChecks = computed(
+  () => {
+    const password =
+      registrationForm.portalAccount
+        .temporaryPassword ?? "";
+
+    return [
+      {
+        label: "12 to 128 characters",
+        met:
+          password.length >= 12 &&
+          password.length <= 128,
+      },
+      {
+        label:
+          "Uppercase and lowercase letters",
+        met:
+          /[A-Z]/.test(password) &&
+          /[a-z]/.test(password),
+      },
+      {
+        label: "At least one number",
+        met: /\d/.test(password),
+      },
+      {
+        label: "At least one symbol",
+        met:
+          /[^A-Za-z0-9\s]/.test(
+            password,
+          ),
+      },
+      {
+        label:
+          "Does not contain account identifiers",
+        met:
+          password.length > 0 &&
+          !manualPortalPasswordIssues.value.some(
+            (issue) =>
+              issue.startsWith(
+                "Do not include",
+              ),
+          ),
+      },
+    ];
+  },
+);
+
+function setPortalPasswordMode(
+  mode: StudentPortalPasswordMode,
+) {
+  registrationForm.portalAccount.passwordMode =
+    mode;
+
+  if (mode === "Generated") {
+    registrationForm.portalAccount.temporaryPassword =
+      "";
+    portalPasswordConfirmation.value =
+      "";
+    showRegistrationPassword.value =
+      false;
+    showRegistrationPasswordConfirmation.value =
+      false;
+  }
+}
+
+watch(
+  () =>
+    registrationForm.portalAccount.create,
+  (createAccount) => {
+    if (!createAccount) {
+      setPortalPasswordMode(
+        "Generated",
+      );
+    }
+  },
 );
 
 const editForm = reactive({
@@ -375,6 +560,44 @@ function validate(state: StudentRegistrationInput): FormError[] {
           "Portal username must contain at least 3 valid characters.",
       });
     }
+
+    if (
+      state.portalAccount.passwordMode ===
+      "Manual"
+    ) {
+      const password =
+        state.portalAccount
+          .temporaryPassword ?? "";
+      const passwordIssues =
+        manualPasswordIssues(
+          password,
+          username,
+          state.student.email ?? "",
+          state.student.studentNo,
+        );
+
+      if (passwordIssues.length) {
+        errors.push({
+          name:
+            "portalAccount.temporaryPassword",
+          message:
+            passwordIssues[0] ??
+            "Enter a secure temporary password.",
+        });
+      }
+
+      if (
+        password !==
+        portalPasswordConfirmation.value
+      ) {
+        errors.push({
+          name:
+            "portalAccount.confirmTemporaryPassword",
+          message:
+            "The password confirmation does not match.",
+        });
+      }
+    }
   }
   return errors;
 }
@@ -457,7 +680,15 @@ function resetRegistration() {
   Object.assign(registrationForm.portalAccount, {
     create: true,
     username: "",
+    passwordMode: "Generated",
+    temporaryPassword: "",
   });
+  portalPasswordConfirmation.value =
+    "";
+  showRegistrationPassword.value =
+    false;
+  showRegistrationPasswordConfirmation.value =
+    false;
 
   releasePhotoSelection(
     registrationPhoto.value,
@@ -1339,7 +1570,7 @@ onBeforeUnmount(() => {
                       Student Portal Account
                     </h3>
                     <p class="mt-1 text-xs leading-relaxed text-muted">
-                      Create and securely link the Student login account to this Library profile. A unique temporary password will be generated and displayed only after registration.
+                      Create and securely link the Student login account to this Library profile. Choose an automatically generated password or enter a secure temporary password for the Student.
                     </p>
                   </div>
                 </div>
@@ -1379,17 +1610,169 @@ onBeforeUnmount(() => {
                     {{ registrationForm.student.email || 'Enter the Student email address' }}
                   </p>
                 </div>
-              </div>
 
-              <UAlert
-                v-if="registrationForm.portalAccount.create"
-                class="mt-4"
-                color="warning"
-                variant="soft"
-                icon="i-lucide-key-round"
-                title="One-time temporary password"
-                description="The system will generate a random password instead of using a shared default password. Give it only to the registered Student and instruct the Student to change it immediately after signing in."
-              />
+                <div class="md:col-span-2">
+                  <div class="mb-3">
+                    <p class="text-sm font-medium text-highlighted">
+                      Temporary Password Setup
+                    </p>
+                    <p class="mt-1 text-xs leading-relaxed text-muted">
+                      Generate a secure password automatically or enter a temporary password agreed with the Student. The password is shown only in the registration result.
+                    </p>
+                  </div>
+
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <UButton
+                      type="button"
+                      block
+                      icon="i-lucide-wand-sparkles"
+                      label="Generate Secure Password"
+                      :color="
+                        registrationForm.portalAccount.passwordMode === 'Generated'
+                          ? 'primary'
+                          : 'neutral'
+                      "
+                      :variant="
+                        registrationForm.portalAccount.passwordMode === 'Generated'
+                          ? 'solid'
+                          : 'outline'
+                      "
+                      @click="setPortalPasswordMode('Generated')"
+                    />
+
+                    <UButton
+                      type="button"
+                      block
+                      icon="i-lucide-key-round"
+                      label="Enter Temporary Password"
+                      :color="
+                        registrationForm.portalAccount.passwordMode === 'Manual'
+                          ? 'primary'
+                          : 'neutral'
+                      "
+                      :variant="
+                        registrationForm.portalAccount.passwordMode === 'Manual'
+                          ? 'solid'
+                          : 'outline'
+                      "
+                      @click="setPortalPasswordMode('Manual')"
+                    />
+                  </div>
+                </div>
+
+                <UAlert
+                  v-if="registrationForm.portalAccount.passwordMode === 'Generated'"
+                  class="md:col-span-2"
+                  color="info"
+                  variant="soft"
+                  icon="i-lucide-shield-check"
+                  title="Secure password will be generated"
+                  description="The backend will generate a unique 16-character password containing uppercase and lowercase letters, numbers, and symbols. Give it privately to the Student after registration."
+                />
+
+                <template
+                  v-if="registrationForm.portalAccount.passwordMode === 'Manual'"
+                >
+                  <UFormField
+                    name="portalAccount.temporaryPassword"
+                    label="Temporary Password"
+                    description="Enter a strong password agreed with the Student."
+                    required
+                  >
+                    <UInput
+                      v-model="registrationForm.portalAccount.temporaryPassword"
+                      :type="showRegistrationPassword ? 'text' : 'password'"
+                      autocomplete="new-password"
+                      placeholder="Enter 12–128 characters"
+                      class="w-full font-mono"
+                    >
+                      <template #trailing>
+                        <UButton
+                          type="button"
+                          :icon="
+                            showRegistrationPassword
+                              ? 'i-lucide-eye-off'
+                              : 'i-lucide-eye'
+                          "
+                          color="neutral"
+                          variant="ghost"
+                          square
+                          :aria-label="
+                            showRegistrationPassword
+                              ? 'Hide temporary password'
+                              : 'Show temporary password'
+                          "
+                          @click="showRegistrationPassword = !showRegistrationPassword"
+                        />
+                      </template>
+                    </UInput>
+                  </UFormField>
+
+                  <UFormField
+                    name="portalAccount.confirmTemporaryPassword"
+                    label="Confirm Temporary Password"
+                    description="Enter the same password again."
+                    required
+                  >
+                    <UInput
+                      v-model="portalPasswordConfirmation"
+                      :type="showRegistrationPasswordConfirmation ? 'text' : 'password'"
+                      autocomplete="new-password"
+                      placeholder="Re-enter the password"
+                      class="w-full font-mono"
+                    >
+                      <template #trailing>
+                        <UButton
+                          type="button"
+                          :icon="
+                            showRegistrationPasswordConfirmation
+                              ? 'i-lucide-eye-off'
+                              : 'i-lucide-eye'
+                          "
+                          color="neutral"
+                          variant="ghost"
+                          square
+                          :aria-label="
+                            showRegistrationPasswordConfirmation
+                              ? 'Hide password confirmation'
+                              : 'Show password confirmation'
+                          "
+                          @click="showRegistrationPasswordConfirmation = !showRegistrationPasswordConfirmation"
+                        />
+                      </template>
+                    </UInput>
+                  </UFormField>
+
+                  <div class="rounded-xl border border-default bg-default/70 p-4 md:col-span-2">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-muted">
+                      Password requirements
+                    </p>
+                    <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                      <div
+                        v-for="check in manualPasswordChecks"
+                        :key="check.label"
+                        class="flex items-center gap-2 text-xs"
+                        :class="check.met ? 'text-success' : 'text-muted'"
+                      >
+                        <UIcon
+                          :name="check.met ? 'i-lucide-circle-check' : 'i-lucide-circle'"
+                          class="size-4 shrink-0"
+                        />
+                        <span>{{ check.label }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <UAlert
+                    class="md:col-span-2"
+                    color="warning"
+                    variant="soft"
+                    icon="i-lucide-key-round"
+                    title="Keep the password private"
+                    description="Do not use a shared default password. Confirm the password privately with the Student and instruct the Student to change it after the first sign-in."
+                  />
+                </template>
+              </div>
             </div>
 
             <div class="rounded-2xl border border-default bg-elevated/50 p-5">

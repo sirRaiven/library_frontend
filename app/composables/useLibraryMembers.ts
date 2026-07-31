@@ -184,11 +184,16 @@ export interface MembershipListResponse {
   };
 }
 
+export type StudentPortalPasswordMode =
+  | "Generated"
+  | "Manual";
+
 export interface StudentPortalCredentials {
   created: true;
   username: string;
   email: string;
   temporaryPassword: string;
+  passwordMode?: StudentPortalPasswordMode;
 }
 
 export interface StudentRegistrationInput {
@@ -225,6 +230,8 @@ export interface StudentRegistrationInput {
   portalAccount: {
     create: boolean;
     username?: string;
+    passwordMode?: StudentPortalPasswordMode;
+    temporaryPassword?: string;
   };
 }
 
