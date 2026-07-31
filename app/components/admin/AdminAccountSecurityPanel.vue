@@ -283,7 +283,7 @@ onMounted(loadSecurity);
           :tone="security.summary.blockedDevices ? 'error' : 'neutral'"
         />
         <AdminMetricCard
-          label="Last Successful Login"
+          label="Last Successful Login" 
           :value="security.summary.lastSuccessfulLoginAt ? formatDate(security.summary.lastSuccessfulLoginAt).split(',')[0] : 'No record'"
           :description="formatDate(security.summary.lastSuccessfulLoginAt)"
           icon="i-lucide-log-in"

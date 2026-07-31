@@ -6,6 +6,9 @@ import type {
 
 const route = useRoute();
 const auth = useAuth();
+const monitoring = usePortalMonitoring();
+
+let monitoringTimer: ReturnType<typeof setInterval> | undefined;
 
 const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
@@ -95,6 +98,24 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       type: "label",
     },
     {
+      label: "User Activity",
+      icon: "i-lucide-activity",
+      to: "/admin/activity",
+      active: active("/admin/activity"),
+    },
+    {
+      label: "Active Sessions",
+      icon: "i-lucide-monitor-dot",
+      to: "/admin/sessions",
+      active: active("/admin/sessions"),
+    },
+    {
+      label: "Devices",
+      icon: "i-lucide-monitor-smartphone",
+      to: "/admin/devices",
+      active: active("/admin/devices"),
+    },
+    {
       label: "Audit Logs",
       icon: "i-lucide-scroll-text",
       to: "/admin/audit-logs",
@@ -120,6 +141,15 @@ function pageInformation() {
   }
   if (path.startsWith("/admin/settings")) {
     return { title: "Library Rules and Settings", icon: "i-lucide-settings-2" };
+  }
+  if (path.startsWith("/admin/activity")) {
+    return { title: "User Activity", icon: "i-lucide-activity" };
+  }
+  if (path.startsWith("/admin/sessions")) {
+    return { title: "Active Sessions", icon: "i-lucide-monitor-dot" };
+  }
+  if (path.startsWith("/admin/devices")) {
+    return { title: "Devices", icon: "i-lucide-monitor-smartphone" };
   }
   if (path.startsWith("/admin/audit-logs")) {
     return { title: "Audit Logs", icon: "i-lucide-scroll-text" };
@@ -174,6 +204,7 @@ async function signOut() {
   loggingOut.value = true;
 
   try {
+    await monitoring.end();
     await auth.logout();
     await navigateTo("/");
   } finally {
@@ -181,6 +212,33 @@ async function signOut() {
     logoutOpen.value = false;
   }
 }
+
+onMounted(async () => {
+  try {
+    await monitoring.start();
+    await monitoring.recordPageView(route.path, pageTitle.value);
+  } catch (error) {
+    console.warn("Unable to initialize Administrator portal monitoring.", error);
+  }
+
+  monitoringTimer = setInterval(() => {
+    void monitoring.touch();
+  }, 15_000);
+});
+
+onBeforeUnmount(() => {
+  if (monitoringTimer) clearInterval(monitoringTimer);
+});
+
+watch(
+  () => route.fullPath,
+  async () => {
+    sidebarOpen.value = false;
+    await nextTick();
+    void monitoring.touch(true);
+    void monitoring.recordPageView(route.path, pageTitle.value);
+  },
+);
 </script>
 
 <template>

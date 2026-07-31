@@ -126,7 +126,7 @@ export function useStudentSession() {
 
     const now = Date.now();
 
-    if (!force && now - lastTouch.value < 60_000) {
+    if (!force && now - lastTouch.value < 12_000) {
       return;
     }
 

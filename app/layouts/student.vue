@@ -214,7 +214,7 @@ onMounted(async () => {
   notificationCenter.startPolling(30_000);
   heartbeat = setInterval(() => {
     void monitoring.touch();
-  }, 4 * 60 * 1000);
+  }, 15_000);
 });
 
 watch(

@@ -9,6 +9,7 @@ const auth = useAuth();
 const toast = useToast();
 const notificationCenter =
   useLibraryNotifications();
+const monitoring = usePortalMonitoring();
 
 const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
@@ -17,6 +18,7 @@ const isLoggingOut = ref(false);
 const globalSearch = ref("");
 
 let desktopMediaQuery: MediaQueryList | undefined;
+let monitoringTimer: ReturnType<typeof setInterval> | undefined;
 
 function closeMobileSidebarOnDesktop(
   event: MediaQueryListEvent,
@@ -441,6 +443,7 @@ async function handleLogout() {
   isLoggingOut.value = true;
 
   try {
+    await monitoring.end();
     await auth.logout();
 
     isLogoutModalOpen.value = false;
@@ -468,11 +471,18 @@ async function handleLogout() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   notificationCenter
     .startPolling();
 
   void refreshNotificationBadge();
+
+  try {
+    await monitoring.start();
+    await monitoring.recordPageView(route.path, pageTitle.value);
+  } catch (error) {
+    console.warn("Unable to initialize Librarian portal monitoring.", error);
+  }
 
   desktopMediaQuery = window.matchMedia(
     "(min-width: 1024px)",
@@ -481,11 +491,17 @@ onMounted(() => {
     "change",
     closeMobileSidebarOnDesktop,
   );
+
+  monitoringTimer = setInterval(() => {
+    void monitoring.touch();
+  }, 15_000);
 });
 
 onBeforeUnmount(() => {
   notificationCenter
     .stopPolling();
+
+  if (monitoringTimer) clearInterval(monitoringTimer);
 
   desktopMediaQuery?.removeEventListener(
     "change",
@@ -495,9 +511,13 @@ onBeforeUnmount(() => {
 
 watch(
   () => route.fullPath,
-  () => {
+  async () => {
     // Close the mobile sidebar after navigation.
     sidebarOpen.value = false;
+
+    await nextTick();
+    void monitoring.touch(true);
+    void monitoring.recordPageView(route.path, pageTitle.value);
 
     if (
       route.path.startsWith(

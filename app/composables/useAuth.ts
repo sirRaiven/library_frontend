@@ -70,6 +70,18 @@ interface AuthFetchOptions {
 
 let activeRefreshRequest: Promise<boolean> | null = null;
 
+const DEVICE_BLOCKED_STATUS = 423;
+
+function randomDeviceIdentifier(): string {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+
+  const random = Array.from({ length: 32 }, () =>
+    Math.floor(Math.random() * 16).toString(16),
+  ).join("");
+
+  return `${Date.now().toString(36)}-${random}`;
+}
+
 function getHttpStatus(error: unknown): number | undefined {
   const fetchError = error as {
     statusCode?: number;
@@ -195,6 +207,36 @@ export function useAuth() {
     maxAge: 60 * 60 * 24 * 30,
   });
 
+  // This privacy-safe random identifier is account-scoped by the backend.
+  // Keep it when a device is blocked so refreshing the page cannot silently
+  // create a new identity and bypass the Administrator's block.
+  const deviceIdentifier = useCookie<string | null>("sncbt-device-id", {
+    default: () => null,
+    sameSite: "lax",
+    secure: import.meta.env.PROD,
+    maxAge: 60 * 60 * 24 * 365,
+  });
+
+  const studentMonitoringSession = useCookie<string | null>(
+    "sncbt-student-session",
+    {
+      default: () => null,
+      sameSite: "lax",
+      secure: import.meta.env.PROD,
+    },
+  );
+
+  const sharedMonitoringSession = useCookie<string | null>(
+    "sncbt-portal-monitoring-session",
+    {
+      default: () => null,
+      sameSite: "lax",
+      secure: import.meta.env.PROD,
+    },
+  );
+
+  const deviceAccessMessage = useState<string>("device-access-message", () => "");
+
   const role = computed<ApplicationRole>(() => normalizeRole(user.value?.role));
 
   const isAuthenticated = computed(() =>
@@ -234,21 +276,55 @@ export function useAuth() {
     }
   });
 
+  function ensureDeviceIdentifier(): string {
+    if (!deviceIdentifier.value) {
+      deviceIdentifier.value = randomDeviceIdentifier();
+    }
+
+    return deviceIdentifier.value;
+  }
+
   function clearSession() {
     accessToken.value = null;
     user.value = null;
     sessionHint.value = null;
+    studentMonitoringSession.value = null;
+    sharedMonitoringSession.value = null;
+
+    // Clear in-memory monitoring state while preserving sncbt-device-id.
+    useState("student-session-data", () => null).value = null;
+    useState("portal-monitoring-session-data", () => null).value = null;
   }
 
-  function createAuthorizationHeaders(
-    token: string,
+  function createRequestHeaders(
     existingHeaders?: HeadersInit,
+    token?: string | null,
   ): Headers {
     const headers = new Headers(existingHeaders);
 
-    headers.set("Authorization", `Bearer ${token}`);
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    if (import.meta.client) {
+      headers.set("X-Device-ID", ensureDeviceIdentifier());
+    }
 
     return headers;
+  }
+
+  async function handleBlockedDevice(error: unknown): Promise<void> {
+    if (getHttpStatus(error) !== DEVICE_BLOCKED_STATUS) return;
+
+    deviceAccessMessage.value = getErrorMessage(error);
+    clearSession();
+    initialized.value = true;
+
+    // A hard navigation removes already-rendered Library data immediately.
+    // The blocked device ID remains stored and will be denied again at login.
+    if (import.meta.client && window.location.pathname !== "/") {
+      window.location.replace("/?access=device-blocked");
+    }
   }
 
   async function fetchCurrentUser(token: string): Promise<AuthUser> {
@@ -258,9 +334,7 @@ export function useAuth() {
         populate: "role",
       },
       credentials: "include",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: createRequestHeaders(undefined, token),
     });
 
     const currentUser = normalizeUser(response);
@@ -280,17 +354,25 @@ export function useAuth() {
     identifier: string,
     password: string,
   ): Promise<AuthUser> {
-    const response = await $fetch<LoginResponse>(
-      `${strapiUrl}/api/auth/local`,
-      {
-        method: "POST",
-        credentials: "include",
-        body: {
-          identifier: identifier.trim(),
-          password,
+    let response: LoginResponse;
+
+    try {
+      response = await $fetch<LoginResponse>(
+        `${strapiUrl}/api/auth/local`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: createRequestHeaders(),
+          body: {
+            identifier: identifier.trim(),
+            password,
+          },
         },
-      },
-    );
+      );
+    } catch (error) {
+      await handleBlockedDevice(error);
+      throw error;
+    }
 
     accessToken.value = response.jwt;
 
@@ -303,6 +385,7 @@ export function useAuth() {
 
       return currentUser;
     } catch (error) {
+      await handleBlockedDevice(error);
       clearSession();
       initialized.value = true;
       throw error;
@@ -320,6 +403,7 @@ export function useAuth() {
         {
           method: "POST",
           credentials: "include",
+          headers: createRequestHeaders(),
         },
       );
 
@@ -327,7 +411,8 @@ export function useAuth() {
       user.value = await fetchCurrentUser(response.jwt);
 
       return true;
-    } catch {
+    } catch (error) {
+      await handleBlockedDevice(error);
       clearSession();
       return false;
     }
@@ -383,15 +468,20 @@ export function useAuth() {
       $fetch<T>(requestUrl, {
         ...options,
         credentials: "include",
-        headers: createAuthorizationHeaders(
-          accessToken.value!,
+        headers: createRequestHeaders(
           options.headers,
+          accessToken.value!,
         ),
       });
 
     try {
       return await executeRequest();
     } catch (error) {
+      if (getHttpStatus(error) === DEVICE_BLOCKED_STATUS) {
+        await handleBlockedDevice(error);
+        throw error;
+      }
+
       if (getHttpStatus(error) !== 401) {
         throw error;
       }
@@ -402,7 +492,12 @@ export function useAuth() {
         throw error;
       }
 
-      return await executeRequest();
+      try {
+        return await executeRequest();
+      } catch (retryError) {
+        await handleBlockedDevice(retryError);
+        throw retryError;
+      }
     }
   }
 
@@ -412,9 +507,7 @@ export function useAuth() {
         await $fetch(`${strapiUrl}/api/auth/logout`, {
           method: "POST",
           credentials: "include",
-          headers: {
-            Authorization: `Bearer ${accessToken.value}`,
-          },
+          headers: createRequestHeaders(undefined, accessToken.value),
           ...(allDevices
             ? {
                 body: {
@@ -447,6 +540,9 @@ export function useAuth() {
     isFaculty,
     isLibrarian,
     homeRoute,
+    deviceIdentifier,
+    deviceAccessMessage,
+    ensureDeviceIdentifier,
     login,
     logout,
     initialize,

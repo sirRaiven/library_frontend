@@ -27,6 +27,15 @@ const showPassword = ref(false);
 const isLoggingIn = ref(false);
 const loginError = ref("");
 
+const blockedDeviceNotice = computed(() => {
+  if (route.query.access !== "device-blocked") return "";
+
+  return (
+    auth.deviceAccessMessage.value ||
+    "This device has been blocked by the system administrator. Use another authorized device or contact the Library administrator."
+  );
+});
+
 function validate(
   state: Partial<LoginForm>,
 ): FormError[] {
@@ -148,6 +157,16 @@ async function handleLogin(
 
         <!-- Form Section -->
         <div class="p-8">
+          <UAlert
+            v-if="blockedDeviceNotice"
+            color="error"
+            variant="soft"
+            icon="i-lucide-shield-ban"
+            title="Device access blocked"
+            :description="blockedDeviceNotice"
+            class="mb-5"
+          />
+
           <UForm :validate="validate" :state="form" @submit="handleLogin" class="space-y-5">
                       
           <UFormField
