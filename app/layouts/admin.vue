@@ -116,6 +116,12 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       active: active("/admin/devices"),
     },
     {
+      label: "Monitoring Reports",
+      icon: "i-lucide-file-chart-column",
+      to: "/admin/monitoring-reports",
+      active: active("/admin/monitoring-reports"),
+    },
+    {
       label: "Audit Logs",
       icon: "i-lucide-scroll-text",
       to: "/admin/audit-logs",
@@ -127,6 +133,18 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
 function pageInformation() {
   const path = route.path;
 
+  if (/^\/admin\/users\/[^/]+\/activity/.test(path)) {
+    return { title: "User Activity", icon: "i-lucide-activity" };
+  }
+  if (/^\/admin\/users\/[^/]+\/sessions/.test(path)) {
+    return { title: "User Sessions", icon: "i-lucide-monitor-dot" };
+  }
+  if (/^\/admin\/users\/[^/]+\/devices/.test(path)) {
+    return { title: "User Devices", icon: "i-lucide-monitor-smartphone" };
+  }
+  if (/^\/admin\/users\/[^/]+$/.test(path)) {
+    return { title: "Account Details", icon: "i-lucide-user-round-cog" };
+  }
   if (path.startsWith("/admin/users")) {
     return { title: "User Accounts", icon: "i-lucide-users" };
   }
@@ -150,6 +168,9 @@ function pageInformation() {
   }
   if (path.startsWith("/admin/devices")) {
     return { title: "Devices", icon: "i-lucide-monitor-smartphone" };
+  }
+  if (path.startsWith("/admin/monitoring-reports")) {
+    return { title: "Monitoring Reports", icon: "i-lucide-file-chart-column" };
   }
   if (path.startsWith("/admin/audit-logs")) {
     return { title: "Audit Logs", icon: "i-lucide-scroll-text" };

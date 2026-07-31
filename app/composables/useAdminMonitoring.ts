@@ -17,6 +17,23 @@ export interface MonitoringAccount {
   role: { id: number; name: string; type: string } | null;
 }
 
+export interface AdminUserMonitoringSummary {
+  generatedAt: string;
+  account: MonitoringAccount;
+  profileType: "Student" | "Librarian" | "Administrator" | string;
+  accountStatus: "Active" | "Blocked" | "Unconfirmed" | string;
+  activityThirtyDays: number;
+  failedOrDeniedThirtyDays: number;
+  activeAuthenticationSessions: number;
+  activeTrackedSessions: number;
+  knownDevices: number;
+  trustedDevices: number;
+  blockedDevices: number;
+  lastSuccessfulLoginAt: string | null;
+  lastFailedOrDeniedAt: string | null;
+  lastSeenAt: string | null;
+}
+
 export interface AdminActivityRecord {
   id: number;
   documentId: string;
@@ -70,6 +87,36 @@ export interface AdminDeviceRecord {
   activeSessionCount: number;
 }
 
+export type AdminMonitoringReportType =
+  | "login-history"
+  | "failed-access"
+  | "active-session-register"
+  | "device-register"
+  | "session-revocations"
+  | "new-device-register";
+
+export interface AdminMonitoringReportColumn {
+  key: string;
+  label: string;
+}
+
+export interface AdminMonitoringReport {
+  reportType: AdminMonitoringReportType;
+  title: string;
+  generatedAt: string;
+  total: number;
+  returned: number;
+  truncated: boolean;
+  filters: {
+    dateFrom: string;
+    dateTo: string;
+    profileType: string | null;
+    userId: number | null;
+  };
+  columns: AdminMonitoringReportColumn[];
+  rows: Array<Record<string, string | number | boolean | null>>;
+}
+
 interface PagedResponse<T> {
   data: T[];
   meta: { page: number; pageSize: number; pageCount: number; total: number };
@@ -77,7 +124,12 @@ interface PagedResponse<T> {
 
 function queryObject(input: Record<string, unknown>) {
   return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== "" && value !== null && value !== undefined && value !== "All"),
+    Object.entries(input).filter(([, value]) =>
+      value !== "" &&
+      value !== null &&
+      value !== undefined &&
+      value !== "All"
+    ),
   );
 }
 
@@ -88,6 +140,13 @@ export function useAdminMonitoring() {
     const response = await auth.authFetch<{ data: AdminMonitoringSummary }>(
       "/api/admin-monitoring/summary",
     );
+    return response.data;
+  }
+
+  async function userSummary(userId: number) {
+    const response = await auth.authFetch<{
+      data: AdminUserMonitoringSummary;
+    }>(`/api/admin-monitoring/users/${userId}/summary`);
     return response.data;
   }
 
@@ -112,11 +171,24 @@ export function useAdminMonitoring() {
     );
   }
 
+  async function report(
+    reportType: AdminMonitoringReportType,
+    filters: Record<string, unknown>,
+  ) {
+    const response = await auth.authFetch<{ data: AdminMonitoringReport }>(
+      `/api/admin-monitoring/reports/${reportType}`,
+      { query: queryObject(filters) },
+    );
+    return response.data;
+  }
+
   async function revokeSession(session: AdminSessionRecord, reason: string) {
     const path = session.source === "Authentication Session"
       ? `/api/admin-monitoring/auth-sessions/${session.account.id}/${encodeURIComponent(session.id)}/revoke`
       : `/api/admin-monitoring/tracked-sessions/${encodeURIComponent(session.id)}/revoke`;
-    return await auth.authFetch<{ data: { revoked: boolean; sessionReference: string } }>(path, {
+    return await auth.authFetch<{
+      data: { revoked: boolean; sessionReference: string };
+    }>(path, {
       method: "POST",
       body: { data: { reason } },
     });
@@ -140,5 +212,14 @@ export function useAdminMonitoring() {
     });
   }
 
-  return { summary, activity, sessions, devices, revokeSession, deviceAction };
+  return {
+    summary,
+    userSummary,
+    activity,
+    sessions,
+    devices,
+    report,
+    revokeSession,
+    deviceAction,
+  };
 }

@@ -82,7 +82,10 @@ onMounted(() => { load(); loadSummary(); });
       icon="i-lucide-activity"
     >
       <template #actions>
-        <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" />
+        <div class="flex flex-wrap gap-2">
+          <UButton label="Monitoring Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/monitoring-reports" />
+          <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" />
+        </div>
       </template>
     </AdminPageHeader>
 
@@ -116,7 +119,7 @@ onMounted(() => { load(); loadSummary(); });
       <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-activity" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching activity</h3><p class="mt-1 text-sm text-muted">Adjust the filters or wait for new portal activity.</p></div>
       <UTable v-else :data="records" :columns="columns">
         <template #activity-cell="{ row }"><p class="font-semibold text-highlighted">{{ row.original.description }}</p><p class="mt-1 max-w-xl truncate font-mono text-[11px] text-muted">{{ row.original.eventCode }}<span v-if="row.original.route"> · {{ row.original.route }}</span></p></template>
-        <template #user-cell="{ row }"><p class="font-medium text-highlighted">{{ row.original.account.username }}</p><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.role || 'Role unavailable' }}</p></template>
+        <template #user-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/activity`" color="neutral" variant="link" class="h-auto p-0 font-medium" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.role || 'Role unavailable' }}</p></template>
         <template #category-cell="{ row }"><UBadge :label="row.original.category" color="neutral" variant="soft" /></template>
         <template #outcome-cell="{ row }"><UBadge :label="row.original.outcome" :color="outcomeColor(row.original.outcome)" variant="soft" /></template>
         <template #occurred-cell="{ row }"><time class="text-sm text-default">{{ formatDate(row.original.occurredAt) }}</time></template>

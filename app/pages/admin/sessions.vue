@@ -61,7 +61,7 @@ onMounted(() => { load(); loadSummary(); });
 
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
-    <AdminPageHeader eyebrow="Security and Monitoring" title="Active Sessions" description="Review Strapi authentication sessions and privacy-safe portal-monitoring sessions for Student, Librarian, and Administrator accounts." icon="i-lucide-monitor-dot"><template #actions><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></template></AdminPageHeader>
+    <AdminPageHeader eyebrow="Security and Monitoring" title="Active Sessions" description="Review Strapi authentication sessions and privacy-safe portal-monitoring sessions for Student, Librarian, and Administrator accounts." icon="i-lucide-monitor-dot"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Monitoring Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/monitoring-reports" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
     <UAlert color="info" variant="soft" icon="i-lucide-info" title="Two session sources" description="Authentication Sessions control actual sign-in refresh tokens. Portal Monitoring Sessions record portal presence and activity. They are displayed separately because they do not store or expose authentication tokens." />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminMetricCard label="Authentication Sessions" :value="summary?.activeAuthenticationSessions ?? 0" description="Current refresh-token sign-ins." icon="i-lucide-key-round" tone="success" :loading="!summary" />
@@ -74,7 +74,7 @@ onMounted(() => { load(); loadSummary(); });
       <div v-if="loading" class="space-y-3 p-6"><USkeleton v-for="i in 7" :key="i" class="h-16 w-full" /></div>
       <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-monitor-off" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching sessions</h3><p class="mt-1 text-sm text-muted">Change the source or filters.</p></div>
       <UTable v-else :data="records" :columns="columns">
-        <template #account-cell="{ row }"><p class="font-semibold text-highlighted">{{ row.original.account.username }}</p><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.email || 'No email' }}</p></template>
+        <template #account-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/sessions`" color="neutral" variant="link" class="h-auto p-0 font-semibold" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.email || 'No email' }}</p></template>
         <template #device-cell="{ row }"><p class="font-medium text-highlighted">{{ row.original.deviceName }}</p><p class="text-xs text-muted">{{ row.original.browser }} · {{ row.original.operatingSystem }}</p></template>
         <template #source-cell="{ row }"><UBadge :label="row.original.source" color="neutral" variant="soft" /></template>
         <template #status-cell="{ row }"><UBadge :label="row.original.status" :color="statusColor(row.original.status)" variant="soft" /></template>

@@ -20,6 +20,9 @@ const auth = useAuth();
 const toast = useToast();
 
 const userId = computed(() => Number.parseInt(String(route.params.id), 10));
+const monitoringChildActive = computed(() =>
+  /^\/admin\/users\/[^/]+\/(activity|sessions|devices)$/.test(route.path),
+);
 const record = ref<AdminUserRecord | null>(null);
 const roles = ref<AdminRoleSummary[]>([]);
 const candidates = ref<AdminProfileCandidate[]>([]);
@@ -326,11 +329,20 @@ watch(candidateSearch, () => {
   candidateTimer = setTimeout(loadCandidates, 300);
 });
 
-onMounted(loadAccount);
+onMounted(() => {
+  if (!monitoringChildActive.value) void loadAccount();
+});
+
+watch(monitoringChildActive, (isChild) => {
+  if (!isChild && !record.value) void loadAccount();
+});
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <NuxtPage v-if="monitoringChildActive" />
+
+  <template v-else>
+    <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="Account Details"
@@ -347,6 +359,12 @@ onMounted(loadAccount);
         />
       </template>
     </AdminPageHeader>
+
+    <AdminUserMonitoringNav
+      v-if="Number.isInteger(userId) && Boolean(userId)"
+      :user-id="userId"
+      active="overview"
+    />
 
     <div v-if="loading" class="grid gap-4 lg:grid-cols-3">
       <USkeleton v-for="index in 6" :key="index" class="h-40 w-full" />
@@ -669,4 +687,5 @@ onMounted(loadAccount);
       </div>
     </template>
   </UModal>
+  </template>
 </template>
