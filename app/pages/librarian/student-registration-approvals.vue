@@ -309,7 +309,7 @@ onMounted(loadRequests);
 
 <template>
   <div class="space-y-6 p-4 sm:p-6">
-    <section class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-6">
+    <section class="rounded-xl border border-default bg-default p-5 shadow-sm sm:p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <UBadge label="Library Users" color="success" variant="soft" />
@@ -341,25 +341,25 @@ onMounted(loadRequests);
     </section>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div class="rounded-2xl border border-warning/30 bg-warning/5 p-5">
+      <div class="rounded-xl border border-warning/30 bg-warning/5 p-5">
         <p class="text-sm font-semibold text-muted">Pending Registrations</p>
         <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.pendingRegistrations }}</p>
       </div>
-      <div class="rounded-2xl border border-success/30 bg-success/5 p-5">
+      <div class="rounded-xl border border-success/30 bg-success/5 p-5">
         <p class="text-sm font-semibold text-muted">Approved Registrations</p>
         <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.approvedRegistrations }}</p>
       </div>
-      <div class="rounded-2xl border border-error/30 bg-error/5 p-5">
+      <div class="rounded-xl border border-error/30 bg-error/5 p-5">
         <p class="text-sm font-semibold text-muted">Rejected Registrations</p>
         <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.rejectedRegistrations }}</p>
       </div>
-      <div class="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+      <div class="rounded-xl border border-primary/30 bg-primary/5 p-5">
         <p class="text-sm font-semibold text-muted">Credential Requests</p>
         <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.pendingCredentialRequests }}</p>
       </div>
     </section>
 
-    <section class="overflow-hidden rounded-3xl border border-default bg-default shadow-sm">
+    <section class="overflow-hidden rounded-xl border border-default bg-default shadow-sm">
       <div class="border-b border-default p-5 sm:p-6">
         <div class="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-end">
           <div>
