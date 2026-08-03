@@ -480,20 +480,21 @@ onBeforeUnmount(() => {
         </div>
         <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
           <UButton
-            label="Cancel"
-            color="neutral"
-            variant="outline"
-            block
-            :disabled="loggingOut"
-            @click="logoutOpen = false"
-          />
-          <UButton
             label="Sign Out"
             icon="i-lucide-log-out"
-            color="error"
+            variant="outline"
+            color="neutral"
             block
             :loading="loggingOut"
             @click="signOut"
+          />
+          <UButton
+            label="Cancel"
+            color="error"
+            
+            block
+            :disabled="loggingOut"
+            @click="logoutOpen = false"
           />
         </div>
       </div>
