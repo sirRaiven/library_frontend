@@ -3,10 +3,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
+  const isPublicRoute =
+    to.meta.public === true ||
+    to.path === "/" ||
+    to.path === "/student-registration";
+
   const nuxtApp = useNuxtApp();
 
-  // Keep the browser's first hydration render identical to the SSR output.
-  // The client plugin restores the HttpOnly refresh-token session after mount.
   if (
     nuxtApp.isHydrating &&
     nuxtApp.payload.serverRendered
@@ -20,8 +23,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await auth.initialize();
   }
 
-  if (to.path === "/") {
-    if (auth.isAuthenticated.value) {
+  if (isPublicRoute) {
+    if (to.path === "/" && auth.isAuthenticated.value) {
       return navigateTo(auth.homeRoute.value);
     }
 
@@ -54,7 +57,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (
-    to.path.startsWith("/student") &&
+    to.path.startsWith("/student/") &&
     role !== "student"
   ) {
     return navigateTo(auth.homeRoute.value);

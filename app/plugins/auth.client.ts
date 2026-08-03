@@ -2,18 +2,30 @@ export default defineNuxtPlugin((nuxtApp) => {
   const auth = useAuth();
   const router = useRouter();
 
+  function isPublicRoute() {
+    const currentRoute = router.currentRoute.value;
+
+    return (
+      currentRoute.meta.public === true ||
+      currentRoute.path === "/" ||
+      currentRoute.path === "/student-registration"
+    );
+  }
+
   nuxtApp.hook("app:mounted", async () => {
     await auth.initialize();
 
     const currentRoute = router.currentRoute.value;
     const path = currentRoute.path;
 
-    if (path === "/" && auth.isAuthenticated.value) {
-      await navigateTo(auth.homeRoute.value, { replace: true });
+    if (isPublicRoute()) {
+      if (path === "/" && auth.isAuthenticated.value) {
+        await navigateTo(auth.homeRoute.value, { replace: true });
+      }
       return;
     }
 
-    if (path !== "/" && !auth.isAuthenticated.value) {
+    if (!auth.isAuthenticated.value) {
       await navigateTo(
         {
           path: "/",

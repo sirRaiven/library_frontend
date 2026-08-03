@@ -39,9 +39,11 @@
     "typescript": "^6.0.3",
     "vue": "^3.5.39",
     "vue-qrcode-reader": "5.7.3",
-    "vue-router": "^5.1.0"
+    "vue-router": "^5.1.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.119"
+    "@iconify-json/lucide": "^1.2.119",
+    "@types/qrcode": "^1.5.6"
   }
 }

@@ -6,6 +6,7 @@ import type {
 export type StudentStatus =
   | "Active"
   | "Inactive"
+  | "Pending Approval"
   | "Suspended"
   | "Graduated"
   | "Dropped";
@@ -17,6 +18,7 @@ export type FacultyStatus =
 
 export type MembershipStatus =
   | "Active"
+  | "Pending Approval"
   | "Expired"
   | "Suspended"
   | "Cancelled"

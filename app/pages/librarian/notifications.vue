@@ -507,6 +507,43 @@ async function openNotification(
   }
 }
 
+function actionUrlFor(
+  notification:
+    LibraryNotification,
+): string | undefined {
+  const sourceType = String(
+    notification.sourceType ?? "",
+  ).toLowerCase();
+  const actionLabel = String(
+    notification.actionLabel ?? "",
+  ).toLowerCase();
+  const title = String(
+    notification.title ?? "",
+  ).toLowerCase();
+  const requestType = String(
+    notification.metadata?.requestType ?? "",
+  ).toLowerCase();
+
+  const isStudentRegistration =
+    sourceType.includes(
+      "student registration",
+    ) ||
+    actionLabel.includes(
+      "registration approval",
+    ) ||
+    requestType ===
+      "registration" ||
+    title.includes(
+      "student registration",
+    );
+
+  if (isStudentRegistration) {
+    return "/librarian/student-registration-approvals";
+  }
+
+  return notification.actionUrl;
+}
+
 async function openAction(
   notification:
     LibraryNotification,
@@ -529,11 +566,14 @@ async function openAction(
     }
   }
 
-  if (
-    notification.actionUrl
-  ) {
+  const targetUrl =
+    actionUrlFor(
+      notification,
+    );
+
+  if (targetUrl) {
     await navigateTo(
-      notification.actionUrl,
+      targetUrl,
     );
   }
 }
@@ -1275,7 +1315,9 @@ onBeforeUnmount(() => {
 
                   <UButton
                     v-if="
-                      notification.actionUrl
+                      actionUrlFor(
+                        notification,
+                      )
                     "
                     :label="
                       notification.actionLabel ||
@@ -1544,8 +1586,9 @@ onBeforeUnmount(() => {
 
           <UButton
             v-if="
-              selectedNotification
-                .actionUrl
+              actionUrlFor(
+                selectedNotification,
+              )
             "
             :label="
               selectedNotification

@@ -1181,6 +1181,22 @@ onBeforeUnmount(() => {
         </div>
         <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <UButton
+            to="/librarian/student-registration-approvals"
+            label="Registration Approvals"
+            icon="i-lucide-clipboard-check"
+            color="warning"
+            variant="soft"
+          />
+
+          <UButton
+            to="/librarian/student-self-registration"
+            label="Registration QR"
+            icon="i-lucide-qr-code"
+            color="neutral"
+            variant="outline"
+          />
+
+          <UButton
             to="/librarian/library-card-designer"
             label="Card Designer"
             icon="i-lucide-palette"

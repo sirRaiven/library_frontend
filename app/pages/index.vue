@@ -259,9 +259,9 @@ async function handleLogin(
             </div>
 
             <!-- Footer Note Pill -->
-            <div class="mt-6 px-4 py-3 bg-[#f4fbf8] dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl flex items-center justify-center">
+            <div class="mt-4 px-4 py-3 bg-[#f4fbf8] dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl flex items-center justify-center">
               <span class="text-[11px] sm:text-xs font-medium text-emerald-600/80 dark:text-emerald-400/80">
-                Secure access for administrators, staff, and librarians.
+                Secure access for administrators, staff, librarians, and students.
               </span>
             </div>
 
