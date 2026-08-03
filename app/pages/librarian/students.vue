@@ -30,6 +30,8 @@ const cardPrintQueue =
   useLibraryCardPrintQueue();
 
 const students = ref<StudentMember[]>([]);
+const selectedStudents =
+  ref<Record<string, StudentMember>>({});
 const selectedStudent = ref<StudentMember | null>(null);
 const search = ref("");
 const statusFilter = ref("All");
@@ -41,6 +43,7 @@ const cardStatusFilter =
 const page = ref(1);
 const pageSize = 10;
 const loading = ref(false);
+const preparingAllCards = ref(false);
 const submitting = ref(false);
 const registrationOpen = ref(false);
 const editOpen = ref(false);
@@ -433,12 +436,84 @@ const registrationPreviewStudent =
   }));
 
 const columns: TableColumn<StudentMember>[] = [
+  { id: "select", header: "" },
   { id: "student", header: "Student" },
   { id: "card", header: "Library Card" },
   { id: "membership", header: "Current Membership" },
   { accessorKey: "status", header: "Profile" },
   { id: "actions", header: "" },
 ];
+
+function studentSelectionKey(
+  student: StudentMember,
+): string {
+  return (
+    student.documentId ||
+    student.libraryCardNo ||
+    student.studentNo
+  );
+}
+
+const selectedStudentList = computed(
+  () => Object.values(selectedStudents.value),
+);
+
+function isStudentSelected(
+  student: StudentMember,
+): boolean {
+  return Boolean(
+    selectedStudents.value[
+      studentSelectionKey(student)
+    ],
+  );
+}
+
+function setStudentSelected(
+  student: StudentMember,
+  selected: boolean,
+) {
+  const key = studentSelectionKey(student);
+  const next = {
+    ...selectedStudents.value,
+  };
+
+  if (selected) {
+    next[key] = student;
+  } else {
+    delete next[key];
+  }
+
+  selectedStudents.value = next;
+}
+
+const allShownSelected = computed({
+  get: () =>
+    students.value.length > 0 &&
+    students.value.every(
+      isStudentSelected,
+    ),
+  set: (selected: boolean) => {
+    const next = {
+      ...selectedStudents.value,
+    };
+
+    for (const student of students.value) {
+      const key = studentSelectionKey(student);
+
+      if (selected) {
+        next[key] = student;
+      } else {
+        delete next[key];
+      }
+    }
+
+    selectedStudents.value = next;
+  },
+});
+
+function clearStudentSelection() {
+  selectedStudents.value = {};
+}
 
 const statusItems = ["All", "Active", "Inactive", "Suspended", "Graduated", "Dropped"];
 const memberStatusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
@@ -617,6 +692,22 @@ async function loadStudents() {
       pageSize,
     });
     students.value = response.data;
+
+    const refreshedSelection = {
+      ...selectedStudents.value,
+    };
+
+    for (const student of response.data) {
+      const key = studentSelectionKey(student);
+
+      if (refreshedSelection[key]) {
+        refreshedSelection[key] = student;
+      }
+    }
+
+    selectedStudents.value =
+      refreshedSelection;
+
     Object.assign(pagination, response.meta.pagination);
     Object.assign(summary, response.meta.summary);
   } catch (error) {
@@ -942,11 +1033,43 @@ async function renew(student: StudentMember) {
   await navigateTo({ path: "/librarian/memberships", query: { barcode: student.barcode } });
 }
 
-async function printStudentCard(
-  student: StudentMember,
+async function openCardPrintPreview(
+  sourceStudents: StudentMember[],
 ) {
+  if (sourceStudents.length === 0) {
+    toast.add({
+      title: "No Library Cards selected",
+      description:
+        "Select at least one Student before opening the print preview.",
+      color: "warning",
+      icon: "i-lucide-printer",
+    });
+
+    return;
+  }
+
+  const orderedStudents = [
+    ...sourceStudents,
+  ].sort((left, right) => {
+    const nameOrder =
+      left.fullName.localeCompare(
+        right.fullName,
+        undefined,
+        { sensitivity: "base" },
+      );
+
+    return (
+      nameOrder ||
+      left.studentNo.localeCompare(
+        right.studentNo,
+        undefined,
+        { numeric: true },
+      )
+    );
+  });
+
   cardPrintQueue.setPrintQueue(
-    [student],
+    orderedStudents,
     route.fullPath,
   );
 
@@ -955,6 +1078,65 @@ async function printStudentCard(
   await navigateTo(
     "/librarian/library-card-print",
   );
+}
+
+async function printStudentCard(
+  student: StudentMember,
+) {
+  await openCardPrintPreview([student]);
+}
+
+async function printSelectedStudents() {
+  await openCardPrintPreview(
+    selectedStudentList.value,
+  );
+}
+
+async function printAllStudents() {
+  if (preparingAllCards.value) {
+    return;
+  }
+
+  preparingAllCards.value = true;
+
+  try {
+    const allStudents =
+      await members.listAllStudents();
+
+    const printableStudents =
+      allStudents.filter(
+        (student) =>
+          student.status !==
+          "Pending Approval",
+      );
+
+    if (printableStudents.length === 0) {
+      toast.add({
+        title: "No Students available",
+        description:
+          "There are no approved Student Library Cards to print.",
+        color: "warning",
+        icon: "i-lucide-printer",
+      });
+
+      return;
+    }
+
+    await openCardPrintPreview(
+      printableStudents,
+    );
+  } catch (error) {
+    toast.add({
+      title:
+        "Unable to prepare all Library Cards",
+      description:
+        auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    preparingAllCards.value = false;
+  }
 }
 
 
@@ -1277,6 +1459,61 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
+        <div
+          class="mb-4 flex flex-col gap-3 rounded-xl border border-default bg-elevated/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div class="flex flex-wrap items-center gap-3">
+            <UCheckbox
+              v-model="allShownSelected"
+              :disabled="loading || students.length === 0"
+              :label="`Select all shown (${students.length})`"
+            />
+
+            <span class="text-sm text-muted">
+              {{ selectedStudentList.length }}
+              {{
+                selectedStudentList.length === 1
+                  ? "Student selected"
+                  : "Students selected"
+              }}
+              across pages
+            </span>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              v-if="selectedStudentList.length > 0"
+              label="Clear Selection"
+              icon="i-lucide-x"
+              color="neutral"
+              variant="ghost"
+              @click="clearStudentSelection"
+            />
+
+            <UButton
+              :label="`Print Selected (${selectedStudentList.length})`"
+              icon="i-lucide-printer"
+              color="primary"
+              variant="soft"
+              :disabled="selectedStudentList.length === 0"
+              @click="printSelectedStudents"
+            />
+
+            <UTooltip
+              text="Prepare every approved Student in the directory, including Students on other pages."
+            >
+              <UButton
+                label="Print All Students"
+                icon="i-lucide-printer-check"
+                color="primary"
+                :loading="preparingAllCards"
+                :disabled="loading"
+                @click="printAllStudents"
+              />
+            </UTooltip>
+          </div>
+        </div>
+
         <div v-if="loading" class="space-y-3">
           <USkeleton v-for="index in 6" :key="index" class="h-16 w-full" />
         </div>
@@ -1288,6 +1525,19 @@ onBeforeUnmount(() => {
         </div>
 
         <UTable v-else :data="students" :columns="columns">
+          <template #select-cell="{ row }">
+            <UCheckbox
+              :model-value="isStudentSelected(row.original)"
+              :aria-label="`Select ${row.original.fullName} for Library Card printing`"
+              @update:model-value="
+                setStudentSelected(
+                  row.original,
+                  Boolean($event),
+                )
+              "
+            />
+          </template>
+
           <template #student-cell="{ row }">
             <div class="flex items-center gap-3">
               <UAvatar :src="row.original.photoUrl ?? undefined" :alt="row.original.fullName" size="md" />

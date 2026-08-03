@@ -357,8 +357,68 @@ export function useLibraryMembers() {
     );
   }
 
+  async function listAllStudents(
+    input: Record<string, unknown> = {},
+  ): Promise<StudentMember[]> {
+    const records = new Map<
+      string,
+      StudentMember
+    >();
+
+    const pageSize = 100;
+    let currentPage = 1;
+    let pageCount = 1;
+
+    do {
+      const response =
+        await auth.authFetch<
+          StudentListResponse
+        >(
+          "/api/library-members/students",
+          {
+            method: "GET",
+            query: query({
+              ...input,
+              page: currentPage,
+              pageSize,
+            }),
+          },
+        );
+
+      for (const rawStudent of response.data) {
+        const student =
+          normalizeStudent(rawStudent);
+
+        const key =
+          student.documentId ||
+          student.libraryCardNo ||
+          student.studentNo;
+
+        if (key) {
+          records.set(key, student);
+        }
+      }
+
+      pageCount = Math.max(
+        response.meta.pagination.pageCount || 1,
+        1,
+      );
+
+      currentPage += 1;
+
+      if (currentPage > 200) {
+        throw new Error(
+          "The Student directory is too large to prepare in one print job. Apply filters or print selected Students instead.",
+        );
+      }
+    } while (currentPage <= pageCount);
+
+    return [...records.values()];
+  }
+
   return {
     resolveMediaUrl,
+    listAllStudents,
 
     async uploadStudentPhoto(
       file: File,

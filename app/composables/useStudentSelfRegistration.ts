@@ -9,7 +9,7 @@ export type StudentAccessRequestStatus =
   | "Verified"
   | "Completed"
   | "Rejected"
-  | "Cancelled";
+  | "Cancelled";  
 
 export interface RegistrationAccessDetails {
   valid: true;
