@@ -15,15 +15,6 @@ type CardSide =
   | "back"
   | "both";
 
-type SharedCardApi = {
-  downloadCard: (
-    side: CardSide,
-  ) => Promise<boolean>;
-  printCard: (
-    side?: CardSide,
-  ) => Promise<boolean>;
-};
-
 definePageMeta({
   layout: "student",
   middleware: ["student"],
@@ -34,15 +25,47 @@ definePageMeta({
 const libraryCard =
   useStudentLibraryCard();
 const toast = useToast();
-const sharedCard =
-  ref<SharedCardApi | null>(null);
 const displaySide =
   ref<Exclude<CardSide, "both">>(
     "front",
   );
-const cardAction = ref<string | null>(
-  null,
+
+const watermarkItems = Array.from(
+  { length: 12 },
+  (_, index) => index,
 );
+const watermarkClock = ref(new Date());
+let watermarkTimer: ReturnType<typeof setInterval> | null = null;
+let lastProtectionNotice = 0;
+
+const watermarkText = computed(() => {
+  const student = libraryCard.card.value?.student;
+  const viewedAt = new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Manila",
+  }).format(watermarkClock.value);
+
+  if (!student) return `SNCBT LIBRARY • VIEW ONLY • ${viewedAt}`;
+
+  return `${student.fullName} • ${student.studentNo} • VIEW ONLY • ${viewedAt}`;
+});
+
+function notifyViewOnlyProtection() {
+  const now = Date.now();
+  if (now - lastProtectionNotice < 2500) return;
+  lastProtectionNotice = now;
+
+  toast.add({
+    title: "View-only Library Card",
+    description:
+      "Downloading, printing, copying, and ordinary save actions are disabled. Present the live card from your authenticated Student Portal.",
+    color: "warning",
+    icon: "i-lucide-shield-alert",
+  });
+}
 
 function formatDate(
   value: string | null,
@@ -230,66 +253,16 @@ async function load() {
   }
 }
 
-async function downloadCard(
-  side: CardSide,
-) {
-  if (
-    !libraryCard.card.value
-      ?.eligibility.canDownload ||
-    !sharedCard.value ||
-    cardAction.value
-  ) {
-    return;
-  }
+onMounted(() => {
+  void load();
+  watermarkTimer = setInterval(() => {
+    watermarkClock.value = new Date();
+  }, 60_000);
+});
 
-  cardAction.value =
-    `download-${side}`;
-
-  try {
-    const completed =
-      await sharedCard.value
-        .downloadCard(side);
-
-    if (completed) {
-      await libraryCard.recordActivity(
-        "download",
-      );
-    }
-  } finally {
-    cardAction.value = null;
-  }
-}
-
-async function printCard() {
-  if (
-    !libraryCard.card.value
-      ?.eligibility.canPrint ||
-    !sharedCard.value ||
-    cardAction.value
-  ) {
-    return;
-  }
-
-  cardAction.value =
-    `print-${displaySide.value}`;
-
-  try {
-    const completed =
-      await sharedCard.value.printCard(
-        displaySide.value,
-      );
-
-    if (completed) {
-      await libraryCard.recordActivity(
-        "print",
-      );
-    }
-  } finally {
-    cardAction.value = null;
-  }
-}
-
-onMounted(load);
+onBeforeUnmount(() => {
+  if (watermarkTimer) clearInterval(watermarkTimer);
+});
 </script>
 
 <template>
@@ -297,7 +270,7 @@ onMounted(load);
     <StudentPageHeader
       eyebrow="Membership and Identification"
       title="Digital Library Card"
-      description="Review your permanent Library Card, current membership validity, and renewal requirements from your authenticated Student account."
+      description="Present your live, view-only Library Card and review your current membership validity from your authenticated Student account."
       icon="i-lucide-id-card"
     >
       <template #actions>
@@ -338,8 +311,8 @@ onMounted(load);
         color="warning"
         variant="soft"
         icon="i-lucide-shield-alert"
-        title="Library verification is required"
-        description="You may review the card, but downloading and printing are disabled until all eligibility requirements are satisfied."
+        title="Library Card verification is required"
+        description="You may review the record, but the card is not valid for Library transactions until all eligibility requirements are satisfied."
       >
         <template #actions>
           <UButton
@@ -351,6 +324,14 @@ onMounted(load);
           />
         </template>
       </UAlert>
+
+      <UAlert
+        color="warning"
+        variant="soft"
+        icon="i-lucide-shield-ban"
+        title="View-only digital identification"
+        description="Downloading and browser printing are disabled. Do not capture, copy, or share this card. Library personnel may require the live Student Portal display for verification."
+      />
 
       <UCard
         :ui="{
@@ -441,81 +422,64 @@ onMounted(load);
           </div>
         </template>
 
-        <StudentLibraryCard
+        <div
           v-if="studentRecord"
-          ref="sharedCard"
-          :student="studentRecord"
-          :membership="membershipRecord"
-          :design="activeDesign"
-          :display-side="displaySide"
-          :show-actions="false"
-          fit-preview
-        />
+          class="protected-card-display relative overflow-hidden rounded-2xl"
+          role="img"
+          aria-label="View-only Student Library Card"
+          @contextmenu.prevent="notifyViewOnlyProtection"
+          @copy.prevent="notifyViewOnlyProtection"
+          @cut.prevent="notifyViewOnlyProtection"
+          @dragstart.prevent="notifyViewOnlyProtection"
+        >
+          <StudentLibraryCard
+            :student="studentRecord"
+            :membership="membershipRecord"
+            :design="activeDesign"
+            :display-side="displaySide"
+            :show-actions="false"
+            :allow-export="false"
+            fit-preview
+          />
+
+          <div
+            class="pointer-events-none absolute inset-0 z-20 grid select-none grid-cols-2 content-around overflow-hidden opacity-[0.16]"
+            aria-hidden="true"
+          >
+            <span
+              v-for="item in watermarkItems"
+              :key="item"
+              class="-rotate-[24deg] whitespace-nowrap px-3 text-center text-[10px] font-black uppercase tracking-[0.14em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] sm:text-xs"
+            >
+              {{ watermarkText }}
+            </span>
+          </div>
+        </div>
 
         <div
-          class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
+          class="flex flex-col gap-3 rounded-xl border border-warning/30 bg-warning/5 p-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <UButton
-            label="Download Front"
-            icon="i-lucide-download"
-            color="neutral"
-            variant="outline"
-            block
-            :disabled="
-              !libraryCard.card.value.eligibility.canDownload ||
-              Boolean(cardAction)
-            "
-            :loading="cardAction === 'download-front'"
-            @click="downloadCard('front')"
-          />
+          <div class="flex items-start gap-3">
+            <UIcon
+              name="i-lucide-eye"
+              class="mt-0.5 size-5 shrink-0 text-warning"
+            />
+            <div>
+              <p class="text-sm font-bold text-highlighted">
+                Live Student Portal display only
+              </p>
+              <p class="mt-1 text-xs text-muted">
+                Download and print controls are not available. Present this page while signed in when Library personnel request identification.
+              </p>
+            </div>
+          </div>
 
-          <UButton
-            label="Download Back"
-            icon="i-lucide-download"
-            color="neutral"
-            variant="outline"
-            block
-            :disabled="
-              !libraryCard.card.value.eligibility.canDownload ||
-              Boolean(cardAction)
-            "
-            :loading="cardAction === 'download-back'"
-            @click="downloadCard('back')"
-          />
-
-          <UButton
-            label="Download Both"
-            icon="i-lucide-images"
-            color="primary"
+          <UBadge
+            label="VIEW ONLY"
+            color="warning"
             variant="soft"
-            block
-            :disabled="
-              !libraryCard.card.value.eligibility.canDownload ||
-              Boolean(cardAction)
-            "
-            :loading="cardAction === 'download-both'"
-            @click="downloadCard('both')"
-          />
-
-          <UButton
-            :label="`Print ${
-              displaySide === 'front'
-                ? 'Front'
-                : 'Back'
-            }`"
-            icon="i-lucide-printer"
-            color="neutral"
-            variant="outline"
-            block
-            :disabled="
-              !libraryCard.card.value.eligibility.canPrint ||
-              Boolean(cardAction)
-            "
-            :loading="
-              cardAction ===
-                `print-${displaySide}`
-            "
-            @click="printCard"
+            size="lg"
+            class="w-fit shrink-0"
           />
         </div>
 
@@ -523,7 +487,7 @@ onMounted(load);
           class="rounded-xl border border-default bg-elevated/30 p-3 text-xs text-muted"
         >
           Changes saved by the Librarian in
-          <strong>Card Designer</strong> are loaded here after Refresh. The Student Portal does not maintain a separate card layout.
+          <strong>Card Designer</strong> are loaded here after Refresh. Student accounts can view the design but cannot download or print it.
         </p>
       </UCard>
 
@@ -706,7 +670,7 @@ onMounted(load);
         color="warning"
         variant="outline"
         icon="i-lucide-list-checks"
-        title="Requirements preventing digital-card use"
+        title="Requirements affecting Library Card validity"
       >
         <template #description>
           <ul class="mt-2 list-disc space-y-1 ps-5 text-sm">
@@ -720,5 +684,52 @@ onMounted(load);
         </template>
       </UAlert>
     </template>
+
+    <div class="print-only-warning" aria-hidden="true">
+      <div>
+        <strong>Printing is disabled.</strong>
+        <span>Open the authenticated Student Portal to present the live Library Card.</span>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.protected-card-display {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.print-only-warning {
+  display: none;
+}
+
+@media print {
+  .protected-card-display {
+    display: none !important;
+  }
+
+  .print-only-warning {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: black;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .print-only-warning > div {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 36rem;
+    border: 2px solid #111827;
+    border-radius: 1rem;
+    padding: 2rem;
+  }
+}
+</style>

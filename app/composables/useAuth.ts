@@ -96,6 +96,29 @@ function getHttpStatus(error: unknown): number | undefined {
   );
 }
 
+function getErrorCode(error: unknown): string {
+  const fetchError = error as {
+    data?: {
+      error?: {
+        details?: { code?: string };
+      };
+    };
+    response?: {
+      _data?: {
+        error?: {
+          details?: { code?: string };
+        };
+      };
+    };
+  };
+
+  return String(
+    fetchError.data?.error?.details?.code ??
+      fetchError.response?._data?.error?.details?.code ??
+      "",
+  ).trim();
+}
+
 function getErrorMessage(error: unknown): string {
   const fetchError = error as {
     statusMessage?: string;
@@ -236,6 +259,10 @@ export function useAuth() {
   );
 
   const deviceAccessMessage = useState<string>("device-access-message", () => "");
+  const membershipAccessMessage = useState<string>(
+    "student-membership-access-message",
+    () => "",
+  );
 
   const role = computed<ApplicationRole>(() => normalizeRole(user.value?.role));
 
@@ -313,18 +340,34 @@ export function useAuth() {
     return headers;
   }
 
-  async function handleBlockedDevice(error: unknown): Promise<void> {
-    if (getHttpStatus(error) !== DEVICE_BLOCKED_STATUS) return;
+  async function handleAccessRestriction(error: unknown): Promise<boolean> {
+    if (getHttpStatus(error) !== DEVICE_BLOCKED_STATUS) return false;
 
-    deviceAccessMessage.value = getErrorMessage(error);
+    const code = getErrorCode(error);
+    const message = getErrorMessage(error);
+    let accessQuery = "";
+
+    if (code === "DEVICE_BLOCKED") {
+      deviceAccessMessage.value = message;
+      membershipAccessMessage.value = "";
+      accessQuery = "device-blocked";
+    } else if (code.startsWith("STUDENT_")) {
+      membershipAccessMessage.value = message;
+      deviceAccessMessage.value = "";
+      accessQuery = "membership-required";
+    } else {
+      return false;
+    }
+
     clearSession();
     initialized.value = true;
 
-    // A hard navigation removes already-rendered Library data immediately.
-    // The blocked device ID remains stored and will be denied again at login.
+    // Hard navigation immediately removes protected Student Portal content.
     if (import.meta.client && window.location.pathname !== "/") {
-      window.location.replace("/?access=device-blocked");
+      window.location.replace(`/?access=${accessQuery}`);
     }
+
+    return true;
   }
 
   async function fetchCurrentUser(token: string): Promise<AuthUser> {
@@ -370,7 +413,7 @@ export function useAuth() {
         },
       );
     } catch (error) {
-      await handleBlockedDevice(error);
+      await handleAccessRestriction(error);
       throw error;
     }
 
@@ -380,12 +423,14 @@ export function useAuth() {
       const currentUser = await fetchCurrentUser(response.jwt);
 
       user.value = currentUser;
+      deviceAccessMessage.value = "";
+      membershipAccessMessage.value = "";
       sessionHint.value = "1";
       initialized.value = true;
 
       return currentUser;
     } catch (error) {
-      await handleBlockedDevice(error);
+      await handleAccessRestriction(error);
       clearSession();
       initialized.value = true;
       throw error;
@@ -409,10 +454,12 @@ export function useAuth() {
 
       accessToken.value = response.jwt;
       user.value = await fetchCurrentUser(response.jwt);
+      deviceAccessMessage.value = "";
+      membershipAccessMessage.value = "";
 
       return true;
     } catch (error) {
-      await handleBlockedDevice(error);
+      await handleAccessRestriction(error);
       clearSession();
       return false;
     }
@@ -477,8 +524,7 @@ export function useAuth() {
     try {
       return await executeRequest();
     } catch (error) {
-      if (getHttpStatus(error) === DEVICE_BLOCKED_STATUS) {
-        await handleBlockedDevice(error);
+      if (await handleAccessRestriction(error)) {
         throw error;
       }
 
@@ -495,7 +541,7 @@ export function useAuth() {
       try {
         return await executeRequest();
       } catch (retryError) {
-        await handleBlockedDevice(retryError);
+        await handleAccessRestriction(retryError);
         throw retryError;
       }
     }
@@ -542,6 +588,7 @@ export function useAuth() {
     homeRoute,
     deviceIdentifier,
     deviceAccessMessage,
+    membershipAccessMessage,
     ensureDeviceIdentifier,
     login,
     logout,

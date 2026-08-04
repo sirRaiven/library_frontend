@@ -36,6 +36,20 @@ const blockedDeviceNotice = computed(() => {
   );
 });
 
+const membershipAccessNotice = computed(() => {
+  if (
+    route.query.access !== "membership-required" &&
+    !auth.membershipAccessMessage.value
+  ) {
+    return "";
+  }
+
+  return (
+    auth.membershipAccessMessage.value ||
+    "Your Student Portal account requires an active and verified Library membership. Visit the Library to renew your membership before signing in again."
+  );
+});
+
 function validate(
   state: Partial<LoginForm>,
 ): FormError[] {
@@ -164,6 +178,16 @@ async function handleLogin(
             icon="i-lucide-shield-ban"
             title="Device access blocked"
             :description="blockedDeviceNotice"
+            class="mb-5"
+          />
+
+          <UAlert
+            v-if="membershipAccessNotice"
+            color="warning"
+            variant="soft"
+            icon="i-lucide-calendar-x-2"
+            title="Library membership renewal required"
+            :description="membershipAccessNotice"
             class="mb-5"
           />
 

@@ -31,6 +31,7 @@ const props = withDefaults(
     student: StudentMember;
     membership?: MembershipRecord | null;
     showActions?: boolean;
+    allowExport?: boolean;
     design?: Partial<LibraryCardDesign>;
     previewMode?: boolean;
     displaySide?: DisplaySide;
@@ -45,6 +46,7 @@ const props = withDefaults(
   {
     membership: null,
     showActions: true,
+    allowExport: true,
     design: undefined,
     previewMode: false,
     displaySide: "both",
@@ -459,9 +461,18 @@ function downloadTarget(
   return bothCards.value;
 }
 
+function assertExportAllowed() {
+  if (props.allowExport) return;
+
+  throw new Error(
+    "Downloading and printing are disabled for the Student Portal Library Card.",
+  );
+}
+
 async function captureCard(
   side: DownloadSide,
 ): Promise<string> {
+  assertExportAllowed();
   const target = downloadTarget(side);
 
   if (
@@ -500,6 +511,17 @@ async function captureCard(
 async function downloadCard(
   side: DownloadSide,
 ): Promise<boolean> {
+  if (!props.allowExport) {
+    toast.add({
+      title: "View-only Library Card",
+      description:
+        "Student accounts cannot download the digital Library Card.",
+      color: "warning",
+      icon: "i-lucide-shield-alert",
+    });
+    return false;
+  }
+
   if (downloading.value) {
     return false;
   }
@@ -563,6 +585,17 @@ async function downloadCard(
 async function printCard(
   side: DownloadSide = "both",
 ): Promise<boolean> {
+  if (!props.allowExport) {
+    toast.add({
+      title: "View-only Library Card",
+      description:
+        "Student accounts cannot print the digital Library Card.",
+      color: "warning",
+      icon: "i-lucide-shield-alert",
+    });
+    return false;
+  }
+
   if (
     !import.meta.client ||
     downloading.value
@@ -1208,7 +1241,7 @@ defineExpose({
     </div>
 
     <div
-      v-if="showActions"
+      v-if="showActions && allowExport"
       class="grid gap-2 sm:grid-cols-3"
     >
       <UButton
