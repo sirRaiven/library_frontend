@@ -224,6 +224,24 @@ function absoluteAssetUrl(
   }
 }
 
+
+function addressLines(
+  value: string,
+): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function htmlAddress(
+  value: string,
+): string {
+  return addressLines(value)
+    .map((line) => escapeHtml(line))
+    .join("<br />");
+}
+
 function printReportHtml(
   report: LibraryReportDocument,
   branding: LibraryReportBranding,
@@ -250,6 +268,11 @@ function printReportHtml(
   const libraryLogo =
     absoluteAssetUrl(
       branding.libraryLogoUrl,
+    );
+
+  const addressMarkup =
+    htmlAddress(
+      branding.address,
     );
 
   const logoMarkup = (
@@ -435,62 +458,72 @@ function printReportHtml(
 
     .institution-header {
       display: grid;
-      grid-template-columns: 22mm 1fr 22mm;
+      grid-template-columns: 19mm minmax(88mm, 118mm) 19mm;
       align-items: center;
-      gap: 4mm;
+      justify-content: center;
+      gap: 2mm;
+      max-width: 158mm;
+      margin: 0 auto;
       padding-bottom: 3mm;
-      border-bottom: 1.4pt solid #0b2642;
+      border-bottom: 1.4pt solid #000000;
     }
 
     .institution-header img,
     .logo-placeholder {
       display: block;
-      width: 18mm;
-      height: 18mm;
+      width: 17mm;
+      height: 17mm;
       margin: 0 auto;
       object-fit: contain;
     }
 
     .institution-copy {
       text-align: center;
+      color: #000000;
     }
 
     .institution-copy strong {
       display: block;
-      color: #0b2642;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
       font-size: 12pt;
-      letter-spacing: 0.02em;
+      letter-spacing: 0;
     }
 
-    .institution-copy span {
+    .institution-copy .address {
       display: block;
-      margin-top: 1mm;
-      color: #0f766e;
-      font-size: 9pt;
+      margin-top: 0.4mm;
+      color: #000000;
+      font-size: 8.5pt;
+      line-height: 1.15;
+    }
+
+    .institution-copy .office-name {
+      display: block;
+      margin-top: 1.6mm;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 10pt;
       font-weight: 700;
     }
 
-    .institution-copy small {
-      display: block;
-      margin-top: 1mm;
-      color: #64748b;
-      font-size: 7.5pt;
-    }
-
     .report-heading {
-      padding: 5mm 0 3mm;
+      padding: 6mm 0 3mm;
+      text-align: center;
     }
 
     .report-heading h1 {
       margin: 0;
       color: #0f172a;
+      font-family: "Times New Roman", Times, serif;
       font-size: 16pt;
       line-height: 1.15;
+      text-transform: uppercase;
     }
 
     .report-heading p {
       max-width: 180mm;
-      margin: 2mm 0 0;
+      margin: 2mm auto 0;
       color: #475569;
       font-size: 8.5pt;
     }
@@ -776,12 +809,10 @@ function printReportHtml(
           <strong>${escapeHtml(
             branding.schoolName,
           )}</strong>
-          <span>${escapeHtml(
+          <span class="address">${addressMarkup}</span>
+          <span class="office-name">${escapeHtml(
             branding.officeName,
           )}</span>
-          <small>${escapeHtml(
-            branding.address,
-          )}</small>
         </div>
 
         <div>
@@ -1084,6 +1115,25 @@ async function exportPdf(
   function drawHeader(
     pageTitle = report.title,
   ) {
+    const logoSize = 17;
+    const headerWidth =
+      Math.min(
+        pageWidth -
+          margin * 2,
+        158,
+      );
+    const headerLeft =
+      (pageWidth -
+        headerWidth) /
+      2;
+    const headerRight =
+      headerLeft +
+      headerWidth;
+    const address =
+      addressLines(
+        branding.address,
+      ).slice(0, 2);
+
     if (institutionLogo) {
       doc.addImage(
         institutionLogo.dataUrl,
@@ -1091,10 +1141,10 @@ async function exportPdf(
           "jpeg"
           ? "JPEG"
           : "PNG",
-        margin,
-        9,
-        18,
-        18,
+        headerLeft,
+        8,
+        logoSize,
+        logoSize,
       );
     }
 
@@ -1105,81 +1155,137 @@ async function exportPdf(
           "jpeg"
           ? "JPEG"
           : "PNG",
-        pageWidth - margin - 18,
-        9,
-        18,
-        18,
+        headerRight -
+          logoSize,
+        8,
+        logoSize,
+        logoSize,
       );
     }
 
-    doc.setTextColor(11, 38, 66);
-    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(
+      "times",
+      "bold",
+    );
     doc.setFontSize(12);
     doc.text(
       branding.schoolName,
       pageWidth / 2,
-      12,
-      { align: "center" },
+      11.5,
+      {
+        align:
+          "center",
+      },
     );
 
-    doc.setFontSize(9);
+    doc.setFont(
+      "helvetica",
+      "normal",
+    );
+    doc.setFontSize(8.5);
+
+    if (address.length) {
+      doc.text(
+        address,
+        pageWidth / 2,
+        16,
+        {
+          align:
+            "center",
+          lineHeightFactor:
+            1.1,
+        },
+      );
+    }
+
+    doc.setFont(
+      "times",
+      "bold",
+    );
+    doc.setFontSize(10);
     doc.text(
       branding.officeName,
       pageWidth / 2,
-      17,
-      { align: "center" },
+      address.length > 1
+        ? 24
+        : 21,
+      {
+        align:
+          "center",
+      },
     );
 
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(75, 85, 99);
-    doc.setFontSize(7.5);
-    doc.text(
-      branding.address,
-      pageWidth / 2,
-      21,
-      { align: "center" },
+    doc.setDrawColor(
+      0,
+      0,
+      0,
     );
-
-    doc.setDrawColor(14, 165, 233);
-    doc.setLineWidth(0.6);
+    doc.setLineWidth(
+      0.7,
+    );
     doc.line(
-      margin,
+      headerLeft +
+        3,
       29,
-      pageWidth - margin,
+      headerRight -
+        3,
       29,
     );
 
-    doc.setTextColor(15, 23, 42);
-    doc.setFont("helvetica", "bold");
+    doc.setTextColor(
+      15,
+      23,
+      42,
+    );
+    doc.setFont(
+      "times",
+      "bold",
+    );
     doc.setFontSize(14);
     doc.text(
-      pageTitle,
-      margin,
-      37,
+      pageTitle.toUpperCase(),
+      pageWidth / 2,
+      38,
+      {
+        align:
+          "center",
+      },
     );
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont(
+      "helvetica",
+      "normal",
+    );
     doc.setFontSize(8);
-    doc.setTextColor(71, 85, 105);
+    doc.setTextColor(
+      71,
+      85,
+      105,
+    );
     doc.text(
       `Period: ${report.periodLabel}`,
       margin,
-      42,
+      44,
     );
     doc.text(
       `Generated: ${formatValue(
         report.generatedAt,
         "datetime",
       )}`,
-      pageWidth - margin,
-      42,
-      { align: "right" },
+      pageWidth -
+        margin,
+      44,
+      {
+        align:
+          "right",
+      },
     );
   }
 
   drawHeader();
 
-  let y = 49;
+  let y = 51;
 
   if (report.description) {
     doc.setFontSize(8);
@@ -1204,7 +1310,7 @@ async function exportPdf(
     if (y > pageHeight - 45) {
       doc.addPage();
       drawHeader(table.title);
-      y = 49;
+      y = 51;
     }
 
     doc.setTextColor(
@@ -1332,7 +1438,7 @@ async function exportPdf(
     if (y > pageHeight - 35) {
       doc.addPage();
       drawHeader("Report Notes");
-      y = 49;
+      y = 51;
     }
 
     doc.setFont(
@@ -1536,6 +1642,11 @@ async function exportDocx(
     ),
   ]);
 
+  const headerAddress =
+    addressLines(
+      branding.address,
+    ).slice(0, 2);
+
   const imageRun = (
     image: LoadedImage | null,
   ) =>
@@ -1548,8 +1659,8 @@ async function exportDocx(
               ? "jpg"
               : "png",
           transformation: {
-            width: 58,
-            height: 58,
+            width: 54,
+            height: 54,
           },
         })
       : new TextRun("");
@@ -1557,10 +1668,12 @@ async function exportDocx(
   const headerTable =
     new Table({
       width: {
-        size: 100,
+        size: 92,
         type:
           WidthType.PERCENTAGE,
       },
+      alignment:
+        AlignmentType.CENTER,
       borders: {
         top: {
           style:
@@ -1571,8 +1684,8 @@ async function exportDocx(
         bottom: {
           style:
             BorderStyle.SINGLE,
-          size: 8,
-          color: "0EA5E9",
+          size: 12,
+          color: "000000",
         },
         left: {
           style:
@@ -1604,7 +1717,7 @@ async function exportDocx(
           children: [
             new TableCell({
               width: {
-                size: 16,
+                size: 12,
                 type:
                   WidthType.PERCENTAGE,
               },
@@ -1622,7 +1735,7 @@ async function exportDocx(
             }),
             new TableCell({
               width: {
-                size: 68,
+                size: 76,
                 type:
                   WidthType.PERCENTAGE,
               },
@@ -1630,38 +1743,56 @@ async function exportDocx(
                 new Paragraph({
                   alignment:
                     AlignmentType.CENTER,
+                  spacing: {
+                    after: 0,
+                  },
                   children: [
                     new TextRun({
                       text:
                         branding.schoolName,
                       bold: true,
-                      size: 24,
-                      color: "0B2642",
+                      size: 21,
+                      font:
+                        "Times New Roman",
+                      color: "000000",
                     }),
                   ],
                 }),
+                ...headerAddress.map(
+                  (line) =>
+                    new Paragraph({
+                      alignment:
+                        AlignmentType.CENTER,
+                      spacing: {
+                        before: 0,
+                        after: 0,
+                      },
+                      children: [
+                        new TextRun({
+                          text:
+                            line,
+                          size: 16,
+                          color: "000000",
+                        }),
+                      ],
+                    }),
+                ),
                 new Paragraph({
                   alignment:
                     AlignmentType.CENTER,
+                  spacing: {
+                    before: 80,
+                    after: 0,
+                  },
                   children: [
                     new TextRun({
                       text:
                         branding.officeName,
                       bold: true,
-                      size: 19,
-                      color: "0F766E",
-                    }),
-                  ],
-                }),
-                new Paragraph({
-                  alignment:
-                    AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text:
-                        branding.address,
-                      size: 15,
-                      color: "64748B",
+                      size: 20,
+                      font:
+                        "Times New Roman",
+                      color: "000000",
                     }),
                   ],
                 }),
@@ -1669,7 +1800,7 @@ async function exportDocx(
             }),
             new TableCell({
               width: {
-                size: 16,
+                size: 12,
                 type:
                   WidthType.PERCENTAGE,
               },
@@ -1692,15 +1823,20 @@ async function exportDocx(
 
   const children: any[] = [
     new Paragraph({
+      alignment:
+        AlignmentType.CENTER,
       spacing: {
-        before: 220,
+        before: 260,
         after: 80,
       },
       children: [
         new TextRun({
-          text: report.title,
+          text:
+            report.title.toUpperCase(),
           bold: true,
           size: 30,
+          font:
+            "Times New Roman",
           color: "0F172A",
         }),
       ],
@@ -2162,11 +2298,13 @@ async function exportXlsx(
     sheet.getCell("B1").value =
       branding.schoolName;
     sheet.getCell("B2").value =
-      branding.officeName;
+      addressLines(
+        branding.address,
+      ).join(" · ");
     sheet.getCell("B3").value =
-      branding.address;
+      branding.officeName;
     sheet.getCell("A5").value =
-      title;
+      title.toUpperCase();
     sheet.getCell("A6").value =
       `Period: ${report.periodLabel}    Generated: ${formatValue(
         report.generatedAt,
@@ -2183,7 +2321,8 @@ async function exportXlsx(
       sheet.getCell(address)
         .alignment = {
           horizontal:
-            address.startsWith("B")
+            address.startsWith("B") ||
+            address === "A5"
               ? "center"
               : "left",
           vertical: "middle",
@@ -2198,16 +2337,16 @@ async function exportXlsx(
       },
     };
     sheet.getCell("B2").font = {
-      bold: true,
-      size: 12,
+      size: 9,
       color: {
-        argb: "FF0F766E",
+        argb: "FF000000",
       },
     };
     sheet.getCell("B3").font = {
-      size: 9,
+      bold: true,
+      size: 11,
       color: {
-        argb: "FF64748B",
+        argb: "FF000000",
       },
     };
     sheet.getCell("A5").font = {
