@@ -384,12 +384,18 @@ export function useLibraryInventoryExcel() {
         return columnNumber ? cellText(row.getCell(columnNumber)) : "";
       };
 
-      const rawValues = requiredHeaders.map(getValue);
-      const isBlank = rawValues.every(
-        (value) => String(value ?? "").trim() === "",
+      // The Call Number column is generated with a formula down to the end of
+      // the template. ExcelJS therefore considers those formula-only rows to
+      // be used rows even when the Librarian has not entered any book data.
+      // Ignore the generated column when deciding whether a row is empty.
+      const userInputHeaders = requiredHeaders.filter(
+        (header) => header !== "call number",
+      );
+      const hasUserInput = userInputHeaders.some(
+        (header) => String(getValue(header) ?? "").trim() !== "",
       );
 
-      if (isBlank) {
+      if (!hasUserInput) {
         continue;
       }
 

@@ -74,6 +74,12 @@ interface CatalogBook extends BookRecord {
   attentionCopies: number;
 }
 
+interface ClassificationRange {
+  from: string;
+  to: string;
+  label: string;
+}
+
 const auth = useAuth();
 const toast = useToast();
 const printQueue = useBarcodePrintQueue();
@@ -188,6 +194,60 @@ function normalizeBook(
   };
 }
 
+function normalizeClassificationBoundary(value: string): string | null {
+  const normalized = value.trim();
+
+  if (!/^\d{1,3}(?:\.\d{1,10})?$/.test(normalized)) {
+    return null;
+  }
+
+  const [wholePart, decimalPart = ""] = normalized.split(".");
+  const wholeNumber = Number.parseInt(wholePart, 10);
+
+  if (!Number.isFinite(wholeNumber) || wholeNumber < 0 || wholeNumber > 999) {
+    return null;
+  }
+
+  const canonicalDecimal = decimalPart.replace(/0+$/, "");
+  const canonicalWhole = String(wholeNumber).padStart(3, "0");
+
+  return canonicalDecimal
+    ? `${canonicalWhole}.${canonicalDecimal}`
+    : canonicalWhole;
+}
+
+function parseClassificationRange(value: string): ClassificationRange | null {
+  const match = value.match(
+    /^\s*(\d{1,3}(?:\.\d{1,10})?)\s*(?:-|–|—|to)\s*(\d{1,3}(?:\.\d{1,10})?)\s*$/i,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const first = normalizeClassificationBoundary(match[1] ?? "");
+  const second = normalizeClassificationBoundary(match[2] ?? "");
+
+  if (!first || !second) {
+    return null;
+  }
+
+  const firstNumber = Number(first);
+  const secondNumber = Number(second);
+  const from = firstNumber <= secondNumber ? first : second;
+  const to = firstNumber <= secondNumber ? second : first;
+
+  return {
+    from,
+    to,
+    label: `${from}–${to}`,
+  };
+}
+
+const activeClassificationRange = computed(() =>
+  parseClassificationRange(search.value),
+);
+
 function buildQuery(
   physicalBarcode = "",
 ): Record<string, unknown> {
@@ -217,6 +277,11 @@ function buildQuery(
     query[
       "filters[$or][1][book_copies][accession_number][$eqi]"
     ] = barcode;
+  } else if (activeClassificationRange.value) {
+    query["filters[classification_number][$gte]"] =
+      activeClassificationRange.value.from;
+    query["filters[classification_number][$lte]"] =
+      activeClassificationRange.value.to;
   } else if (keyword) {
     query[
       "filters[$or][0][title][$containsi]"
@@ -241,6 +306,7 @@ function buildQuery(
     query[
       "filters[$or][8][book_copies][shelf_location][$containsi]"
     ] = keyword;
+    query["filters[$or][9][author_number][$containsi]"] = keyword;
   }
 
   if (
@@ -656,7 +722,7 @@ onBeforeUnmount(() => {
               <UInput
                 v-model="search"
                 icon="i-lucide-search"
-                placeholder="Search title, author, subject, call number, ISBN, or accession barcode"
+                placeholder="Search books or enter a Dewey range, e.g. 001 - 099"
                 size="lg"
                 :loading="isLoading"
                 class="min-w-0 flex-1"
@@ -680,9 +746,21 @@ onBeforeUnmount(() => {
               />
             </div>
 
-            <p class="text-xs text-muted">
-              Search by book information, scan a physical copy, or enter its accession number manually.
-            </p>
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <p class="text-muted">
+                Search by title, author, subject, call number, ISBN, author code, or accession number.
+                For a Dewey range, enter <span class="font-medium text-highlighted">001 - 099</span>.
+              </p>
+
+              <UBadge
+                v-if="activeClassificationRange"
+                color="primary"
+                variant="soft"
+                icon="i-lucide-list-filter"
+              >
+                Dewey range: {{ activeClassificationRange.label }}
+              </UBadge>
+            </div>
           </div>
 
           <USelect
