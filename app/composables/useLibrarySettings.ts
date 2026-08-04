@@ -41,7 +41,7 @@ function fallbackSettings(): OperationalLibrarySettings {
     borrowing: {
       studentBorrowLimit: 5,
       facultyBorrowLimit: 10,
-      studentLoanDays: 7,
+      studentLoanDays: 3,
       facultyLoanDays: 14,
       studentMaxRenewals: 1,
       facultyMaxRenewals: 2,
@@ -61,7 +61,7 @@ function fallbackSettings(): OperationalLibrarySettings {
       requireActiveStudentMembership: true,
       requireEnrollmentVerification: true,
       defaultLibraryCardStatus: "On Process",
-      libraryCardReplacementFee: 0,
+      libraryCardReplacementFee: 50,
     },
     reservations: {
       studentMaxActiveReservations: 3,
@@ -71,7 +71,7 @@ function fallbackSettings(): OperationalLibrarySettings {
       allowReserveAvailableBooks: true,
     },
     fines: {
-      overdueFinePerDay: 0,
+      overdueFinePerDay: 10,
       graceDays: 0,
       maximumOverdueFine: 0,
       damagedBookFee: 0,

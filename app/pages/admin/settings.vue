@@ -521,8 +521,8 @@ onMounted(() => {
               color="info"
               variant="soft"
               icon="i-lucide-info"
-              title="Approved policy amounts"
-              description="These values are stored centrally. Automatic fine computation can be enabled in the Return workflow after the institution confirms the final policy."
+              title="Automatic school-day fine policy"
+              description="Overdue fines are calculated automatically on Monday to Friday only. Weekends and dates entered by the Librarian under Fines and No-Fine Days are excluded. Cashier Official Receipt verification is required before a fine is marked paid."
             />
             <div class="grid gap-5 md:grid-cols-2">
               <UFormField label="Overdue Fine per Day">

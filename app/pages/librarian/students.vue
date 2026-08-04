@@ -1070,6 +1070,10 @@ async function renew(student: StudentMember) {
   await navigateTo({ path: "/librarian/memberships", query: { barcode: student.barcode } });
 }
 
+function canPrintLibraryCard(student: StudentMember): boolean {
+  return student.libraryCardStatus !== "Replacement";
+}
+
 async function openCardPrintPreview(
   sourceStudents: StudentMember[],
 ) {
@@ -1085,8 +1089,26 @@ async function openCardPrintPreview(
     return;
   }
 
+  const blockedStudents = sourceStudents.filter(
+    (student) => !canPrintLibraryCard(student),
+  );
+  const printableStudents = sourceStudents.filter(canPrintLibraryCard);
+
+  if (blockedStudents.length > 0) {
+    toast.add({
+      title: "Replacement payment required",
+      description: `${blockedStudents.length} Library Card${blockedStudents.length === 1 ? " is" : "s are"} awaiting cashier OR verification and cannot be printed yet.`,
+      color: "warning",
+      icon: "i-lucide-receipt-text",
+    });
+  }
+
+  if (printableStudents.length === 0) {
+    return;
+  }
+
   const orderedStudents = [
-    ...sourceStudents,
+    ...printableStudents,
   ].sort((left, right) => {
     const nameOrder =
       left.fullName.localeCompare(
@@ -1711,13 +1733,14 @@ onBeforeUnmount(() => {
                 />
               </UTooltip>
 
-              <UTooltip text="Open ready-to-print Library Card">
+              <UTooltip :text="canPrintLibraryCard(row.original) ? 'Open ready-to-print Library Card' : 'Verify the cashier OR for the replacement fee before printing'">
                 <UButton
                   icon="i-lucide-printer"
                   color="primary"
                   variant="ghost"
                   square
                   aria-label="Print student Library Card"
+                  :disabled="!canPrintLibraryCard(row.original)"
                   @click="printStudentCard(row.original)"
                 />
               </UTooltip>

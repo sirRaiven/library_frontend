@@ -39,6 +39,7 @@ const circulation =
   useLibraryCirculation();
 const auth = useAuth();
 const toast = useToast();
+const librarySettings = useLibrarySettings();
 
 const scannerInput = ref("");
 const bookScannerInput = ref("");
@@ -54,7 +55,6 @@ const todayRecords =
 
 const bulkCondition =
   ref<ReturnCondition>("Good");
-const bulkFineAmount = ref(0);
 
 const isScanning = ref(false);
 const isVerifyingBook = ref(false);
@@ -129,15 +129,7 @@ const canProcess = computed(
     verifiedCount.value > 0 &&
     !isProcessing.value &&
     verifiedItems.value.every(
-      (item) =>
-        Number.isFinite(
-          Number(
-            item.fineAmount,
-          ),
-        ) &&
-        Number(
-          item.fineAmount,
-        ) >= 0,
+      (item) => Boolean(item.verifiedBarcode),
     ),
 );
 
@@ -175,7 +167,6 @@ function resetWorkflow() {
   scannerInput.value = "";
   bookScannerInput.value = "";
   bulkCondition.value = "Good";
-  bulkFineAmount.value = 0;
   focusMemberScanner();
 }
 
@@ -210,7 +201,7 @@ function buildReturnItems(
         "Good",
       fineAmount:
         previous?.fineAmount ??
-        0,
+        Number(borrow.fine?.estimatedTotal ?? 0),
       remarks:
         previous?.remarks ??
         "",
@@ -543,10 +534,7 @@ function applyBulkValues() {
   ) {
     item.condition =
       bulkCondition.value;
-    item.fineAmount =
-      Number(
-        bulkFineAmount.value,
-      ) || 0;
+    item.fineAmount = estimatedFine(item);
   }
 
   toast.add({
@@ -584,10 +572,6 @@ async function processSelectedReturns() {
             item.verifiedBarcode,
           condition:
             item.condition,
-          fineAmount:
-            Number(
-              item.fineAmount,
-            ),
           remarks:
             item.remarks.trim() ||
             undefined,
@@ -771,6 +755,7 @@ function conditionColor(
 
 onMounted(() => {
   focusMemberScanner();
+  void librarySettings.load(true);
   void loadTodayReturns();
 });
 </script>
@@ -1061,8 +1046,8 @@ onMounted(() => {
             color="info"
             variant="soft"
             icon="i-lucide-receipt-text"
-            title="Fine handling"
-            description="Overdue days are displayed for guidance. The librarian enters the approved fine for each verified copy."
+            title="Automatic school-day fine"
+            description="The system calculates ₱10 per chargeable school day after the due date. Saturdays, Sundays, regular holidays, school events, suspensions, and emergency closures are excluded. Payment is verified later using the cashier OR number."
           />
         </div>
 
@@ -1307,19 +1292,6 @@ onMounted(() => {
                     v-model="bulkCondition"
                     :items="conditionOptions"
                     icon="i-lucide-shield-check"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField
-                  label="Bulk fine"
-                  description="Use 0.00 when no fine applies."
-                >
-                  <UInputNumber
-                    v-model="bulkFineAmount"
-                    :min="0"
-                    :step="0.01"
-                    icon="i-lucide-philippine-peso"
                     class="w-full"
                   />
                 </UFormField>
@@ -1573,21 +1545,17 @@ onMounted(() => {
                     </UFormField>
 
                     <UFormField
-                      label="Fine amount"
-                      required
+                      label="Calculated fine"
+                      description="Final amount is recalculated and enforced by the backend."
                     >
-                      <UInputNumber
-                        v-model="
-                          item.fineAmount
-                        "
-                        :min="0"
-                        :step="0.01"
-                        icon="i-lucide-philippine-peso"
-                        class="w-full"
-                        :disabled="
-                          !item.verified
-                        "
-                      />
+                      <div class="rounded-xl border border-default bg-elevated/50 px-4 py-3">
+                        <p class="text-lg font-bold text-highlighted">{{ formatMoney(estimatedFine(item)) }}</p>
+                        <p class="mt-1 text-xs text-muted">
+                          {{ item.borrow.fine?.chargeableSchoolDays ?? 0 }} chargeable school day(s)
+                          <span v-if="item.borrow.fine?.excludedWeekendDays"> • {{ item.borrow.fine.excludedWeekendDays }} weekend day(s) excluded</span>
+                          <span v-if="item.borrow.fine?.excludedExceptionDays"> • {{ item.borrow.fine.excludedExceptionDays }} no-fine day(s) excluded</span>
+                        </p>
+                      </div>
                     </UFormField>
 
                     <UFormField

@@ -17,6 +17,7 @@ export interface CirculationMember {
   suggestedDueDate?: string;
   activeBorrowCount: number;
   overdueBorrowCount?: number;
+  unpaidFineCount?: number;
   remainingSlots: number;
   canBorrow: boolean;
   enrollmentVerified?: boolean;
@@ -79,7 +80,19 @@ export interface ReturnLookup {
   dueDate: string;
   status: string;
   daysOverdue: number;
+  fine: {
+    calendarDaysOverdue: number;
+    chargeableSchoolDays: number;
+    excludedWeekendDays: number;
+    excludedExceptionDays: number;
+    dailyRate: number;
+    overdueAmount: number;
+    conditionFee: number;
+    estimatedTotal: number;
+    exceptionDates: Array<{ date: string; title: string; type: string }>;
+  };
   member: {
+    documentId?: string | null;
     type: MemberType;
     fullName: string;
     identifier: string;
@@ -126,7 +139,7 @@ export interface BatchReturnInputItem {
   scannedBarcode: string;
 
   condition: "Good" | "Damaged" | "Lost";
-  fineAmount: number;
+  fineAmount?: number;
   remarks?: string;
 }
 
@@ -150,6 +163,14 @@ export interface ProcessReturnResult {
   returnDate: string;
   condition: "Good" | "Damaged" | "Lost";
   fineAmount: number;
+  fineBreakdown?: {
+    calendarDaysOverdue: number;
+    chargeableSchoolDays: number;
+    dailyRate: number;
+    overdueAmount: number;
+    conditionFee: number;
+    totalAmount: number;
+  };
   borrow: ReturnLookup;
   copyStatus: string;
 }
@@ -384,7 +405,7 @@ export function useLibraryCirculation() {
   async function processReturn(input: {
     borrowDocumentId: string;
     condition: "Good" | "Damaged" | "Lost";
-    fineAmount: number;
+    fineAmount?: number;
     remarks?: string;
   }): Promise<ProcessReturnResult> {
     const response =

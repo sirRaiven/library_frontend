@@ -11,6 +11,7 @@ const route = useRoute();
 const members = useLibraryMembers();
 const librarySettings = useLibrarySettings();
 const termManager = useMembershipTerm();
+const fines = useLibraryFines();
 const auth = useAuth();
 const toast = useToast();
 
@@ -20,6 +21,9 @@ const canRenew = ref(false);
 const lookupReason = ref<string | null>(null);
 const lookupLoading = ref(false);
 const renewing = ref(false);
+const replacementOpen = ref(false);
+const replacementSaving = ref(false);
+const replacementReason = ref("");
 const previewSide = ref<"front" | "back">("front");
 
 const memberships = ref<MembershipListItem[]>([]);
@@ -182,6 +186,40 @@ async function renewMembership() {
     toast.add({ title: "Renewal failed", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
   } finally {
     renewing.value = false;
+  }
+}
+
+function openReplacementCharge() {
+  if (!scannedStudent.value) return;
+  replacementReason.value = "Lost Library Card replacement";
+  replacementOpen.value = true;
+}
+
+async function createReplacementCharge() {
+  if (!scannedStudent.value || !replacementReason.value.trim()) return;
+  replacementSaving.value = true;
+  try {
+    const response = await fines.createCardReplacement(
+      scannedStudent.value.documentId,
+      replacementReason.value.trim(),
+    );
+    scannedStudent.value.libraryCardStatus = "Replacement";
+    replacementOpen.value = false;
+    toast.add({
+      title: "Replacement charge created",
+      description: `${response.data.fineNo} — ${new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(response.data.amount)}. Verify the cashier OR under Fines & Payments before processing the replacement card.`,
+      color: "success",
+      icon: "i-lucide-receipt-text",
+    });
+  } catch (error) {
+    toast.add({
+      title: "Unable to create replacement charge",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    replacementSaving.value = false;
   }
 }
 
@@ -511,8 +549,9 @@ onMounted(async () => {
                 <UCheckbox v-if="librarySettings.settings.value.membership.requireEnrollmentVerification" v-model="renewal.enrollmentVerified" label="The student submitted a copy of enrollment for the selected semester." />
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid gap-3 sm:grid-cols-3">
                 <UButton label="Scan Another" icon="i-lucide-scan-line" color="neutral" variant="outline" block @click="clearScanner" />
+                <UButton label="Lost Card / Replace" icon="i-lucide-credit-card" color="warning" variant="outline" block @click="openReplacementCharge" />
                 <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="success" block :disabled="!termIsOpen || !canRenew || (librarySettings.settings.value.membership.requireEnrollmentVerification && !renewal.enrollmentVerified)" :loading="renewing" @click="renewMembership" />
               </div>
             </div>
@@ -593,5 +632,31 @@ onMounted(async () => {
         </template>
       </UCard>
     </div>
+
+
+    <UModal v-model:open="replacementOpen" :ui="{ content: 'sm:max-w-lg' }">
+      <template #content>
+        <div class="space-y-5 bg-default p-6">
+          <div>
+            <h2 class="text-xl font-bold text-highlighted">Library Card Replacement</h2>
+            <p class="mt-1 text-sm text-muted">Create a replacement charge for {{ scannedStudent?.fullName }}. The replacement card can be processed only after the Cashier OR is verified.</p>
+          </div>
+          <UAlert
+            color="warning"
+            variant="soft"
+            icon="i-lucide-philippine-peso"
+            :title="`Replacement Fee: ${new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(librarySettings.settings.value.membership.libraryCardReplacementFee || 50)}`"
+            description="The Student must pay at the Cashier and present the Official Receipt to the Librarian."
+          />
+          <UFormField label="Reason" required>
+            <UTextarea v-model="replacementReason" :rows="3" placeholder="Example: Lost Library Card" />
+          </UFormField>
+          <div class="flex justify-end gap-2">
+            <UButton label="Cancel" color="neutral" variant="ghost" @click="replacementOpen = false" />
+            <UButton label="Create Replacement Charge" icon="i-lucide-receipt-text" color="warning" :loading="replacementSaving" :disabled="!replacementReason.trim()" @click="createReplacementCharge" />
+          </div>
+        </div>
+      </template>
+    </UModal>
   </UContainer>
 </template>

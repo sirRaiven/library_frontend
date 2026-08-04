@@ -295,6 +295,14 @@ const navigationItems =
         ),
       },
       {
+        label: "Fines & Payments",
+        icon: "i-lucide-receipt-text",
+        to: "/librarian/fines",
+        active: isRouteActive(
+          "/librarian/fines",
+        ),
+      },
+      {
         label: "Reservations",
         icon: "i-lucide-calendar-check-2",
         to: "/librarian/reservations",
