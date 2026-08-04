@@ -141,13 +141,31 @@ async function syncPhilippineHolidays() {
     const year = Number(calendarYear.value);
     const response = await finesApi.syncPhilippineHolidays([year]);
     const result = response.data.results.find((item) => item.year === year);
-    const description = result?.fallbackUsed
-      ? `The ${year} official fallback list was loaded because the online service was unavailable.`
-      : `${result?.total ?? 0} regular holiday(s) were synchronized for ${year}.`;
+
+    if (!result?.syncSucceeded) {
+      toast.add({
+        title: result?.cachedOnly ? "Online holiday sources unavailable" : "Holiday synchronization failed",
+        description: result?.cachedOnly
+          ? `No hardcoded dates were loaded. The system kept ${result.cachedCount ?? 0} previously synchronized holiday(s) for ${year}. ${result.warning ?? ""}`.trim()
+          : (result?.warning || `No dynamic Philippine regular-holiday data was available for ${year}.`),
+        color: result?.cachedOnly ? "warning" : "error",
+        icon: result?.cachedOnly ? "i-lucide-database" : "i-lucide-cloud-alert",
+      });
+      await loadCalendar();
+      return;
+    }
+
+    const changeSummary = [
+      `${result.total ?? 0} regular holiday(s) synchronized`,
+      result.created ? `${result.created} added` : "",
+      result.updated ? `${result.updated} updated` : "",
+      result.removed ? `${result.removed} obsolete record(s) removed` : "",
+    ].filter(Boolean).join(" • ");
+
     toast.add({
       title: "Philippine holidays synchronized",
-      description,
-      color: "success",
+      description: `${changeSummary} from ${result.provider || "local open-source holiday data"}.${result.warning ? ` Provider note: ${result.warning}` : ""}`,
+      color: result.warning ? "warning" : "success",
       icon: "i-lucide-cloud-download",
     });
     await loadCalendar();
@@ -370,8 +388,8 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
           color="info"
           variant="soft"
           icon="i-lucide-cloud-sun"
-          title="Philippine regular holidays are synchronized automatically"
-          description="Saturdays and Sundays are always excluded. The Add No-Fine Period form is now only for school events, class suspensions, natural disasters, and emergency closures."
+          title="Philippine regular holidays are generated locally"
+          description="The system uses the open-source date-holidays library for the selected year and may verify available dates through Nager.Holidays. Internet outages do not stop local holiday generation. Saturdays and Sundays remain excluded; manual entries are only for school events, suspensions, disasters, and emergency closures."
         />
 
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
@@ -380,7 +398,7 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
               <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h2 class="font-semibold text-highlighted">Automatic Philippine Regular Holidays</h2>
-                  <p class="text-sm text-muted">Read-only dates synchronized from an online Philippine holiday source and stored locally for fine calculation.</p>
+                  <p class="text-sm text-muted">Read-only dates generated from an installed open-source Philippine holiday calendar, then stored locally for fine calculation.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <USelect v-model="calendarYear" :items="calendarYearItems" class="w-32" />
@@ -393,16 +411,25 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
             <div v-else-if="automaticHolidays.length === 0" class="py-12 text-center">
               <UIcon name="i-lucide-calendar-search" class="mx-auto size-10 text-dimmed" />
               <h3 class="mt-3 font-semibold">No synchronized regular holidays for {{ calendarYear }}</h3>
-              <p class="mt-1 text-sm text-muted">Select Sync Holidays to check the latest available national holiday list.</p>
+              <p class="mt-1 text-sm text-muted">Select Sync Holidays to generate the selected year from the installed open-source holiday data. An internet connection is optional.</p>
             </div>
             <UTable v-else :data="automaticHolidays" :columns="calendarColumns">
               <template #event-cell="{ row }">
                 <p class="font-semibold text-highlighted">{{ row.original.title }}</p>
                 <div class="mt-1 flex flex-wrap items-center gap-2">
                   <UBadge color="primary" variant="soft">Automatic</UBadge>
-                  <span class="text-xs text-muted">{{ row.original.sourceName || 'Philippine holiday source' }}</span>
+                  <span class="text-xs text-muted">{{ row.original.sourceName || 'Local open-source holiday data' }}</span>
                 </div>
-                <p v-if="row.original.sourceReference" class="mt-1 text-xs text-muted">{{ row.original.sourceReference }}</p>
+                <ULink
+                  v-if="row.original.sourceReference"
+                  :to="row.original.sourceReference"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  View holiday data source
+                  <UIcon name="i-lucide-external-link" class="size-3" />
+                </ULink>
               </template>
               <template #dates-cell="{ row }"><p>{{ dateLabel(row.original.startDate) }}</p><p class="text-xs text-muted">Regular Holiday</p></template>
               <template #resume-cell="{ row }"><p class="font-medium text-highlighted">{{ dateLabel(row.original.resumeDate) }}</p></template>

@@ -130,13 +130,19 @@ export function useLibraryFines() {
       data: {
         provider: string;
         automatic: boolean;
+        hardcodedFallback: false;
         results: Array<{
           year: number;
           skipped?: boolean;
           created?: number;
           updated?: number;
           total?: number;
-          fallbackUsed?: boolean;
+          syncSucceeded?: boolean;
+          cachedOnly?: boolean;
+          cachedCount?: number;
+          provider?: string | null;
+          attemptedProviders?: string[];
+          removed?: number;
           warning?: string;
           syncedAt?: string;
           latestSync?: string;
