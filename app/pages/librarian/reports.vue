@@ -41,6 +41,13 @@ interface ReportGroup {
   icon: string;
 }
 
+interface ReportSectionCustomization {
+  id: string;
+  included: boolean;
+  title: string;
+  description: string;
+}
+
 const reportApi = useLibraryReports();
 const reportExport = useLibraryReportExport();
 const auth = useAuth();
@@ -260,6 +267,15 @@ const loadingKey = ref<StandardReportKey | "combined" | null>(null);
 const exportingFormat = ref<ExportFormat | null>(null);
 const isPrinting = ref(false);
 const brandingOpen = ref(false);
+const reportCustomizationOpen = ref(false);
+
+const reportCustomization = reactive({
+  title: "",
+  description: "",
+  includeNotes: false,
+  notesText: "",
+  sections: [] as ReportSectionCustomization[],
+});
 
 const combinedTitle = ref("Consolidated Library Report");
 const combinedPurpose = ref(
@@ -294,6 +310,50 @@ const combinedOptions = computed(() => REPORTS.filter((report) => report.combine
 const selectedDefinition = computed(
   () => REPORTS.find((report) => report.key === activeReportKey.value) ?? REPORTS[0]!,
 );
+
+const includedSectionCount = computed(() =>
+  reportCustomization.sections.filter((section) => section.included).length,
+);
+
+const customizedReport = computed<LibraryReportDocument | null>(() => {
+  const report = activeReport.value;
+
+  if (!report) {
+    return null;
+  }
+
+  const sectionSettings = new Map(
+    reportCustomization.sections.map((section) => [section.id, section]),
+  );
+
+  const tables = report.tables
+    .filter((table) => sectionSettings.get(table.id)?.included !== false)
+    .map((table) => {
+      const setting = sectionSettings.get(table.id);
+      const description = setting?.description.trim();
+
+      return {
+        ...table,
+        title: setting?.title.trim() || cleanTableTitle(table.title),
+        description: description || undefined,
+      };
+    });
+
+  const notes = reportCustomization.includeNotes
+    ? reportCustomization.notesText
+        .split(/\r?\n/)
+        .map((note) => note.trim())
+        .filter(Boolean)
+    : [];
+
+  return {
+    ...report,
+    title: reportCustomization.title.trim() || report.title,
+    description: reportCustomization.description.trim() || report.description,
+    tables,
+    notes: notes.length ? notes : undefined,
+  };
+});
 
 function dateInput(date: Date): string {
   const offset = date.getTimezoneOffset();
@@ -376,6 +436,98 @@ function errorMessage(error: unknown): string {
   return "The report could not be prepared.";
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function cleanTableTitle(title: string, sourceLabel?: string): string {
+  let cleaned = title.trim();
+  const prefixes = [
+    sourceLabel,
+    ...REPORTS.map((report) => report.label),
+  ]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .sort((a, b) => b.length - a.length);
+
+  for (let pass = 0; pass < 3; pass += 1) {
+    const previous = cleaned;
+
+    for (const prefix of prefixes) {
+      cleaned = cleaned.replace(
+        new RegExp(`^${escapeRegExp(prefix)}\\s*(?:—|–|-|:)\\s*`, "i"),
+        "",
+      );
+    }
+
+    if (cleaned === previous) {
+      break;
+    }
+  }
+
+  return cleaned || title.trim() || "Report Table";
+}
+
+function resetReportCustomization(report: LibraryReportDocument) {
+  reportCustomization.title = report.title;
+  reportCustomization.description = report.description;
+  reportCustomization.includeNotes = Boolean(report.notes?.length);
+  reportCustomization.notesText = (report.notes ?? []).join("\n");
+  reportCustomization.sections = report.tables.map((table) => ({
+    id: table.id,
+    included: true,
+    title: cleanTableTitle(table.title),
+    description: table.description ?? "",
+  }));
+}
+
+function openReportCustomization() {
+  if (!activeReport.value) {
+    return;
+  }
+
+  reportCustomizationOpen.value = true;
+}
+
+function includeAllReportSections(included: boolean) {
+  reportCustomization.sections.forEach((section) => {
+    section.included = included;
+  });
+}
+
+function restoreReportDefaults() {
+  if (!activeReport.value) {
+    return;
+  }
+
+  resetReportCustomization(activeReport.value);
+  toast.add({
+    title: "Report settings restored",
+    description: "The original report name, notes, and section selections were restored.",
+    color: "success",
+    icon: "i-lucide-rotate-ccw",
+  });
+}
+
+function preparedReportForOutput(): LibraryReportDocument | null {
+  const report = customizedReport.value;
+
+  if (!report) {
+    return null;
+  }
+
+  if (report.tables.length === 0) {
+    toast.add({
+      title: "Include at least one report section",
+      description: "Open Customize Report and mark at least one table as included.",
+      color: "warning",
+      icon: "i-lucide-list-checks",
+    });
+    return null;
+  }
+
+  return report;
+}
+
 async function generateReport(key: StandardReportKey) {
   if (!validatePeriod()) {
     return;
@@ -386,6 +538,7 @@ async function generateReport(key: StandardReportKey) {
 
   try {
     activeReport.value = await reportApi.generate(key, filters);
+    resetReportCustomization(activeReport.value);
 
     await nextTick();
     document.getElementById("report-preview")?.scrollIntoView({
@@ -411,13 +564,10 @@ function toggleCombined(key: StandardReportKey) {
 }
 
 function combinedMetric(
-  reportLabel: string,
+  _reportLabel: string,
   metric: LibraryReportMetric,
 ): LibraryReportMetric {
-  return {
-    ...metric,
-    label: `${reportLabel}: ${metric.label}`,
-  };
+  return { ...metric };
 }
 
 function combinedTable(
@@ -427,7 +577,7 @@ function combinedTable(
   return {
     ...table,
     id: `${reportLabel}-${table.id}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-    title: `${reportLabel} — ${table.title}`,
+    title: cleanTableTitle(table.title, reportLabel),
   };
 }
 
@@ -477,6 +627,7 @@ async function generateCombinedReport() {
         "Detailed transaction registers can be generated separately from the official report cards.",
       ],
     };
+    resetReportCustomization(activeReport.value);
 
     await nextTick();
     document.getElementById("report-preview")?.scrollIntoView({
@@ -500,14 +651,16 @@ function formatCell(value: unknown, format?: ReportCellFormat): string {
 }
 
 async function exportActive(format: ExportFormat) {
-  if (!activeReport.value) {
+  const report = preparedReportForOutput();
+
+  if (!report) {
     return;
   }
 
   exportingFormat.value = format;
 
   try {
-    await reportExport.exportReport(format, activeReport.value, branding);
+    await reportExport.exportReport(format, report, branding);
   } catch (error) {
     toast.add({
       title: "Unable to export report",
@@ -521,14 +674,16 @@ async function exportActive(format: ExportFormat) {
 }
 
 async function printActive() {
-  if (!activeReport.value) {
+  const report = preparedReportForOutput();
+
+  if (!report) {
     return;
   }
 
   isPrinting.value = true;
 
   try {
-    await reportExport.previewAndPrint(activeReport.value, branding);
+    await reportExport.previewAndPrint(report, branding);
   } catch (error) {
     toast.add({
       title: "Unable to open print preview",
@@ -792,20 +947,27 @@ onMounted(async () => {
     </div>
 
     <section id="report-preview" class="scroll-mt-6">
-      <UCard v-if="activeReport">
+      <UCard v-if="activeReport && customizedReport">
         <template #header>
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <UBadge color="primary" variant="soft" :label="activeReport.category" />
-              <h2 class="mt-2 text-2xl font-bold text-highlighted">{{ activeReport.title }}</h2>
-              <p class="mt-1 max-w-3xl text-sm leading-6 text-muted">{{ activeReport.description }}</p>
+              <UBadge color="primary" variant="soft" :label="customizedReport.category" />
+              <h2 class="mt-2 text-2xl font-bold text-highlighted">{{ customizedReport.title }}</h2>
+              <p class="mt-1 max-w-3xl text-sm leading-6 text-muted">{{ customizedReport.description }}</p>
               <p class="mt-2 text-xs text-muted">
                 <span class="font-medium text-highlighted">Reporting period:</span>
-                {{ activeReport.periodLabel }}
+                {{ customizedReport.periodLabel }}
               </p>
             </div>
 
             <div class="flex flex-wrap gap-2">
+              <UButton
+                label="Customize Report"
+                icon="i-lucide-file-pen-line"
+                color="primary"
+                variant="soft"
+                @click="openReportCustomization"
+              />
               <UButton
                 label="Print"
                 icon="i-lucide-printer"
@@ -843,10 +1005,28 @@ onMounted(async () => {
         </template>
 
         <div class="space-y-7">
-          <div v-if="activeReport.metrics.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="flex flex-col gap-3 rounded-2xl border border-default bg-elevated/25 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm font-semibold text-highlighted">Report ready for review</p>
+              <p class="mt-1 text-xs text-muted">
+                {{ includedSectionCount }} of {{ reportCustomization.sections.length }} table sections included
+                <span v-if="reportCustomization.includeNotes"> · Notes included</span>
+                <span v-else> · Notes excluded</span>
+              </p>
+            </div>
+            <UButton
+              label="Edit Name and Sections"
+              icon="i-lucide-settings-2"
+              color="neutral"
+              variant="outline"
+              @click="openReportCustomization"
+            />
+          </div>
+
+          <div v-if="customizedReport.metrics.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div
-              v-for="metric in activeReport.metrics"
-              :key="metric.label"
+              v-for="(metric, metricIndex) in customizedReport.metrics"
+              :key="`${metric.label}-${metricIndex}`"
               class="rounded-2xl border p-4"
               :class="metricTone(metric.tone)"
             >
@@ -861,7 +1041,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <section v-for="table in activeReport.tables" :key="table.id" class="space-y-3">
+          <section v-for="table in customizedReport.tables" :key="table.id" class="space-y-3">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h3 class="font-semibold text-highlighted">{{ table.title }}</h3>
@@ -905,7 +1085,7 @@ onMounted(async () => {
           </section>
 
           <UAlert
-            v-if="activeReport.notes?.length"
+            v-if="customizedReport.notes?.length"
             color="info"
             variant="soft"
             icon="i-lucide-notebook-pen"
@@ -913,7 +1093,7 @@ onMounted(async () => {
           >
             <template #description>
               <ul class="list-disc space-y-1 pl-5 text-sm">
-                <li v-for="note in activeReport.notes" :key="note">{{ note }}</li>
+                <li v-for="note in customizedReport.notes" :key="note">{{ note }}</li>
               </ul>
             </template>
           </UAlert>
@@ -928,6 +1108,130 @@ onMounted(async () => {
         </div>
       </UCard>
     </section>
+
+    <UModal
+      v-model:open="reportCustomizationOpen"
+      :ui="{ content: 'sm:max-w-3xl max-h-[92dvh] overflow-y-auto' }"
+    >
+      <template #content>
+        <div class="p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-highlighted">Customize Report Before Export</h2>
+              <p class="mt-1 text-sm text-muted">
+                Change the report name, choose which tables to include, and decide whether Report Notes should appear.
+              </p>
+            </div>
+            <UButton
+              icon="i-lucide-x"
+              color="neutral"
+              variant="ghost"
+              square
+              aria-label="Close"
+              @click="reportCustomizationOpen = false"
+            />
+          </div>
+
+          <div class="mt-6 space-y-5">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <UFormField label="Report Name" class="sm:col-span-2">
+                <UInput v-model="reportCustomization.title" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Purpose or Description" class="sm:col-span-2">
+                <UTextarea v-model="reportCustomization.description" :rows="3" class="w-full" />
+              </UFormField>
+            </div>
+
+            <div class="rounded-2xl border border-default p-4">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="text-sm font-semibold text-highlighted">Report Notes</p>
+                  <p class="mt-1 text-xs text-muted">Optional. Turn this off when the official report does not need notes.</p>
+                </div>
+                <USwitch v-model="reportCustomization.includeNotes" />
+              </div>
+
+              <UTextarea
+                v-if="reportCustomization.includeNotes"
+                v-model="reportCustomization.notesText"
+                :rows="4"
+                class="mt-4 w-full"
+                placeholder="Enter one note per line."
+              />
+            </div>
+
+            <div>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 class="font-semibold text-highlighted">Tables to Include</h3>
+                  <p class="mt-1 text-xs text-muted">Rename each table and switch off sections that should not appear in Print, PDF, Word, or Excel.</p>
+                </div>
+                <div class="flex gap-2">
+                  <UButton label="Include All" size="sm" color="neutral" variant="soft" @click="includeAllReportSections(true)" />
+                  <UButton label="Exclude All" size="sm" color="neutral" variant="ghost" @click="includeAllReportSections(false)" />
+                </div>
+              </div>
+
+              <div class="mt-4 space-y-3">
+                <div
+                  v-for="(section, index) in reportCustomization.sections"
+                  :key="section.id"
+                  class="rounded-2xl border border-default p-4"
+                  :class="section.included ? 'bg-default' : 'bg-elevated/40 opacity-75'"
+                >
+                  <div class="flex items-start gap-3">
+                    <USwitch v-model="section.included" class="mt-1 shrink-0" />
+                    <div class="min-w-0 flex-1 space-y-3">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted">Table {{ index + 1 }}</p>
+                        <UBadge
+                          :color="section.included ? 'success' : 'neutral'"
+                          variant="soft"
+                          :label="section.included ? 'Included' : 'Excluded'"
+                        />
+                      </div>
+
+                      <UFormField label="Table Title">
+                        <UInput v-model="section.title" :disabled="!section.included" class="w-full" />
+                      </UFormField>
+
+                      <UFormField label="Short Description" hint="Optional">
+                        <UTextarea
+                          v-model="section.description"
+                          :disabled="!section.included"
+                          :rows="2"
+                          class="w-full"
+                        />
+                      </UFormField>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <UButton
+              label="Restore Defaults"
+              icon="i-lucide-rotate-ccw"
+              color="neutral"
+              variant="ghost"
+              @click="restoreReportDefaults"
+            />
+            <div class="flex justify-end gap-3">
+              <UButton label="Cancel" color="neutral" variant="outline" @click="reportCustomizationOpen = false" />
+              <UButton
+                label="Apply Changes"
+                icon="i-lucide-check"
+                :disabled="includedSectionCount === 0"
+                @click="reportCustomizationOpen = false"
+              />
+            </div>
+          </div>
+        </div>
+      </template>
+    </UModal>
 
     <UModal v-model:open="brandingOpen" :ui="{ content: 'sm:max-w-2xl max-h-[92dvh] overflow-y-auto' }">
       <template #content>
