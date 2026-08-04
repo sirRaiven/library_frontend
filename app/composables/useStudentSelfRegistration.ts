@@ -9,7 +9,7 @@ export type StudentAccessRequestStatus =
   | "Verified"
   | "Completed"
   | "Rejected"
-  | "Cancelled";  
+  | "Cancelled";
 
 export interface RegistrationAccessDetails {
   valid: true;
@@ -24,6 +24,10 @@ export interface RegistrationAccessDetails {
   membership: {
     academicYear: string;
     semester: string;
+    termStatus: "Open" | "Closed";
+    registrationOpen: boolean;
+    validFrom: string;
+    validUntil: string | null;
     enrollmentVerificationRequired: boolean;
   };
 }

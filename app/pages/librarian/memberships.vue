@@ -10,6 +10,7 @@ definePageMeta({ layout: "librarian", title: "Library Cards" });
 const route = useRoute();
 const members = useLibraryMembers();
 const librarySettings = useLibrarySettings();
+const termManager = useMembershipTerm();
 const auth = useAuth();
 const toast = useToast();
 
@@ -64,9 +65,20 @@ const renewal = reactive({
   remarks: "",
 });
 
+const activeTerm = computed(() => termManager.term.value);
+const termIsOpen = computed(() => activeTerm.value.status === "Open");
+
+function syncRenewalTerm() {
+  Object.assign(renewal, {
+    academicYear: activeTerm.value.academicYear,
+    semester: activeTerm.value.semester,
+    issuedDate: activeTerm.value.validFrom,
+    expiryDate: activeTerm.value.validUntil,
+  });
+}
+
 const statusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
 const semesterItems = ["All", "First Semester", "Second Semester", "Summer"];
-const renewalSemesters = semesterItems.slice(1);
 
 const columns: TableColumn<MembershipListItem>[] = [
   { id: "student", header: "Student" },
@@ -126,6 +138,16 @@ async function handleCameraBarcodeDetected(
 
 async function renewMembership() {
   if (!scannedStudent.value) return;
+  if (!termIsOpen.value) {
+    toast.add({
+      title: "Membership renewal is closed",
+      description: "Open the academic term before renewing Student memberships.",
+      color: "warning",
+      icon: "i-lucide-calendar-x-2",
+    });
+    return;
+  }
+  syncRenewalTerm();
   if (
     librarySettings.settings.value.membership.requireEnrollmentVerification &&
     !renewal.enrollmentVerified
@@ -224,16 +246,11 @@ watch(
 
 onMounted(async () => {
   try {
-    await librarySettings.load();
-    renewal.academicYear =
-      librarySettings.settings.value.general.currentAcademicYear ||
-      currentAcademicYear();
-    renewal.semester =
-      librarySettings.settings.value.general.currentSemester;
-    renewal.expiryDate =
-      librarySettings.membershipExpiryDate(
-        new Date(`${renewal.issuedDate}T00:00:00`),
-      );
+    await Promise.all([
+      librarySettings.load(true),
+      termManager.load(true),
+    ]);
+    syncRenewalTerm();
     renewal.enrollmentVerified =
       !librarySettings.settings.value.membership.requireEnrollmentVerification;
   } catch (error) {
@@ -252,14 +269,23 @@ onMounted(async () => {
 <template>
   <UContainer class="py-6 sm:py-8">
     <div class="mx-auto max-w-[1500px] space-y-6">
-      <div class="flex items-start gap-3">
-        <div class="flex size-11 items-center justify-center rounded-2xl bg-success/10 text-success">
-          <UIcon name="i-lucide-id-card" class="size-6" />
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex items-start gap-3">
+          <div class="flex size-11 items-center justify-center rounded-2xl bg-success/10 text-success">
+            <UIcon name="i-lucide-id-card" class="size-6" />
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">Student Membership Renewal</h1>
+            <p class="mt-1 max-w-3xl text-sm text-muted">Scan the permanent library-card barcode, verify the new-semester enrollment copy, and renew using the centrally managed academic term.</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">Student Membership Renewal</h1>
-          <p class="mt-1 max-w-3xl text-sm text-muted">Scan the permanent library-card barcode, verify the new-semester enrollment copy, and renew without re-entering the student profile.</p>
-        </div>
+        <UButton
+          to="/librarian/membership-term"
+          label="Academic Term & Validity"
+          icon="i-lucide-calendar-range"
+          color="neutral"
+          variant="outline"
+        />
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
@@ -426,11 +452,34 @@ onMounted(async () => {
 
               <UAlert v-if="!canRenew" color="error" variant="soft" icon="i-lucide-circle-alert" title="Renewal unavailable" :description="lookupReason ?? 'This student cannot be renewed.'" />
 
+              <div class="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="font-semibold text-highlighted">Active Academic Term</p>
+                    <p class="mt-1 text-xs text-muted">Renewal dates are controlled from Academic Term and Membership Validity.</p>
+                  </div>
+                  <UBadge :color="termIsOpen ? 'success' : 'warning'" variant="soft">
+                    {{ activeTerm.status }}
+                  </UBadge>
+                </div>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div><p class="text-xs uppercase text-muted">Academic Year</p><p class="mt-1 font-semibold">{{ activeTerm.academicYear }}</p></div>
+                  <div><p class="text-xs uppercase text-muted">Semester</p><p class="mt-1 font-semibold">{{ activeTerm.semester }}</p></div>
+                  <div><p class="text-xs uppercase text-muted">Valid From</p><p class="mt-1 font-semibold">{{ activeTerm.validFrom }}</p></div>
+                  <div><p class="text-xs uppercase text-muted">Valid Until</p><p class="mt-1 font-semibold">{{ activeTerm.validUntil }}</p></div>
+                </div>
+              </div>
+
+              <UAlert
+                v-if="!termIsOpen"
+                color="warning"
+                variant="soft"
+                icon="i-lucide-calendar-x-2"
+                title="Membership renewal is closed"
+                description="Open the academic term before renewing a Student membership."
+              />
+
               <div class="grid gap-4 md:grid-cols-2">
-                <UFormField label="Academic Year" required><UInput v-model="renewal.academicYear" class="w-full" /></UFormField>
-                <UFormField label="Semester" required><USelect v-model="renewal.semester" :items="renewalSemesters" class="w-full" /></UFormField>
-                <UFormField label="Issued Date" required><UInput v-model="renewal.issuedDate" type="date" class="w-full" /></UFormField>
-                <UFormField label="Valid Until" required><UInput v-model="renewal.expiryDate" type="date" class="w-full" /></UFormField>
                 <UFormField
                   label="Enrollment Reference"
                   hint="Optional"
@@ -464,7 +513,7 @@ onMounted(async () => {
 
               <div class="grid gap-3 sm:grid-cols-2">
                 <UButton label="Scan Another" icon="i-lucide-scan-line" color="neutral" variant="outline" block @click="clearScanner" />
-                <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="success" block :disabled="!canRenew || (librarySettings.settings.value.membership.requireEnrollmentVerification && !renewal.enrollmentVerified)" :loading="renewing" @click="renewMembership" />
+                <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="success" block :disabled="!termIsOpen || !canRenew || (librarySettings.settings.value.membership.requireEnrollmentVerification && !renewal.enrollmentVerified)" :loading="renewing" @click="renewMembership" />
               </div>
             </div>
           </div>

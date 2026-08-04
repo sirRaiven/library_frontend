@@ -16,7 +16,16 @@ export interface OperationalLibrarySettings {
       | "Summer";
   };
   borrowing: BorrowingLibrarySettings;
-  membership: MembershipLibrarySettings;
+  membership: MembershipLibrarySettings & {
+    term: {
+      status: "Open" | "Closed";
+      registrationOpen: boolean;
+      validFrom: string;
+      validUntil: string;
+      openedAt: string | null;
+      openedBy: string | null;
+    };
+  };
   reservations: ReservationLibrarySettings;
   fines: FineLibrarySettings;
 }
@@ -41,6 +50,14 @@ function fallbackSettings(): OperationalLibrarySettings {
     },
     membership: {
       validityMonths: 5,
+      term: {
+        status: "Open",
+        registrationOpen: true,
+        validFrom: "",
+        validUntil: "",
+        openedAt: null,
+        openedBy: null,
+      },
       requireActiveStudentMembership: true,
       requireEnrollmentVerification: true,
       defaultLibraryCardStatus: "On Process",
@@ -121,6 +138,10 @@ export function useLibrarySettings() {
   }
 
   function membershipExpiryDate(from = new Date()) {
+    if (settings.value.membership.term.validUntil) {
+      return settings.value.membership.term.validUntil;
+    }
+
     const date = new Date(from);
     date.setMonth(
       date.getMonth() + settings.value.membership.validityMonths,

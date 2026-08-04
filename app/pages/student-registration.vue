@@ -108,6 +108,16 @@ const sexOptions = [
   { label: "Female", value: "Female" },
 ];
 
+const registrationAvailable = computed(() =>
+  Boolean(
+    access.value &&
+    access.value.membership.termStatus === "Open" &&
+    access.value.membership.registrationOpen &&
+    Boolean(access.value.membership.validFrom) &&
+    Boolean(access.value.membership.validUntil),
+  ),
+);
+
 const portalUsername = computed(() =>
   registration.student.studentNo
     .trim()
@@ -133,6 +143,12 @@ watch(
 
 function registrationErrors(state: PublicStudentRegistrationInput): FormError[] {
   const errors: FormError[] = [];
+  if (!registrationAvailable.value) {
+    errors.push({
+      name: "membership.term",
+      message: "Student registration is closed for the current academic term.",
+    });
+  }
   const requiredFields: Array<[string, string, unknown]> = [
     ["student.studentNo", "Student number is required.", state.student.studentNo],
     ["student.firstName", "First name is required.", state.student.firstName],
@@ -259,7 +275,22 @@ async function proceedAfterCredentialHelp() {
 async function submitRegistration(
   event: FormSubmitEvent<PublicStudentRegistrationInput>,
 ) {
-  if (submitting.value || !access.value || !registrationPhoto.value) return;
+  if (
+    submitting.value ||
+    !access.value ||
+    !registrationPhoto.value ||
+    !registrationAvailable.value
+  ) {
+    if (!registrationAvailable.value) {
+      toast.add({
+        title: "Registration is closed",
+        description: "Please wait for the Library to open the next academic term.",
+        color: "warning",
+        icon: "i-lucide-calendar-x-2",
+      });
+    }
+    return;
+  }
   submitting.value = true;
   registrationResult.value = null;
 
@@ -361,11 +392,34 @@ onMounted(loadAccess);
               </p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-              <p class="font-semibold">{{ access.membership.academicYear }}</p>
-              <p class="mt-1 text-muted">{{ access.membership.semester }}</p>
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="font-semibold">{{ access.membership.academicYear }}</p>
+                  <p class="mt-1 text-muted">{{ access.membership.semester }}</p>
+                </div>
+                <UBadge
+                  :color="registrationAvailable ? 'success' : 'warning'"
+                  variant="soft"
+                >
+                  {{ registrationAvailable ? "Open" : "Closed" }}
+                </UBadge>
+              </div>
+              <p class="mt-3 text-xs text-muted">
+                Valid {{ access.membership.validFrom || '—' }} to {{ access.membership.validUntil || '—' }}
+              </p>
             </div>
           </div>
         </section>
+
+        <UAlert
+          v-if="!registrationAvailable"
+          class="mb-6"
+          color="warning"
+          variant="soft"
+          icon="i-lucide-calendar-x-2"
+          title="Student registration is currently closed"
+          description="The Library has not opened new Student memberships for this academic term. You may still submit a credential-help request for an existing account."
+        />
 
         <div class="mb-6 flex flex-wrap gap-2">
           <UButton label="New Membership Registration" icon="i-lucide-user-plus" :variant="activeView === 'registration' ? 'solid' : 'outline'" color="success" @click="activeView = 'registration'" />
@@ -447,9 +501,10 @@ onMounted(loadAccess);
 
           <section class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-7">
             <h3 class="text-xl font-bold text-highlighted">Initial Library Membership</h3>
-            <div class="mt-5 grid gap-4 md:grid-cols-3">
+            <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div class="rounded-xl border border-default p-4"><p class="text-xs uppercase text-muted">Academic Year</p><p class="mt-2 font-semibold">{{ access.membership.academicYear }}</p></div>
               <div class="rounded-xl border border-default p-4"><p class="text-xs uppercase text-muted">Semester</p><p class="mt-2 font-semibold">{{ access.membership.semester }}</p></div>
+              <div class="rounded-xl border border-default p-4"><p class="text-xs uppercase text-muted">Membership Validity</p><p class="mt-2 font-semibold">{{ access.membership.validFrom || '—' }} to {{ access.membership.validUntil || '—' }}</p></div>
               <div class="rounded-xl border border-default p-4"><p class="text-xs uppercase text-muted">Membership Status</p><p class="mt-2 font-semibold text-warning">Pending approval</p></div>
             </div>
           </section>
@@ -460,7 +515,15 @@ onMounted(loadAccess);
           </section>
 
           <div class="flex justify-end">
-            <UButton type="submit" label="Submit Registration for Approval" icon="i-lucide-send" color="success" size="lg" :loading="submitting" />
+            <UButton
+              type="submit"
+              label="Submit Registration for Approval"
+              icon="i-lucide-send"
+              color="success"
+              size="lg"
+              :loading="submitting"
+              :disabled="!registrationAvailable"
+            />
           </div>
         </UForm>
 

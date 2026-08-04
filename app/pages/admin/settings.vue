@@ -454,8 +454,15 @@ onMounted(() => {
           </div>
 
           <div v-else-if="activeSection === 'membership'" class="space-y-6">
+            <UAlert
+              color="info"
+              variant="soft"
+              icon="i-lucide-calendar-range"
+              title="Semester dates are managed by the Librarian"
+              description="The active academic year, semester opening, and exact membership-validity dates are configured under Academic Term and Membership Validity in the Librarian Portal."
+            />
             <div class="grid gap-5 md:grid-cols-2">
-              <UFormField label="Default Membership Validity" hint="Number of months">
+              <UFormField label="Fallback Membership Validity" hint="Months used only when no term expiry date exists">
                 <UInput v-model.number="forms.membership.validityMonths" type="number" min="1" max="24" class="w-full" />
               </UFormField>
               <UFormField label="Default Library Card Status">

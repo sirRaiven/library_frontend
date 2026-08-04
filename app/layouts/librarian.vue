@@ -135,6 +135,13 @@ function getPageInformation(): {
     };
   }
 
+  if (path.startsWith("/librarian/membership-term")) {
+    return {
+      title: "Academic Term and Membership Validity",
+      icon: "i-lucide-calendar-range",
+    };
+  }
+
   if (
     path.startsWith(
       "/librarian/memberships",
@@ -315,6 +322,14 @@ const navigationItems =
         to: "/librarian/faculty",
         active: isRouteActive(
           "/librarian/faculty",
+        ),
+      },
+      {
+        label: "Academic Term & Validity",
+        icon: "i-lucide-calendar-range",
+        to: "/librarian/membership-term",
+        active: isRouteActive(
+          "/librarian/membership-term",
         ),
       },
       {

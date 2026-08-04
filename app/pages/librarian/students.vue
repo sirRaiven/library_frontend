@@ -23,6 +23,7 @@ import {
 definePageMeta({ layout: "librarian", title: "Students" });
 
 const members = useLibraryMembers();
+const termManager = useMembershipTerm();
 const auth = useAuth();
 const toast = useToast();
 const route = useRoute();
@@ -142,6 +143,18 @@ const registrationForm = reactive<StudentRegistrationInput>({
     temporaryPassword: "",
   },
 });
+
+const activeMembershipTerm = computed(() => termManager.term.value);
+
+function syncRegistrationMembership() {
+  const term = activeMembershipTerm.value;
+  Object.assign(registrationForm.membership, {
+    academicYear: term.academicYear,
+    semester: term.semester,
+    issuedDate: term.validFrom,
+    expiryDate: term.validUntil,
+  });
+}
 
 const suggestedPortalUsername = computed(() =>
   registrationForm.student.studentNo
@@ -517,7 +530,6 @@ function clearStudentSelection() {
 
 const statusItems = ["All", "Active", "Inactive", "Suspended", "Graduated", "Dropped"];
 const memberStatusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
-const semesterItems = ["First Semester", "Second Semester", "Summer"];
 const sexItems = ["Male", "Female"];
 
 const educationalLevelItems = [
@@ -608,8 +620,18 @@ function validate(state: StudentRegistrationInput): FormError[] {
   if (!state.student.yearLevel) errors.push({ name: "student.yearLevel", message: "Select the Student year or grade level." });
   if (!state.student.libraryCardStatus) errors.push({ name: "student.libraryCardStatus", message: "Select the Library Card processing status." });
   if (!registrationPhoto.value) errors.push({ name: "student.photo", message: "Upload and crop the Student photo for the Library Card." });
-  if (!/^\d{4}-\d{4}$/.test(state.membership.academicYear)) errors.push({ name: "membership.academicYear", message: "Use YYYY-YYYY format." });
-  if (!state.membership.expiryDate) errors.push({ name: "membership.expiryDate", message: "Expiry date is required." });
+  if (activeMembershipTerm.value.status !== "Open" || !activeMembershipTerm.value.registrationOpen) {
+    errors.push({
+      name: "membership.term",
+      message: "Student registration is closed for the current academic term.",
+    });
+  }
+  if (!activeMembershipTerm.value.validFrom || !activeMembershipTerm.value.validUntil) {
+    errors.push({
+      name: "membership.term",
+      message: "Configure the academic term and membership validity before registration.",
+    });
+  }
   if (!state.membership.enrollmentVerified) errors.push({ name: "membership.enrollmentVerified", message: "Verify the enrollment document." });
   if (state.portalAccount.create) {
     if (!state.student.email?.trim()) {
@@ -760,10 +782,10 @@ function resetRegistration() {
       "",
   });
   Object.assign(registrationForm.membership, {
-    academicYear: defaultAcademicYear(),
-    semester: defaultSemester(),
-    issuedDate: today,
-    expiryDate: defaultExpiryDate(),
+    academicYear: activeMembershipTerm.value.academicYear,
+    semester: activeMembershipTerm.value.semester,
+    issuedDate: activeMembershipTerm.value.validFrom,
+    expiryDate: activeMembershipTerm.value.validUntil,
     enrollmentVerified: false,
     enrollmentReference: "",
     remarks: "",
@@ -830,6 +852,21 @@ function closeCardPreview() {
 }
 
 async function registerStudent(_event: FormSubmitEvent<StudentRegistrationInput>) {
+  if (
+    activeMembershipTerm.value.status !== "Open" ||
+    !activeMembershipTerm.value.registrationOpen
+  ) {
+    toast.add({
+      title: "Student registration is closed",
+      description: "Open an academic membership term before registering a Student.",
+      color: "warning",
+      icon: "i-lucide-calendar-x-2",
+    });
+    return;
+  }
+
+  syncRegistrationMembership();
+
   if (!registrationPhoto.value) {
     toast.add({
       title: "Student photo required",
@@ -1149,6 +1186,41 @@ function removeEditPhoto() {
     true;
 }
 
+async function openRegistrationModal() {
+  try {
+    await termManager.load(true);
+    syncRegistrationMembership();
+
+    if (
+      activeMembershipTerm.value.status !== "Open" ||
+      !activeMembershipTerm.value.registrationOpen
+    ) {
+      toast.add({
+        title: "Student registration is closed",
+        description: "Open the academic term and allow Student registration first.",
+        color: "warning",
+        icon: "i-lucide-calendar-x-2",
+        actions: [
+          {
+            label: "Manage Term",
+            onClick: () => navigateTo("/librarian/membership-term"),
+          },
+        ],
+      });
+      return;
+    }
+
+    registrationOpen.value = true;
+  } catch (error) {
+    toast.add({
+      title: "Unable to load the academic term",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  }
+}
+
 function cancelRegistration() {
   if (submitting.value) {
     return;
@@ -1336,7 +1408,15 @@ watch(
   },
 );
 watch(page, () => void loadStudents());
-onMounted(() => void loadStudents());
+onMounted(async () => {
+  try {
+    await termManager.load(true);
+    syncRegistrationMembership();
+  } catch (error) {
+    console.warn("Academic membership term could not be loaded.", error);
+  }
+  await loadStudents();
+});
 
 onBeforeUnmount(() => {
   releasePhotoSelection(
@@ -1395,10 +1475,18 @@ onBeforeUnmount(() => {
           />
 
           <UButton
+            to="/librarian/membership-term"
+            label="Academic Term"
+            icon="i-lucide-calendar-range"
+            color="neutral"
+            variant="outline"
+          />
+
+          <UButton
             label="Register Student"
             icon="i-lucide-user-plus"
             color="success"
-            @click="() => { registrationOpen = true }"
+            @click="openRegistrationModal"
           />
         </div>
       </div>
@@ -2110,14 +2198,54 @@ onBeforeUnmount(() => {
               />
             </div>
 
-            <div class="rounded-2xl border border-default bg-elevated/50 p-5">
-              <h3 class="font-semibold text-highlighted">Initial Membership</h3>
-              <p class="mt-1 text-xs text-muted">The card is permanent, but access is valid only for the selected academic term.</p>
+            <div class="rounded-2xl border border-primary/25 bg-primary/5 p-5">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 class="font-semibold text-highlighted">Initial Membership</h3>
+                  <p class="mt-1 text-xs leading-5 text-muted">
+                    Academic-term dates are managed centrally and cannot be changed inside this registration form.
+                  </p>
+                </div>
+                <UButton
+                  to="/librarian/membership-term"
+                  label="Manage Term"
+                  icon="i-lucide-calendar-range"
+                  color="neutral"
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
+
+              <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl border border-default bg-default/70 p-4">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">Academic Year</p>
+                  <p class="mt-2 font-semibold text-highlighted">{{ activeMembershipTerm.academicYear }}</p>
+                </div>
+                <div class="rounded-xl border border-default bg-default/70 p-4">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">Semester</p>
+                  <p class="mt-2 font-semibold text-highlighted">{{ activeMembershipTerm.semester }}</p>
+                </div>
+                <div class="rounded-xl border border-default bg-default/70 p-4">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">Valid From</p>
+                  <p class="mt-2 font-semibold text-highlighted">{{ activeMembershipTerm.validFrom }}</p>
+                </div>
+                <div class="rounded-xl border border-default bg-default/70 p-4">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">Valid Until</p>
+                  <p class="mt-2 font-semibold text-highlighted">{{ activeMembershipTerm.validUntil }}</p>
+                </div>
+              </div>
+
+              <UAlert
+                v-if="activeMembershipTerm.status !== 'Open' || !activeMembershipTerm.registrationOpen"
+                class="mt-4"
+                color="warning"
+                variant="soft"
+                icon="i-lucide-calendar-x-2"
+                title="Student registration is closed"
+                description="Open the academic term before completing this registration."
+              />
+
               <div class="mt-4 grid gap-4 md:grid-cols-2">
-                <UFormField name="membership.academicYear" label="Academic Year" required><UInput v-model="registrationForm.membership.academicYear" placeholder="2026-2027" class="w-full" /></UFormField>
-                <UFormField name="membership.semester" label="Semester" required><USelect v-model="registrationForm.membership.semester" :items="semesterItems" class="w-full" /></UFormField>
-                <UFormField name="membership.issuedDate" label="Issued Date" required><UInput v-model="registrationForm.membership.issuedDate" type="date" class="w-full" /></UFormField>
-                <UFormField name="membership.expiryDate" label="Valid Until" required><UInput v-model="registrationForm.membership.expiryDate" type="date" class="w-full" /></UFormField>
                 <UFormField
                   name="membership.enrollmentReference"
                   label="Enrollment Reference"
@@ -2144,8 +2272,12 @@ onBeforeUnmount(() => {
                   />
                 </UFormField>
               </div>
+
               <UFormField name="membership.enrollmentVerified" class="mt-4">
-                <UCheckbox v-model="registrationForm.membership.enrollmentVerified" label="I verified the student's enrollment document for this semester." />
+                <UCheckbox
+                  v-model="registrationForm.membership.enrollmentVerified"
+                  label="I verified the Student's enrollment document for the active semester."
+                />
               </UFormField>
             </div>
 
