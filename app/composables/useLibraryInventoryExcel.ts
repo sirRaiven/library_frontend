@@ -1,4 +1,6 @@
-export const INVENTORY_CATEGORIES = [
+import type { Cell, Row } from "exceljs";
+
+export const INVENTORY_SHELF_LOCATIONS = [
   "Filipiniana",
   "Reference",
   "Computer Program",
@@ -12,29 +14,37 @@ export const INVENTORY_HEADERS = [
   "Inventory Date",
   "Accession Number",
   "Number of Copies",
+  "Classification Number",
+  "Author Number",
   "Call Number",
   "Title",
   "Author",
   "Copyright Date",
   "Publisher",
   "Edition",
+  "Shelf Location",
+  "Subject",
   "Price",
 ] as const;
 
-export type InventoryCategory =
-  (typeof INVENTORY_CATEGORIES)[number];
+export type InventoryShelfLocation =
+  (typeof INVENTORY_SHELF_LOCATIONS)[number];
 
 export interface InventoryImportRow {
   row_number: number;
   inventory_date: number;
   accession_number: string | null;
   number_of_copies: number;
+  classification_number: string;
+  author_number: string;
   call_number: string;
   title: string;
   author: string;
-  copyright_date: number | null;
+  copyright_date: number;
   publisher: string;
   edition: string;
+  shelf_location: InventoryShelfLocation;
+  subject: string;
   price: number;
 }
 
@@ -53,12 +63,16 @@ export interface InventoryExportRow {
   inventory_date: number | null;
   accession_number: string;
   number_of_copies: number;
+  classification_number: string;
+  author_number: string;
   call_number: string;
   title: string;
   author: string;
   copyright_date: number | null;
   publisher: string;
   edition: string;
+  shelf_location: string;
+  subject: string;
   price: number;
 }
 
@@ -137,7 +151,6 @@ function parseNumberOfCopies(value: unknown): number {
     value === null ||
     String(value).trim() === ""
   ) {
-    // Backward compatibility with the previous one-copy-per-row template.
     return 1;
   }
 
@@ -187,6 +200,67 @@ function requireText(
   }
 
   return normalized;
+}
+
+function normalizeClassificationNumber(value: unknown): string {
+  const normalized = requireText(
+    value,
+    "Classification Number",
+  ).replace(/\s+/g, "");
+
+  if (!/^\d{3}(?:\.\d{1,10})?$/.test(normalized)) {
+    throw new Error(
+      "Classification Number must use Dewey format, such as 002 or 005.133.",
+    );
+  }
+
+  return normalized;
+}
+
+function normalizeAuthorNumber(value: unknown): string {
+  const normalized = requireText(
+    value,
+    "Author Number",
+  )
+    .replace(/\s+/g, "")
+    .toUpperCase();
+
+  if (!/^[A-Z0-9]{1,12}$/.test(normalized)) {
+    throw new Error(
+      "Author Number must contain only letters and numbers, such as 13E3.",
+    );
+  }
+
+  return normalized;
+}
+
+function requireShelfLocation(
+  value: unknown,
+): InventoryShelfLocation {
+  const normalized = requireText(
+    value,
+    "Shelf Location",
+  );
+
+  if (
+    !INVENTORY_SHELF_LOCATIONS.includes(
+      normalized as InventoryShelfLocation,
+    )
+  ) {
+    throw new Error(
+      `Shelf Location must be one of: ${INVENTORY_SHELF_LOCATIONS.join(", ")}.`,
+    );
+  }
+
+  return normalized as InventoryShelfLocation;
+}
+
+function buildCallNumber(
+  classificationNumber: string,
+  authorNumber: string,
+  copyrightYear: number,
+): string {
+  return `${classificationNumber} ${authorNumber} ${copyrightYear}`;
 }
 
 function cellText(cell: {
@@ -257,7 +331,7 @@ export function useLibraryInventoryExcel() {
 
     headerRow.eachCell(
       { includeEmpty: false },
-      (cell, columnNumber) => {
+      (cell: Cell, columnNumber: number) => {
         headerColumns.set(
           normalizeHeader(cellText(cell)),
           columnNumber,
@@ -265,17 +339,20 @@ export function useLibraryInventoryExcel() {
       },
     );
 
-    // Number of Copies is optional only for backward compatibility. New
-    // templates always include it and default to 1 when left blank.
     const requiredHeaders = [
       "inventory date",
       "accession number",
+      "number of copies",
+      "classification number",
+      "author number",
       "call number",
       "title",
       "author",
       "copyright date",
       "publisher",
       "edition",
+      "shelf location",
+      "subject",
       "price",
     ];
 
@@ -287,7 +364,7 @@ export function useLibraryInventoryExcel() {
       throw new Error(
         `Missing Excel header${
           missingHeaders.length === 1 ? "" : "s"
-        }: ${missingHeaders.join(", ")}.`,
+        }: ${missingHeaders.join(", ")}. Download the latest import template.`,
       );
     }
 
@@ -304,20 +381,10 @@ export function useLibraryInventoryExcel() {
 
       const getValue = (header: string): unknown => {
         const columnNumber = headerColumns.get(header);
-
-        if (!columnNumber) {
-          return "";
-        }
-
-        return cellText(row.getCell(columnNumber));
+        return columnNumber ? cellText(row.getCell(columnNumber)) : "";
       };
 
-      const checkHeaders = [
-        ...requiredHeaders,
-        "number of copies",
-      ];
-
-      const rawValues = checkHeaders.map(getValue);
+      const rawValues = requiredHeaders.map(getValue);
       const isBlank = rawValues.every(
         (value) => String(value ?? "").trim() === "",
       );
@@ -332,29 +399,26 @@ export function useLibraryInventoryExcel() {
           "Inventory date",
           true,
         );
-
         const accessionNumber = normalizeAccessionNumber(
           getValue("accession number"),
         );
-
         const numberOfCopies = parseNumberOfCopies(
           getValue("number of copies"),
         );
-
-        const callNumber = requireText(
-          getValue("call number"),
-          "Call number",
+        const classificationNumber = normalizeClassificationNumber(
+          getValue("classification number"),
         );
-
-        if (
-          !INVENTORY_CATEGORIES.includes(
-            callNumber as InventoryCategory,
-          )
-        ) {
-          throw new Error(
-            `Call number must be one of: ${INVENTORY_CATEGORIES.join(", ")}.`,
-          );
-        }
+        const authorNumber = normalizeAuthorNumber(
+          getValue("author number"),
+        );
+        const copyrightDate = parseYear(
+          getValue("copyright date"),
+          "Copyright date",
+          true,
+        );
+        const shelfLocation = requireShelfLocation(
+          getValue("shelf location"),
+        );
 
         if (accessionNumber) {
           const startingSequence = Number.parseInt(
@@ -370,7 +434,6 @@ export function useLibraryInventoryExcel() {
             const reserved = String(
               startingSequence + offset,
             ).padStart(4, "0");
-
             const firstRow = reservedAccessions.get(reserved);
 
             if (firstRow) {
@@ -388,26 +451,20 @@ export function useLibraryInventoryExcel() {
           inventory_date: inventoryDate!,
           accession_number: accessionNumber,
           number_of_copies: numberOfCopies,
-          call_number: callNumber,
-          title: requireText(
-            getValue("title"),
-            "Title",
+          classification_number: classificationNumber,
+          author_number: authorNumber,
+          call_number: buildCallNumber(
+            classificationNumber,
+            authorNumber,
+            copyrightDate!,
           ),
-          author: requireText(
-            getValue("author"),
-            "Author",
-          ),
-          copyright_date: parseYear(
-            getValue("copyright date"),
-            "Copyright date",
-            false,
-          ),
-          publisher: String(
-            getValue("publisher") ?? "",
-          ).trim(),
-          edition: String(
-            getValue("edition") ?? "",
-          ).trim(),
+          title: requireText(getValue("title"), "Title"),
+          author: requireText(getValue("author"), "Author"),
+          copyright_date: copyrightDate!,
+          publisher: String(getValue("publisher") ?? "").trim(),
+          edition: String(getValue("edition") ?? "").trim(),
+          shelf_location: shelfLocation,
+          subject: String(getValue("subject") ?? "").trim(),
           price: parsePrice(getValue("price")),
         });
       } catch (error) {
@@ -457,73 +514,38 @@ export function useLibraryInventoryExcel() {
       },
     );
 
-    worksheet.columns = [
-      {
-        header: INVENTORY_HEADERS[0],
-        key: "inventory_date",
-        width: 16,
-      },
-      {
-        header: INVENTORY_HEADERS[1],
-        key: "accession_number",
-        width: 20,
-        style: { numFmt: "@" },
-      },
-      {
-        header: INVENTORY_HEADERS[2],
-        key: "number_of_copies",
-        width: 18,
-      },
-      {
-        header: INVENTORY_HEADERS[3],
-        key: "call_number",
-        width: 38,
-      },
-      {
-        header: INVENTORY_HEADERS[4],
-        key: "title",
-        width: 42,
-      },
-      {
-        header: INVENTORY_HEADERS[5],
-        key: "author",
-        width: 30,
-      },
-      {
-        header: INVENTORY_HEADERS[6],
-        key: "copyright_date",
-        width: 18,
-      },
-      {
-        header: INVENTORY_HEADERS[7],
-        key: "publisher",
-        width: 30,
-      },
-      {
-        header: INVENTORY_HEADERS[8],
-        key: "edition",
-        width: 20,
-      },
-      {
-        header: INVENTORY_HEADERS[9],
-        key: "price",
-        width: 16,
-        style: { numFmt: "₱#,##0.00" },
-      },
+    const widths = [
+      16, 20, 18, 24, 18, 30, 42, 30, 18, 30, 20, 38, 34, 16,
     ];
 
-    worksheet.addRow({
-      inventory_date: new Date().getFullYear(),
+    worksheet.columns = INVENTORY_HEADERS.map((header, index) => ({
+      header,
+      key: normalizeHeader(header).replace(/\s+/g, "_"),
+      width: widths[index],
+      ...(header === "Accession Number" ? { style: { numFmt: "@" } } : {}),
+      ...(header === "Price" ? { style: { numFmt: "₱#,##0.00" } } : {}),
+    }));
+
+    const currentYear = new Date().getFullYear();
+    const sample = worksheet.addRow({
+      inventory_date: currentYear,
       accession_number: "0001",
       number_of_copies: 2,
-      call_number: "Filipiniana",
+      classification_number: "002",
+      author_number: "13E3",
       title: "Sample Book Title",
       author: "Sample Author",
-      copyright_date: new Date().getFullYear(),
+      copyright_date: currentYear,
       publisher: "Sample Publisher",
       edition: "1st Edition",
+      shelf_location: "Computer Program",
+      subject: "Information Technology",
       price: 0,
     });
+    sample.getCell(6).value = {
+      formula: `D${sample.number}&" "&E${sample.number}&" "&I${sample.number}`,
+      result: `002 13E3 ${currentYear}`,
+    };
 
     const headerRow = worksheet.getRow(1);
     headerRow.height = 26;
@@ -543,21 +565,24 @@ export function useLibraryInventoryExcel() {
 
     worksheet.autoFilter = {
       from: "A1",
-      to: "J1",
+      to: "N1",
     };
 
     for (let row = 2; row <= 5000; row += 1) {
-      worksheet.getCell(`D${row}`).dataValidation = {
+      worksheet.getCell(`F${row}`).value = {
+        formula: `IF(OR(D${row}="",E${row}="",I${row}=""),"",D${row}&" "&E${row}&" "&I${row})`,
+      };
+      worksheet.getCell(`F${row}`).protection = { locked: true };
+      worksheet.getCell(`L${row}`).dataValidation = {
         type: "list",
         allowBlank: false,
         formulae: [
-          `"${INVENTORY_CATEGORIES.join(",")}"`,
+          `"${INVENTORY_SHELF_LOCATIONS.join(",")}"`,
         ],
         showErrorMessage: true,
-        errorTitle: "Invalid call number",
-        error: "Select one of the approved categories.",
+        errorTitle: "Invalid shelf location",
+        error: "Select one of the approved shelf locations.",
       };
-
       worksheet.getCell(`C${row}`).dataValidation = {
         type: "whole",
         operator: "between",
@@ -566,15 +591,14 @@ export function useLibraryInventoryExcel() {
         errorTitle: "Invalid number of copies",
         error: "Enter a whole number from 1 to 100.",
       };
-
       worksheet.getCell(`B${row}`).numFmt = "@";
-      worksheet.getCell(`J${row}`).numFmt = "₱#,##0.00";
+      worksheet.getCell(`N${row}`).numFmt = "₱#,##0.00";
     }
 
     const instructions = workbook.addWorksheet("Instructions");
     instructions.columns = [
       { width: 30 },
-      { width: 92 },
+      { width: 96 },
     ];
 
     instructions.addRows([
@@ -584,24 +608,36 @@ export function useLibraryInventoryExcel() {
         "Use Number of Copies to create all physical copies for the title in one import row.",
       ],
       [
-        "Accession Number",
-        "This is the first accession number for the row. For 3 copies starting at 0001, the system creates 0001, 0002, and 0003. Leave it blank to generate the next available numbers automatically.",
+        "Classification Number",
+        "Enter the Dewey Decimal Classification number using three digits, with an optional decimal extension. Examples: 002, 005.133, or 650.",
       ],
       [
-        "Number of Copies",
-        "Enter a whole number from 1 to 100. Older files without this column are still accepted and default to one copy per row.",
+        "Author Number",
+        "Enter the Library author number/code using letters and numbers only. Example: 13E3.",
       ],
       [
         "Call Number",
-        "The call number is also used as the Book category and every copy's shelf location.",
+        "Generated automatically from Classification Number + Author Number + Copyright Date. Example: 002 13E3 2025. Do not edit this column.",
+      ],
+      [
+        "Shelf Location",
+        "Select the physical shelf where every copy from the row will be stored. This replaces the previous Category field.",
+      ],
+      [
+        "Subject",
+        "Optional subject or topic of the book.",
+      ],
+      [
+        "Accession Number",
+        "This is the first accession number for the row. For 3 copies starting at 0001, the system creates 0001, 0002, and 0003. Leave it blank for automatic numbering.",
       ],
       [
         "Barcode",
-        "Each barcode is generated as LIB-{Inventory Date}-{Accession Number}. Example: LIB-2026-0001.",
+        "The barcode contains the accession number only. Example: accession number 0001 produces barcode value 0001.",
       ],
       [
         "Price",
-        "The price is applied to every physical copy created from the row. Use 0.00 for donated books.",
+        "The price is applied to every physical copy. Use 0.00 for donated books.",
       ],
     ]);
 
@@ -615,7 +651,7 @@ export function useLibraryInventoryExcel() {
       pattern: "solid",
       fgColor: { argb: "FF047857" },
     };
-    instructions.eachRow((row) => {
+    instructions.eachRow((row: Row) => {
       row.alignment = {
         vertical: "top",
         wrapText: true,
@@ -628,7 +664,7 @@ export function useLibraryInventoryExcel() {
       new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }),
-      "SNCBT-Library-Inventory-Import-Template-v2.xlsx",
+      "SNCBT-Library-Inventory-Import-Template-v3.xlsx",
     );
   }
 
@@ -657,72 +693,33 @@ export function useLibraryInventoryExcel() {
       },
     );
 
-    worksheet.columns = [
-      {
-        header: INVENTORY_HEADERS[0],
-        key: "inventory_date",
-        width: 16,
-      },
-      {
-        header: INVENTORY_HEADERS[1],
-        key: "accession_number",
-        width: 20,
-        style: { numFmt: "@" },
-      },
-      {
-        header: INVENTORY_HEADERS[2],
-        key: "number_of_copies",
-        width: 18,
-      },
-      {
-        header: INVENTORY_HEADERS[3],
-        key: "call_number",
-        width: 38,
-      },
-      {
-        header: INVENTORY_HEADERS[4],
-        key: "title",
-        width: 42,
-      },
-      {
-        header: INVENTORY_HEADERS[5],
-        key: "author",
-        width: 30,
-      },
-      {
-        header: INVENTORY_HEADERS[6],
-        key: "copyright_date",
-        width: 18,
-      },
-      {
-        header: INVENTORY_HEADERS[7],
-        key: "publisher",
-        width: 30,
-      },
-      {
-        header: INVENTORY_HEADERS[8],
-        key: "edition",
-        width: 20,
-      },
-      {
-        header: INVENTORY_HEADERS[9],
-        key: "price",
-        width: 16,
-        style: { numFmt: "₱#,##0.00" },
-      },
+    const widths = [
+      16, 20, 18, 24, 18, 30, 42, 30, 18, 30, 20, 38, 34, 16,
     ];
+
+    worksheet.columns = INVENTORY_HEADERS.map((header, index) => ({
+      header,
+      key: normalizeHeader(header).replace(/\s+/g, "_"),
+      width: widths[index],
+      ...(header === "Accession Number" ? { style: { numFmt: "@" } } : {}),
+      ...(header === "Price" ? { style: { numFmt: "₱#,##0.00" } } : {}),
+    }));
 
     worksheet.addRows(
       rows.map((row) => ({
         inventory_date: row.inventory_date ?? "",
         accession_number: row.accession_number,
         number_of_copies: row.number_of_copies,
+        classification_number: row.classification_number,
+        author_number: row.author_number,
         call_number: row.call_number,
         title: row.title,
         author: row.author,
         copyright_date: row.copyright_date ?? "",
         publisher: row.publisher,
         edition: row.edition,
+        shelf_location: row.shelf_location,
+        subject: row.subject,
         price: row.price,
       })),
     );
@@ -745,12 +742,12 @@ export function useLibraryInventoryExcel() {
 
     worksheet.autoFilter = {
       from: "A1",
-      to: "J1",
+      to: "N1",
     };
 
     for (let row = 2; row <= worksheet.rowCount; row += 1) {
       worksheet.getCell(`B${row}`).numFmt = "@";
-      worksheet.getCell(`J${row}`).numFmt = "₱#,##0.00";
+      worksheet.getCell(`N${row}`).numFmt = "₱#,##0.00";
     }
 
     const buffer = await workbook.xlsx.writeBuffer();

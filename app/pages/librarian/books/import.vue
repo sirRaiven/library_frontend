@@ -20,7 +20,10 @@ interface ImportedCopy {
   control_number: string;
   title: string;
   author: string;
-  category: string;
+  classification_number: string;
+  author_number: string;
+  call_number: string;
+  subject?: string | null;
   shelf_location: string;
 }
 
@@ -248,7 +251,7 @@ async function importInventory(): Promise<void> {
       title: "Inventory import completed",
       description: `${importedCopies.value.length} physical ${
         importedCopies.value.length === 1 ? "copy was" : "copies were"
-      } registered with barcodes.`,
+      } registered with accession-number barcodes.`,
       color: "success",
       icon: "i-lucide-circle-check-big",
     });
@@ -286,7 +289,7 @@ async function printImportedBarcodes(): Promise<void> {
 
   printQueue.setPrintQueue(
     importedCopies.value.map((copy) => ({
-      controlNumber: copy.control_number,
+      controlNumber: copy.accession_number || copy.control_number,
       title: copy.title,
       author: copy.author,
       shelfLocation: copy.shelf_location,
@@ -351,7 +354,7 @@ async function printImportedBarcodes(): Promise<void> {
         variant="soft"
         icon="i-lucide-info"
         title="Excel import rules"
-        description="One row represents one book title. Number of Copies creates all physical copies in one step. Accession Number is the starting value; leave it blank for automatic numbering. Call Number is also used as Category and Shelf Location."
+        description="One row represents one book title. Enter the Dewey classification number, author number, copyright date, and shelf location. The call number is generated automatically, while each barcode contains the accession number only."
       />
 
       <UCard v-if="importedCopies.length === 0">
@@ -380,9 +383,7 @@ async function printImportedBarcodes(): Promise<void> {
               Select the library inventory workbook
             </h2>
             <p class="mx-auto mt-2 max-w-xl text-sm text-muted">
-              Use an <strong>.xlsx</strong> file with the updated ten-column
-              template. Older files without Number of Copies are still accepted
-              and default to one copy per row.
+              Use an <strong>.xlsx</strong> file created from the latest fourteen-column template. The Call Number column is generated automatically.
             </p>
 
             <div class="mt-5 flex flex-wrap justify-center gap-2">
@@ -548,14 +549,18 @@ async function printImportedBarcodes(): Promise<void> {
         </template>
 
         <div class="overflow-x-auto">
-          <table class="min-w-[1220px] w-full text-left text-sm">
+          <table class="min-w-[1680px] w-full text-left text-sm">
             <thead>
               <tr class="border-b border-default bg-elevated/60">
                 <th class="px-3 py-3">Row</th>
                 <th class="px-3 py-3">Inventory</th>
                 <th class="px-3 py-3">Starting Accession</th>
                 <th class="px-3 py-3 text-center">Copies</th>
-                <th class="px-3 py-3">Call No. / Shelf</th>
+                <th class="px-3 py-3">Classification</th>
+                <th class="px-3 py-3">Author No.</th>
+                <th class="px-3 py-3">Call Number</th>
+                <th class="px-3 py-3">Shelf Location</th>
+                <th class="px-3 py-3">Subject</th>
                 <th class="px-3 py-3">Title</th>
                 <th class="px-3 py-3">Author</th>
                 <th class="px-3 py-3">Copyright</th>
@@ -578,7 +583,11 @@ async function printImportedBarcodes(): Promise<void> {
                 <td class="px-3 py-3 text-center font-semibold">
                   {{ row.number_of_copies }}
                 </td>
-                <td class="px-3 py-3">{{ row.call_number }}</td>
+                <td class="px-3 py-3 font-mono">{{ row.classification_number }}</td>
+                <td class="px-3 py-3 font-mono">{{ row.author_number }}</td>
+                <td class="px-3 py-3 font-mono font-semibold">{{ row.call_number }}</td>
+                <td class="px-3 py-3">{{ row.shelf_location }}</td>
+                <td class="px-3 py-3">{{ row.subject || "—" }}</td>
                 <td class="px-3 py-3 font-medium text-highlighted">
                   {{ row.title }}
                 </td>
@@ -624,7 +633,7 @@ async function printImportedBarcodes(): Promise<void> {
 
             <div class="flex flex-wrap gap-2">
               <UButton
-                label="Print Imported Barcodes"
+                label="Print Accession Barcodes"
                 icon="i-lucide-printer"
                 color="success"
                 @click="printImportedBarcodes"
@@ -681,7 +690,8 @@ async function printImportedBarcodes(): Promise<void> {
                 <th class="px-4 py-3">Accession / Barcode</th>
                 <th class="px-4 py-3">Title</th>
                 <th class="px-4 py-3">Author</th>
-                <th class="px-4 py-3">Category / Shelf</th>
+                <th class="px-4 py-3">Call Number</th>
+                <th class="px-4 py-3">Shelf Location</th>
               </tr>
             </thead>
             <tbody>
@@ -697,7 +707,8 @@ async function printImportedBarcodes(): Promise<void> {
                   {{ copy.title }}
                 </td>
                 <td class="px-4 py-3 text-muted">{{ copy.author }}</td>
-                <td class="px-4 py-3">{{ copy.category }}</td>
+                <td class="px-4 py-3 font-mono">{{ copy.call_number }}</td>
+                <td class="px-4 py-3">{{ copy.shelf_location }}</td>
               </tr>
             </tbody>
           </table>

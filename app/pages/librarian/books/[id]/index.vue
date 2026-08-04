@@ -36,8 +36,10 @@ interface BookRecord {
   title: string;
   author: string;
   isbn?: string | null;
-  category?: string | null;
+  classification_number?: string | null;
+  author_number?: string | null;
   call_number?: string | null;
+  subject?: string | null;
   publisher?: string | null;
   edition?: string | null;
   copyright_year?: number | null;
@@ -103,7 +105,7 @@ const filteredCopies = computed(() => {
 
     return [
       copy.accession_number,
-      copy.control_number,
+      copy.accession_number || copy.control_number,
       copy.shelf_location,
       copy.copy_status,
       copy.condition,
@@ -257,7 +259,7 @@ async function loadBook(): Promise<void> {
       toast.add({
         title: "Book information updated",
         description:
-          "The category, call number, and copy shelf locations were synchronized.",
+          "The classification, call number, subject, and copy shelf locations were updated.",
         color: "success",
         icon: "i-lucide-save",
       });
@@ -301,10 +303,10 @@ function queueLabels(targetCopies: BookCopy[]): void {
 
   printQueue.setPrintQueue(
     targetCopies.map((copy) => ({
-      controlNumber: copy.control_number,
+      controlNumber: copy.accession_number || copy.control_number,
       title: book.value!.title,
       author: book.value!.author,
-      shelfLocation: copy.shelf_location ?? book.value!.category ?? "",
+      shelfLocation: copy.shelf_location ?? "",
     })),
     route.fullPath,
   );
@@ -516,15 +518,27 @@ onMounted(() => {
 
               <dl class="space-y-3 text-sm">
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Category</dt>
-                  <dd class="max-w-48 text-right font-semibold text-highlighted">
-                    {{ book.category || "Not provided" }}
+                  <dt class="text-muted">Classification</dt>
+                  <dd class="max-w-48 text-right font-mono font-semibold text-highlighted">
+                    {{ book.classification_number || "Not provided" }}
+                  </dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                  <dt class="text-muted">Author number</dt>
+                  <dd class="max-w-48 text-right font-mono font-semibold text-highlighted">
+                    {{ book.author_number || "Not provided" }}
                   </dd>
                 </div>
                 <div class="flex justify-between gap-4">
                   <dt class="text-muted">Call number</dt>
+                  <dd class="max-w-48 text-right font-mono font-semibold text-highlighted">
+                    {{ book.call_number || "Not provided" }}
+                  </dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                  <dt class="text-muted">Subject</dt>
                   <dd class="max-w-48 text-right font-semibold text-highlighted">
-                    {{ book.call_number || book.category || "Not provided" }}
+                    {{ book.subject || "Not provided" }}
                   </dd>
                 </div>
                 <div class="flex justify-between gap-4">
@@ -646,10 +660,10 @@ onMounted(() => {
                 </div>
 
                 <BarcodeCard
-                  :control-number="copy.control_number"
+                  :control-number="copy.accession_number || copy.control_number"
                   :title="book.title"
                   :author="book.author"
-                  :shelf-location="copy.shelf_location || book.category || ''"
+                  :shelf-location="copy.shelf_location || ''"
                   :status="copy.copy_status"
                   :condition="copy.condition || 'Good'"
                 />

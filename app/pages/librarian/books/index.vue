@@ -34,7 +34,10 @@ interface BookRecord {
   title: string;
   author: string;
   isbn?: string | null;
-  category?: string | null;
+  classification_number?: string | null;
+  author_number?: string | null;
+  call_number?: string | null;
+  subject?: string | null;
   publisher?: string | null;
   edition?: string | null;
   copyright_year?: number | null;
@@ -77,7 +80,7 @@ const printQueue = useBarcodePrintQueue();
 const inventoryExcel = useLibraryInventoryExcel();
 
 const search = ref("");
-const selectedCategory = ref("All Categories");
+const selectedShelfLocation = ref("All Shelf Locations");
 const page = ref(1);
 const pageSize = 12;
 
@@ -91,8 +94,8 @@ const books = ref<CatalogBook[]>([]);
 const totalBooks = ref(0);
 const pageCount = ref(1);
 
-const categoryItems = [
-  "All Categories",
+const shelfLocationItems = [
+  "All Shelf Locations",
   "Filipiniana",
   "Reference",
   "Computer Program",
@@ -230,14 +233,22 @@ function buildQuery(
     query[
       "filters[$or][4][book_copies][accession_number][$containsi]"
     ] = keyword;
+    query["filters[$or][5][call_number][$containsi]"] = keyword;
+    query["filters[$or][6][subject][$containsi]"] = keyword;
+    query[
+      "filters[$or][7][classification_number][$containsi]"
+    ] = keyword;
+    query[
+      "filters[$or][8][book_copies][shelf_location][$containsi]"
+    ] = keyword;
   }
 
   if (
-    selectedCategory.value !==
-    "All Categories"
+    selectedShelfLocation.value !==
+    "All Shelf Locations"
   ) {
-    query["filters[category][$eq]"] =
-      selectedCategory.value;
+    query["filters[book_copies][shelf_location][$eq]"] =
+      selectedShelfLocation.value;
   }
 
   return query;
@@ -347,7 +358,7 @@ async function printAllCopies(
   printQueue.setPrintQueue(
     book.copies.map((copy) => ({
       controlNumber:
-        copy.control_number,
+        copy.accession_number || copy.control_number,
       title: book.title,
       author: book.author,
       shelfLocation:
@@ -433,7 +444,7 @@ function findMatchingCopy(
 
   return book.copies.find((copy) =>
     [
-      copy.control_number,
+      copy.accession_number || copy.control_number,
       copy.accession_number,
     ].some(
       (value) =>
@@ -464,7 +475,7 @@ async function handlePhysicalBookBarcodeDetected(
   isApplyingBarcodeSearch.value = true;
   lastScannedBarcode.value = barcode;
   search.value = barcode;
-  selectedCategory.value = "All Categories";
+  selectedShelfLocation.value = "All Shelf Locations";
   page.value = 1;
 
   try {
@@ -482,8 +493,8 @@ async function handlePhysicalBookBarcodeDetected(
       toast.add({
         title: "Physical book found",
         description: `${matchingBook.title} • ${
-          matchingCopy.control_number ||
           matchingCopy.accession_number ||
+          matchingCopy.control_number ||
           barcode
         } • ${matchingCopy.copy_status}`,
         color: "success",
@@ -509,8 +520,8 @@ async function handlePhysicalBookBarcodeDetected(
 function clearFilters() {
   search.value = "";
   lastScannedBarcode.value = "";
-  selectedCategory.value =
-    "All Categories";
+  selectedShelfLocation.value =
+    "All Shelf Locations";
   page.value = 1;
 }
 
@@ -535,7 +546,7 @@ watch(search, () => {
   }, 350);
 });
 
-watch(selectedCategory, () => {
+watch(selectedShelfLocation, () => {
   if (isApplyingBarcodeSearch.value) {
     return;
   }
@@ -645,7 +656,7 @@ onBeforeUnmount(() => {
               <UInput
                 v-model="search"
                 icon="i-lucide-search"
-                placeholder="Search title, author, ISBN, accession no., or book barcode"
+                placeholder="Search title, author, subject, call number, ISBN, or accession barcode"
                 size="lg"
                 :loading="isLoading"
                 class="min-w-0 flex-1"
@@ -670,14 +681,14 @@ onBeforeUnmount(() => {
             </div>
 
             <p class="text-xs text-muted">
-              Search by book information, scan a physical copy, or enter its control or accession number manually.
+              Search by book information, scan a physical copy, or enter its accession number manually.
             </p>
           </div>
 
           <USelect
-            v-model="selectedCategory"
-            :items="categoryItems"
-            icon="i-lucide-tags"
+            v-model="selectedShelfLocation"
+            :items="shelfLocationItems"
+            icon="i-lucide-map-pin"
             size="lg"
             class="w-full"
           />
@@ -913,15 +924,12 @@ onBeforeUnmount(() => {
 
                 <div>
                   <p class="text-xs text-muted">
-                    Category
+                    Call number
                   </p>
                   <p
-                    class="truncate font-medium text-highlighted"
+                    class="truncate font-mono font-medium text-highlighted"
                   >
-                    {{
-                      book.category ||
-                      "Uncategorized"
-                    }}
+                    {{ book.call_number || "Not provided" }}
                   </p>
                 </div>
               </div>
@@ -979,8 +987,8 @@ onBeforeUnmount(() => {
                   </p>
                   <p class="mt-1 break-all font-mono text-sm font-semibold text-highlighted">
                     {{
-                      findMatchingCopy(book)?.control_number ||
-                      findMatchingCopy(book)?.accession_number
+                      findMatchingCopy(book)?.accession_number ||
+                      findMatchingCopy(book)?.control_number
                     }}
                   </p>
                   <p class="mt-1 text-xs text-muted">
@@ -1069,8 +1077,8 @@ onBeforeUnmount(() => {
             <UButton
               v-if="
                 search ||
-                selectedCategory !==
-                  'All Categories'
+                selectedShelfLocation !==
+                  'All Shelf Locations'
               "
               label="Clear Filters"
               color="neutral"

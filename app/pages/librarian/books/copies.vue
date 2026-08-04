@@ -308,7 +308,7 @@ async function printCopies(
   printQueue.setPrintQueue(
     sourceCopies.map((copy) => ({
       controlNumber:
-        copy.control_number,
+        copy.accession_number || copy.control_number,
       title:
         copy.relatedBook?.title ??
         "Library Book",
@@ -406,7 +406,7 @@ onBeforeUnmount(() => {
             </div>
 
             <p class="mt-1 text-sm text-muted">
-              Search individual control numbers,
+              Search individual accession numbers,
               verify barcode labels, and print selected
               copies in one place.
             </p>
@@ -442,7 +442,7 @@ onBeforeUnmount(() => {
           <UInput
             v-model="search"
             icon="i-lucide-search"
-            placeholder="Search control number, title, author, or shelf"
+            placeholder="Search accession number, title, author, or shelf"
             size="lg"
             class="w-full"
           />
@@ -654,7 +654,7 @@ onBeforeUnmount(() => {
 
           <BarcodeCard
             :control-number="
-              copy.control_number
+              copy.accession_number || copy.control_number
             "
             :title="
               copy.relatedBook?.title ??

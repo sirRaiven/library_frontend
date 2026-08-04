@@ -104,7 +104,7 @@ async function renderBarcode() {
   if (!normalizedControlNumber.value) {
     barcodeSvg.value.innerHTML = "";
     barcodeError.value =
-      "A control number is required.";
+      "An accession number is required.";
     return;
   }
 
@@ -135,7 +135,7 @@ async function renderBarcode() {
         valid(valid: boolean) {
           if (!valid) {
             barcodeError.value =
-              "The control number cannot be encoded.";
+              "The accession number cannot be encoded.";
           }
         },
       },
@@ -324,7 +324,7 @@ defineExpose({
         >
           {{
             normalizedControlNumber ||
-            "No control number"
+            "No accession number"
           }}
         </p>
 
