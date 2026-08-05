@@ -1,10 +1,16 @@
-import { userFacingErrorMessage } from "~/utils/user-facing-error";
-
-import type { StudentEducationalLevel } from "~/constants/studentPrograms";
+import type {
+  LibraryCardStatus,
+  StudentEducationalLevel,
+} from "~/constants/studentPrograms";
 
 export type StudentAccessRequestType =
   | "Registration"
   | "Credential Recovery";
+
+export type RegistrationLibraryCardStatus =
+  | "On Process"
+  | "Printed"
+  | "Released";
 
 export type StudentAccessRequestStatus =
   | "Pending Verification"
@@ -131,7 +137,8 @@ export interface StudentAccessRequest {
     fullName: string;
     status: string;
     libraryCardNo?: string | null;
-    libraryCardStatus?: string | null;
+    libraryCardStatus?: LibraryCardStatus | null;
+    libraryCardReleaseDate?: string | null;
     photoUrl?: string | null;
   } | null;
   account: {
@@ -185,9 +192,19 @@ interface ResetCredentialResult {
 }
 
 function errorMessage(error: unknown): string {
-  return userFacingErrorMessage(
-    error,
-    "The request could not be completed. Please try again.",
+  const candidate = error as {
+    data?: { error?: { message?: string } };
+    response?: { _data?: { error?: { message?: string } } };
+    statusMessage?: string;
+    message?: string;
+  };
+
+  return (
+    candidate.data?.error?.message ??
+    candidate.response?._data?.error?.message ??
+    candidate.statusMessage ??
+    candidate.message ??
+    "The request could not be completed."
   );
 }
 
@@ -195,6 +212,25 @@ export function useStudentSelfRegistration() {
   const config = useRuntimeConfig();
   const auth = useAuth();
   const apiBase = String(config.public.strapiUrl).replace(/\/$/, "");
+
+  function absoluteMediaUrl(url?: string | null): string | null {
+    if (!url) return null;
+    if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
+    return `${apiBase}${url.startsWith("/") ? url : `/${url}`}`;
+  }
+
+  function normalizeRequest(record: StudentAccessRequest): StudentAccessRequest {
+    return {
+      ...record,
+      photoPreviewUrl: absoluteMediaUrl(record.photoPreviewUrl),
+      student: record.student
+        ? {
+            ...record.student,
+            photoUrl: absoluteMediaUrl(record.student.photoUrl),
+          }
+        : null,
+    };
+  }
 
   async function publicFetch<T>(
     path: string,
@@ -272,7 +308,7 @@ export function useStudentSelfRegistration() {
     page?: number;
     pageSize?: number;
   }): Promise<RequestListResponse> {
-    return await auth.authFetch<RequestListResponse>(
+    const response = await auth.authFetch<RequestListResponse>(
       "/api/public-student-registration/requests",
       {
         query: {
@@ -284,13 +320,18 @@ export function useStudentSelfRegistration() {
         },
       },
     );
+
+    return {
+      ...response,
+      data: response.data.map(normalizeRequest),
+    };
   }
 
   async function getRequest(documentId: string): Promise<StudentAccessRequest> {
     const response = await auth.authFetch<{ data: StudentAccessRequest }>(
       `/api/public-student-registration/requests/${documentId}`,
     );
-    return response.data;
+    return normalizeRequest(response.data);
   }
 
   async function verifyRegistration(
@@ -301,7 +342,7 @@ export function useStudentSelfRegistration() {
       `/api/public-student-registration/requests/${documentId}/verify`,
       { method: "POST", body: { data } },
     );
-    return response.data;
+    return normalizeRequest(response.data);
   }
 
   async function rejectRequest(
@@ -312,7 +353,18 @@ export function useStudentSelfRegistration() {
       `/api/public-student-registration/requests/${documentId}/reject`,
       { method: "POST", body: { data: { reason } } },
     );
-    return response.data;
+    return normalizeRequest(response.data);
+  }
+
+  async function updateLibraryCardStatus(
+    documentId: string,
+    status: RegistrationLibraryCardStatus,
+  ): Promise<StudentAccessRequest> {
+    const response = await auth.authFetch<{ data: StudentAccessRequest }>(
+      `/api/public-student-registration/requests/${documentId}/library-card-status`,
+      { method: "PUT", body: { data: { status } } },
+    );
+    return normalizeRequest(response.data);
   }
 
   async function resetCredentials(
@@ -342,6 +394,7 @@ export function useStudentSelfRegistration() {
     getRequest,
     verifyRegistration,
     rejectRequest,
+    updateLibraryCardStatus,
     resetCredentials,
     errorMessage,
   };

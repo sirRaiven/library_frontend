@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import type {
+  RegistrationLibraryCardStatus,
   StudentAccessRequest,
   StudentAccessRequestStatus,
   StudentAccessRequestType,
@@ -12,6 +13,9 @@ definePageMeta({
 });
 
 const registration = useStudentSelfRegistration();
+const members = useLibraryMembers();
+const cardPrintQueue = useLibraryCardPrintQueue();
+const route = useRoute();
 const toast = useToast();
 
 const requestType = ref<StudentAccessRequestType>("Registration");
@@ -38,6 +42,11 @@ const rejectOpen = ref(false);
 const resetOpen = ref(false);
 const credentialsOpen = ref(false);
 const actionLoading = ref(false);
+const cardStatusOpen = ref(false);
+const cardStatusLoading = ref(false);
+const openingPrintFor = ref<string | null>(null);
+const cardStatusRequest = ref<StudentAccessRequest | null>(null);
+const cardStatusTarget = ref<RegistrationLibraryCardStatus>("On Process");
 const credentials = ref<{
   username: string;
   email: string;
@@ -82,6 +91,124 @@ function statusLabel(status: StudentAccessRequestStatus) {
   if (status === "Pending Verification") return "Pending";
   if (status === "Verified") return "Approved";
   return status;
+}
+
+function requestPhotoUrl(request?: StudentAccessRequest | null) {
+  return request?.photoPreviewUrl || request?.student?.photoUrl || null;
+}
+
+function registrationCardStatus(
+  request?: StudentAccessRequest | null,
+): RegistrationLibraryCardStatus | null {
+  const status = request?.student?.libraryCardStatus;
+  return status === "On Process" || status === "Printed" || status === "Released"
+    ? status
+    : null;
+}
+
+function cardStatusColor(status?: string | null) {
+  if (status === "Released") return "success";
+  if (status === "Printed") return "primary";
+  if (status === "On Process") return "warning";
+  return "neutral";
+}
+
+function nextCardStatus(
+  request?: StudentAccessRequest | null,
+): RegistrationLibraryCardStatus | null {
+  return request?.student?.libraryCardStatus === "None"
+    ? "On Process"
+    : null;
+}
+
+function cardActionLabel() {
+  return "Start Card Preparation";
+}
+
+function cardActionIcon() {
+  return "i-lucide-play";
+}
+
+const cardWorkflowSteps: Array<{
+  value: RegistrationLibraryCardStatus;
+  label: string;
+  description: string;
+  icon: string;
+}> = [
+  {
+    value: "On Process",
+    label: "Preparing",
+    description: "Student information and card layout are being checked.",
+    icon: "i-lucide-file-check-2",
+  },
+  {
+    value: "Printed",
+    label: "Printed",
+    description: "The physical Library Card is ready for final checking.",
+    icon: "i-lucide-printer-check",
+  },
+  {
+    value: "Released",
+    label: "Released",
+    description: "The Library Card has been received by the Student.",
+    icon: "i-lucide-handshake",
+  },
+];
+
+function cardStatusRank(status?: string | null) {
+  if (status === "On Process") return 1;
+  if (status === "Printed") return 2;
+  if (status === "Released") return 3;
+  return 0;
+}
+
+function cardStepState(
+  request: StudentAccessRequest,
+  step: RegistrationLibraryCardStatus,
+) {
+  const currentRank = cardStatusRank(request.student?.libraryCardStatus);
+  const stepRank = cardStatusRank(step);
+
+  if (currentRank > stepRank) return "complete";
+  if (currentRank === stepRank) return "current";
+  return "upcoming";
+}
+
+function studentInitials(request?: StudentAccessRequest | null) {
+  if (!request) return "ST";
+  const initials = [request.firstName, request.lastName]
+    .map((part) => part?.trim()?.charAt(0))
+    .filter(Boolean)
+    .join("")
+    .toUpperCase();
+  return initials || "ST";
+}
+
+function openVerifyFromDetails() {
+  const request = selectedRequest.value;
+  if (!request) return;
+  detailsOpen.value = false;
+  void openVerify(request);
+}
+
+function openRejectFromDetails() {
+  const request = selectedRequest.value;
+  if (!request) return;
+  detailsOpen.value = false;
+  openReject(request);
+}
+
+function openResetFromDetails() {
+  const request = selectedRequest.value;
+  if (!request) return;
+  detailsOpen.value = false;
+  openReset(request);
+}
+
+function formatDateOnly(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
 }
 
 function formatDate(value?: string | null) {
@@ -161,6 +288,54 @@ function openReset(request: StudentAccessRequest) {
   resetOpen.value = true;
 }
 
+function openCardStatusUpdate(request: StudentAccessRequest) {
+  const target = nextCardStatus(request);
+  if (!target) return;
+  cardStatusRequest.value = request;
+  cardStatusTarget.value = target;
+  cardStatusOpen.value = true;
+}
+
+
+async function openCardPrinting(request: StudentAccessRequest) {
+  if (!request.student?.documentId || openingPrintFor.value) return;
+
+  openingPrintFor.value = request.documentId;
+
+  try {
+    const response = await members.listStudents({
+      search: request.studentNo,
+      page: 1,
+      pageSize: 20,
+    });
+
+    const student = response.data.find(
+      (item) =>
+        item.documentId === request.student?.documentId ||
+        item.studentNo === request.studentNo,
+    );
+
+    if (!student) {
+      throw new Error(
+        "The approved Student could not be loaded from the Student Library Members page.",
+      );
+    }
+
+    cardPrintQueue.setPrintQueue([student], route.fullPath);
+    detailsOpen.value = false;
+    await navigateTo("/librarian/library-card-print");
+  } catch (error) {
+    toast.add({
+      title: "Unable to open card printing",
+      description: registration.errorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    openingPrintFor.value = null;
+  }
+}
+
 function resetErrors(state: typeof resetForm): FormError[] {
   const errors: FormError[] = [];
   if (state.reason.trim().length < 5) {
@@ -204,10 +379,16 @@ async function submitVerification(event: FormSubmitEvent<typeof verifyForm>) {
     toast.add({
       title: "Student registration approved",
       description:
-        "Borrowing, reservation, and Library Card eligibility now use the verified membership record.",
+        "The Library Card is now On Process. Continue from the Approved list after the card has been printed.",
       color: "success",
     });
-    await loadRequests();
+
+    if (requestStatus.value !== "Verified") {
+      requestStatus.value = "Verified";
+      page.value = 1;
+    } else {
+      await loadRequests();
+    }
   } catch (error) {
     toast.add({
       title: "Approval failed",
@@ -216,6 +397,45 @@ async function submitVerification(event: FormSubmitEvent<typeof verifyForm>) {
     });
   } finally {
     actionLoading.value = false;
+  }
+}
+
+async function submitCardStatusUpdate() {
+  const request = cardStatusRequest.value;
+  if (!request || cardStatusLoading.value) return;
+
+  cardStatusLoading.value = true;
+  try {
+    const updated = await registration.updateLibraryCardStatus(
+      request.documentId,
+      cardStatusTarget.value,
+    );
+
+    requests.value = requests.value.map((item) =>
+      item.documentId === updated.documentId ? updated : item,
+    );
+
+    if (selectedRequest.value?.documentId === updated.documentId) {
+      selectedRequest.value = updated;
+    }
+
+    cardStatusRequest.value = updated;
+    cardStatusOpen.value = false;
+
+    toast.add({
+      title: "Library Card preparation started",
+      description:
+        "Continue the printing, Printed status, and release steps from the Library Card Print page.",
+      color: "success",
+    });
+  } catch (error) {
+    toast.add({
+      title: "Unable to update Library Card status",
+      description: registration.errorMessage(error),
+      color: "error",
+    });
+  } finally {
+    cardStatusLoading.value = false;
   }
 }
 
@@ -317,7 +537,7 @@ onMounted(loadRequests);
             Student Registration Approvals
           </h1>
           <p class="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Review submitted Student membership applications and approve or reject each request after validating identity and enrollment.
+            Review submitted Student membership applications and approve verified records. Printing and card release are managed from the Library Card Print page.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -389,7 +609,8 @@ onMounted(loadRequests);
               <th class="px-5 py-3">Student</th>
               <th class="px-5 py-3">Student Number</th>
               <th class="px-5 py-3">Level / Program</th>
-              <th class="px-5 py-3">Status</th>
+              <th class="px-5 py-3">Registration</th>
+              <th class="px-5 py-3">Library Card</th>
               <th class="px-5 py-3">Submitted</th>
               <th class="px-5 py-3 text-right">Actions</th>
             </tr>
@@ -406,8 +627,8 @@ onMounted(loadRequests);
               <td class="min-w-64 px-5 py-4">
                 <div class="flex items-center gap-3">
                   <img
-                    v-if="request.photoPreviewUrl || request.student?.photoUrl"
-                    :src="request.photoPreviewUrl || request.student?.photoUrl || ''"
+                    v-if="requestPhotoUrl(request)"
+                    :src="requestPhotoUrl(request) || ''"
                     :alt="request.fullName"
                     class="size-11 shrink-0 rounded-full border border-default object-cover"
                   >
@@ -441,6 +662,25 @@ onMounted(loadRequests);
                   variant="soft"
                 />
               </td>
+              <td class="min-w-44 px-5 py-4">
+                <template v-if="request.type === 'Registration' && request.student">
+                  <UBadge
+                    :label="request.student.libraryCardStatus || 'On Process'"
+                    :color="cardStatusColor(request.student.libraryCardStatus)"
+                    variant="soft"
+                  />
+                  <p
+                    v-if="request.student.libraryCardStatus === 'Released'"
+                    class="mt-1 text-xs text-muted"
+                  >
+                    Released {{ formatDateOnly(request.student.libraryCardReleaseDate) }}
+                  </p>
+                  <p v-else class="mt-1 text-xs text-muted">
+                    {{ request.student.libraryCardNo || 'Card number pending' }}
+                  </p>
+                </template>
+                <span v-else class="text-muted">—</span>
+              </td>
               <td class="whitespace-nowrap px-5 py-4 text-muted">
                 {{ formatDate(request.submittedAt) }}
               </td>
@@ -453,6 +693,25 @@ onMounted(loadRequests);
                     variant="soft"
                     size="sm"
                     @click="openDetails(request)"
+                  />
+                  <UButton
+                    v-if="request.type === 'Registration' && request.status === 'Verified' && nextCardStatus(request)"
+                    :label="cardActionLabel()"
+                    :icon="cardActionIcon()"
+                    color="primary"
+                    variant="soft"
+                    size="sm"
+                    @click="openCardStatusUpdate(request)"
+                  />
+                  <UButton
+                    v-if="request.type === 'Registration' && request.status === 'Verified' && request.student && !nextCardStatus(request) && request.student.libraryCardStatus !== 'Released'"
+                    label="Print Card"
+                    icon="i-lucide-printer"
+                    color="primary"
+                    variant="soft"
+                    size="sm"
+                    :loading="openingPrintFor === request.documentId"
+                    @click="openCardPrinting(request)"
                   />
                   <UButton
                     v-if="request.type === 'Registration' && request.status === 'Pending Verification'"
@@ -494,48 +753,382 @@ onMounted(loadRequests);
       </div>
     </section>
 
-    <UModal v-model:open="detailsOpen" :ui="{ content: 'sm:max-w-4xl max-h-[92dvh] overflow-y-auto' }">
+    <UModal
+      v-model:open="detailsOpen"
+      :ui="{ content: 'sm:max-w-6xl max-h-[94dvh] overflow-hidden' }"
+    >
       <template #content>
-        <div v-if="selectedRequest" class="p-6">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h2 class="text-xl font-bold text-highlighted">{{ selectedRequest.requestNo }}</h2>
-              <p class="mt-1 text-sm text-muted">{{ selectedRequest.type }}</p>
-            </div>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square @click="detailsOpen = false" />
-          </div>
-          <div class="mt-6 grid gap-5 lg:grid-cols-[180px_1fr]">
-            <div class="rounded-2xl border border-default bg-elevated p-3">
-              <img
-                v-if="selectedRequest.photoPreviewUrl"
-                :src="selectedRequest.photoPreviewUrl"
-                :alt="`${selectedRequest.fullName} registration photo`"
-                class="aspect-square w-full rounded-xl object-cover"
-              >
-              <div v-else class="flex aspect-square items-center justify-center rounded-xl border border-dashed border-default text-muted">
-                <UIcon name="i-lucide-image-off" class="size-10" />
+        <div v-if="selectedRequest" class="flex max-h-[94dvh] flex-col bg-default">
+          <header class="flex shrink-0 items-start justify-between gap-4 border-b border-default px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-center gap-3">
+              <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <UIcon
+                  :name="selectedRequest.type === 'Registration' ? 'i-lucide-user-round-check' : 'i-lucide-key-round'"
+                  class="size-5"
+                />
               </div>
-              <p class="mt-3 text-center text-xs text-muted">Student Library Card photo</p>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="truncate text-lg font-bold text-highlighted sm:text-xl">
+                    Student Registration Details
+                  </h2>
+                  <UBadge
+                    :label="statusLabel(selectedRequest.status)"
+                    :color="statusColor(selectedRequest.status)"
+                    variant="soft"
+                  />
+                </div>
+                <p class="mt-1 truncate text-sm text-muted">
+                  {{ selectedRequest.requestNo }} · {{ selectedRequest.type }}
+                </p>
+              </div>
             </div>
+            <UButton
+              icon="i-lucide-x"
+              color="neutral"
+              variant="ghost"
+              square
+              aria-label="Close Student details"
+              @click="detailsOpen = false"
+            />
+          </header>
 
-            <dl class="grid gap-4 rounded-2xl border border-default p-4 sm:grid-cols-2">
-              <div><dt class="text-xs font-semibold uppercase text-muted">Student</dt><dd class="mt-1 font-semibold">{{ selectedRequest.fullName }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Student Number</dt><dd class="mt-1 font-semibold">{{ selectedRequest.studentNo }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Educational Level</dt><dd class="mt-1">{{ selectedRequest.educationalLevel || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Course / Program</dt><dd class="mt-1">{{ selectedRequest.course || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Year / Grade</dt><dd class="mt-1">{{ selectedRequest.yearLevel || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Section</dt><dd class="mt-1">{{ selectedRequest.section || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Email</dt><dd class="mt-1 break-all">{{ selectedRequest.email || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Contact</dt><dd class="mt-1">{{ selectedRequest.contactNo || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Username</dt><dd class="mt-1 font-mono">{{ selectedRequest.portalUsername || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Status</dt><dd class="mt-1"><UBadge :label="statusLabel(selectedRequest.status)" :color="statusColor(selectedRequest.status)" /></dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Academic Year</dt><dd class="mt-1">{{ selectedRequest.academicYear || '—' }}</dd></div>
-              <div><dt class="text-xs font-semibold uppercase text-muted">Semester</dt><dd class="mt-1">{{ selectedRequest.semester || '—' }}</dd></div>
-              <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase text-muted">Address</dt><dd class="mt-1 whitespace-pre-wrap">{{ selectedRequest.address || '—' }}</dd></div>
-              <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase text-muted">Submitted</dt><dd class="mt-1">{{ formatDate(selectedRequest.submittedAt) }}</dd></div>
-              <div v-if="selectedRequest.reviewNotes" class="sm:col-span-2"><dt class="text-xs font-semibold uppercase text-muted">Review Notes</dt><dd class="mt-1 whitespace-pre-wrap">{{ selectedRequest.reviewNotes }}</dd></div>
-            </dl>
+          <div class="min-h-0 flex-1 overflow-y-auto">
+            <div class="grid gap-6 p-5 sm:p-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+              <aside class="space-y-4 lg:sticky lg:top-0 lg:self-start">
+                <section class="overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm">
+                  <div class="relative bg-gradient-to-br from-primary/10 via-default to-success/5 p-4">
+                    <img
+                      v-if="requestPhotoUrl(selectedRequest)"
+                      :src="requestPhotoUrl(selectedRequest) || ''"
+                      :alt="`${selectedRequest.fullName} registration photo`"
+                      class="aspect-[4/5] w-full rounded-xl border border-default bg-default object-cover shadow-sm"
+                    >
+                    <div
+                      v-else
+                      class="flex aspect-[4/5] w-full items-center justify-center rounded-xl border border-dashed border-default bg-default"
+                    >
+                      <div class="flex size-20 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                        {{ studentInitials(selectedRequest) }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-default p-4 text-center">
+                    <p class="text-lg font-bold text-highlighted">{{ selectedRequest.fullName }}</p>
+                    <p class="mt-1 font-mono text-sm font-semibold text-primary">
+                      {{ selectedRequest.studentNo }}
+                    </p>
+                    <p class="mt-2 text-sm leading-5 text-muted">
+                      {{ selectedRequest.course || selectedRequest.educationalLevel || 'Student' }}
+                      <span v-if="selectedRequest.yearLevel"> · Year {{ selectedRequest.yearLevel }}</span>
+                      <span v-if="selectedRequest.section"> · Section {{ selectedRequest.section }}</span>
+                    </p>
+                  </div>
+                </section>
+
+                <section class="rounded-2xl border border-default bg-default p-4 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted">Quick status</p>
+                  <div class="mt-3 space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-sm text-muted">Registration</span>
+                      <UBadge
+                        :label="statusLabel(selectedRequest.status)"
+                        :color="statusColor(selectedRequest.status)"
+                        variant="soft"
+                      />
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-sm text-muted">Library Card</span>
+                      <UBadge
+                        :label="selectedRequest.student?.libraryCardStatus || 'Not started'"
+                        :color="cardStatusColor(selectedRequest.student?.libraryCardStatus)"
+                        variant="soft"
+                      />
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-sm text-muted">Submitted</span>
+                      <span class="text-right text-sm font-medium text-highlighted">
+                        {{ formatDate(selectedRequest.submittedAt) }}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+              </aside>
+
+              <main class="min-w-0 space-y-5">
+                <section class="rounded-2xl border border-default bg-default shadow-sm">
+                  <div class="flex items-center gap-3 border-b border-default px-4 py-3 sm:px-5">
+                    <div class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <UIcon name="i-lucide-graduation-cap" class="size-4" />
+                    </div>
+                    <div>
+                      <h3 class="font-semibold text-highlighted">Student and Academic Information</h3>
+                      <p class="text-xs text-muted">Basic information submitted for Library membership.</p>
+                    </div>
+                  </div>
+                  <dl class="grid gap-x-6 gap-y-5 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
+                    <div>
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Full Name</dt>
+                      <dd class="mt-1.5 font-semibold text-highlighted">{{ selectedRequest.fullName }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Student Number</dt>
+                      <dd class="mt-1.5 font-mono font-semibold text-highlighted">{{ selectedRequest.studentNo }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Educational Level</dt>
+                      <dd class="mt-1.5 text-highlighted">{{ selectedRequest.educationalLevel || '—' }}</dd>
+                    </div>
+                    <div class="sm:col-span-2 xl:col-span-1">
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Course / Program</dt>
+                      <dd class="mt-1.5 text-highlighted">{{ selectedRequest.course || '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Year / Grade</dt>
+                      <dd class="mt-1.5 text-highlighted">{{ selectedRequest.yearLevel || '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Section</dt>
+                      <dd class="mt-1.5 text-highlighted">{{ selectedRequest.section || '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Academic Year</dt>
+                      <dd class="mt-1.5 text-highlighted">{{ selectedRequest.academicYear || '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Semester</dt>
+                      <dd class="mt-1.5 text-highlighted">{{ selectedRequest.semester || '—' }}</dd>
+                    </div>
+                    <div v-if="selectedRequest.enrollmentReference">
+                      <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Enrollment Reference</dt>
+                      <dd class="mt-1.5 break-all text-highlighted">{{ selectedRequest.enrollmentReference }}</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <div class="grid gap-5 xl:grid-cols-2">
+                  <section class="rounded-2xl border border-default bg-default shadow-sm">
+                    <div class="flex items-center gap-3 border-b border-default px-4 py-3 sm:px-5">
+                      <div class="flex size-9 items-center justify-center rounded-lg bg-success/10 text-success">
+                        <UIcon name="i-lucide-contact-round" class="size-4" />
+                      </div>
+                      <div>
+                        <h3 class="font-semibold text-highlighted">Contact Information</h3>
+                        <p class="text-xs text-muted">Details used for Library notices.</p>
+                      </div>
+                    </div>
+                    <dl class="space-y-4 p-4 sm:p-5">
+                      <div class="flex items-start gap-3">
+                        <UIcon name="i-lucide-mail" class="mt-0.5 size-4 shrink-0 text-muted" />
+                        <div class="min-w-0">
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Email Address</dt>
+                          <dd class="mt-1 break-all text-sm text-highlighted">{{ selectedRequest.email || '—' }}</dd>
+                        </div>
+                      </div>
+                      <div class="flex items-start gap-3">
+                        <UIcon name="i-lucide-phone" class="mt-0.5 size-4 shrink-0 text-muted" />
+                        <div>
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Contact Number</dt>
+                          <dd class="mt-1 text-sm text-highlighted">{{ selectedRequest.contactNo || '—' }}</dd>
+                        </div>
+                      </div>
+                      <div class="flex items-start gap-3">
+                        <UIcon name="i-lucide-map-pin" class="mt-0.5 size-4 shrink-0 text-muted" />
+                        <div>
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Address</dt>
+                          <dd class="mt-1 whitespace-pre-wrap text-sm leading-6 text-highlighted">{{ selectedRequest.address || '—' }}</dd>
+                        </div>
+                      </div>
+                    </dl>
+                  </section>
+
+                  <section class="rounded-2xl border border-default bg-default shadow-sm">
+                    <div class="flex items-center gap-3 border-b border-default px-4 py-3 sm:px-5">
+                      <div class="flex size-9 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                        <UIcon name="i-lucide-id-card" class="size-4" />
+                      </div>
+                      <div>
+                        <h3 class="font-semibold text-highlighted">Portal and Library Card</h3>
+                        <p class="text-xs text-muted">Account and physical card information.</p>
+                      </div>
+                    </div>
+                    <dl class="space-y-4 p-4 sm:p-5">
+                      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <div>
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Portal Username</dt>
+                          <dd class="mt-1 font-mono text-sm font-semibold text-highlighted">{{ selectedRequest.portalUsername || '—' }}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Card Number</dt>
+                          <dd class="mt-1 font-mono text-sm font-semibold text-highlighted">{{ selectedRequest.student?.libraryCardNo || '—' }}</dd>
+                        </div>
+                      </div>
+                      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <div>
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Card Status</dt>
+                          <dd class="mt-1.5">
+                            <UBadge
+                              :label="selectedRequest.student?.libraryCardStatus || 'Not started'"
+                              :color="cardStatusColor(selectedRequest.student?.libraryCardStatus)"
+                              variant="soft"
+                            />
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Date Released</dt>
+                          <dd class="mt-1 text-sm text-highlighted">{{ formatDateOnly(selectedRequest.student?.libraryCardReleaseDate) }}</dd>
+                        </div>
+                      </div>
+                    </dl>
+                  </section>
+                </div>
+
+                <section
+                  v-if="selectedRequest.type === 'Registration'"
+                  class="rounded-2xl border border-default bg-elevated/40 p-4 shadow-sm sm:p-5"
+                >
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <UIcon name="i-lucide-badge-check" class="size-5 text-primary" />
+                        <h3 class="font-semibold text-highlighted">Library Card Release Progress</h3>
+                      </div>
+                      <p class="mt-1.5 max-w-2xl text-sm leading-6 text-muted">
+                        {{ selectedRequest.status === 'Verified'
+                          ? 'This page shows the current progress. Printing, Mark as Printed, and Release actions are completed from the Library Card Print page.'
+                          : 'Library Card processing becomes available after the registration has been approved.' }}
+                      </p>
+                    </div>
+                    <div v-if="selectedRequest.status === 'Verified'" class="flex flex-wrap gap-2">
+                      <UButton
+                        v-if="nextCardStatus(selectedRequest)"
+                        :label="cardActionLabel()"
+                        :icon="cardActionIcon()"
+                        color="primary"
+                        @click="openCardStatusUpdate(selectedRequest)"
+                      />
+                      <UButton
+                        v-if="selectedRequest.student && !nextCardStatus(selectedRequest) && selectedRequest.student.libraryCardStatus !== 'Released'"
+                        label="Open Card Printing"
+                        icon="i-lucide-printer"
+                        color="primary"
+                        variant="soft"
+                        :loading="openingPrintFor === selectedRequest.documentId"
+                        @click="openCardPrinting(selectedRequest)"
+                      />
+                    </div>
+                  </div>
+
+                  <ol class="mt-5 grid gap-3 md:grid-cols-3">
+                    <li
+                      v-for="(step, index) in cardWorkflowSteps"
+                      :key="step.value"
+                      class="relative rounded-xl border p-4 transition"
+                      :class="{
+                        'border-success/40 bg-success/5': selectedRequest.status === 'Verified' && cardStepState(selectedRequest, step.value) === 'complete',
+                        'border-primary bg-primary/5 ring-1 ring-primary/20': selectedRequest.status === 'Verified' && cardStepState(selectedRequest, step.value) === 'current',
+                        'border-default bg-default': selectedRequest.status !== 'Verified' || cardStepState(selectedRequest, step.value) === 'upcoming',
+                      }"
+                    >
+                      <div class="flex items-start gap-3">
+                        <div
+                          class="flex size-9 shrink-0 items-center justify-center rounded-full"
+                          :class="{
+                            'bg-success text-white': selectedRequest.status === 'Verified' && cardStepState(selectedRequest, step.value) === 'complete',
+                            'bg-primary text-white': selectedRequest.status === 'Verified' && cardStepState(selectedRequest, step.value) === 'current',
+                            'bg-elevated text-muted': selectedRequest.status !== 'Verified' || cardStepState(selectedRequest, step.value) === 'upcoming',
+                          }"
+                        >
+                          <UIcon
+                            :name="selectedRequest.status === 'Verified' && cardStepState(selectedRequest, step.value) === 'complete' ? 'i-lucide-check' : step.icon"
+                            class="size-4"
+                          />
+                        </div>
+                        <div class="min-w-0">
+                          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Step {{ index + 1 }}</p>
+                          <p class="mt-1 font-semibold text-highlighted">{{ step.label }}</p>
+                          <p class="mt-1 text-xs leading-5 text-muted">{{ step.description }}</p>
+                          <UBadge
+                            v-if="selectedRequest.status === 'Verified' && cardStepState(selectedRequest, step.value) !== 'upcoming'"
+                            class="mt-3"
+                            :label="cardStepState(selectedRequest, step.value) === 'complete' ? 'Completed' : 'Current step'"
+                            :color="cardStepState(selectedRequest, step.value) === 'complete' ? 'success' : 'primary'"
+                            variant="soft"
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  </ol>
+                </section>
+
+                <section v-if="selectedRequest.reviewNotes" class="rounded-2xl border border-default bg-elevated/40 p-4 sm:p-5">
+                  <div class="flex items-start gap-3">
+                    <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-neutral/10 text-muted">
+                      <UIcon name="i-lucide-notebook-text" class="size-4" />
+                    </div>
+                    <div>
+                      <h3 class="font-semibold text-highlighted">Review Notes</h3>
+                      <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted">{{ selectedRequest.reviewNotes }}</p>
+                    </div>
+                  </div>
+                </section>
+              </main>
+            </div>
           </div>
+
+          <footer class="flex shrink-0 flex-col-reverse gap-3 border-t border-default bg-default px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p class="text-xs text-muted">
+              Review the Student information before approval. Continue physical card processing from the Library Card Print page.
+            </p>
+            <div class="flex flex-wrap justify-end gap-2">
+              <UButton
+                label="Close"
+                color="neutral"
+                variant="outline"
+                @click="detailsOpen = false"
+              />
+              <template v-if="selectedRequest.status === 'Pending Verification'">
+                <UButton
+                  label="Reject"
+                  icon="i-lucide-x"
+                  color="error"
+                  variant="soft"
+                  @click="openRejectFromDetails"
+                />
+                <UButton
+                  v-if="selectedRequest.type === 'Registration'"
+                  label="Approve Registration"
+                  icon="i-lucide-check"
+                  color="success"
+                  @click="openVerifyFromDetails"
+                />
+                <UButton
+                  v-else
+                  label="Reset Credentials"
+                  icon="i-lucide-key-round"
+                  color="warning"
+                  @click="openResetFromDetails"
+                />
+              </template>
+              <template v-else-if="selectedRequest.type === 'Registration' && selectedRequest.status === 'Verified'">
+                <UButton
+                  v-if="nextCardStatus(selectedRequest)"
+                  :label="cardActionLabel()"
+                  :icon="cardActionIcon()"
+                  color="primary"
+                  @click="openCardStatusUpdate(selectedRequest)"
+                />
+                <UButton
+                  v-else-if="selectedRequest.student?.libraryCardStatus !== 'Released'"
+                  label="Open Card Printing"
+                  icon="i-lucide-printer"
+                  color="primary"
+                  :loading="openingPrintFor === selectedRequest.documentId"
+                  @click="openCardPrinting(selectedRequest)"
+                />
+              </template>
+            </div>
+          </footer>
         </div>
       </template>
     </UModal>
@@ -547,8 +1140,8 @@ onMounted(loadRequests);
             <h2 class="text-xl font-bold text-highlighted">Approve Student Registration</h2>
             <p class="mt-2 text-sm text-muted">Confirm the Student identity and current enrollment information before activating full Library privileges.</p>
           </div>
-          <div v-if="selectedRequest?.photoPreviewUrl" class="flex items-center gap-4 rounded-2xl border border-default bg-elevated p-4">
-            <img :src="selectedRequest.photoPreviewUrl" :alt="selectedRequest.fullName" class="size-24 rounded-xl object-cover">
+          <div v-if="requestPhotoUrl(selectedRequest)" class="flex items-center gap-4 rounded-2xl border border-default bg-elevated p-4">
+            <img :src="requestPhotoUrl(selectedRequest) || ''" :alt="selectedRequest?.fullName" class="size-24 rounded-xl object-cover">
             <div>
               <p class="font-semibold text-highlighted">{{ selectedRequest.fullName }}</p>
               <p class="mt-1 text-sm text-muted">{{ selectedRequest.studentNo }} • {{ selectedRequest.course }}</p>
@@ -564,6 +1157,74 @@ onMounted(loadRequests);
             <UButton type="submit" label="Approve Student" icon="i-lucide-badge-check" color="success" :loading="actionLoading" />
           </div>
         </UForm>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="cardStatusOpen"
+      :dismissible="!cardStatusLoading"
+      :ui="{ content: 'sm:max-w-lg' }"
+    >
+      <template #content>
+        <div v-if="cardStatusRequest" class="space-y-5 p-6">
+          <div>
+            <h2 class="text-xl font-bold text-highlighted">
+              Start Library Card Preparation
+            </h2>
+            <p class="mt-2 text-sm text-muted">
+              {{ cardStatusRequest.fullName }} · {{ cardStatusRequest.studentNo }}
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-default bg-elevated p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-xs font-semibold uppercase text-muted">Current Status</p>
+                <UBadge
+                  class="mt-2"
+                  :label="cardStatusRequest.student?.libraryCardStatus || 'Not available'"
+                  :color="cardStatusColor(cardStatusRequest.student?.libraryCardStatus)"
+                  variant="soft"
+                />
+              </div>
+              <UIcon name="i-lucide-arrow-right" class="size-5 text-muted" />
+              <div class="text-right">
+                <p class="text-xs font-semibold uppercase text-muted">New Status</p>
+                <UBadge
+                  class="mt-2"
+                  :label="cardStatusTarget"
+                  :color="cardStatusColor(cardStatusTarget)"
+                  variant="soft"
+                />
+              </div>
+            </div>
+          </div>
+
+          <UAlert
+            color="primary"
+            variant="soft"
+            icon="i-lucide-play"
+            title="Begin card preparation"
+            description="This moves the card to On Process. Printing, Mark as Printed, and Release are completed from the Library Card Print page."
+          />
+
+          <div class="flex justify-end gap-2">
+            <UButton
+              label="Cancel"
+              color="neutral"
+              variant="outline"
+              :disabled="cardStatusLoading"
+              @click="cardStatusOpen = false"
+            />
+            <UButton
+              label="Start Preparation"
+              icon="i-lucide-play"
+              color="primary"
+              :loading="cardStatusLoading"
+              @click="submitCardStatusUpdate"
+            />
+          </div>
+        </div>
       </template>
     </UModal>
 

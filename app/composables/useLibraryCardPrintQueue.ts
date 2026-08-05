@@ -137,6 +137,55 @@ export function useLibraryCardPrintQueue() {
     }
   }
 
+
+  function replaceQueuedStudent(
+    updatedStudent: StudentMember,
+  ) {
+    const updatedKey =
+      updatedStudent.documentId ||
+      updatedStudent.libraryCardNo ||
+      updatedStudent.studentNo;
+
+    students.value = students.value.map(
+      (student) => {
+        const currentKey =
+          student.documentId ||
+          student.libraryCardNo ||
+          student.studentNo;
+
+        return currentKey === updatedKey
+          ? updatedStudent
+          : student;
+      },
+    );
+
+    persist();
+  }
+
+  function replaceQueuedStudents(
+    updatedStudents: StudentMember[],
+  ) {
+    const updates = new Map(
+      updatedStudents.map((student) => [
+        student.documentId ||
+          student.libraryCardNo ||
+          student.studentNo,
+        student,
+      ]),
+    );
+
+    students.value = students.value.map(
+      (student) =>
+        updates.get(
+          student.documentId ||
+            student.libraryCardNo ||
+            student.studentNo,
+        ) ?? student,
+    );
+
+    persist();
+  }
+
   function clearPrintQueue() {
     students.value = [];
     sourceRoute.value =
@@ -154,6 +203,8 @@ export function useLibraryCardPrintQueue() {
     sourceRoute,
     setPrintQueue,
     addToPrintQueue,
+    replaceQueuedStudent,
+    replaceQueuedStudents,
     restorePrintQueue,
     clearPrintQueue,
   };
