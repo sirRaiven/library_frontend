@@ -248,22 +248,6 @@ const navigationItems =
           "/librarian/books/register",
         ),
       },
-      {
-        label: "Upload Book List",
-        icon: "i-lucide-file-up",
-        to: "/librarian/books/import",
-        active: isRouteActive(
-          "/librarian/books/import",
-        ),
-      },
-      {
-        label: "Manage Book Copies",
-        icon: "i-lucide-copy",
-        to: "/librarian/books/copies",
-        active: isRouteActive(
-          "/librarian/books/copies",
-        ),
-      },
     ],
     [
       {

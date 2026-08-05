@@ -12,11 +12,17 @@ const toast = useToast();
 const activeView = ref<"payments" | "calendar">("payments");
 const records = ref<LibraryFineRecord[]>([]);
 const calendar = ref<FineCalendarEntry[]>([]);
-const calendarYear = ref(String(new Date().getFullYear()));
-const calendarYearItems = Array.from({ length: 4 }, (_, index) => String(new Date().getFullYear() - 1 + index));
+const currentPhilippineYear = Number(getPhilippineDateKey().slice(0, 4));
+const calendarYear = ref(String(currentPhilippineYear));
+const calendarYearItems = Array.from({ length: 4 }, (_, index) => String(currentPhilippineYear - 1 + index));
 const holidaySyncing = ref(false);
 const loading = ref(false);
 const calendarLoading = ref(false);
+const calendarSearch = ref("");
+const calendarSource = ref("All entries");
+const calendarClassification = ref("All types");
+const calendarDateView = ref("All dates");
+const calendarStatus = ref("Active");
 const search = ref("");
 const status = ref("Unpaid");
 const type = ref("All");
@@ -31,6 +37,12 @@ const selectedFine = ref<LibraryFineRecord | null>(null);
 const payment = reactive({ orNumber: "", paymentDate: new Date().toISOString().slice(0, 10), notes: "" });
 const waiverReason = ref("");
 const saving = ref(false);
+const cancelCalendarOpen = ref(false);
+const calendarToCancel = ref<FineCalendarEntry | null>(null);
+const cancelCalendarReason = ref("");
+const removeCalendarOpen = ref(false);
+const calendarToRemove = ref<FineCalendarEntry | null>(null);
+const removeCalendarReason = ref("");
 
 const calendarOpen = ref(false);
 const editingCalendar = ref<FineCalendarEntry | null>(null);
@@ -52,15 +64,29 @@ const fineColumns: TableColumn<LibraryFineRecord>[] = [
 ];
 
 const calendarColumns: TableColumn<FineCalendarEntry>[] = [
-  { id: "event", header: "No-Fine Period" },
+  { id: "event", header: "Holiday / No-Fine Period" },
   { id: "dates", header: "Dates" },
-  { id: "resume", header: "Fine Counting Resumes" },
+  { id: "resume", header: "Fine Handling" },
   { id: "status", header: "Status" },
   { id: "actions", header: "Actions" },
 ];
 
 const statusItems = ["All", "Unpaid", "Paid", "Waived", "Cancelled"];
 const typeItems = ["All", "Overdue Book", "Damaged Book", "Lost Book", "Library Card Replacement", "Other"];
+const calendarSourceItems = ["All entries", "Official holidays", "School-added dates"];
+const calendarClassificationItems = [
+  "All types",
+  "Regular Holiday",
+  "Special Non-Working Day",
+  "Special Working Day",
+  "School Event",
+  "Class Suspension",
+  "Natural Disaster",
+  "Emergency Closure",
+  "Other",
+];
+const calendarDateViewItems = ["All dates", "Upcoming & current", "Upcoming", "Currently active", "Past"];
+const calendarStatusItems = ["All statuses", "Active", "Cancelled", "Removed"];
 const calendarTypes: FineCalendarInput["type"][] = [
   "School Event",
   "Class Suspension",
@@ -69,14 +95,117 @@ const calendarTypes: FineCalendarInput["type"][] = [
   "Other",
 ];
 
-const automaticHolidays = computed(() => calendar.value.filter((entry) => entry.automatic));
-const manualNoFinePeriods = computed(() => calendar.value.filter((entry) => !entry.automatic));
-const latestHolidaySync = computed(() => {
-  const values = automaticHolidays.value
-    .map((entry) => entry.syncedAt)
-    .filter((value): value is string => Boolean(value));
-  return values.sort().at(-1) ?? null;
+const todayKey = ref(getPhilippineDateKey());
+
+const automaticHolidayCount = computed(() => calendar.value.filter((entry) => entry.automatic && entry.status === "Active").length);
+const regularHolidayCount = computed(() => calendar.value.filter((entry) => entry.type === "Regular Holiday" && entry.status === "Active").length);
+const specialNonWorkingCount = computed(() => calendar.value.filter((entry) => entry.type === "Special Non-Working Day" && entry.status === "Active").length);
+const specialWorkingCount = computed(() => calendar.value.filter((entry) => entry.type === "Special Working Day" && entry.status === "Active").length);
+const schoolAddedCount = computed(() => calendar.value.filter((entry) => !entry.automatic && entry.status === "Active").length);
+const upcomingNoFineCount = computed(() => calendar.value.filter((entry) => entry.status === "Active" && entry.affectsFines && entry.endDate >= todayKey.value).length);
+
+const sortedCalendar = computed(() => [...calendar.value].sort(compareCalendarEntries));
+
+const filteredCalendar = computed(() => {
+  const query = calendarSearch.value.trim().toLowerCase();
+
+  return sortedCalendar.value.filter((entry) => {
+    if (calendarSource.value === "Official holidays" && !entry.automatic) return false;
+    if (calendarSource.value === "School-added dates" && entry.automatic) return false;
+    if (calendarClassification.value !== "All types" && entry.type !== calendarClassification.value) return false;
+    if (calendarStatus.value !== "All statuses" && entry.status !== calendarStatus.value) return false;
+
+    const timing = calendarTiming(entry);
+    if (calendarDateView.value === "Upcoming & current" && !["Upcoming", "Current"].includes(timing)) return false;
+    if (calendarDateView.value === "Upcoming" && timing !== "Upcoming") return false;
+    if (calendarDateView.value === "Currently active" && timing !== "Current") return false;
+    if (calendarDateView.value === "Past" && timing !== "Past") return false;
+
+    if (!query) return true;
+    return [entry.title, entry.type, entry.reason, entry.exceptionNo]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(query));
+  });
 });
+
+const nextNoFineDay = computed(() => sortedCalendar.value.find((entry) => entry.status === "Active" && entry.affectsFines && entry.endDate >= todayKey.value) ?? null);
+
+const hasCalendarFilters = computed(() =>
+  Boolean(calendarSearch.value.trim())
+  || calendarSource.value !== "All entries"
+  || calendarClassification.value !== "All types"
+  || calendarDateView.value !== "All dates"
+  || calendarStatus.value !== "Active",
+);
+
+function getPhilippineDateKey() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+  return `${year}-${month}-${day}`;
+}
+
+function dateNumber(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return Date.UTC(year || 0, (month || 1) - 1, day || 1) / 86_400_000;
+}
+
+function calendarTiming(entry: FineCalendarEntry) {
+  if (entry.startDate <= todayKey.value && entry.endDate >= todayKey.value) return "Current";
+  if (entry.startDate > todayKey.value) return "Upcoming";
+  return "Past";
+}
+
+function compareCalendarEntries(a: FineCalendarEntry, b: FineCalendarEntry) {
+  const rank = (entry: FineCalendarEntry) => {
+    if (entry.status === "Cancelled") return 3;
+    if (entry.status === "Removed") return 4;
+    const timing = calendarTiming(entry);
+    if (timing === "Current") return 0;
+    if (timing === "Upcoming") return 1;
+    return 2;
+  };
+
+  const rankDifference = rank(a) - rank(b);
+  if (rankDifference !== 0) return rankDifference;
+
+  const timing = calendarTiming(a);
+  if (timing === "Past" || a.status === "Cancelled" || a.status === "Removed") {
+    return dateNumber(b.endDate) - dateNumber(a.endDate);
+  }
+
+  return dateNumber(a.startDate) - dateNumber(b.startDate);
+}
+
+function calendarDateHint(entry: FineCalendarEntry) {
+  const timing = calendarTiming(entry);
+  if (timing === "Current") return "Happening today";
+
+  if (timing === "Upcoming") {
+    const days = dateNumber(entry.startDate) - dateNumber(todayKey.value);
+    if (days === 1) return "Tomorrow";
+    return `In ${days} days`;
+  }
+
+  const days = dateNumber(todayKey.value) - dateNumber(entry.endDate);
+  if (days === 1) return "Ended yesterday";
+  return `Ended ${days} days ago`;
+}
+
+function clearCalendarFilters() {
+  calendarSearch.value = "";
+  calendarSource.value = "All entries";
+  calendarClassification.value = "All types";
+  calendarDateView.value = "All dates";
+  calendarStatus.value = "Active";
+}
 
 function money(value: number) {
   return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(value || 0);
@@ -94,6 +223,7 @@ function statusColor(value: string) {
   if (value === "Paid" || value === "Active") return "success";
   if (value === "Unpaid") return "warning";
   if (value === "Waived") return "info";
+  if (value === "Removed") return "neutral";
   return "error";
 }
 
@@ -144,29 +274,29 @@ async function syncPhilippineHolidays() {
 
     if (!result?.syncSucceeded) {
       toast.add({
-        title: result?.cachedOnly ? "Online holiday sources unavailable" : "Holiday synchronization failed",
+        title: "Unable to refresh holidays",
         description: result?.cachedOnly
-          ? `No hardcoded dates were loaded. The system kept ${result.cachedCount ?? 0} previously synchronized holiday(s) for ${year}. ${result.warning ?? ""}`.trim()
-          : (result?.warning || `No dynamic Philippine regular-holiday data was available for ${year}.`),
+          ? `The existing holiday dates for ${year} were kept. Please try again later.`
+          : `No holiday dates were added for ${year}. Please try again later.`,
         color: result?.cachedOnly ? "warning" : "error",
-        icon: result?.cachedOnly ? "i-lucide-database" : "i-lucide-cloud-alert",
+        icon: "i-lucide-circle-alert",
       });
       await loadCalendar();
       return;
     }
 
-    const changeSummary = [
-      `${result.total ?? 0} regular holiday(s) synchronized`,
-      result.created ? `${result.created} added` : "",
-      result.updated ? `${result.updated} updated` : "",
-      result.removed ? `${result.removed} obsolete record(s) removed` : "",
-    ].filter(Boolean).join(" • ");
+    const counts = result.classificationCounts;
+    const countDetails = counts
+      ? `${counts.regularHolidays} regular, ${counts.specialNonWorkingDays} special non-working, and ${counts.specialWorkingDays} special working day(s).`
+      : `${result.total ?? 0} official holiday date(s).`;
 
     toast.add({
-      title: "Philippine holidays synchronized",
-      description: `${changeSummary} from ${result.provider || "local open-source holiday data"}.${result.warning ? ` Provider note: ${result.warning}` : ""}`,
-      color: result.warning ? "warning" : "success",
-      icon: "i-lucide-cloud-download",
+      title: result.repairedIncompleteCalendar
+        ? "Holiday calendar repaired"
+        : "Holiday calendar refreshed",
+      description: `${countDetails} The official ${year} calendar is ready.${result.removed ? ` ${result.removed} outdated date(s) were removed.` : ""}`,
+      color: "success",
+      icon: "i-lucide-calendar-check",
     });
     await loadCalendar();
   } catch (error) {
@@ -279,16 +409,66 @@ async function saveCalendar() {
   }
 }
 
-async function cancelCalendar(record: FineCalendarEntry) {
+function openCancelCalendar(record: FineCalendarEntry) {
   if (record.automatic) return;
-  const reason = window.prompt("Reason for cancelling this no-fine period:", record.reason || "Schedule changed");
-  if (!reason) return;
+  calendarToCancel.value = record;
+  cancelCalendarReason.value = record.reason || "Schedule changed";
+  cancelCalendarOpen.value = true;
+}
+
+async function confirmCancelCalendar() {
+  if (!calendarToCancel.value || !cancelCalendarReason.value.trim()) return;
+  saving.value = true;
   try {
-    await finesApi.cancelCalendar(record.documentId, reason);
+    await finesApi.cancelCalendar(calendarToCancel.value.documentId, cancelCalendarReason.value.trim());
+    cancelCalendarOpen.value = false;
     toast.add({ title: "No-fine period cancelled", color: "success", icon: "i-lucide-circle-check" });
     await loadCalendar();
   } catch (error) {
     toast.add({ title: "Unable to cancel period", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+  } finally {
+    saving.value = false;
+  }
+}
+
+function openRemoveCalendar(record: FineCalendarEntry) {
+  calendarToRemove.value = record;
+  removeCalendarReason.value = record.automatic
+    ? "Not applicable to the library calendar"
+    : "No longer needed";
+  removeCalendarOpen.value = true;
+}
+
+async function confirmRemoveCalendar() {
+  if (!calendarToRemove.value || !removeCalendarReason.value.trim()) return;
+  saving.value = true;
+  try {
+    await finesApi.removeCalendar(calendarToRemove.value.documentId, removeCalendarReason.value.trim());
+    removeCalendarOpen.value = false;
+    toast.add({
+      title: "Calendar entry removed",
+      description: "The entry will no longer affect fine calculations. It can be restored from the Removed filter.",
+      color: "success",
+      icon: "i-lucide-trash-2",
+    });
+    await loadCalendar();
+  } catch (error) {
+    toast.add({ title: "Unable to remove entry", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function restoreCalendar(record: FineCalendarEntry) {
+  saving.value = true;
+  try {
+    await finesApi.restoreCalendar(record.documentId);
+    toast.add({ title: "Calendar entry restored", color: "success", icon: "i-lucide-rotate-ccw" });
+    await loadCalendar();
+  } catch (error) {
+    toast.add({ title: "Unable to restore entry", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -313,15 +493,26 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
     <div class="mx-auto max-w-[1500px] space-y-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex items-start gap-3">
-          <div class="flex size-11 items-center justify-center rounded-2xl bg-warning/10 text-warning"><UIcon name="i-lucide-receipt-text" class="size-6" /></div>
+          <div
+            class="flex size-11 items-center justify-center rounded-2xl"
+            :class="activeView === 'calendar' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'"
+          >
+            <UIcon :name="activeView === 'calendar' ? 'i-lucide-calendar-off' : 'i-lucide-receipt-text'" class="size-6" />
+          </div>
           <div>
-            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">Fines and Cashier Payments</h1>
-            <p class="mt-1 max-w-3xl text-sm text-muted">Review automatic school-day fines, verify cashier Official Receipts, process Library Card replacement charges, and manage dates when fine counting is suspended.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">
+              {{ activeView === 'calendar' ? 'No-Fine Days' : 'Fines and Cashier Payments' }}
+            </h1>
+            <p class="mt-1 max-w-3xl text-sm text-muted">
+              {{ activeView === 'calendar'
+                ? 'View official Philippine holidays and school-approved no-fine dates. Special working days are shown for reference.'
+                : 'Review fines, verify cashier Official Receipts, and process Library Card replacement charges.' }}
+            </p>
           </div>
         </div>
-        <div class="inline-flex rounded-xl border border-default bg-elevated p-1">
-          <UButton label="Fines & Payments" icon="i-lucide-philippine-peso" :variant="activeView === 'payments' ? 'solid' : 'ghost'" :color="activeView === 'payments' ? 'primary' : 'neutral'" @click="activeView = 'payments'" />
-          <UButton label="No-Fine Days" icon="i-lucide-calendar-off" :variant="activeView === 'calendar' ? 'solid' : 'ghost'" :color="activeView === 'calendar' ? 'primary' : 'neutral'" @click="activeView = 'calendar'" />
+        <div class="inline-flex w-full rounded-xl border border-default bg-elevated p-1 sm:w-auto">
+          <UButton class="flex-1 sm:flex-none" label="Fines & Payments" icon="i-lucide-philippine-peso" :variant="activeView === 'payments' ? 'solid' : 'ghost'" :color="activeView === 'payments' ? 'primary' : 'neutral'" @click="activeView = 'payments'" />
+          <UButton class="flex-1 sm:flex-none" label="No-Fine Days" icon="i-lucide-calendar-off" :variant="activeView === 'calendar' ? 'solid' : 'ghost'" :color="activeView === 'calendar' ? 'primary' : 'neutral'" @click="activeView = 'calendar'" />
         </div>
       </div>
 
@@ -387,66 +578,64 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
         <UAlert
           color="info"
           variant="soft"
-          icon="i-lucide-cloud-sun"
-          title="Philippine regular holidays are generated locally"
-          description="The system uses the open-source date-holidays library for the selected year and may verify available dates through Nager.Holidays. Internet outages do not stop local holiday generation. Saturdays and Sundays remain excluded; manual entries are only for school events, suspensions, disasters, and emergency closures."
+          icon="i-lucide-calendar-heart"
+          title="How the holiday calendar works"
+          description="Regular holidays, special non-working days, and approved school dates pause overdue-fine counting. Special working days are displayed for reference, but fines continue normally."
         />
 
-        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <UCard>
-            <template #header>
-              <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 class="font-semibold text-highlighted">Automatic Philippine Regular Holidays</h2>
-                  <p class="text-sm text-muted">Read-only dates generated from an installed open-source Philippine holiday calendar, then stored locally for fine calculation.</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <USelect v-model="calendarYear" :items="calendarYearItems" class="w-32" />
-                  <UButton label="Sync Holidays" icon="i-lucide-cloud-download" color="primary" :loading="holidaySyncing" @click="syncPhilippineHolidays" />
-                </div>
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm text-muted">Next No-Fine Day</p>
+                <p class="mt-2 text-xl font-bold text-highlighted">
+                  {{ nextNoFineDay ? dateLabel(nextNoFineDay.startDate) : 'None scheduled' }}
+                </p>
+                <p v-if="nextNoFineDay" class="mt-1 truncate text-sm text-muted">{{ nextNoFineDay.title }}</p>
               </div>
-            </template>
-
-            <div v-if="calendarLoading" class="space-y-3"><USkeleton v-for="i in 4" :key="i" class="h-16 w-full" /></div>
-            <div v-else-if="automaticHolidays.length === 0" class="py-12 text-center">
-              <UIcon name="i-lucide-calendar-search" class="mx-auto size-10 text-dimmed" />
-              <h3 class="mt-3 font-semibold">No synchronized regular holidays for {{ calendarYear }}</h3>
-              <p class="mt-1 text-sm text-muted">Select Sync Holidays to generate the selected year from the installed open-source holiday data. An internet connection is optional.</p>
+              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <UIcon name="i-lucide-calendar-clock" class="size-5" />
+              </div>
             </div>
-            <UTable v-else :data="automaticHolidays" :columns="calendarColumns">
-              <template #event-cell="{ row }">
-                <p class="font-semibold text-highlighted">{{ row.original.title }}</p>
-                <div class="mt-1 flex flex-wrap items-center gap-2">
-                  <UBadge color="primary" variant="soft">Automatic</UBadge>
-                  <span class="text-xs text-muted">{{ row.original.sourceName || 'Local open-source holiday data' }}</span>
-                </div>
-                <ULink
-                  v-if="row.original.sourceReference"
-                  :to="row.original.sourceReference"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  View holiday data source
-                  <UIcon name="i-lucide-external-link" class="size-3" />
-                </ULink>
-              </template>
-              <template #dates-cell="{ row }"><p>{{ dateLabel(row.original.startDate) }}</p><p class="text-xs text-muted">Regular Holiday</p></template>
-              <template #resume-cell="{ row }"><p class="font-medium text-highlighted">{{ dateLabel(row.original.resumeDate) }}</p></template>
-              <template #status-cell="{ row }"><UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge></template>
-              <template #actions-cell><span class="text-xs text-muted">Managed automatically</span></template>
-            </UTable>
           </UCard>
 
           <UCard>
-            <p class="text-sm text-muted">Selected Year</p>
-            <p class="mt-1 text-3xl font-bold text-highlighted">{{ calendarYear }}</p>
-            <div class="mt-5 space-y-3 text-sm">
-              <div class="flex items-center justify-between"><span class="text-muted">Regular holidays</span><span class="font-semibold">{{ automaticHolidays.length }}</span></div>
-              <div class="flex items-center justify-between"><span class="text-muted">School exceptions</span><span class="font-semibold">{{ manualNoFinePeriods.length }}</span></div>
-              <div class="border-t border-default pt-3">
-                <p class="text-xs text-muted">Last synchronized</p>
-                <p class="mt-1 font-medium text-highlighted">{{ dateLabel(latestHolidaySync) }}</p>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm text-muted">Upcoming or Ongoing</p>
+                <p class="mt-2 text-3xl font-bold text-highlighted">{{ upcomingNoFineCount }}</p>
+                <p class="mt-1 text-xs text-muted">Active dates from today onward</p>
+              </div>
+              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
+                <UIcon name="i-lucide-calendar-check-2" class="size-5" />
+              </div>
+            </div>
+          </UCard>
+
+          <UCard>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm text-muted">Official Holiday Dates</p>
+                <p class="mt-2 text-3xl font-bold text-highlighted">{{ automaticHolidayCount }}</p>
+                <p class="mt-1 text-xs text-muted">
+                  {{ regularHolidayCount }} regular · {{ specialNonWorkingCount }} special non-working · {{ specialWorkingCount }} special working
+                </p>
+              </div>
+              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
+                <UIcon name="i-lucide-flag" class="size-5" />
+              </div>
+            </div>
+          </UCard>
+
+          <UCard>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm text-muted">School-Added Dates</p>
+                <p class="mt-2 text-3xl font-bold text-highlighted">{{ schoolAddedCount }}</p>
+                <p class="mt-1 text-xs text-muted">Events, suspensions, and closures</p>
+              </div>
+              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
+                <UIcon name="i-lucide-school" class="size-5" />
               </div>
             </div>
           </UCard>
@@ -454,22 +643,173 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
 
         <UCard>
           <template #header>
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <h2 class="font-semibold text-highlighted">School Events and Class Suspensions</h2>
-                <p class="text-sm text-muted">Add only institution-specific dates when fine counting must stop.</p>
+                <h2 class="text-lg font-semibold text-highlighted">Holiday and No-Fine Calendar</h2>
+                <p class="mt-1 text-sm text-muted">Official 2026 holidays follow Proclamation No. 1006 and the separate Eid proclamations. Nearest dates appear first.</p>
               </div>
-              <UButton label="Add No-Fine Period" icon="i-lucide-plus" color="success" @click="openCalendar()" />
+              <div class="flex flex-wrap items-center gap-2">
+                <USelect v-model="calendarYear" :items="calendarYearItems" class="w-32" aria-label="Calendar year" />
+                <UButton
+                  label="Refresh Holidays"
+                  icon="i-lucide-refresh-cw"
+                  color="neutral"
+                  variant="outline"
+                  :loading="holidaySyncing"
+                  @click="syncPhilippineHolidays"
+                />
+                <UButton label="Add No-Fine Day" icon="i-lucide-plus" color="success" @click="openCalendar()" />
+              </div>
             </div>
           </template>
-          <div v-if="calendarLoading" class="space-y-3"><USkeleton v-for="i in 3" :key="i" class="h-16 w-full" /></div>
-          <div v-else-if="manualNoFinePeriods.length === 0" class="py-12 text-center"><UIcon name="i-lucide-school" class="mx-auto size-10 text-dimmed" /><h3 class="mt-3 font-semibold">No school-specific no-fine period</h3></div>
-          <UTable v-else :data="manualNoFinePeriods" :columns="calendarColumns">
-            <template #event-cell="{ row }"><p class="font-semibold text-highlighted">{{ row.original.title }}</p><p class="text-xs text-muted">{{ row.original.type }} • {{ row.original.exceptionNo }}</p><p v-if="row.original.reason" class="mt-1 text-xs text-muted">{{ row.original.reason }}</p></template>
-            <template #dates-cell="{ row }"><p>{{ dateLabel(row.original.startDate) }}</p><p class="text-xs text-muted">to {{ dateLabel(row.original.endDate) }}</p></template>
-            <template #resume-cell="{ row }"><p class="font-medium text-highlighted">{{ dateLabel(row.original.resumeDate) }}</p></template>
-            <template #status-cell="{ row }"><UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge></template>
-            <template #actions-cell="{ row }"><div class="flex gap-2"><UButton label="Edit" icon="i-lucide-pencil" size="sm" color="neutral" variant="outline" @click="openCalendar(row.original)" /><UButton v-if="row.original.status === 'Active'" label="Cancel" icon="i-lucide-x" size="sm" color="error" variant="ghost" @click="cancelCalendar(row.original)" /></div></template>
+
+          <div class="mb-5 rounded-2xl border border-default bg-elevated/50 p-4">
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_13rem_14rem_14rem_12rem]">
+              <UInput
+                v-model="calendarSearch"
+                icon="i-lucide-search"
+                placeholder="Search holiday or school event"
+              />
+              <USelect v-model="calendarSource" :items="calendarSourceItems" aria-label="Entry source" />
+              <USelect v-model="calendarClassification" :items="calendarClassificationItems" aria-label="Holiday or event type" />
+              <USelect v-model="calendarDateView" :items="calendarDateViewItems" aria-label="Date filter" />
+              <USelect v-model="calendarStatus" :items="calendarStatusItems" aria-label="Status filter" />
+            </div>
+            <div class="mt-3 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-muted">Showing {{ filteredCalendar.length }} of {{ calendar.length }} scheduled date(s)</p>
+              <UButton
+                v-if="hasCalendarFilters"
+                label="Clear Filters"
+                icon="i-lucide-filter-x"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                @click="clearCalendarFilters"
+              />
+            </div>
+          </div>
+
+          <div v-if="calendarLoading" class="space-y-3">
+            <USkeleton v-for="i in 5" :key="i" class="h-16 w-full" />
+          </div>
+
+          <div v-else-if="filteredCalendar.length === 0" class="py-14 text-center">
+            <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-elevated text-dimmed">
+              <UIcon name="i-lucide-calendar-search" class="size-7" />
+            </div>
+            <h3 class="mt-4 font-semibold text-highlighted">No matching holiday or no-fine dates</h3>
+            <p class="mx-auto mt-1 max-w-md text-sm text-muted">
+              {{ calendar.length ? 'Try changing or clearing the filters.' : `Refresh the ${calendarYear} holidays or add a school-specific date.` }}
+            </p>
+            <UButton
+              v-if="calendar.length && hasCalendarFilters"
+              label="Clear Filters"
+              icon="i-lucide-filter-x"
+              class="mt-4"
+              color="neutral"
+              variant="outline"
+              @click="clearCalendarFilters"
+            />
+          </div>
+
+          <UTable v-else :data="filteredCalendar" :columns="calendarColumns">
+            <template #event-cell="{ row }">
+              <div class="min-w-56">
+                <p class="font-semibold text-highlighted">{{ row.original.title }}</p>
+                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <UBadge :color="row.original.automatic ? 'primary' : 'neutral'" variant="soft">
+                    {{ row.original.automatic ? 'Official Holiday' : 'School-Added' }}
+                  </UBadge>
+                  <UBadge
+                    :color="row.original.type === 'Special Working Day' ? 'warning' : 'neutral'"
+                    variant="subtle"
+                  >
+                    {{ row.original.type }}
+                  </UBadge>
+                </div>
+                <p
+                  v-if="row.original.reason && (!row.original.automatic || row.original.status === 'Removed')"
+                  class="mt-2 max-w-lg text-xs text-muted"
+                >
+                  {{ row.original.reason }}
+                </p>
+              </div>
+            </template>
+
+            <template #dates-cell="{ row }">
+              <p class="font-medium text-highlighted">{{ dateLabel(row.original.startDate) }}</p>
+              <p v-if="row.original.endDate !== row.original.startDate" class="text-xs text-muted">
+                to {{ dateLabel(row.original.endDate) }}
+              </p>
+              <p
+                class="mt-1 text-xs font-medium"
+                :class="calendarTiming(row.original) === 'Current' ? 'text-success' : 'text-muted'"
+              >
+                {{ calendarDateHint(row.original) }}
+              </p>
+            </template>
+
+            <template #resume-cell="{ row }">
+              <template v-if="row.original.status !== 'Active'">
+                <p class="font-medium text-muted">Not applied</p>
+                <p class="mt-1 text-xs text-muted">This entry does not affect fines</p>
+              </template>
+              <template v-else-if="!row.original.affectsFines">
+                <p class="font-medium text-warning">Fines continue</p>
+                <p class="mt-1 text-xs text-muted">Official special working day</p>
+              </template>
+              <template v-else>
+                <p class="font-medium text-highlighted">{{ dateLabel(row.original.resumeDate) }}</p>
+                <p class="mt-1 text-xs text-muted">Fine counting resumes</p>
+              </template>
+            </template>
+
+            <template #status-cell="{ row }">
+              <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
+            </template>
+
+            <template #actions-cell="{ row }">
+              <div class="flex flex-wrap gap-2">
+                <UButton
+                  v-if="row.original.status === 'Removed'"
+                  label="Restore"
+                  icon="i-lucide-rotate-ccw"
+                  size="sm"
+                  color="success"
+                  variant="outline"
+                  :loading="saving"
+                  @click="restoreCalendar(row.original)"
+                />
+                <template v-else>
+                  <UButton
+                    v-if="!row.original.automatic"
+                    label="Edit"
+                    icon="i-lucide-pencil"
+                    size="sm"
+                    color="neutral"
+                    variant="outline"
+                    @click="openCalendar(row.original)"
+                  />
+                  <UButton
+                    v-if="!row.original.automatic && row.original.status === 'Active'"
+                    label="Cancel"
+                    icon="i-lucide-x"
+                    size="sm"
+                    color="warning"
+                    variant="ghost"
+                    @click="openCancelCalendar(row.original)"
+                  />
+                  <UButton
+                    label="Remove"
+                    icon="i-lucide-trash-2"
+                    size="sm"
+                    color="error"
+                    variant="ghost"
+                    @click="openRemoveCalendar(row.original)"
+                  />
+                </template>
+              </div>
+            </template>
           </UTable>
         </UCard>
       </template>
@@ -479,6 +819,74 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
 
     <UModal v-model:open="waiverOpen" :ui="{ content: 'sm:max-w-lg' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold">Waive Fine</h2><p class="mt-1 text-sm text-muted">A reason is required and will be included in the audit trail.</p></div><UFormField label="Waiver Reason" required><UTextarea v-model="waiverReason" :rows="4" /></UFormField><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="ghost" @click="waiverOpen = false" /><UButton label="Confirm Waiver" icon="i-lucide-scale" color="warning" :loading="saving" :disabled="!waiverReason.trim()" @click="waiveFine" /></div></div></template></UModal>
 
-    <UModal v-model:open="calendarOpen" :ui="{ content: 'sm:max-w-xl' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold">{{ editingCalendar ? 'Update No-Fine Period' : 'Add No-Fine Period' }}</h2><p class="mt-1 text-sm text-muted">Use this only for school events, class suspensions, disasters, or emergency closures. National regular holidays are synchronized automatically.</p></div><div class="grid gap-4 sm:grid-cols-2"><UFormField label="Title" required class="sm:col-span-2"><UInput v-model="calendarForm.title" placeholder="Example: Typhoon class suspension" /></UFormField><UFormField label="Type" required><USelect v-model="calendarForm.type" :items="calendarTypes" /></UFormField><UFormField label="Start Date" required><UInput v-model="calendarForm.startDate" type="date" /></UFormField><UFormField label="End Date" required><UInput v-model="calendarForm.endDate" type="date" /></UFormField><UFormField label="Resume Fine Counting" hint="Optional — the no-fine period ends on the previous date"><UInput v-model="calendarForm.resumeDate" type="date" /></UFormField><UFormField label="Reason or Details" hint="Optional" class="sm:col-span-2"><UTextarea v-model="calendarForm.reason" :rows="3" /></UFormField></div><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="ghost" @click="calendarOpen = false" /><UButton label="Save Period" icon="i-lucide-save" color="success" :loading="saving" :disabled="!calendarForm.title.trim() || !calendarForm.startDate || !calendarForm.endDate" @click="saveCalendar" /></div></div></template></UModal>
+    <UModal v-model:open="calendarOpen" :ui="{ content: 'sm:max-w-xl' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold">{{ editingCalendar ? 'Update No-Fine Period' : 'Add No-Fine Period' }}</h2><p class="mt-1 text-sm text-muted">Use this for school events, class suspensions, disasters, or emergency closures. Official Philippine holidays are added automatically.</p></div><div class="grid gap-4 sm:grid-cols-2"><UFormField label="Title" required class="sm:col-span-2"><UInput v-model="calendarForm.title" placeholder="Example: Typhoon class suspension" /></UFormField><UFormField label="Type" required><USelect v-model="calendarForm.type" :items="calendarTypes" /></UFormField><UFormField label="Start Date" required><UInput v-model="calendarForm.startDate" type="date" /></UFormField><UFormField label="End Date" required><UInput v-model="calendarForm.endDate" type="date" /></UFormField><UFormField label="Resume Fine Counting" hint="Optional — the no-fine period ends on the previous date"><UInput v-model="calendarForm.resumeDate" type="date" /></UFormField><UFormField label="Reason or Details" hint="Optional" class="sm:col-span-2"><UTextarea v-model="calendarForm.reason" :rows="3" /></UFormField></div><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="ghost" @click="calendarOpen = false" /><UButton label="Save Period" icon="i-lucide-save" color="success" :loading="saving" :disabled="!calendarForm.title.trim() || !calendarForm.startDate || !calendarForm.endDate" @click="saveCalendar" /></div></div></template></UModal>
+
+    <UModal v-model:open="cancelCalendarOpen" :ui="{ content: 'sm:max-w-lg' }">
+      <template #content>
+        <div class="space-y-5 bg-default p-6">
+          <div>
+            <h2 class="text-xl font-bold text-highlighted">Cancel No-Fine Period</h2>
+            <p class="mt-1 text-sm text-muted">This will keep the record for reference but stop it from affecting fine calculations.</p>
+          </div>
+          <UAlert
+            v-if="calendarToCancel"
+            color="warning"
+            variant="soft"
+            icon="i-lucide-calendar-x"
+            :title="calendarToCancel.title"
+            :description="`${dateLabel(calendarToCancel.startDate)} to ${dateLabel(calendarToCancel.endDate)}`"
+          />
+          <UFormField label="Reason for Cancellation" required>
+            <UTextarea v-model="cancelCalendarReason" :rows="4" placeholder="Explain why this date is being cancelled" />
+          </UFormField>
+          <div class="flex justify-end gap-2">
+            <UButton label="Keep Period" color="neutral" variant="ghost" @click="cancelCalendarOpen = false" />
+            <UButton
+              label="Cancel Period"
+              icon="i-lucide-calendar-x"
+              color="error"
+              :loading="saving"
+              :disabled="!cancelCalendarReason.trim()"
+              @click="confirmCancelCalendar"
+            />
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <UModal v-model:open="removeCalendarOpen" :ui="{ content: 'sm:max-w-lg' }">
+      <template #content>
+        <div class="space-y-5 bg-default p-6">
+          <div>
+            <h2 class="text-xl font-bold text-highlighted">Remove Calendar Entry</h2>
+            <p class="mt-1 text-sm text-muted">Removed entries are hidden from the active calendar and do not affect fine calculations.</p>
+          </div>
+          <UAlert
+            v-if="calendarToRemove"
+            color="error"
+            variant="soft"
+            icon="i-lucide-trash-2"
+            :title="calendarToRemove.title"
+            :description="calendarToRemove.automatic
+              ? 'This official holiday will remain removed after future holiday refreshes unless it is restored.'
+              : `${dateLabel(calendarToRemove.startDate)} to ${dateLabel(calendarToRemove.endDate)}`"
+          />
+          <UFormField label="Reason for Removal" required>
+            <UTextarea v-model="removeCalendarReason" :rows="4" placeholder="Explain why this entry should be removed" />
+          </UFormField>
+          <div class="flex justify-end gap-2">
+            <UButton label="Keep Entry" color="neutral" variant="ghost" @click="removeCalendarOpen = false" />
+            <UButton
+              label="Remove Entry"
+              icon="i-lucide-trash-2"
+              color="error"
+              :loading="saving"
+              :disabled="!removeCalendarReason.trim()"
+              @click="confirmRemoveCalendar"
+            />
+          </div>
+        </div>
+      </template>
+    </UModal>
   </UContainer>
 </template>

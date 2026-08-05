@@ -41,6 +41,8 @@ export interface FineCalendarEntry {
   title: string;
   type:
     | "Regular Holiday"
+    | "Special Non-Working Day"
+    | "Special Working Day"
     | "School Event"
     | "Class Suspension"
     | "Natural Disaster"
@@ -50,8 +52,9 @@ export interface FineCalendarEntry {
   endDate: string;
   resumeDate: string;
   reason: string;
-  status: "Active" | "Cancelled";
+  status: "Active" | "Cancelled" | "Removed";
   automatic: boolean;
+  affectsFines: boolean;
   sourceName?: string | null;
   sourceReference?: string | null;
   externalKey?: string | null;
@@ -63,7 +66,10 @@ export interface FineCalendarEntry {
 
 export interface FineCalendarInput {
   title: string;
-  type: Exclude<FineCalendarEntry["type"], "Regular Holiday">;
+  type: Exclude<
+    FineCalendarEntry["type"],
+    "Regular Holiday" | "Special Non-Working Day" | "Special Working Day"
+  >;
   startDate: string;
   endDate: string;
   resumeDate?: string;
@@ -130,7 +136,6 @@ export function useLibraryFines() {
       data: {
         provider: string;
         automatic: boolean;
-        hardcodedFallback: false;
         results: Array<{
           year: number;
           skipped?: boolean;
@@ -143,6 +148,15 @@ export function useLibraryFines() {
           provider?: string | null;
           attemptedProviders?: string[];
           removed?: number;
+          repairedIncompleteCalendar?: boolean;
+          calendarComplete?: boolean | null;
+          expectedTotal?: number;
+          existingTotal?: number;
+          classificationCounts?: {
+            regularHolidays: number;
+            specialNonWorkingDays: number;
+            specialWorkingDays: number;
+          };
           warning?: string;
           syncedAt?: string;
           latestSync?: string;
@@ -175,6 +189,20 @@ export function useLibraryFines() {
     );
   }
 
+  async function removeCalendar(documentId: string, reason: string) {
+    return await auth.authFetch<{ data: FineCalendarEntry }>(
+      `/api/library-fines/calendar/${encodeURIComponent(documentId)}/remove`,
+      { method: "POST", body: { data: { reason } } },
+    );
+  }
+
+  async function restoreCalendar(documentId: string) {
+    return await auth.authFetch<{ data: FineCalendarEntry }>(
+      `/api/library-fines/calendar/${encodeURIComponent(documentId)}/restore`,
+      { method: "POST" },
+    );
+  }
+
   return {
     list,
     createCardReplacement,
@@ -185,5 +213,7 @@ export function useLibraryFines() {
     createCalendar,
     updateCalendar,
     cancelCalendar,
+    removeCalendar,
+    restoreCalendar,
   };
 }
