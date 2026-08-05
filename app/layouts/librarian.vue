@@ -166,6 +166,13 @@ function getPageInformation(): {
     };
   }
 
+  if (path.startsWith("/librarian/history")) {
+    return {
+      title: "History Logs",
+      icon: "i-lucide-history",
+    };
+  }
+
   if (path.startsWith("/librarian/reports")) {
     return {
       title: "Reports",
@@ -347,6 +354,14 @@ const navigationItems =
       {
         label: "Reports and Notices",
         type: "label",
+      },
+      {
+        label: "History Logs",
+        icon: "i-lucide-history",
+        to: "/librarian/history",
+        active: isRouteActive(
+          "/librarian/history",
+        ),
       },
       {
         label: "Reports",

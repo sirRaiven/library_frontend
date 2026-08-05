@@ -67,6 +67,12 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       active: active("/student/reservations"),
     },
     {
+      label: "My History",
+      icon: "i-lucide-history",
+      to: "/student/history",
+      active: active("/student/history"),
+    },
+    {
       label: "Digital Library Card",
       icon: "i-lucide-id-card",
       to: "/student/library-card",
@@ -117,6 +123,9 @@ function pageInformation() {
   }
   if (path.startsWith("/student/reservations")) {
     return { title: "My Reservations", icon: "i-lucide-bookmark-check" };
+  }
+  if (path.startsWith("/student/history")) {
+    return { title: "My History", icon: "i-lucide-history" };
   }
   if (path.startsWith("/student/library-card")) {
     return { title: "Library Card", icon: "i-lucide-id-card" };
