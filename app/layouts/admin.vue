@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type {
   DropdownMenuItem,
   NavigationMenuItem,
@@ -239,7 +241,7 @@ onMounted(async () => {
     await monitoring.start();
     await monitoring.recordPageView(route.path, pageTitle.value);
   } catch (error) {
-    console.warn("Unable to initialize Administrator portal monitoring.", error);
+    appLogger.warn("Unable to initialize Administrator portal monitoring.", error);
   }
 
   monitoringTimer = setInterval(() => {

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+
+
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
+import { appLogger } from "~/utils/app-logger";
 type CopyStatus =
   | "Available"
   | "Borrowed"
@@ -141,7 +145,7 @@ async function renderBarcode() {
       },
     );
   } catch (error) {
-    console.error(
+    appLogger.error(
       "Unable to render barcode:",
       error,
     );
@@ -217,10 +221,10 @@ async function downloadPng() {
       icon: "i-lucide-download",
     });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Unable to download the barcode.";
+    const message = userFacingErrorMessage(
+      error,
+      "Unable to download the barcode.",
+    );
 
     emit("error", message);
 

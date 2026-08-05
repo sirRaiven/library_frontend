@@ -1,3 +1,5 @@
+import { appLogger } from "~/utils/app-logger";
+
 import type {
   LibraryCardDesign,
 } from "~/composables/useLibraryCardDesign";
@@ -149,7 +151,7 @@ export function useStudentLibraryCard() {
       );
     } catch (caught) {
       if (await handleUnauthorized(caught)) return;
-      console.warn("Unable to record Library Card activity.", caught);
+      appLogger.warn("Unable to record Library Card activity.", caught);
     }
   }
 

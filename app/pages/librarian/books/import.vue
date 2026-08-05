@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
 import { useAuth } from "~/composables/useAuth";
 import { useBarcodePrintQueue } from "~/composables/useBarcodePrintQueue";
 import { useLibraryInventoryExcel } from "~/composables/useLibraryInventoryExcel";
@@ -187,10 +189,10 @@ async function handleFileSelection(
 
     toast.add({
       title: "Unable to read Excel file",
-      description:
-        error instanceof Error
-          ? error.message
-          : "The workbook could not be read.",
+      description: userFacingErrorMessage(
+        error,
+        "The workbook could not be read.",
+      ),
       color: "error",
       icon: "i-lucide-file-x-2",
     });

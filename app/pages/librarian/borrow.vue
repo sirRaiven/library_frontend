@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type {
   CirculationBookCopy,
   CirculationMember,
@@ -110,7 +112,7 @@ async function loadRecentTransactions() {
     recentTransactions.value =
       await circulation.recentBorrows(8);
   } catch (error) {
-    console.warn(
+    appLogger.warn(
       "Recent borrowing transactions could not be loaded.",
       error,
     );

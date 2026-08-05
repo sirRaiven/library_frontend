@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminDeviceRecord, AdminMonitoringSummary } from "~/composables/useAdminMonitoring";
 
@@ -16,7 +18,7 @@ const columns: TableColumn<AdminDeviceRecord>[] = [
   { id: "seen", header: "Last Seen" }, { id: "sessions", header: "Portal Sessions" }, { id: "actions", header: "" },
 ];
 function formatDate(value: string | null) { if (!value) return "Not recorded"; return new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(value)); }
-async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { console.warn(error); } }
+async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { appLogger.warn(error); } }
 async function load() { loading.value = true; try { const response = await api.devices({ page: page.value, pageSize, search: search.value, trust: trust.value, blocked: blocked.value, deviceType: deviceType.value, profileType: profileType.value }); records.value = response.data; total.value = response.meta.total; } catch (error) { toast.add({ title: "Unable to load devices", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" }); } finally { loading.value = false; } }
 function view(record: AdminDeviceRecord) { selected.value = record; detailOpen.value = true; }
 function begin(record: AdminDeviceRecord, next: typeof action.value) { selected.value = record; action.value = next; reason.value = ""; detailOpen.value = false; actionOpen.value = true; }

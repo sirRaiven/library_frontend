@@ -1,4 +1,5 @@
 export default defineNuxtConfig({
+  compatibilityDate: "2026-08-05",
   ssr: true,
 
   devtools: {
@@ -8,6 +9,21 @@ export default defineNuxtConfig({
   modules: ["@nuxt/ui"],
 
   css: ["~/assets/css/main.css"],
+
+  nitro: {
+    compressPublicAssets: true,
+  },
+
+  routeRules: {
+    "/**": {
+      headers: {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(self), microphone=(), geolocation=()",
+      },
+    },
+  },
 
   app: {
     head: {

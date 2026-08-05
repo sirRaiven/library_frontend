@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type { FormError, FormSubmitEvent, TableColumn } from "@nuxt/ui";
 import type {
   StudentMember,
@@ -1435,7 +1437,7 @@ onMounted(async () => {
     await termManager.load(true);
     syncRegistrationMembership();
   } catch (error) {
-    console.warn("Academic membership term could not be loaded.", error);
+    appLogger.warn("Academic membership term could not be loaded.", error);
   }
   await loadStudents();
 });

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
 import type {
   LibraryReportBranding,
   LibraryReportDocument,
@@ -430,10 +432,10 @@ function validatePeriod(): boolean {
 }
 
 function errorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return "The report could not be prepared.";
+  return userFacingErrorMessage(
+    error,
+    "The report could not be prepared.",
+  );
 }
 
 function escapeRegExp(value: string): string {

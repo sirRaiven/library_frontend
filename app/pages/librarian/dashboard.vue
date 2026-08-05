@@ -36,45 +36,32 @@ interface NotificationSummaryResponse {
   };
 }
 
-interface BookRecord {
-  id?: number;
+interface BorrowingDashboardItem {
   documentId?: string;
+  borrowNo?: string;
+  borrowDate?: string;
+  dueDate?: string;
+  status?: string;
+  memberType?: string;
+  memberName?: string;
+  memberIdentifier?: string;
+  controlNumber?: string | null;
+  accessionNumber?: string | null;
   title?: string;
-  author?: string;
-  control_number?: string;
 }
 
-interface BookCopyRecord {
-  id?: number;
-  documentId?: string;
-  accession_number?: string;
-  control_number?: string;
-  copy_status?: string;
-  book?: unknown;
+interface BorrowingDashboardResponse {
+  data: {
+    activeBorrowCount?: number;
+    overdueBorrowCount?: number;
+    recent?: BorrowingDashboardItem[];
+  };
 }
 
-interface LibraryMemberRecord {
-  first_name?: string;
-  middle_name?: string;
-  last_name?: string;
-  suffix?: string;
-}
-
-interface BorrowTransactionRecord {
-  id?: number;
-  documentId?: string;
-  borrow_no?: string;
-  borrow_date?: string;
-  due_date?: string;
-  borrow_transaction_status?: string;
-  createdAt?: string;
-  book?: unknown;
-  book_copy?: unknown;
-  bookCopy?: unknown;
-  student?: unknown;
-  students?: unknown;
-  faculty?: unknown;
-  faculties?: unknown;
+interface BorrowingDashboardData {
+  activeBorrowCount: number;
+  overdueBorrowCount: number;
+  recentActivity: RecentActivity[];
 }
 
 interface RecentActivity {
@@ -126,77 +113,6 @@ const EMPTY_DASHBOARD: DashboardData = {
   unavailableModules: [],
   loadedAt: "",
 };
-
-function unwrapOne<T>(value: unknown): T | null {
-  if (!value) {
-    return null;
-  }
-
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "data" in value
-  ) {
-    const data = (value as { data?: unknown }).data;
-
-    if (Array.isArray(data)) {
-      return (data[0] as T | undefined) ?? null;
-    }
-
-    return (data as T | null | undefined) ?? null;
-  }
-
-  if (Array.isArray(value)) {
-    return (value[0] as T | undefined) ?? null;
-  }
-
-  return value as T;
-}
-
-function unwrapMany<T>(value: unknown): T[] {
-  if (!value) {
-    return [];
-  }
-
-  if (Array.isArray(value)) {
-    return value as T[];
-  }
-
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "data" in value
-  ) {
-    const data = (value as { data?: unknown }).data;
-
-    if (Array.isArray(data)) {
-      return data as T[];
-    }
-
-    return data ? [data as T] : [];
-  }
-
-  return [value as T];
-}
-
-function formatMemberName(
-  member: LibraryMemberRecord | null,
-): string {
-  if (!member) {
-    return "Borrower name unavailable";
-  }
-
-  return (
-    [
-      member.first_name,
-      member.middle_name,
-      member.last_name,
-      member.suffix,
-    ]
-      .filter(Boolean)
-      .join(" ") || "Borrower name unavailable"
-  );
-}
 
 function formatDate(value?: string): string {
   if (!value) {
@@ -285,99 +201,57 @@ async function getUnreadNotificationCount(): Promise<number> {
   return response.data.unread ?? 0;
 }
 
-function normalizeRecentActivity(
-  transaction: BorrowTransactionRecord,
+function normalizeBorrowingActivity(
+  item: BorrowingDashboardItem,
   index: number,
 ): RecentActivity {
-  const students = unwrapMany<LibraryMemberRecord>(
-    transaction.students ?? transaction.student,
-  );
-  const faculties =
-    unwrapMany<LibraryMemberRecord>(
-      transaction.faculties ??
-        transaction.faculty,
-    );
-
-  const member = students[0] ?? faculties[0] ?? null;
-  // @ts-ignore
   const memberType: RecentActivity["memberType"] =
-    students.length > 0
+    item.memberType === "Student"
       ? "Student"
-      : faculties.length > 0
+      : item.memberType === "Faculty"
         ? "Faculty"
-        : "Library Member";
-
-  const copy = unwrapOne<BookCopyRecord>(
-    transaction.book_copy ??
-      transaction.bookCopy,
-  );
-
-  const directBook = unwrapOne<BookRecord>(
-    transaction.book,
-  );
-
-  const copyBook = unwrapOne<BookRecord>(copy?.book);
-  const book = copyBook ?? directBook;
+        : "Member";
 
   return {
     id: String(
-      transaction.documentId ??
-        transaction.id ??
-        index,
+      item.documentId ?? item.borrowNo ?? index,
     ),
-    borrower: formatMemberName(member),
+    borrower:
+      item.memberName || "Borrower name unavailable",
     memberType,
-    title:
-      book?.title ??
-      (copy?.control_number
-        ? `Book Copy ${copy.control_number}`
-        : "Book title unavailable"),
+    title: item.title || "Book title unavailable",
     barcode:
-      copy?.control_number ??
-      directBook?.control_number ??
+      item.controlNumber ??
+      item.accessionNumber ??
       "No barcode",
-    status:
-      transaction.borrow_transaction_status ??
-      "Borrowed",
-    date: formatDate(
-      transaction.borrow_date ??
-        transaction.createdAt,
-    ),
+    status: item.status || "Borrowed",
+    date: formatDate(item.borrowDate),
   };
 }
 
-async function getRecentActivity(): Promise<
-  RecentActivity[]
+async function getBorrowingDashboardSummary(): Promise<
+  BorrowingDashboardData
 > {
   const response =
-    await auth.authFetch<
-      StrapiListResponse<BorrowTransactionRecord>
-    >("/api/borrow-transactions", {
-      method: "GET",
-      query: {
-        "sort[0]":
-          "createdAt:desc",
-        "pagination[page]":
-          1,
-        "pagination[pageSize]":
-          8,
-
-        /*
-         * Current Borrow Transaction relationships:
-         * student, faculty, and book_copy.
-         */
-        "populate[student]":
-          "true",
-        "populate[faculty]":
-          "true",
-        "populate[book_copy][populate][book]":
-          "true",
+    await auth.authFetch<BorrowingDashboardResponse>(
+      "/api/circulation/dashboard-summary",
+      {
+        method: "GET",
+        query: {
+          limit: 8,
+        },
       },
-    });
+    );
 
-  return response.data.map(
-    normalizeRecentActivity,
-  );
+  return {
+    activeBorrowCount:
+      response.data.activeBorrowCount ?? 0,
+    overdueBorrowCount:
+      response.data.overdueBorrowCount ?? 0,
+    recentActivity: (response.data.recent ?? []).map(
+      normalizeBorrowingActivity,
+    ),
+  };
 }
 
 async function loadDashboard(): Promise<DashboardData> {
@@ -414,14 +288,20 @@ async function loadDashboard(): Promise<DashboardData> {
     }
   }
 
-  async function safeRecentActivity() {
+  async function safeBorrowingSummary(): Promise<
+    BorrowingDashboardData
+  > {
     try {
-      return await getRecentActivity();
+      return await getBorrowingDashboardSummary();
     } catch {
       unavailableModules.push(
-        "Recent borrowing records",
+        "Borrowing information",
       );
-      return [];
+      return {
+        activeBorrowCount: 0,
+        overdueBorrowCount: 0,
+        recentActivity: [],
+      };
     }
   }
 
@@ -455,14 +335,12 @@ async function loadDashboard(): Promise<DashboardData> {
     totalTitles,
     totalCopies,
     availableCopies,
-    borrowedCopies,
-    overdueTransactions,
+    borrowingSummary,
     pendingReservations,
     unreadNotifications,
     damagedCopies,
     lostCopies,
     todayVisits,
-    recentActivity,
   ] = await Promise.all([
     safeCount("Book records", "/api/books"),
     safeCount(
@@ -477,24 +355,7 @@ async function loadDashboard(): Promise<DashboardData> {
           "Available",
       },
     ),
-    safeCount(
-      "Borrowed books",
-      "/api/borrow-transactions",
-      {
-        "filters[borrow_transaction_status][$in][0]":
-          "Borrowed",
-        "filters[borrow_transaction_status][$in][1]":
-          "Overdue",
-      },
-    ),
-    safeCount(
-      "Overdue books",
-      "/api/borrow-transactions",
-      {
-        "filters[borrow_transaction_status][$eq]":
-          "Overdue",
-      },
-    ),
+    safeBorrowingSummary(),
     safePendingReservations(),
     safeUnreadNotifications(),
     safeCount(
@@ -513,21 +374,23 @@ async function loadDashboard(): Promise<DashboardData> {
       },
     ),
     safeTodayVisits(),
-    safeRecentActivity(),
   ]);
 
   return {
     totalTitles,
     totalCopies,
     availableCopies,
-    borrowedCopies,
-    overdueTransactions,
+    borrowedCopies:
+      borrowingSummary.activeBorrowCount,
+    overdueTransactions:
+      borrowingSummary.overdueBorrowCount,
     pendingReservations,
     unreadNotifications,
     damagedCopies,
     lostCopies,
     todayVisits,
-    recentActivity,
+    recentActivity:
+      borrowingSummary.recentActivity,
     unavailableModules: [
       ...new Set(unavailableModules),
     ],

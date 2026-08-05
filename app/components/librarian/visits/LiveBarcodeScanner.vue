@@ -279,7 +279,7 @@ function normalizeCameraError(error: EmittedError | Error) {
     case "StreamApiNotSupportedError":
       return "This browser does not support camera streaming. Use the latest Chrome or Edge.";
     default:
-      return error.message || "The camera scanner could not be started.";
+      return "The camera scanner could not be started. Check camera permission and try again.";
   }
 }
 

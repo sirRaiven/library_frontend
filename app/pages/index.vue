@@ -95,17 +95,9 @@ async function handleLogin(
       auth.role.value !== "student" &&
       auth.role.value !== "faculty"
     ) {
-      const returnedRole =
-        auth.user.value?.role?.name ??
-        auth.user.value?.role?.type ??
-        "None";
-
       auth.clearSession();
-
       loginError.value =
-        `Your Strapi account returned the role "${returnedRole}". ` +
-        "Assign the account to Administrator, Librarian, Student, or Faculty.";
-
+        "This account is not assigned to an available Library System portal. Please contact the system administrator.";
       return;
     }
 
@@ -285,7 +277,7 @@ async function handleLogin(
             <!-- Footer Note Pill -->
             <div class="mt-4 px-4 py-3 bg-[#f4fbf8] dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl flex items-center justify-center">
               <span class="text-[11px] sm:text-xs font-medium text-emerald-600/80 dark:text-emerald-400/80">
-                Secure access for administrators, staff, librarians, and students.
+                Secure access for authorized Library System users.
               </span>
             </div>
 

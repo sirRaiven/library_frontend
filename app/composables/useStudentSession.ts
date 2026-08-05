@@ -1,3 +1,5 @@
+import { appLogger } from "~/utils/app-logger";
+
 export interface StudentSessionDevice {
   deviceKey: string;
   displayName: string;
@@ -165,7 +167,7 @@ export function useStudentSession() {
         });
       }
     } catch (caught) {
-      console.warn("Unable to close the Student Portal monitoring session.", caught);
+      appLogger.warn("Unable to close the Student Portal monitoring session.", caught);
     } finally {
       sessionKey.value = null;
       data.value = null;

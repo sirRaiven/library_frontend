@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type {
   ComponentPublicInstance,
 } from "vue";
@@ -123,7 +125,7 @@ async function renderBarcodes() {
       },
     );
   } catch (error) {
-    console.error(
+    appLogger.error(
       "Unable to render print barcodes:",
       error,
     );

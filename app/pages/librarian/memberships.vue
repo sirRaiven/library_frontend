@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type { MembershipListItem, StudentMember } from "~/composables/useLibraryMembers";
 import type { TableColumn } from "@nuxt/ui";
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
@@ -292,7 +294,7 @@ onMounted(async () => {
     renewal.enrollmentVerified =
       !librarySettings.settings.value.membership.requireEnrollmentVerification;
   } catch (error) {
-    console.warn("Operational Library settings could not be loaded.", error);
+    appLogger.warn("Operational Library settings could not be loaded.", error);
   }
 
   await loadMemberships();

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+
+
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
+import { appLogger } from "~/utils/app-logger";
 import type {
   MembershipRecord,
   StudentMember,
@@ -421,7 +425,7 @@ async function renderBarcode() {
       },
     );
   } catch (error) {
-    console.error(error);
+    appLogger.error(error);
     barcodeError.value =
       "Unable to render barcode.";
   }
@@ -568,10 +572,10 @@ async function downloadCard(
   } catch (error) {
     toast.add({
       title: "Download failed",
-      description:
-        error instanceof Error
-          ? error.message
-          : "Unable to download the library card.",
+      description: userFacingErrorMessage(
+        error,
+        "Unable to download the Library Card.",
+      ),
       color: "error",
       icon: "i-lucide-circle-alert",
     });
@@ -714,10 +718,10 @@ async function printCard(
   } catch (error) {
     toast.add({
       title: "Print preparation failed",
-      description:
-        error instanceof Error
-          ? error.message
-          : "Unable to prepare the Library Card for printing.",
+      description: userFacingErrorMessage(
+        error,
+        "Unable to prepare the Library Card for printing.",
+      ),
       color: "error",
       icon: "i-lucide-circle-alert",
     });

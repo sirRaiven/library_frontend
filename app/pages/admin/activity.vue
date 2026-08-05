@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminActivityRecord, AdminMonitoringSummary } from "~/composables/useAdminMonitoring";
 
@@ -48,7 +50,7 @@ function outcomeColor(value: string) {
 
 async function loadSummary() {
   try { summary.value = await api.summary(); }
-  catch (error) { console.warn("Unable to load monitoring summary.", error); }
+  catch (error) { appLogger.warn("Unable to load monitoring summary.", error); }
 }
 
 async function load() {

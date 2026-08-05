@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminMonitoringSummary, AdminSessionRecord } from "~/composables/useAdminMonitoring";
 
@@ -32,7 +34,7 @@ const columns: TableColumn<AdminSessionRecord>[] = [
 
 function formatDate(value: string | null) { if (!value) return "Not recorded"; return new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(value)); }
 function statusColor(value: string) { if (value === "Active") return "success" as const; if (["Blocked", "Suspicious"].includes(value)) return "error" as const; if (["Expired", "Revoked", "Invalidated"].includes(value)) return "warning" as const; return "neutral" as const; }
-async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { console.warn(error); } }
+async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { appLogger.warn(error); } }
 async function load() {
   loading.value = true;
   try {

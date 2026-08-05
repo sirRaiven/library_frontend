@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
 import {
   DEFAULT_LIBRARY_CARD_DESIGN,
   LIBRARY_CARD_PRESET_CATEGORIES,
@@ -884,10 +886,10 @@ async function importDesign(
   } catch (error) {
     toast.add({
       title: "Invalid design file",
-      description:
-        error instanceof Error
-          ? error.message
-          : "The JSON file could not be imported.",
+      description: userFacingErrorMessage(
+        error,
+        "The design file could not be imported.",
+      ),
       color: "error",
       icon: "i-lucide-circle-alert",
     });

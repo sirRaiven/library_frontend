@@ -1,5 +1,9 @@
 
 <script setup lang="ts">
+
+
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
+import { appLogger } from "~/utils/app-logger";
 import type {
   ComponentPublicInstance,
 } from "vue";
@@ -228,15 +232,15 @@ async function prepareCards() {
       await document.fonts.ready;
     }
   } catch (error) {
-    console.error(
+    appLogger.error(
       "Unable to prepare Library Cards:",
       error,
     );
 
-    preparationError.value =
-      error instanceof Error
-        ? error.message
-        : "The Library Cards could not be prepared.";
+    preparationError.value = userFacingErrorMessage(
+      error,
+      "The Library Cards could not be prepared.",
+    );
   } finally {
     preparing.value = false;
   }

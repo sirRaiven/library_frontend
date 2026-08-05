@@ -1,3 +1,6 @@
+import { appLogger } from "~/utils/app-logger";
+import { errorCode, errorStatus, userFacingErrorMessage } from "~/utils/user-facing-error";
+
 interface StrapiRole {
   id: number;
   documentId?: string;
@@ -83,70 +86,17 @@ function randomDeviceIdentifier(): string {
 }
 
 function getHttpStatus(error: unknown): number | undefined {
-  const fetchError = error as {
-    statusCode?: number;
-    status?: number;
-    response?: {
-      status?: number;
-    };
-  };
-
-  return (
-    fetchError.response?.status ?? fetchError.statusCode ?? fetchError.status
-  );
+  return errorStatus(error);
 }
 
 function getErrorCode(error: unknown): string {
-  const fetchError = error as {
-    data?: {
-      error?: {
-        details?: { code?: string };
-      };
-    };
-    response?: {
-      _data?: {
-        error?: {
-          details?: { code?: string };
-        };
-      };
-    };
-  };
-
-  return String(
-    fetchError.data?.error?.details?.code ??
-      fetchError.response?._data?.error?.details?.code ??
-      "",
-  ).trim();
+  return errorCode(error);
 }
 
 function getErrorMessage(error: unknown): string {
-  const fetchError = error as {
-    statusMessage?: string;
-    data?: {
-      error?: {
-        message?: string;
-      };
-      message?: string;
-    };
-    response?: {
-      _data?: {
-        error?: {
-          message?: string;
-        };
-        message?: string;
-      };
-    };
-    message?: string;
-  };
-
-  return (
-    fetchError.data?.error?.message ??
-    fetchError.data?.message ??
-    fetchError.response?._data?.error?.message ??
-    fetchError.response?._data?.message ??
-    fetchError.statusMessage ??
-    fetchError.message ??
-    "An unexpected authentication error occurred."
+  return userFacingErrorMessage(
+    error,
+    "The request could not be completed. Please try again.",
   );
 }
 
@@ -296,7 +246,7 @@ export function useAuth() {
         return "/student/dashboard";
 
       case "faculty":
-        return "/faculty/dashboard";
+        return "/faculty-access";
 
       default:
         return "/";
@@ -386,7 +336,7 @@ export function useAuth() {
       throw createError({
         statusCode: 403,
         statusMessage:
-          "Strapi authenticated the account but did not return its application role. In Users & Permissions → Roles, open the assigned role and enable User → me plus Role → find and findOne, then confirm that the account is assigned to that role.",
+          "This account is not ready for portal access. Please contact the system administrator.",
       });
     }
 
@@ -564,8 +514,8 @@ export function useAuth() {
         });
       }
     } catch (error) {
-      console.warn(
-        "The Strapi logout request failed. The local session was still cleared.",
+      appLogger.warn(
+        "The remote logout request failed. The local session was still cleared.",
         error,
       );
     } finally {

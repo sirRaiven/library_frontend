@@ -1,3 +1,5 @@
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
+
 import type { StudentEducationalLevel } from "~/constants/studentPrograms";
 
 export type StudentAccessRequestType =
@@ -183,19 +185,9 @@ interface ResetCredentialResult {
 }
 
 function errorMessage(error: unknown): string {
-  const candidate = error as {
-    data?: { error?: { message?: string } };
-    response?: { _data?: { error?: { message?: string } } };
-    statusMessage?: string;
-    message?: string;
-  };
-
-  return (
-    candidate.data?.error?.message ??
-    candidate.response?._data?.error?.message ??
-    candidate.statusMessage ??
-    candidate.message ??
-    "The request could not be completed."
+  return userFacingErrorMessage(
+    error,
+    "The request could not be completed. Please try again.",
   );
 }
 

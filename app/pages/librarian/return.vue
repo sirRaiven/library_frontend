@@ -1,5 +1,7 @@
 
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type {
   BatchReturnInputItem,
   MemberReturnLookup,
@@ -170,6 +172,62 @@ function resetWorkflow() {
   focusMemberScanner();
 }
 
+function safeAmount(
+  value: unknown,
+): number {
+  const amount = Number(
+    value ?? 0,
+  );
+
+  return Number.isFinite(amount) &&
+    amount > 0
+    ? amount
+    : 0;
+}
+
+function selectedConditionFee(
+  condition: ReturnCondition,
+): number {
+  const fines =
+    librarySettings.settings.value
+      .fines;
+
+  if (condition === "Damaged") {
+    return safeAmount(
+      fines.damagedBookFee,
+    );
+  }
+
+  if (condition === "Lost") {
+    return safeAmount(
+      fines.lostBookProcessingFee,
+    );
+  }
+
+  return 0;
+}
+
+function estimatedFine(
+  item: ReturnSelection,
+): number {
+  const overdueAmount =
+    safeAmount(
+      item.borrow.fine
+        ?.overdueAmount ??
+        item.borrow.fine
+          ?.estimatedTotal,
+    );
+
+  return Number(
+    (
+      overdueAmount +
+      selectedConditionFee(
+        item.condition,
+      )
+    ).toFixed(2),
+  );
+}
+
 function buildReturnItems(
   borrows: ReturnLookup[],
   preserve?: Map<
@@ -216,7 +274,7 @@ async function loadTodayReturns() {
     todayRecords.value =
       await circulation.todayReturns();
   } catch (error) {
-    console.warn(
+    appLogger.warn(
       "Today's returns could not be loaded.",
       error,
     );
@@ -1546,10 +1604,20 @@ onMounted(() => {
 
                     <UFormField
                       label="Calculated fine"
-                      description="Final amount is recalculated and enforced by the backend."
+                      description="Includes overdue charges and any fee for the selected book condition."
                     >
                       <div class="rounded-xl border border-default bg-elevated/50 px-4 py-3">
-                        <p class="text-lg font-bold text-highlighted">{{ formatMoney(estimatedFine(item)) }}</p>
+                        <p
+                          class="text-lg font-bold text-highlighted"
+                        >
+                          {{
+                            formatCurrency(
+                              estimatedFine(
+                                item,
+                              ),
+                            )
+                          }}
+                        </p>
                         <p class="mt-1 text-xs text-muted">
                           {{ item.borrow.fine?.chargeableSchoolDays ?? 0 }} chargeable school day(s)
                           <span v-if="item.borrow.fine?.excludedWeekendDays"> • {{ item.borrow.fine.excludedWeekendDays }} weekend day(s) excluded</span>

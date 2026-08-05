@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+import { appLogger } from "~/utils/app-logger";
 import type {
   AdminMonitoringReport,
   AdminMonitoringReportType,
@@ -126,7 +128,7 @@ async function loadUsers() {
       ...options,
     ];
   } catch (error) {
-    console.warn("Unable to load monitoring report account filters.", error);
+    appLogger.warn("Unable to load monitoring report account filters.", error);
   } finally {
     loadingUsers.value = false;
   }

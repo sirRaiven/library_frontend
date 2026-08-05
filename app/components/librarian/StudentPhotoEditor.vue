@@ -1,5 +1,7 @@
 
 <script setup lang="ts">
+
+import { userFacingErrorMessage } from "~/utils/user-facing-error";
 import type {
   CroppedStudentPhoto,
 } from "~/types/studentPhoto";
@@ -652,10 +654,10 @@ async function applyCrop() {
 
     cropOpen.value = false;
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error
-        ? error.message
-        : "The photo could not be cropped.";
+    errorMessage.value = userFacingErrorMessage(
+      error,
+      "The photo could not be cropped.",
+    );
   }
 }
 

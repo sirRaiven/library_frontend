@@ -1,3 +1,5 @@
+import { appLogger } from "~/utils/app-logger";
+
 export type LibraryCardFrontLayout =
   | "cinematic"
   | "classic"
@@ -847,7 +849,7 @@ export function useLibraryCardDesign() {
         status !== 404 &&
         status !== 403
       ) {
-        console.warn(
+        appLogger.warn(
           "Library card design could not be loaded. The default design will be used.",
           error,
         );

@@ -1,3 +1,5 @@
+import { appLogger } from "~/utils/app-logger";
+
 export interface PortalMonitoringDevice {
   deviceKey: string;
   displayName: string;
@@ -138,7 +140,7 @@ export function usePortalMonitoring() {
         },
       });
     } catch (caught) {
-      console.warn("Unable to record the portal page activity.", caught);
+      appLogger.warn("Unable to record the portal page activity.", caught);
     }
   }
 
@@ -152,7 +154,7 @@ export function usePortalMonitoring() {
         });
       }
     } catch (caught) {
-      console.warn("Unable to close the portal-monitoring session.", caught);
+      appLogger.warn("Unable to close the portal-monitoring session.", caught);
     } finally {
       sessionKey.value = null;
       data.value = null;
