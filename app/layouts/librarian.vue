@@ -130,6 +130,13 @@ function getPageInformation(): {
     };
   }
 
+  if (path.startsWith("/librarian/faculty-book-reports")) {
+    return {
+      title: "Faculty Book Reports",
+      icon: "i-lucide-clipboard-check",
+    };
+  }
+
   if (path.startsWith("/librarian/faculty")) {
     return {
       title: "Faculty",
@@ -321,8 +328,16 @@ const navigationItems =
         label: "Faculty",
         icon: "i-lucide-briefcase-business",
         to: "/librarian/faculty",
+        active:
+          isRouteActive("/librarian/faculty") &&
+          !isRouteActive("/librarian/faculty-book-reports"),
+      },
+      {
+        label: "Faculty Book Reports",
+        icon: "i-lucide-clipboard-check",
+        to: "/librarian/faculty-book-reports",
         active: isRouteActive(
-          "/librarian/faculty",
+          "/librarian/faculty-book-reports",
         ),
       },
       {

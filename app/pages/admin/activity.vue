@@ -1,6 +1,4 @@
 <script setup lang="ts">
-
-import { appLogger } from "~/utils/app-logger";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminActivityRecord, AdminMonitoringSummary } from "~/composables/useAdminMonitoring";
 
@@ -26,7 +24,7 @@ const detailOpen = ref(false);
 
 const categoryItems = ["All", "Authentication", "Account", "Navigation", "Collection", "Circulation", "Reservation", "Notification", "Security", "System"];
 const outcomeItems = ["All", "Success", "Failure", "Denied"];
-const profileItems = ["All", "Student", "Librarian", "Administrator"];
+const profileItems = ["All", "Student", "Faculty", "Librarian", "Administrator"];
 const columns: TableColumn<AdminActivityRecord>[] = [
   { id: "activity", header: "Activity" },
   { id: "user", header: "User" },
@@ -50,7 +48,7 @@ function outcomeColor(value: string) {
 
 async function loadSummary() {
   try { summary.value = await api.summary(); }
-  catch (error) { appLogger.warn("Unable to load monitoring summary.", error); }
+  catch (error) { console.warn("Unable to load monitoring summary.", error); }
 }
 
 async function load() {
@@ -80,7 +78,7 @@ onMounted(() => { load(); loadSummary(); });
     <AdminPageHeader
       eyebrow="Security and Monitoring"
       title="User Activity"
-      description="Review meaningful authentication, navigation, account, and Library activities recorded for Student, Librarian, and Administrator accounts."
+      description="Review meaningful authentication, navigation, account, and Library activities recorded for Student, Faculty, Librarian, and Administrator accounts."
       icon="i-lucide-activity"
     >
       <template #actions>

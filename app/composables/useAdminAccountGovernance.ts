@@ -19,6 +19,7 @@ export interface AdminAccountsReviewSummary {
   accountsMissingProfile: number;
   roleOrProfileMismatch: number;
   studentProfilesWithoutAccount: number;
+  facultyProfilesWithoutAccount: number;
   librarianProfilesWithoutAccount: number;
 }
 
@@ -47,6 +48,7 @@ function safeSummary(value: unknown): AdminAccountsReviewSummary {
     accountsMissingProfile: Number(summary.accountsMissingProfile || 0),
     roleOrProfileMismatch: Number(summary.roleOrProfileMismatch || 0),
     studentProfilesWithoutAccount: Number(summary.studentProfilesWithoutAccount || 0),
+    facultyProfilesWithoutAccount: Number(summary.facultyProfilesWithoutAccount || 0),
     librarianProfilesWithoutAccount: Number(summary.librarianProfilesWithoutAccount || 0),
   };
 }

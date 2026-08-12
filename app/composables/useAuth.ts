@@ -246,7 +246,7 @@ export function useAuth() {
         return "/student/dashboard";
 
       case "faculty":
-        return "/faculty-access";
+        return "/faculty/dashboard";
 
       default:
         return "/";

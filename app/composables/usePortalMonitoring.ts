@@ -56,7 +56,10 @@ export function usePortalMonitoring() {
   const lastPageRecord = useState<string>("portal-monitoring-last-page", () => "");
 
   const supported = computed(() =>
-    auth.isLibrarian.value || auth.isAdministrator.value,
+    auth.isStudent.value ||
+    auth.isFaculty.value ||
+    auth.isLibrarian.value ||
+    auth.isAdministrator.value,
   );
 
   function ensureDeviceKey() {

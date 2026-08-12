@@ -8,7 +8,7 @@ export interface AdminRoleSummary {
   protected?: boolean;
 }
 
-export type AdminManagedProfileType = "Student" | "Librarian";
+export type AdminManagedProfileType = "Student" | "Faculty" | "Librarian";
 export type AdminProfileExpectation =
   | AdminManagedProfileType
   | "Administrator"
@@ -77,12 +77,31 @@ export interface AdminUserFilters {
   pageSize?: number;
 }
 
+export interface CreateFacultyAccountDetailsInput {
+  employeeNo?: string;
+  barcode?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  suffix?: string;
+  department?: string;
+  designation?: string;
+  contactNo?: string;
+  employmentType?:
+    | "Full-Time"
+    | "Part-Time"
+    | "Guest Lecturer"
+    | "Administrative Personnel"
+    | "Other";
+}
+
 export interface CreateAdminUserInput {
   username: string;
   email: string;
   password: string;
   roleId: number;
   confirmed?: boolean;
+  facultyDetails?: CreateFacultyAccountDetailsInput;
 }
 
 const PROFILE_STATUSES = new Set<AdminProfileLinkStatus>([
@@ -118,6 +137,7 @@ function expectedProfile(role: AdminRoleSummary | null): AdminProfileExpectation
   const type = roleType(role?.type || role?.name);
 
   if (type === "student") return "Student";
+  if (type === "faculty") return "Faculty";
   if (type === "librarian") return "Librarian";
   if (ADMIN_ROLE_TYPES.has(type)) return "Administrator";
   return null;
@@ -145,9 +165,12 @@ export function normalizeAdminLinkedProfile(
   value: unknown,
 ): AdminLinkedProfile | null {
   const profile = asRecord(value);
-  const type = profile.type === "Student" || profile.type === "Librarian"
-    ? profile.type
-    : null;
+  const type =
+    profile.type === "Student" ||
+    profile.type === "Faculty" ||
+    profile.type === "Librarian"
+      ? profile.type
+      : null;
 
   if (!type || (!profile.id && !profile.documentId)) return null;
 
@@ -166,7 +189,10 @@ function unavailableGovernance(
   role: AdminRoleSummary | null,
 ): AdminProfileGovernance {
   const expectedType = expectedProfile(role);
-  const required = expectedType === "Student" || expectedType === "Librarian";
+  const required =
+    expectedType === "Student" ||
+    expectedType === "Faculty" ||
+    expectedType === "Librarian";
 
   return {
     status: "Unavailable",
@@ -195,6 +221,7 @@ function normalizeGovernance(
     : "Unavailable";
   const expectedType =
     governance.expectedType === "Student" ||
+    governance.expectedType === "Faculty" ||
     governance.expectedType === "Librarian" ||
     governance.expectedType === "Administrator"
       ? governance.expectedType
@@ -207,7 +234,9 @@ function normalizeGovernance(
   const profile = normalizeAdminLinkedProfile(governance.profile) ?? profiles[0] ?? null;
   const required = typeof governance.required === "boolean"
     ? governance.required
-    : expectedType === "Student" || expectedType === "Librarian";
+    : expectedType === "Student" ||
+      expectedType === "Faculty" ||
+      expectedType === "Librarian";
   const issues = Array.isArray(governance.issues)
     ? governance.issues.map((issue: unknown) => String(issue)).filter(Boolean)
     : [];

@@ -36,6 +36,9 @@ const TECHNICAL_MESSAGE_PATTERN = new RegExp(
     "document service",
     "content-type",
     "content type",
+    "invalid key",
+    "invalid populate",
+    "populate path",
     "users & permissions",
     "api::",
     "plugin::",
@@ -112,13 +115,6 @@ export function userFacingErrorMessage(
 ): string {
   const status = errorStatus(error);
   const message = rawErrorMessage(error).replace(/\s+/g, " ").slice(0, 300);
-
-  if (
-    status === 404 &&
-    /^(not found|404|route not found|page not found)$/i.test(message)
-  ) {
-    return statusFallback(status, fallback);
-  }
 
   if (!message || TECHNICAL_MESSAGE_PATTERN.test(message)) {
     return statusFallback(status, fallback);

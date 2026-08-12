@@ -1,6 +1,4 @@
 <script setup lang="ts">
-
-import { appLogger } from "~/utils/app-logger";
 import type {
   AdminMonitoringReport,
   AdminMonitoringReportType,
@@ -39,7 +37,7 @@ const reportItems = [
   { label: "Session Revocation Report", value: "session-revocations" },
   { label: "New Device Register", value: "new-device-register" },
 ];
-const profileItems = ["All", "Student", "Librarian", "Administrator"];
+const profileItems = ["All", "Student", "Faculty", "Librarian", "Administrator"];
 const limitItems = [
   { label: "Up to 500 records", value: 500 },
   { label: "Up to 1,000 records", value: 1000 },
@@ -128,7 +126,7 @@ async function loadUsers() {
       ...options,
     ];
   } catch (error) {
-    appLogger.warn("Unable to load monitoring report account filters.", error);
+    console.warn("Unable to load monitoring report account filters.", error);
   } finally {
     loadingUsers.value = false;
   }

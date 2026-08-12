@@ -44,6 +44,24 @@ const createForm = reactive({
   password: "",
   roleId: 0,
   confirmed: true,
+  includeFacultyDetails: false,
+  facultyDetails: {
+    employeeNo: "",
+    barcode: "",
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    suffix: "",
+    department: "",
+    designation: "",
+    contactNo: "",
+    employmentType: "Full-Time" as
+      | "Full-Time"
+      | "Part-Time"
+      | "Guest Lecturer"
+      | "Administrative Personnel"
+      | "Other",
+  },
 });
 
 const editForm = reactive({
@@ -56,7 +74,7 @@ const columns: TableColumn<AdminUserRecord>[] = [
   { id: "account", header: "Account" },
   { id: "role", header: "Role" },
   { id: "status", header: "Account Status" },
-  { id: "profile", header: "Profile Connection" },
+  { id: "profile", header: "Library Record" },
   { id: "created", header: "Created" },
   { id: "actions", header: "" },
 ];
@@ -80,6 +98,26 @@ const createRoleOptions = computed(() =>
     .map(role => ({ label: role.name, value: role.id })),
 );
 
+const selectedCreateRole = computed(() =>
+  roles.value.find(role => Number(role.id) === Number(createForm.roleId)) ?? null,
+);
+
+const creatingFacultyAccount = computed(() => {
+  const role = selectedCreateRole.value;
+  return String(role?.type || role?.name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-") === "faculty";
+});
+
+const facultyEmploymentOptions = [
+  "Full-Time",
+  "Part-Time",
+  "Guest Lecturer",
+  "Administrative Personnel",
+  "Other",
+].map(value => ({ label: value, value }));
+
 const statusOptions = [
   { label: "All account statuses", value: "all" },
   { label: "Active", value: "active" },
@@ -88,11 +126,11 @@ const statusOptions = [
 ];
 
 const profileOptions = [
-  { label: "All profile connections", value: "all" },
-  { label: "Profile linked", value: "linked" },
-  { label: "Profile missing", value: "missing" },
-  { label: "Profile mismatch", value: "mismatch" },
-  { label: "Profile not required", value: "not-required" },
+  { label: "All Library record states", value: "all" },
+  { label: "Record linked", value: "linked" },
+  { label: "Required record missing", value: "missing" },
+  { label: "Record mismatch", value: "mismatch" },
+  { label: "Record not required", value: "not-required" },
   { label: "Role not managed", value: "unsupported-role" },
 ];
 
@@ -116,6 +154,19 @@ function resetCreateForm() {
     password: "",
     roleId: createRoleOptions.value[0]?.value ?? 0,
     confirmed: true,
+    includeFacultyDetails: false,
+  });
+  Object.assign(createForm.facultyDetails, {
+    employeeNo: "",
+    barcode: "",
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    suffix: "",
+    department: "",
+    designation: "",
+    contactNo: "",
+    employmentType: "Full-Time",
   });
 }
 
@@ -193,16 +244,47 @@ async function createAccount() {
     return;
   }
 
+  if (creatingFacultyAccount.value && createForm.includeFacultyDetails) {
+    const details = createForm.facultyDetails;
+    if (
+      details.employeeNo.trim().length < 2 ||
+      details.firstName.trim().length < 1 ||
+      details.lastName.trim().length < 1 ||
+      details.department.trim().length < 2
+    ) {
+      toast.add({
+        title: "Complete the Faculty details",
+        description: "Employee number, first name, last name, and department are required when Faculty details are included.",
+        color: "warning",
+        icon: "i-lucide-triangle-alert",
+      });
+      return;
+    }
+  }
+
   saving.value = true;
   try {
-    const created = await usersApi.create({ ...createForm });
+    const created = await usersApi.create({
+      username: createForm.username.trim(),
+      email: createForm.email.trim(),
+      password: createForm.password,
+      roleId: createForm.roleId,
+      confirmed: createForm.confirmed,
+      ...(creatingFacultyAccount.value && createForm.includeFacultyDetails
+        ? { facultyDetails: { ...createForm.facultyDetails } }
+        : {}),
+    });
     createOpen.value = false;
     await loadUsers();
     toast.add({
       title: "User account created",
-      description: created.profileGovernance?.required
-        ? "The account was created. Connect it to the correct institutional profile next."
-        : "The new account was created with the selected role.",
+      description: creatingFacultyAccount.value
+        ? createForm.includeFacultyDetails
+          ? "The Faculty account and Library details are ready to use."
+          : "The Faculty account is ready. Basic Library details were prepared automatically and can be completed later."
+        : created.profileGovernance?.required
+          ? "The account was created. Connect it to the correct institutional profile next."
+          : "The new account was created with the selected role.",
       color: "success",
       icon: "i-lucide-user-check",
     });
@@ -296,6 +378,15 @@ async function confirmStatusChange() {
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
+watch(
+  () => createForm.roleId,
+  () => {
+    if (!creatingFacultyAccount.value) {
+      createForm.includeFacultyDetails = false;
+    }
+  },
+);
+
 watch([roleFilter, statusFilter, profileFilter], () => {
   page.value = 1;
   loadUsers();
@@ -450,12 +541,12 @@ onMounted(async () => {
     </UCard>
   </div>
 
-  <UModal v-model:open="createOpen" :ui="{ content: 'sm:max-w-xl' }">
+  <UModal v-model:open="createOpen" :ui="{ content: 'sm:max-w-3xl' }">
     <template #content>
       <form class="space-y-5 bg-default p-6" @submit.prevent="createAccount">
         <div>
           <h2 class="text-xl font-bold text-highlighted">Create User Account</h2>
-          <p class="mt-1 text-sm text-muted">Create a secured application account and assign its initial role. Student and Librarian accounts can be connected to their institutional profile after creation.</p>
+          <p class="mt-1 text-sm text-muted">Create a secured application account and assign its initial role. Faculty accounts can be used immediately; additional Faculty Library details are optional.</p>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           <UFormField label="Username" required>
@@ -471,6 +562,56 @@ onMounted(async () => {
             <USelect v-model="createForm.roleId" :items="createRoleOptions" class="w-full" />
           </UFormField>
           <UCheckbox v-model="createForm.confirmed" label="Mark account as confirmed" class="sm:col-span-2" />
+
+          <div
+            v-if="creatingFacultyAccount"
+            class="sm:col-span-2 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
+          >
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-briefcase-business" class="size-5 text-primary" />
+                  <h3 class="font-semibold text-highlighted">Faculty Library details</h3>
+                  <UBadge label="Optional" color="neutral" variant="soft" size="sm" />
+                </div>
+                <p class="mt-2 max-w-2xl text-xs leading-5 text-muted">
+                  The Faculty account does not require a separate registration. If you skip these fields, the system prepares a basic internal Faculty Library record automatically so the portal works immediately.
+                </p>
+              </div>
+              <USwitch
+                v-model="createForm.includeFacultyDetails"
+                label="Add details now"
+                class="shrink-0"
+              />
+            </div>
+
+            <div v-if="createForm.includeFacultyDetails" class="mt-5 grid gap-4 sm:grid-cols-2">
+              <UFormField label="Employee Number" required>
+                <UInput v-model="createForm.facultyDetails.employeeNo" autocomplete="off" class="w-full" placeholder="Example: FAC-2026-001" />
+              </UFormField>
+              <UFormField label="Faculty ID Barcode" help="Optional. The employee number is used when left blank.">
+                <UInput v-model="createForm.facultyDetails.barcode" autocomplete="off" class="w-full" />
+              </UFormField>
+              <UFormField label="First Name" required>
+                <UInput v-model="createForm.facultyDetails.firstName" class="w-full" />
+              </UFormField>
+              <UFormField label="Last Name" required>
+                <UInput v-model="createForm.facultyDetails.lastName" class="w-full" />
+              </UFormField>
+              <UFormField label="Department" required>
+                <UInput v-model="createForm.facultyDetails.department" class="w-full" placeholder="Example: College of Computer Studies" />
+              </UFormField>
+              <UFormField label="Designation">
+                <UInput v-model="createForm.facultyDetails.designation" class="w-full" placeholder="Example: Instructor" />
+              </UFormField>
+              <UFormField label="Employment Type">
+                <USelect v-model="createForm.facultyDetails.employmentType" :items="facultyEmploymentOptions" class="w-full" />
+              </UFormField>
+              <UFormField label="Contact Number">
+                <UInput v-model="createForm.facultyDetails.contactNo" class="w-full" />
+              </UFormField>
+            </div>
+          </div>
         </div>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="createOpen = false" />

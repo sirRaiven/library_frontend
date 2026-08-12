@@ -1,6 +1,4 @@
 <script setup lang="ts">
-
-import { appLogger } from "~/utils/app-logger";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminDeviceRecord, AdminMonitoringSummary } from "~/composables/useAdminMonitoring";
 
@@ -12,13 +10,13 @@ const search = ref(""); const trust = ref("All"); const blocked = ref("All"); co
 const selected = ref<AdminDeviceRecord | null>(null); const detailOpen = ref(false); const actionOpen = ref(false);
 const action = ref<"trust" | "untrust" | "block" | "unblock" | "revoke-sessions">("trust"); const reason = ref(""); const acting = ref(false);
 const trustItems = ["All", "Trusted", "Untrusted"]; const blockedItems = ["All", "Blocked", "Allowed"];
-const deviceItems = ["All", "Desktop", "Laptop", "Tablet", "Mobile Phone", "Unknown Device"]; const profileItems = ["All", "Student", "Librarian", "Administrator"];
+const deviceItems = ["All", "Desktop", "Laptop", "Tablet", "Mobile Phone", "Unknown Device"]; const profileItems = ["All", "Student", "Faculty", "Librarian", "Administrator"];
 const columns: TableColumn<AdminDeviceRecord>[] = [
   { id: "device", header: "Device" }, { id: "account", header: "Account" }, { id: "trust", header: "Security State" },
   { id: "seen", header: "Last Seen" }, { id: "sessions", header: "Portal Sessions" }, { id: "actions", header: "" },
 ];
 function formatDate(value: string | null) { if (!value) return "Not recorded"; return new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(value)); }
-async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { appLogger.warn(error); } }
+async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { console.warn(error); } }
 async function load() { loading.value = true; try { const response = await api.devices({ page: page.value, pageSize, search: search.value, trust: trust.value, blocked: blocked.value, deviceType: deviceType.value, profileType: profileType.value }); records.value = response.data; total.value = response.meta.total; } catch (error) { toast.add({ title: "Unable to load devices", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" }); } finally { loading.value = false; } }
 function view(record: AdminDeviceRecord) { selected.value = record; detailOpen.value = true; }
 function begin(record: AdminDeviceRecord, next: typeof action.value) { selected.value = record; action.value = next; reason.value = ""; detailOpen.value = false; actionOpen.value = true; }
@@ -31,7 +29,7 @@ onMounted(() => { load(); loadSummary(); });
 
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
-    <AdminPageHeader eyebrow="Security and Monitoring" title="Known Devices" description="Review privacy-safe browser device records created by Student, Librarian, and Administrator portal sessions." icon="i-lucide-monitor-smartphone"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Monitoring Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/monitoring-reports" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
+    <AdminPageHeader eyebrow="Security and Monitoring" title="Known Devices" description="Review privacy-safe browser device records created by Student, Faculty, Librarian, and Administrator portal sessions." icon="i-lucide-monitor-smartphone"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Monitoring Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/monitoring-reports" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
     <UAlert color="primary" variant="soft" icon="i-lucide-fingerprint" title="No hardware fingerprinting" description="The Library System uses a random application device identifier. It does not collect MAC addresses, IMEI numbers, hardware serial numbers, continuous location, or personal files." />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminMetricCard label="Known Devices" :value="summary?.knownDevices ?? 0" description="Registered privacy-safe devices." icon="i-lucide-monitor-smartphone" tone="primary" :loading="!summary" />

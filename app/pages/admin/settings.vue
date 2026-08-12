@@ -39,7 +39,7 @@ const forms = reactive({
     studentBorrowLimit: 5,
     facultyBorrowLimit: 10,
     studentLoanDays: 7,
-    facultyLoanDays: 14,
+    facultyLoanDays: 365,
     studentMaxRenewals: 1,
     facultyMaxRenewals: 2,
     allowBorrowWithOverdue: false,
@@ -425,8 +425,8 @@ onMounted(() => {
               <UFormField label="Student Loan Period" hint="Number of calendar days">
                 <UInput v-model.number="forms.borrowing.studentLoanDays" type="number" min="1" max="90" class="w-full" />
               </UFormField>
-              <UFormField label="Faculty Loan Period" hint="Number of calendar days">
-                <UInput v-model.number="forms.borrowing.facultyLoanDays" type="number" min="1" max="180" class="w-full" />
+              <UFormField label="Faculty Loan Period" hint="Use 365 for annual loans or set the number of days before the department audit">
+                <UInput v-model.number="forms.borrowing.facultyLoanDays" type="number" min="1" max="730" class="w-full" />
               </UFormField>
               <UFormField label="Student Renewal Limit">
                 <UInput v-model.number="forms.borrowing.studentMaxRenewals" type="number" min="0" max="5" class="w-full" />

@@ -279,7 +279,7 @@ onMounted(loadSecurity);
           label="Known Devices"
           :value="security.summary.knownDevices"
           :description="`${security.summary.registeredDevices} portal · ${security.summary.sessionDerivedDevices} from sign-ins`"
-          icon="i-lucide-devices"
+          icon="i-lucide-monitor-smartphone"
           :tone="security.summary.blockedDevices ? 'error' : 'neutral'"
         />
         <AdminMetricCard
@@ -396,7 +396,7 @@ onMounted(loadSecurity);
             </div>
           </div>
           <div v-else class="mt-4 rounded-xl border border-dashed border-default px-5 py-8 text-center">
-            <UIcon name="i-lucide-devices" class="mx-auto size-8 text-dimmed" />
+            <UIcon name="i-lucide-monitor-smartphone" class="mx-auto size-8 text-dimmed" />
             <p class="mt-2 font-semibold text-highlighted">No recognized devices available</p>
             <p class="mt-1 text-xs text-muted">A device appears after the account has an active sign-in or a portal monitoring record.</p>
           </div>

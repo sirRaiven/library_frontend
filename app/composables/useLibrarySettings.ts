@@ -42,7 +42,7 @@ function fallbackSettings(): OperationalLibrarySettings {
       studentBorrowLimit: 5,
       facultyBorrowLimit: 10,
       studentLoanDays: 3,
-      facultyLoanDays: 14,
+      facultyLoanDays: 365,
       studentMaxRenewals: 1,
       facultyMaxRenewals: 2,
       allowBorrowWithOverdue: false,

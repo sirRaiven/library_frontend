@@ -59,10 +59,20 @@ const manageableRoles = computed(() =>
 
 const expectedProfileType = computed<AdminManagedProfileType | null>(() => {
   const value = record.value?.profileGovernance.expectedType;
-  return value === "Student" || value === "Librarian" ? value : null;
+  return value === "Student" || value === "Faculty" || value === "Librarian"
+    ? value
+    : null;
 });
 
+function profileTypeIcon(type: AdminManagedProfileType): string {
+  if (type === "Student") return "i-lucide-graduation-cap";
+  if (type === "Faculty") return "i-lucide-briefcase-business";
+  return "i-lucide-library";
+}
+
+
 const linkedProfile = computed(() => record.value?.profileGovernance.profile ?? null);
+const facultyDetailsOptional = computed(() => expectedProfileType.value === "Faculty");
 
 function formatDate(value?: string | null) {
   if (!value) return "Not available";
@@ -346,7 +356,7 @@ watch(monitoringChildActive, (isChild) => {
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="Account Details"
-      description="Review the account identity, assigned role, access status, and institutional profile connection."
+      description="Review the account identity, assigned role, access status, and Library details used by the assigned portal."
       icon="i-lucide-user-round-cog"
     >
       <template #actions>
@@ -396,9 +406,13 @@ watch(monitoringChildActive, (isChild) => {
           tone="primary"
         />
         <AdminMetricCard
-          label="Profile Connection"
+          :label="facultyDetailsOptional ? 'Faculty Library Details' : 'Profile Connection'"
           :value="record.profileGovernance.status"
-          :description="record.profileGovernance.required ? `${record.profileGovernance.expectedType} profile required.` : 'No member profile is required.'"
+          :description="facultyDetailsOptional
+            ? (linkedProfile ? 'Faculty Library details are available.' : 'Faculty Library details are optional and prepared automatically when needed.')
+            : record.profileGovernance.required
+              ? `${record.profileGovernance.expectedType} profile required.`
+              : 'No member profile is required.'"
           icon="i-lucide-link-2"
           :tone="record.profileGovernance.status === 'Linked' || record.profileGovernance.status === 'Not Required' ? 'success' : record.profileGovernance.status === 'Mismatch' ? 'error' : 'warning'"
         />
@@ -484,8 +498,8 @@ watch(monitoringChildActive, (isChild) => {
           <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 class="text-lg font-bold text-highlighted">Institutional Profile</h2>
-                <p class="mt-1 text-sm text-muted">Connect the login account to the correct Library profile.</p>
+                <h2 class="text-lg font-bold text-highlighted">Library Account Details</h2>
+                <p class="mt-1 text-sm text-muted">Student and Librarian accounts use linked institutional records. Faculty details are optional and can be prepared automatically.</p>
               </div>
               <AdminProfileStatusBadge :status="record.profileGovernance.status" />
             </div>
@@ -494,7 +508,7 @@ watch(monitoringChildActive, (isChild) => {
           <div v-if="linkedProfile" class="rounded-2xl border border-default bg-elevated/40 p-5">
             <div class="flex items-start gap-4">
               <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <UIcon :name="linkedProfile.type === 'Student' ? 'i-lucide-graduation-cap' : 'i-lucide-library'" class="size-5" />
+                <UIcon :name="profileTypeIcon(linkedProfile.type)" class="size-5" />
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
@@ -511,12 +525,18 @@ watch(monitoringChildActive, (isChild) => {
           <div v-else class="rounded-2xl border border-dashed border-default px-6 py-10 text-center">
             <UIcon name="i-lucide-link-2-off" class="mx-auto size-10 text-dimmed" />
             <h3 class="mt-3 font-semibold text-highlighted">
-              {{ expectedProfileType ? `No ${expectedProfileType} profile connected` : 'No institutional profile required' }}
+              {{ facultyDetailsOptional
+                ? 'Faculty Library details have not been added yet'
+                : expectedProfileType
+                  ? `No ${expectedProfileType} profile connected`
+                  : 'No institutional profile required' }}
             </h3>
             <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-              {{ expectedProfileType
-                ? `Connect this account to its existing ${expectedProfileType} record so the user receives the correct portal data.`
-                : 'Administrator accounts operate without a Student or Librarian member profile.' }}
+              {{ facultyDetailsOptional
+                ? 'This does not block Faculty Portal access. A basic internal Faculty Library record is prepared automatically when needed, or you can connect an existing Faculty record here.'
+                : expectedProfileType
+                  ? `Connect this account to its existing ${expectedProfileType} record so the user receives the correct portal data.`
+                  : 'Administrator accounts operate without a Student or Librarian member profile.' }}
             </p>
           </div>
 
@@ -524,7 +544,9 @@ watch(monitoringChildActive, (isChild) => {
             <div class="flex flex-wrap gap-2">
               <UButton
                 v-if="expectedProfileType"
-                :label="linkedProfile ? 'Change Profile Connection' : 'Connect Profile'"
+                :label="facultyDetailsOptional
+                  ? (linkedProfile ? 'Change Faculty Record' : 'Use Existing Faculty Record')
+                  : (linkedProfile ? 'Change Profile Connection' : 'Connect Profile')"
                 icon="i-lucide-link-2"
                 @click="openLink"
               />
@@ -585,7 +607,7 @@ watch(monitoringChildActive, (isChild) => {
               @click="selectedProfileDocumentId = candidate.documentId"
             >
               <div class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <UIcon :name="candidate.type === 'Student' ? 'i-lucide-graduation-cap' : 'i-lucide-library'" class="size-4" />
+                <UIcon :name="profileTypeIcon(candidate.type)" class="size-4" />
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
@@ -609,7 +631,7 @@ watch(monitoringChildActive, (isChild) => {
         </div>
 
         <UFormField label="Reason for this connection" required help="This reason is written to the administrator audit trail.">
-          <UTextarea v-model="linkReason" :rows="3" class="w-full" placeholder="Example: Correcting an unlinked Student Portal account" />
+          <UTextarea v-model="linkReason" :rows="3" class="w-full" placeholder="Example: Correcting an unlinked portal account" />
         </UFormField>
 
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -625,7 +647,11 @@ watch(monitoringChildActive, (isChild) => {
       <div class="space-y-5 bg-default p-6">
         <div>
           <h2 class="text-xl font-bold text-highlighted">Remove Profile Connection?</h2>
-          <p class="mt-2 text-sm leading-6 text-muted">The user may lose access to role-specific Library records until the correct profile is connected.</p>
+          <p class="mt-2 text-sm leading-6 text-muted">
+            {{ facultyDetailsOptional
+              ? 'Removing these Faculty details will not block Faculty Portal access. The system can prepare a basic internal Faculty Library record again when the account is used.'
+              : 'The user may lose access to role-specific Library records until the correct profile is connected.' }}
+          </p>
         </div>
         <UFormField label="Reason for removing the connection" required>
           <UTextarea v-model="unlinkReason" :rows="3" class="w-full" />
@@ -643,7 +669,7 @@ watch(monitoringChildActive, (isChild) => {
       <form class="space-y-5 bg-default p-6" @submit.prevent="saveAccount">
         <div>
           <h2 class="text-xl font-bold text-highlighted">Edit User Account</h2>
-          <p class="mt-1 text-sm text-muted">Changing to an incompatible role is blocked until the current profile connection is removed or corrected.</p>
+          <p class="mt-1 text-sm text-muted">Student and Librarian roles require the correct linked record. Faculty Library details are optional and can be prepared automatically.</p>
         </div>
         <UFormField label="Username" required>
           <UInput v-model="editForm.username" class="w-full" />

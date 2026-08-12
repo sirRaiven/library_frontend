@@ -24,6 +24,7 @@ const summary = ref<AdminAccountsReviewSummary>({
   accountsMissingProfile: 0,
   roleOrProfileMismatch: 0,
   studentProfilesWithoutAccount: 0,
+  facultyProfilesWithoutAccount: 0,
   librarianProfilesWithoutAccount: 0,
 });
 const loading = ref(false);
@@ -62,8 +63,16 @@ const profileColumns: TableColumn<AdminLinkedProfile>[] = [
 const typeOptions = [
   { label: "All profile types", value: "All" },
   { label: "Students", value: "Student" },
+  { label: "Faculty", value: "Faculty" },
   { label: "Librarians", value: "Librarian" },
 ];
+
+function profileTypeIcon(type: AdminManagedProfileType): string {
+  if (type === "Student") return "i-lucide-graduation-cap";
+  if (type === "Faculty") return "i-lucide-briefcase-business";
+  return "i-lucide-library";
+}
+
 
 function generateUsername(profile: AdminLinkedProfile) {
   const emailName = profile.email?.split("@")[0] || "";
@@ -202,7 +211,7 @@ onMounted(loadReview);
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="Accounts Needing Review"
-      description="Find login accounts without the required institutional profile, incorrect role-to-profile connections, and Student or Librarian profiles that do not yet have a portal account."
+      description="Find login accounts that need identity-record review and institutional records that do not yet have portal access. Faculty accounts do not require a pre-existing profile; their basic Library record can be prepared automatically."
       icon="i-lucide-list-checks"
     >
       <template #actions>
@@ -227,14 +236,14 @@ onMounted(loadReview);
       variant="soft"
       icon="i-lucide-shield-check"
       title="Profile links control role-specific Library data"
-      description="A Student account must connect to one Student profile, a Librarian account must connect to one Librarian profile, and Administrator accounts must not be connected to member profiles. All corrections are enforced by the backend and audited."
+      description="Student and Librarian accounts require their matching institutional record. Faculty accounts may optionally use an existing Faculty record; otherwise the system prepares a basic internal Library record automatically. Administrator accounts must not be connected to member profiles."
     />
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <AdminMetricCard
         label="Accounts Missing Profiles"
         :value="summary.accountsMissingProfile"
-        description="Student or Librarian accounts without their required profile."
+        description="Student or Librarian accounts without their required institutional record."
         icon="i-lucide-link-2-off"
         tone="warning"
         to="/admin/accounts-review"
@@ -252,6 +261,13 @@ onMounted(loadReview);
         description="Registered Student profiles without portal access."
         icon="i-lucide-graduation-cap"
         tone="primary"
+      />
+      <AdminMetricCard
+        label="Faculty Without Accounts"
+        :value="summary.facultyProfilesWithoutAccount"
+        icon="i-lucide-briefcase-business"
+        description="Existing Faculty Library records that do not yet have a portal account. Faculty accounts can also be created without selecting one of these records."
+        tone="info"
       />
       <AdminMetricCard
         label="Librarians Without Accounts"
@@ -355,15 +371,15 @@ onMounted(loadReview);
       <template v-else>
         <div v-if="!profileRecords.length" class="px-6 py-16 text-center">
           <UIcon name="i-lucide-circle-check-big" class="mx-auto size-11 text-success" />
-          <h3 class="mt-3 font-semibold text-highlighted">No profiles without accounts found</h3>
-          <p class="mt-1 text-sm text-muted">The selected Student and Librarian profiles already have portal accounts.</p>
+          <h3 class="mt-3 font-semibold text-highlighted">No unassigned institutional records found</h3>
+          <p class="mt-1 text-sm text-muted">The selected existing records already have portal accounts. Faculty accounts do not require a pre-existing record.</p>
         </div>
 
         <UTable v-else :data="profileRecords" :columns="profileColumns">
           <template #profile-cell="{ row }">
             <div class="flex items-center gap-3">
               <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <UIcon :name="row.original.type === 'Student' ? 'i-lucide-graduation-cap' : 'i-lucide-library'" class="size-4" />
+                <UIcon :name="profileTypeIcon(row.original.type)" class="size-4" />
               </div>
               <div class="min-w-0">
                 <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>

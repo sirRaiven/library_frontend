@@ -20,7 +20,7 @@ export interface MonitoringAccount {
 export interface AdminUserMonitoringSummary {
   generatedAt: string;
   account: MonitoringAccount;
-  profileType: "Student" | "Librarian" | "Administrator" | string;
+  profileType: "Student" | "Faculty" | "Librarian" | "Administrator" | string;
   accountStatus: "Active" | "Blocked" | "Unconfirmed" | string;
   activityThirtyDays: number;
   failedOrDeniedThirtyDays: number;

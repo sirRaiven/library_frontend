@@ -1,6 +1,4 @@
 <script setup lang="ts">
-
-import { appLogger } from "~/utils/app-logger";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminMonitoringSummary, AdminSessionRecord } from "~/composables/useAdminMonitoring";
 
@@ -25,7 +23,7 @@ const reason = ref("");
 const revoking = ref(false);
 const sourceItems = ["Authentication Session", "Portal Monitoring", "All"];
 const statusItems = ["All", "Active", "Logged Out", "Expired", "Revoked", "Invalidated", "Blocked", "Suspicious"];
-const profileItems = ["All", "Student", "Librarian", "Administrator"];
+const profileItems = ["All", "Student", "Faculty", "Librarian", "Administrator"];
 const columns: TableColumn<AdminSessionRecord>[] = [
   { id: "account", header: "Account" }, { id: "device", header: "Device" },
   { accessorKey: "source", header: "Session Source" }, { accessorKey: "status", header: "Status" },
@@ -34,7 +32,7 @@ const columns: TableColumn<AdminSessionRecord>[] = [
 
 function formatDate(value: string | null) { if (!value) return "Not recorded"; return new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(value)); }
 function statusColor(value: string) { if (value === "Active") return "success" as const; if (["Blocked", "Suspicious"].includes(value)) return "error" as const; if (["Expired", "Revoked", "Invalidated"].includes(value)) return "warning" as const; return "neutral" as const; }
-async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { appLogger.warn(error); } }
+async function loadSummary() { try { summary.value = await api.summary(); } catch (error) { console.warn(error); } }
 async function load() {
   loading.value = true;
   try {
@@ -63,7 +61,7 @@ onMounted(() => { load(); loadSummary(); });
 
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
-    <AdminPageHeader eyebrow="Security and Monitoring" title="Active Sessions" description="Review Strapi authentication sessions and privacy-safe portal-monitoring sessions for Student, Librarian, and Administrator accounts." icon="i-lucide-monitor-dot"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Monitoring Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/monitoring-reports" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
+    <AdminPageHeader eyebrow="Security and Monitoring" title="Active Sessions" description="Review Strapi authentication sessions and privacy-safe portal-monitoring sessions for Student, Faculty, Librarian, and Administrator accounts." icon="i-lucide-monitor-dot"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Monitoring Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/monitoring-reports" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
     <UAlert color="info" variant="soft" icon="i-lucide-info" title="Two session sources" description="Authentication Sessions control actual sign-in refresh tokens. Portal Monitoring Sessions record portal presence and activity. They are displayed separately because they do not store or expose authentication tokens." />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminMetricCard label="Authentication Sessions" :value="summary?.activeAuthenticationSessions ?? 0" description="Current refresh-token sign-ins." icon="i-lucide-key-round" tone="success" :loading="!summary" />
