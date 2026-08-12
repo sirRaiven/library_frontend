@@ -430,7 +430,7 @@ export function useLibraryNotifications() {
   }
 
   function startPolling(
-    intervalMilliseconds = 30_000,
+    intervalMilliseconds = 120_000,
   ) {
     if (!import.meta.client) {
       return;

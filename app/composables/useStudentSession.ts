@@ -19,6 +19,8 @@ export interface StudentSessionData {
   device: StudentSessionDevice;
 }
 
+const TOUCH_THROTTLE_MS = 55_000;
+
 let activeStartRequest: Promise<StudentSessionData | null> | null = null;
 
 function randomIdentifier(): string {
@@ -128,7 +130,7 @@ export function useStudentSession() {
 
     const now = Date.now();
 
-    if (!force && now - lastTouch.value < 12_000) {
+    if (!force && now - lastTouch.value < TOUCH_THROTTLE_MS) {
       return;
     }
 

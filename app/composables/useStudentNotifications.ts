@@ -402,7 +402,7 @@ export function useStudentNotifications() {
 
   function startPolling(
     intervalMilliseconds =
-      30_000,
+      120_000,
   ) {
     if (!import.meta.client) {
       return;

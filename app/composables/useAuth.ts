@@ -69,9 +69,44 @@ interface AuthFetchOptions {
   query?: Record<string, unknown>;
   params?: Record<string, unknown>;
   headers?: HeadersInit;
+  cache?: RequestCache;
 }
 
 let activeRefreshRequest: Promise<boolean> | null = null;
+const activeGetRequests = new Map<string, Promise<unknown>>();
+
+function stableRequestValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stableRequestValue);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => key !== "timestamp" && key !== "_refresh")
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, stableRequestValue(entry)]),
+    );
+  }
+
+  return value;
+}
+
+function requestDedupeKey(
+  requestUrl: string,
+  options: AuthFetchOptions,
+): string {
+  const headers = new Headers(options.headers);
+  const normalizedHeaders = [...headers.entries()]
+    .sort(([left], [right]) => left.localeCompare(right));
+
+  return JSON.stringify({
+    url: requestUrl,
+    query: stableRequestValue(options.query ?? {}),
+    params: stableRequestValue(options.params ?? {}),
+    headers: normalizedHeaders,
+  });
+}
 
 const DEVICE_BLOCKED_STATUS = 423;
 
@@ -471,30 +506,54 @@ export function useAuth() {
         ),
       });
 
-    try {
-      return await executeRequest();
-    } catch (error) {
-      if (await handleAccessRestriction(error)) {
-        throw error;
-      }
-
-      if (getHttpStatus(error) !== 401) {
-        throw error;
-      }
-
-      const refreshed = await refreshSession();
-
-      if (!refreshed || !accessToken.value) {
-        throw error;
-      }
-
+    const executeWithRefresh = async (): Promise<T> => {
       try {
         return await executeRequest();
-      } catch (retryError) {
-        await handleAccessRestriction(retryError);
-        throw retryError;
+      } catch (error) {
+        if (await handleAccessRestriction(error)) {
+          throw error;
+        }
+
+        if (getHttpStatus(error) !== 401) {
+          throw error;
+        }
+
+        const refreshed = await refreshSession();
+
+        if (!refreshed || !accessToken.value) {
+          throw error;
+        }
+
+        try {
+          return await executeRequest();
+        } catch (retryError) {
+          await handleAccessRestriction(retryError);
+          throw retryError;
+        }
       }
+    };
+
+    const method = String(options.method ?? "GET").toUpperCase();
+    if (method !== "GET" || options.body) {
+      return await executeWithRefresh();
     }
+
+    // Coalesce only identical GETs that are currently in flight. This does not
+    // cache completed responses, so later refreshes still reach Strapi.
+    const dedupeKey = requestDedupeKey(requestUrl, options);
+    const existing = activeGetRequests.get(dedupeKey);
+    if (existing) {
+      return await (existing as Promise<T>);
+    }
+
+    const pending = executeWithRefresh().finally(() => {
+      if (activeGetRequests.get(dedupeKey) === pending) {
+        activeGetRequests.delete(dedupeKey);
+      }
+    });
+    activeGetRequests.set(dedupeKey, pending);
+
+    return await pending;
   }
 
   async function logout(allDevices = false): Promise<void> {

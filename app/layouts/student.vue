@@ -220,16 +220,18 @@ async function signOut() {
 
 onMounted(async () => {
   await initializeMonitoring();
-  notificationCenter.startPolling(30_000);
+  notificationCenter.startPolling(120_000);
   heartbeat = setInterval(() => {
-    void monitoring.touch();
-  }, 15_000);
+    if (document.visibilityState === "visible") {
+      void monitoring.touch();
+    }
+  }, 60_000);
 });
 
 watch(
   () => route.fullPath,
   () => {
-    if (import.meta.client) void monitoring.touch(true);
+    if (import.meta.client) void monitoring.touch();
   },
 );
 
@@ -241,7 +243,7 @@ onBeforeUnmount(() => {
 
 <template>
   <UDashboardGroup
-    storage="cookie"
+    storage="local"
     storage-key="sncbt-student-dashboard"
     unit="rem"
   >

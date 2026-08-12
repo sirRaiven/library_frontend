@@ -158,8 +158,10 @@ onMounted(async () => {
   }
 
   monitoringTimer = setInterval(() => {
-    void monitoring.touch();
-  }, 15_000);
+    if (document.visibilityState === "visible") {
+      void monitoring.touch();
+    }
+  }, 60_000);
 });
 
 onBeforeUnmount(() => {
@@ -171,7 +173,7 @@ watch(
   async () => {
     sidebarOpen.value = false;
     await nextTick();
-    void monitoring.touch(true);
+    void monitoring.touch();
     void monitoring.recordPageView(route.path, pageTitle.value);
   },
 );

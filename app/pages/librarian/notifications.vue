@@ -269,18 +269,16 @@ async function loadPage(
 ) {
   try {
     if (sync) {
-      await notificationCenter
-        .syncNotifications();
+      // The explicit sync response already includes the authoritative summary.
+      // Only reload the visible page after it completes.
+      await notificationCenter.syncNotifications();
+      await notificationCenter.loadNotifications(filters);
+    } else {
+      await Promise.all([
+        notificationCenter.loadNotifications(filters),
+        notificationCenter.loadSummary(false),
+      ]);
     }
-
-    await Promise.all([
-      notificationCenter
-        .loadNotifications(
-          filters,
-        ),
-      notificationCenter
-        .loadSummary(false),
-    ]);
 
     lastLiveRefreshAt.value =
       new Date().toISOString();
@@ -708,9 +706,8 @@ watch(
 );
 
 onMounted(() => {
-  notificationCenter
-    .startPolling(30_000);
-
+  // The Librarian layout owns the global notification-summary polling.
+  // This page only refreshes its visible list.
   void loadPage(true);
 
   liveRefreshTimer =
@@ -723,7 +720,7 @@ onMounted(() => {
           void loadPage();
         }
       },
-      30_000,
+      120_000,
     );
 });
 

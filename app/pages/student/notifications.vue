@@ -148,13 +148,15 @@ async function load(
 ) {
   try {
     if (synchronize) {
+      // Sync already returns and stores the summary, so avoid fetching it twice.
       await center.sync();
+      await center.load(filters);
+    } else {
+      await Promise.all([
+        center.load(filters),
+        center.loadSummary(),
+      ]);
     }
-
-    await Promise.all([
-      center.load(filters),
-      center.loadSummary(),
-    ]);
 
     lastUpdatedAt.value =
       new Date().toISOString();
@@ -305,7 +307,7 @@ onMounted(async () => {
           void load();
         }
       },
-      30_000,
+      120_000,
     );
 });
 

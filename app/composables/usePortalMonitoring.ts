@@ -19,6 +19,8 @@ export interface PortalMonitoringSession {
   device: PortalMonitoringDevice;
 }
 
+const TOUCH_THROTTLE_MS = 55_000;
+
 let activeStartRequest: Promise<PortalMonitoringSession | null> | null = null;
 
 function randomIdentifier(): string {
@@ -107,7 +109,7 @@ export function usePortalMonitoring() {
   async function touch(force = false) {
     if (!import.meta.client || !supported.value || !sessionKey.value) return;
     const now = Date.now();
-    if (!force && now - lastTouch.value < 12_000) return;
+    if (!force && now - lastTouch.value < TOUCH_THROTTLE_MS) return;
     try {
       const response = await auth.authFetch<{
         data: Pick<PortalMonitoringSession, "sessionKey" | "status" | "loginAt" | "lastActivityAt">;

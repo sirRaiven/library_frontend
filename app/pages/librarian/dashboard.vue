@@ -6,36 +6,6 @@ type BadgeColor =
   | "info"
   | "neutral";
 
-interface StrapiPagination {
-  page: number;
-  pageSize: number;
-  pageCount: number;
-  total: number;
-}
-
-interface StrapiListResponse<T> {
-  data: T[];
-  meta?: {
-    pagination?: StrapiPagination;
-  };
-}
-
-interface ReservationDashboardResponse {
-  data: unknown[];
-  meta?: {
-    pagination?: StrapiPagination;
-    summary?: {
-      pendingCount?: number;
-    };
-  };
-}
-
-interface NotificationSummaryResponse {
-  data: {
-    unread?: number;
-  };
-}
-
 interface BorrowingDashboardItem {
   documentId?: string;
   borrowNo?: string;
@@ -50,18 +20,21 @@ interface BorrowingDashboardItem {
   title?: string;
 }
 
-interface BorrowingDashboardResponse {
+interface LibrarianDashboardResponse {
   data: {
+    totalTitles?: number;
+    totalCopies?: number;
+    availableCopies?: number;
     activeBorrowCount?: number;
     overdueBorrowCount?: number;
+    pendingReservations?: number;
+    unreadNotifications?: number;
+    damagedCopies?: number;
+    lostCopies?: number;
+    todayVisits?: number;
     recent?: BorrowingDashboardItem[];
+    unavailableModules?: string[];
   };
-}
-
-interface BorrowingDashboardData {
-  activeBorrowCount: number;
-  overdueBorrowCount: number;
-  recentActivity: RecentActivity[];
 }
 
 interface RecentActivity {
@@ -120,7 +93,6 @@ function formatDate(value?: string): string {
   }
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -133,72 +105,7 @@ function formatDate(value?: string): string {
 }
 
 function formatNumber(value: number): string {
-  return new Intl.NumberFormat("en-PH").format(
-    value,
-  );
-}
-
-async function getCollectionCount(
-  path: string,
-  query: Record<string, unknown> = {},
-): Promise<number> {
-  const response =
-    await auth.authFetch<StrapiListResponse<unknown>>(
-      path,
-      {
-        method: "GET",
-        query: {
-          ...query,
-          "pagination[page]": 1,
-          "pagination[pageSize]": 1,
-        },
-      },
-    );
-
-  return (
-    response.meta?.pagination?.total ??
-    response.data.length
-  );
-}
-
-async function getPendingReservationCount(): Promise<number> {
-  const response =
-    await auth.authFetch<ReservationDashboardResponse>(
-      "/api/circulation/reservations",
-      {
-        method: "GET",
-        cache: "no-store",
-        query: {
-          status: "Pending",
-          page: 1,
-          pageSize: 1,
-          _refresh: Date.now(),
-        },
-      },
-    );
-
-  return (
-    response.meta?.summary?.pendingCount ??
-    response.meta?.pagination?.total ??
-    response.data.length
-  );
-}
-
-async function getUnreadNotificationCount(): Promise<number> {
-  const response =
-    await auth.authFetch<NotificationSummaryResponse>(
-      "/api/notification-center/summary",
-      {
-        method: "GET",
-        cache: "no-store",
-        query: {
-          sync: "false",
-          timestamp: Date.now(),
-        },
-      },
-    );
-
-  return response.data.unread ?? 0;
+  return new Intl.NumberFormat("en-PH").format(value);
 }
 
 function normalizeBorrowingActivity(
@@ -213,11 +120,8 @@ function normalizeBorrowingActivity(
         : "Member";
 
   return {
-    id: String(
-      item.documentId ?? item.borrowNo ?? index,
-    ),
-    borrower:
-      item.memberName || "Borrower name unavailable",
+    id: String(item.documentId ?? item.borrowNo ?? index),
+    borrower: item.memberName || "Borrower name unavailable",
     memberType,
     title: item.title || "Book title unavailable",
     barcode:
@@ -229,171 +133,30 @@ function normalizeBorrowingActivity(
   };
 }
 
-async function getBorrowingDashboardSummary(): Promise<
-  BorrowingDashboardData
-> {
-  const response =
-    await auth.authFetch<BorrowingDashboardResponse>(
-      "/api/circulation/dashboard-summary",
-      {
-        method: "GET",
-        query: {
-          limit: 8,
-        },
-      },
-    );
-
-  return {
-    activeBorrowCount:
-      response.data.activeBorrowCount ?? 0,
-    overdueBorrowCount:
-      response.data.overdueBorrowCount ?? 0,
-    recentActivity: (response.data.recent ?? []).map(
-      normalizeBorrowingActivity,
-    ),
-  };
-}
-
 async function loadDashboard(): Promise<DashboardData> {
-  const unavailableModules: string[] = [];
+  const response = await auth.authFetch<LibrarianDashboardResponse>(
+    "/api/circulation/dashboard-summary",
+    {
+      method: "GET",
+      cache: "no-store",
+      query: { limit: 8 },
+    },
+  );
 
-  async function safeCount(
-    label: string,
-    path: string,
-    query: Record<string, unknown> = {},
-  ): Promise<number> {
-    try {
-      return await getCollectionCount(path, query);
-    } catch {
-      unavailableModules.push(label);
-      return 0;
-    }
-  }
-
-  async function safePendingReservations() {
-    try {
-      return await getPendingReservationCount();
-    } catch {
-      unavailableModules.push("Reservations");
-      return 0;
-    }
-  }
-
-  async function safeUnreadNotifications() {
-    try {
-      return await getUnreadNotificationCount();
-    } catch {
-      unavailableModules.push("New notifications");
-      return 0;
-    }
-  }
-
-  async function safeBorrowingSummary(): Promise<
-    BorrowingDashboardData
-  > {
-    try {
-      return await getBorrowingDashboardSummary();
-    } catch {
-      unavailableModules.push(
-        "Borrowing information",
-      );
-      return {
-        activeBorrowCount: 0,
-        overdueBorrowCount: 0,
-        recentActivity: [],
-      };
-    }
-  }
-
-  async function safeTodayVisits() {
-    try {
-      const response =
-        await auth.authFetch<{
-          data: {
-            totalVisits: number;
-          };
-        }>(
-          "/api/library-visits/summary",
-          {
-            method: "GET",
-          },
-        );
-
-      return (
-        response.data
-          .totalVisits ?? 0
-      );
-    } catch {
-      unavailableModules.push(
-        "Visitor records",
-      );
-      return 0;
-    }
-  }
-
-  const [
-    totalTitles,
-    totalCopies,
-    availableCopies,
-    borrowingSummary,
-    pendingReservations,
-    unreadNotifications,
-    damagedCopies,
-    lostCopies,
-    todayVisits,
-  ] = await Promise.all([
-    safeCount("Book records", "/api/books"),
-    safeCount(
-      "Book copies",
-      "/api/book-copies",
-    ),
-    safeCount(
-      "Available books",
-      "/api/book-copies",
-      {
-        "filters[copy_status][$eq]":
-          "Available",
-      },
-    ),
-    safeBorrowingSummary(),
-    safePendingReservations(),
-    safeUnreadNotifications(),
-    safeCount(
-      "Damaged books",
-      "/api/book-copies",
-      {
-        "filters[copy_status][$eq]":
-          "Damaged",
-      },
-    ),
-    safeCount(
-      "Lost books",
-      "/api/book-copies",
-      {
-        "filters[copy_status][$eq]": "Lost",
-      },
-    ),
-    safeTodayVisits(),
-  ]);
-
+  const data = response.data ?? {};
   return {
-    totalTitles,
-    totalCopies,
-    availableCopies,
-    borrowedCopies:
-      borrowingSummary.activeBorrowCount,
-    overdueTransactions:
-      borrowingSummary.overdueBorrowCount,
-    pendingReservations,
-    unreadNotifications,
-    damagedCopies,
-    lostCopies,
-    todayVisits,
-    recentActivity:
-      borrowingSummary.recentActivity,
-    unavailableModules: [
-      ...new Set(unavailableModules),
-    ],
+    totalTitles: data.totalTitles ?? 0,
+    totalCopies: data.totalCopies ?? 0,
+    availableCopies: data.availableCopies ?? 0,
+    borrowedCopies: data.activeBorrowCount ?? 0,
+    overdueTransactions: data.overdueBorrowCount ?? 0,
+    pendingReservations: data.pendingReservations ?? 0,
+    unreadNotifications: data.unreadNotifications ?? 0,
+    damagedCopies: data.damagedCopies ?? 0,
+    lostCopies: data.lostCopies ?? 0,
+    todayVisits: data.todayVisits ?? 0,
+    recentActivity: (data.recent ?? []).map(normalizeBorrowingActivity),
+    unavailableModules: data.unavailableModules ?? [],
     loadedAt: new Date().toISOString(),
   };
 }

@@ -232,187 +232,312 @@ function isBooksCatalogActive(): boolean {
   );
 }
 
-const navigationItems =
-  computed<NavigationMenuItem[][]>(() => [
-    [
-      {
-        label: "Dashboard",
-        icon: "i-lucide-layout-dashboard",
-        to: "/librarian/dashboard",
-        active: isRouteActive(
-          "/librarian/dashboard",
-          true,
-        ),
-      },
-    ],
-    [
-      {
-        label: "Books and Collection",
-        type: "label",
-      },
+const contentNavigationItems = computed(() => {
+  const notificationBadge =
+    notificationCenter.badgeCount.value > 0
+      ? notificationCenter.chipText.value
+      : undefined;
+
+  const booksActive = route.path.startsWith("/librarian/books");
+  const servicesActive =
+    isRouteActive("/librarian/visits") ||
+    isRouteActive("/librarian/borrow") ||
+    isRouteActive("/librarian/return") ||
+    isRouteActive("/librarian/fines") ||
+    isRouteActive("/librarian/reservations");
+  const usersActive =
+    isRouteActive("/librarian/students") ||
+    isRouteActive("/librarian/faculty") ||
+    isRouteActive("/librarian/membership-term") ||
+    isRouteActive("/librarian/memberships") ||
+    isRouteActive("/librarian/library-card-designer");
+  const reportsActive =
+    isRouteActive("/librarian/history") ||
+    isRouteActive("/librarian/reports") ||
+    isRouteActive("/librarian/notifications");
+
+  return [
+    {
+      title: "Dashboard",
+      icon: "i-lucide-layout-dashboard",
+      path: "/librarian/dashboard",
+      active:
+        isRouteActive("/librarian/dashboard", true) ||
+        route.path === "/librarian",
+    },
+    {
+      title: "Books & Collection",
+      icon: "i-lucide-library-big",
+      active: booksActive,
+      children: [
+        {
+          title: "View Books",
+          icon: "i-lucide-library",
+          path: "/librarian/books",
+          active: isBooksCatalogActive(),
+        },
+        {
+          title: "Add New Book",
+          icon: "i-lucide-book-plus",
+          path: "/librarian/books/register",
+          active: isRouteActive("/librarian/books/register"),
+        },
+      ],
+    },
+    {
+      title: "Library Services",
+      icon: "i-lucide-hand-helping",
+      active: servicesActive,
+      children: [
+        {
+          title: "Library Entry Log",
+          icon: "i-lucide-scan-line",
+          path: "/librarian/visits",
+          active: isRouteActive("/librarian/visits"),
+        },
+        {
+          title: "Borrow a Book",
+          icon: "i-lucide-book-up",
+          path: "/librarian/borrow",
+          active: isRouteActive("/librarian/borrow"),
+        },
+        {
+          title: "Return a Book",
+          icon: "i-lucide-book-down",
+          path: "/librarian/return",
+          active: isRouteActive("/librarian/return"),
+        },
+        {
+          title: "Fines & Payments",
+          icon: "i-lucide-receipt-text",
+          path: "/librarian/fines",
+          active: isRouteActive("/librarian/fines"),
+        },
+        {
+          title: "Reservations",
+          icon: "i-lucide-calendar-check-2",
+          path: "/librarian/reservations",
+          active: isRouteActive("/librarian/reservations"),
+        },
+      ],
+    },
+    {
+      title: "Library Users",
+      icon: "i-lucide-users-round",
+      active: usersActive,
+      children: [
+        {
+          title: "Students",
+          icon: "i-lucide-graduation-cap",
+          path: "/librarian/students",
+          active: isRouteActive("/librarian/students"),
+        },
+        {
+          title: "Faculty",
+          icon: "i-lucide-briefcase-business",
+          path: "/librarian/faculty",
+          active:
+            isRouteActive("/librarian/faculty") &&
+            !isRouteActive("/librarian/faculty-book-reports"),
+        },
+        {
+          title: "Faculty Book Reports",
+          icon: "i-lucide-clipboard-check",
+          path: "/librarian/faculty-book-reports",
+          active: isRouteActive("/librarian/faculty-book-reports"),
+        },
+        {
+          title: "Academic Term & Validity",
+          icon: "i-lucide-calendar-range",
+          path: "/librarian/membership-term",
+          active: isRouteActive("/librarian/membership-term"),
+        },
+        {
+          title: "Library Cards",
+          icon: "i-lucide-id-card",
+          path: "/librarian/memberships",
+          active: isRouteActive("/librarian/memberships"),
+        },
+        {
+          title: "Design Library Card",
+          icon: "i-lucide-palette",
+          path: "/librarian/library-card-designer",
+          active: isRouteActive("/librarian/library-card-designer"),
+        },
+      ],
+    },
+    {
+      title: "Reports & Notices",
+      icon: "i-lucide-chart-no-axes-combined",
+      active: reportsActive,
+      badge: notificationBadge,
+      children: [
+        {
+          title: "History Logs",
+          icon: "i-lucide-history",
+          path: "/librarian/history",
+          active: isRouteActive("/librarian/history"),
+        },
+        {
+          title: "Reports",
+          icon: "i-lucide-chart-no-axes-combined",
+          path: "/librarian/reports",
+          active: isRouteActive("/librarian/reports"),
+        },
+        {
+          title: "Notifications",
+          icon: "i-lucide-bell",
+          path: "/librarian/notifications",
+          active: isRouteActive("/librarian/notifications"),
+          badge: notificationBadge,
+        },
+      ],
+    },
+  ];
+});
+
+const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
+  {
+    label: "Dashboard",
+    icon: "i-lucide-layout-dashboard",
+    to: "/librarian/dashboard",
+    active:
+      isRouteActive("/librarian/dashboard", true) ||
+      route.path === "/librarian",
+  },
+  {
+    label: "Books & Collection",
+    icon: "i-lucide-library-big",
+    active: route.path.startsWith("/librarian/books"),
+    children: [
       {
         label: "View Books",
         icon: "i-lucide-library",
         to: "/librarian/books",
-        active: isBooksCatalogActive(),
       },
       {
         label: "Add New Book",
         icon: "i-lucide-book-plus",
         to: "/librarian/books/register",
-        active: isRouteActive(
-          "/librarian/books/register",
-        ),
       },
     ],
-    [
-      {
-        label: "Library Services",
-        type: "label",
-      },
+  },
+  {
+    label: "Library Services",
+    icon: "i-lucide-hand-helping",
+    active:
+      isRouteActive("/librarian/visits") ||
+      isRouteActive("/librarian/borrow") ||
+      isRouteActive("/librarian/return") ||
+      isRouteActive("/librarian/fines") ||
+      isRouteActive("/librarian/reservations"),
+    children: [
       {
         label: "Library Entry Log",
         icon: "i-lucide-scan-line",
         to: "/librarian/visits",
-        active: isRouteActive(
-          "/librarian/visits",
-        ),
       },
       {
         label: "Borrow a Book",
         icon: "i-lucide-book-up",
         to: "/librarian/borrow",
-        active: isRouteActive(
-          "/librarian/borrow",
-        ),
       },
       {
         label: "Return a Book",
         icon: "i-lucide-book-down",
         to: "/librarian/return",
-        active: isRouteActive(
-          "/librarian/return",
-        ),
       },
       {
         label: "Fines & Payments",
         icon: "i-lucide-receipt-text",
         to: "/librarian/fines",
-        active: isRouteActive(
-          "/librarian/fines",
-        ),
       },
       {
         label: "Reservations",
         icon: "i-lucide-calendar-check-2",
         to: "/librarian/reservations",
-        active: isRouteActive(
-          "/librarian/reservations",
-        ),
       },
     ],
-    [
-      {
-        label: "Library Users",
-        type: "label",
-      },
+  },
+  {
+    label: "Library Users",
+    icon: "i-lucide-users-round",
+    active:
+      isRouteActive("/librarian/students") ||
+      isRouteActive("/librarian/faculty") ||
+      isRouteActive("/librarian/membership-term") ||
+      isRouteActive("/librarian/memberships") ||
+      isRouteActive("/librarian/library-card-designer"),
+    children: [
       {
         label: "Students",
         icon: "i-lucide-graduation-cap",
         to: "/librarian/students",
-        active: isRouteActive(
-          "/librarian/students",
-        ),
       },
       {
         label: "Faculty",
         icon: "i-lucide-briefcase-business",
         to: "/librarian/faculty",
-        active:
-          isRouteActive("/librarian/faculty") &&
-          !isRouteActive("/librarian/faculty-book-reports"),
       },
       {
         label: "Faculty Book Reports",
         icon: "i-lucide-clipboard-check",
         to: "/librarian/faculty-book-reports",
-        active: isRouteActive(
-          "/librarian/faculty-book-reports",
-        ),
       },
       {
         label: "Academic Term & Validity",
         icon: "i-lucide-calendar-range",
         to: "/librarian/membership-term",
-        active: isRouteActive(
-          "/librarian/membership-term",
-        ),
       },
       {
         label: "Library Cards",
         icon: "i-lucide-id-card",
         to: "/librarian/memberships",
-        active: isRouteActive(
-          "/librarian/memberships",
-        ),
       },
       {
         label: "Design Library Card",
         icon: "i-lucide-palette",
         to: "/librarian/library-card-designer",
-        active: isRouteActive(
-          "/librarian/library-card-designer",
-        ),
       },
     ],
-    [
-      {
-        label: "Reports and Notices",
-        type: "label",
-      },
+  },
+  {
+    label: "Reports & Notices",
+    icon: "i-lucide-chart-no-axes-combined",
+    active:
+      isRouteActive("/librarian/history") ||
+      isRouteActive("/librarian/reports") ||
+      isRouteActive("/librarian/notifications"),
+    children: [
       {
         label: "History Logs",
         icon: "i-lucide-history",
         to: "/librarian/history",
-        active: isRouteActive(
-          "/librarian/history",
-        ),
       },
       {
         label: "Reports",
-        icon:
-          "i-lucide-chart-no-axes-combined",
+        icon: "i-lucide-chart-no-axes-combined",
         to: "/librarian/reports",
-        active: isRouteActive(
-          "/librarian/reports",
-        ),
       },
       {
-        label: "Notifications",
+        label:
+          notificationCenter.badgeCount.value > 0
+            ? `Notifications (${notificationCenter.chipText.value})`
+            : "Notifications",
         icon: "i-lucide-bell",
         to: "/librarian/notifications",
-        active: isRouteActive(
-          "/librarian/notifications",
-        ),
-        chip:
-          notificationCenter
-            .badgeCount.value > 0
-            ? {
-                color:
-                  notificationCenter
-                    .chipColor.value,
-                text:
-                  notificationCenter
-                    .chipText.value,
-                size:
-                  "md",
-                inset:
-                  false,
-              }
-            : undefined,
       },
     ],
-  ]);
+  },
+]);
+
+function handleSidebarNavigationClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+
+  if (target?.closest("a[href]")) {
+    sidebarOpen.value = false;
+  }
+}
 
 const accountMenuItems =
   computed<DropdownMenuItem[][]>(() => [
@@ -465,15 +590,6 @@ async function submitGlobalSearch() {
   globalSearch.value = "";
 }
 
-async function refreshNotificationBadge() {
-  try {
-    await notificationCenter
-      .loadSummary(true);
-  } catch {
-    // Keep the navigation usable if notification synchronization is unavailable.
-  }
-}
-
 async function handleLogout() {
   if (isLoggingOut.value) {
     return;
@@ -512,9 +628,8 @@ async function handleLogout() {
 
 onMounted(async () => {
   notificationCenter
-    .startPolling();
+    .startPolling(120_000);
 
-  void refreshNotificationBadge();
 
   try {
     await monitoring.start();
@@ -532,8 +647,10 @@ onMounted(async () => {
   );
 
   monitoringTimer = setInterval(() => {
-    void monitoring.touch();
-  }, 15_000);
+    if (document.visibilityState === "visible") {
+      void monitoring.touch();
+    }
+  }, 60_000);
 });
 
 onBeforeUnmount(() => {
@@ -555,16 +672,9 @@ watch(
     sidebarOpen.value = false;
 
     await nextTick();
-    void monitoring.touch(true);
+    void monitoring.touch();
     void monitoring.recordPageView(route.path, pageTitle.value);
 
-    if (
-      route.path.startsWith(
-        "/librarian/notifications",
-      )
-    ) {
-      void refreshNotificationBadge();
-    }
   },
 );
 </script>
@@ -582,9 +692,9 @@ watch(
       v-model:collapsed="sidebarCollapsed"
       collapsible
       :collapsed-size="4.5"
-      :default-size="16"
-      :min-size="15"
-      :max-size="20"
+      :default-size="17"
+      :min-size="16"
+      :max-size="21"
       mode="slideover"
       :auto-close="true"
       :toggle="{
@@ -668,38 +778,75 @@ watch(
       </template>
 
       <template #default="{ collapsed }">
-        <UNavigationMenu
-          :items="navigationItems"
-          orientation="vertical"
-          :collapsed="collapsed"
-          :tooltip="{
-            delayDuration: 150,
-            content: {
-              side: 'right',
-              align: 'center',
-              sideOffset: 10,
-              collisionPadding: 12,
-            },
-            arrow: true,
-          }"
-          color="success"
-          variant="pill"
-          highlight
-          class="w-full"
-          :ui="{
-            root: 'w-full gap-1',
-            list: 'w-full gap-1',
-            item: 'w-full',
-            link: collapsed
-              ? 'min-h-10 justify-center rounded-lg px-0 transition-colors duration-150'
-              : 'min-h-10 rounded-lg px-3 transition-colors duration-150',
-            linkLeadingIcon: 'size-6',
-            linkLabel: 'text-xs',
-            label:
-              'px-1 pb-1 pt-2 text-[8px] font-bold tracking-[0.08em] text-muted',
-          }"
-          @click="sidebarOpen = false"
-        />
+        <div class="w-full">
+          <UContentNavigation
+            v-if="!collapsed"
+            :key="`librarian-content-navigation:${route.path}`"
+            :navigation="contentNavigationItems"
+            :default-open="true"
+            type="multiple"
+            :collapsible="true"
+            color="success"
+            variant="pill"
+            highlight
+            highlight-color="success"
+            class="w-full"
+            :ui="{
+              root: 'w-full',
+              list: 'space-y-1',
+              item: 'w-full',
+              itemWithChildren: 'w-full',
+              link: [
+                'min-h-10 w-full rounded-xl px-3 py-2',
+                'text-sm transition-colors duration-150',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50',
+              ].join(' '),
+              trigger: 'font-semibold',
+              content: 'pt-1',
+              listWithChildren: [
+                'ms-4 space-y-0.5 border-s border-default ps-2',
+              ].join(' '),
+              linkLeadingIcon: 'size-5 shrink-0',
+              linkTitle: 'min-w-0 flex-1 truncate',
+              linkTrailing: 'ms-auto shrink-0',
+              linkTrailingIcon: 'size-4 text-dimmed',
+              linkTrailingBadge: 'max-w-20 truncate',
+            }"
+            aria-label="Librarian portal navigation"
+            @click="handleSidebarNavigationClick"
+          />
+
+          <UNavigationMenu
+            v-else
+            :items="compactNavigationItems"
+            orientation="vertical"
+            collapsed
+            :tooltip="{
+              delayDuration: 150,
+              content: {
+                side: 'right',
+                align: 'center',
+                sideOffset: 10,
+                collisionPadding: 12,
+              },
+              arrow: true,
+            }"
+            color="success"
+            variant="pill"
+            highlight
+            class="w-full"
+            :ui="{
+              root: 'w-full gap-1',
+              list: 'w-full gap-1',
+              item: 'w-full',
+              link: 'min-h-10 justify-center rounded-xl px-0 transition-colors duration-150',
+              linkLeadingIcon: 'size-5',
+              linkLabel: 'text-xs',
+            }"
+            aria-label="Compact Librarian portal navigation"
+            @click="handleSidebarNavigationClick"
+          />
+        </div>
       </template>
 
       <template #footer="{ collapsed }">

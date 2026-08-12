@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appLogger } from "~/utils/app-logger";
 import type {
   DropdownMenuItem,
   NavigationMenuItem,
@@ -239,12 +240,14 @@ onMounted(async () => {
     await monitoring.start();
     await monitoring.recordPageView(route.path, pageTitle.value);
   } catch (error) {
-    console.warn("Unable to initialize Administrator portal monitoring.", error);
+    appLogger.warn("Unable to initialize Administrator portal monitoring.", error);
   }
 
   monitoringTimer = setInterval(() => {
-    void monitoring.touch();
-  }, 15_000);
+    if (document.visibilityState === "visible") {
+      void monitoring.touch();
+    }
+  }, 60_000);
 });
 
 onBeforeUnmount(() => {
@@ -256,7 +259,7 @@ watch(
   async () => {
     sidebarOpen.value = false;
     await nextTick();
-    void monitoring.touch(true);
+    void monitoring.touch();
     void monitoring.recordPageView(route.path, pageTitle.value);
   },
 );
