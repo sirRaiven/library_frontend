@@ -8,10 +8,10 @@ defineProps<{
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-2xl border border-default bg-gradient-to-br from-primary/10 via-default to-success/5 shadow-sm">
+  <div class="sncbt-page-hero">
     <div class="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
       <div class="flex min-w-0 items-start gap-4">
-        <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20">
+        <div class="sncbt-icon-tile flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white">
           <UIcon :name="icon || 'i-lucide-graduation-cap'" class="size-6" />
         </div>
         <div class="min-w-0">

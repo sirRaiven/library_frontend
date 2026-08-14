@@ -36,7 +36,7 @@ function formatDate(value?: string | null) {
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-0 sm:p-0' }" class="overflow-hidden">
+  <UCard :ui="{ body: 'p-0 sm:p-0' }" class="sncbt-card-interactive overflow-hidden">
     <div class="flex flex-col gap-5 p-5 sm:flex-row sm:p-6">
       <div class="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-elevated/50">
         <img

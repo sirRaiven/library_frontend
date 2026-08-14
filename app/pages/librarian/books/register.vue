@@ -353,7 +353,7 @@ async function submitRegistration(
 
 <template>
   <UContainer class="py-6 sm:py-8">
-    <div class="mx-auto max-w-6xl space-y-6">
+    <div class="mx-auto w-full max-w-[1600px] space-y-6">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
           <UButton

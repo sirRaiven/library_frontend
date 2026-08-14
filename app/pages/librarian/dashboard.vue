@@ -386,98 +386,114 @@ async function refreshDashboard() {
 
 <template>
   <div class="space-y-6 m-4">
-    <section
-      class="relative overflow-hidden shadow-sm shadow-emerald-100 rounded-3xl border border-success/20 from-success/10 via-default to-default p-6 sm:p-8"
+    <UCard
+      class="sncbt-welcome-card border-primary/15 rounded-3xl shadow-md shadow-primary/15"
+      :ui="{ body: 'p-0' }"
     >
       <div
-        class="absolute -right-16 -top-20 size-64 rounded-full bg-success/10 blur-3xl"
-      />
-
-      <div
-        class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"
+        class="relative grid min-h-[14rem] lg:grid-cols-[minmax(0,1fr)_21rem]"
       >
-        <div class="max-w-3xl">
+        <div class="relative p-6 sm:p-7 lg:p-8">
           <div
-            class="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-semibold text-success"
+            class="flex items-start gap-4 sm:gap-5"
           >
-            <span
-              class="size-2 rounded-full bg-success"
-            />
-            Library overview
-          </div>
-
-          <h1
-            class="mt-4 text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-          >
-            {{ greeting }}, {{ displayName }}
-          </h1>
-
-          <p
-            class="mt-2 max-w-2xl text-sm leading-relaxed text-muted sm:text-base"
-          >
-            See today's library activity, available books,
-            borrowed books, reservations, and items that need
-            your attention—all in one place.
-          </p>
-
-          <div
-            class="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted"
-          >
-            <span class="flex items-center gap-1.5">
+            <div
+              class="sncbt-icon-tile hidden size-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/15 sm:flex"
+            >
               <UIcon
-                name="i-lucide-calendar-days"
-                class="size-4"
+                name="i-lucide-library-big"
+                class="size-7"
               />
-              {{ currentDate }}
-            </span>
+            </div>
 
-            <span class="hidden sm:inline">•</span>
-
-            <span class="flex items-center gap-1.5">
-              <UIcon
-                name="i-lucide-clock-3"
-                class="size-4"
+            <div class="min-w-0 max-w-3xl">
+              <UBadge
+                color="primary"
+                variant="soft"
+                icon="i-lucide-sparkles"
+                label="Library overview"
+                class="rounded-full"
               />
-              Information updated at {{ lastUpdated }}
-            </span>
+
+              <h1
+                class="mt-4 text-2xl font-bold tracking-tight text-highlighted sm:text-3xl lg:text-[2rem]"
+              >
+                {{ greeting }}, {{ displayName }}
+              </h1>
+
+              <p
+                class="mt-2 max-w-2xl text-sm leading-6 text-muted sm:text-base"
+              >
+                See today's library activity, available books, borrowed books,
+                reservations, and items that need your attention—all in one place.
+              </p>
+
+              <div
+                class="mt-5 flex flex-wrap gap-2"
+              >
+                <div
+                  class="inline-flex items-center gap-2 rounded-xl border border-default bg-elevated/70 px-3 py-2 text-xs text-muted shadow-[var(--sncbt-shadow-control)]"
+                >
+                  <UIcon
+                    name="i-lucide-calendar-days"
+                    class="size-4 text-primary"
+                  />
+                  <span>{{ currentDate }}</span>
+                </div>
+
+                <div
+                  class="inline-flex items-center gap-2 rounded-xl border border-default bg-elevated/70 px-3 py-2 text-xs text-muted shadow-[var(--sncbt-shadow-control)]"
+                >
+                  <UIcon
+                    name="i-lucide-clock-3"
+                    class="size-4 text-primary"
+                  />
+                  <span>Updated {{ lastUpdated }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div
-          class="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-56 lg:flex-col"
+        <aside
+          class="relative flex flex-col justify-center border-t  border-default bg-elevated/45 sm:p-6 lg:border-l lg:border-t-0 rounded-3xl"
+          aria-label="Dashboard quick actions"
         >
-          <UButton
-            to="/librarian/visits"
-            label="Record Library Entry"
-            icon="i-lucide-scan-line"
-            color="success"
-            size="lg"
-            block
-          />
+          <div class="space-y-2.5 ">
+            <UButton
+              to="/librarian/visits"
+              label="Record Library Entry"
+              icon="i-lucide-scan-line"
+              color="primary"
+              size="lg"
+              block
+            />
 
-          <UButton
-            to="/librarian/borrow"
-            label="Borrow a Book"
-            icon="i-lucide-book-up"
-            color="neutral"
-            variant="outline"
-            size="lg"
-            block
-          />
+            <UButton
+              to="/librarian/borrow"
+              label="Borrow a Book"
+              icon="i-lucide-book-up"
+              color="neutral"
+              variant="outline"
+              size="lg"
+              block
+              class="bg-default/80"
+            />
 
-          <UButton
-            label="Update Dashboard"
-            icon="i-lucide-refresh-cw"
-            color="neutral"
-            variant="ghost"
-            size="md"
-            block
-            :loading="isRefreshing"
-            @click="refreshDashboard"
-          />
-        </div>
+            <UButton
+              label="Update Dashboard"
+              icon="i-lucide-refresh-cw"
+              color="neutral"
+              variant="ghost"
+              size="md"
+              block
+              :loading="isRefreshing"
+              @click="refreshDashboard"
+            />
+          </div>
+        </aside>
       </div>
-    </section>
+    </UCard>
 
     <UAlert
       v-if="error"

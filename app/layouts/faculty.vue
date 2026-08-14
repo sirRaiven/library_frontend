@@ -184,7 +184,7 @@ watch(
     storage="local"
     storage-key="sncbt-faculty-dashboard"
     unit="rem"
-    class="min-h-dvh bg-default text-default"
+    class="min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="faculty-main-navigation"
@@ -203,11 +203,11 @@ watch(
         icon: 'i-lucide-x',
       }"
       :ui="{
-        root: 'overflow-hidden border-e border-default bg-default transition-[width] duration-300',
-        header: 'border-b border-default bg-default/95 px-3 py-3 backdrop-blur',
+        root: 'sncbt-sidebar-surface overflow-hidden border-e transition-[width] duration-300',
+        header: 'border-b border-default/70 bg-transparent px-3 py-3',
         body: 'gap-2 overflow-y-auto px-2 py-3 ps-4',
-        footer: 'border-t border-default bg-default/95 px-2 py-3 backdrop-blur',
-        content: 'w-[min(88vw,22rem)] max-w-none bg-default shadow-2xl',
+        footer: 'border-t border-default/70 bg-transparent px-2 py-3',
+        content: 'sncbt-sidebar-surface w-[min(88vw,22rem)] max-w-none shadow-2xl',
         overlay: 'bg-black/40 backdrop-blur-[1px]',
       }"
     >
@@ -292,7 +292,7 @@ watch(
 
     <UDashboardPanel
       id="faculty-main"
-      :ui="{ root: 'min-w-0 bg-default', body: 'p-0 sm:p-0' }"
+      :ui="{ root: 'min-w-0 bg-transparent', body: 'p-0 sm:p-0' }"
     >
       <template #header>
         <UDashboardNavbar
@@ -300,7 +300,7 @@ watch(
           :icon="pageIcon"
           :toggle="false"
           :ui="{
-            root: 'border-b border-default bg-default/90 px-2 backdrop-blur sm:px-4 lg:px-6',
+            root: 'sncbt-navbar-surface border-b px-2 sm:px-4 lg:px-6',
             left: 'min-w-0 gap-1 sm:gap-1.5',
             icon: 'hidden size-5 sm:block',
             title: 'max-w-[14rem] truncate text-sm font-semibold sm:max-w-none sm:text-base',
@@ -340,7 +340,7 @@ watch(
       </template>
 
       <template #body>
-        <main class="min-h-[calc(100vh-4rem)] bg-default">
+        <main class="sncbt-dashboard-canvas min-h-[calc(100vh-4rem)]">
           <slot />
         </main>
       </template>
@@ -348,7 +348,7 @@ watch(
 
     <UModal v-model:open="logoutOpen" :dismissible="!loggingOut">
       <template #content>
-        <div class="space-y-5 bg-default p-6">
+        <div class="space-y-5 bg-transparent p-6">
           <div class="flex items-start gap-3">
             <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-error/10 text-error">
               <UIcon name="i-lucide-log-out" class="size-5" />

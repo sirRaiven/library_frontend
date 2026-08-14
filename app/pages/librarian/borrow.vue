@@ -383,7 +383,7 @@ onMounted(() => {
 <template>
   <UContainer class="py-6 sm:py-8">
     <div
-      class="mx-auto max-w-7xl space-y-6"
+      class="mx-auto max-w-[1600px] space-y-6"
     >
       <div
         class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"

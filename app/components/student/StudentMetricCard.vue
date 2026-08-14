@@ -43,7 +43,7 @@ const toneClasses = computed(() => {
         </p>
       </div>
 
-      <div class="flex size-11 shrink-0 items-center justify-center rounded-xl" :class="toneClasses">
+      <div class="sncbt-icon-tile flex size-11 shrink-0 items-center justify-center rounded-xl" :class="toneClasses">
         <UIcon :name="icon" class="size-5" />
       </div>
     </div>

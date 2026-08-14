@@ -55,10 +55,10 @@ function dateTime(
 
 <template>
   <UCard
-    class="transition hover:border-primary/40 hover:bg-elevated/30"
+    class="sncbt-card-interactive hover:bg-elevated/20"
     :class="
       !notification.isRead
-        ? 'ring-1 ring-primary/25 shadow-sm'
+        ? 'ring-1 ring-primary/25'
         : ''
     "
   >

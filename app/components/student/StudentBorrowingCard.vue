@@ -81,7 +81,7 @@ const timingLabel = computed(() => {
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-0 sm:p-0' }">
+  <UCard class="sncbt-card-interactive" :ui="{ body: 'p-0 sm:p-0' }">
     <article class="p-5 sm:p-6">
       <div class="flex flex-col gap-5 sm:flex-row">
         <div class="flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-elevated sm:size-32">

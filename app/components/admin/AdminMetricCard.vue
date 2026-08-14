@@ -35,7 +35,7 @@ const toneClasses = computed(() => {
   <NuxtLink
     v-if="to"
     :to="to"
-    class="group block rounded-2xl border border-default bg-default p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+    class="sncbt-card sncbt-card-interactive group block p-5"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
@@ -50,7 +50,7 @@ const toneClasses = computed(() => {
       </div>
 
       <div
-        class="flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
+        class="sncbt-icon-tile flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
         :class="toneClasses"
       >
         <UIcon :name="icon" class="size-5" />
@@ -60,7 +60,7 @@ const toneClasses = computed(() => {
 
   <div
     v-else
-    class="group block rounded-2xl border border-default bg-default p-5 shadow-sm transition duration-200"
+    class="sncbt-card group block p-5"
   >
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
@@ -75,7 +75,7 @@ const toneClasses = computed(() => {
       </div>
 
       <div
-        class="flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
+        class="sncbt-icon-tile flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
         :class="toneClasses"
       >
         <UIcon :name="icon" class="size-5" />

@@ -737,7 +737,7 @@ onBeforeUnmount(() => {
 <template>
   <UContainer class="py-6 sm:py-8">
     <div
-      class="mx-auto max-w-7xl space-y-6"
+      class="mx-auto max-w-[1600px] space-y-6"
     >
       <header
         class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"

@@ -30,7 +30,7 @@ const detailRoute = computed(() =>
 
 <template>
   <UCard
-    class="group h-full overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+    class="sncbt-card-interactive group h-full overflow-hidden"
     :ui="{ body: 'flex h-full flex-col p-0 sm:p-0' }"
   >
     <NuxtLink
@@ -52,7 +52,7 @@ const detailRoute = computed(() =>
           v-else
           class="flex size-full flex-col items-center justify-center gap-3 px-6 text-center text-muted"
         >
-          <div class="flex size-16 items-center justify-center rounded-2xl border border-default bg-default shadow-sm">
+          <div class="sncbt-card flex size-16 items-center justify-center">
             <UIcon name="i-lucide-book-open" class="size-8" />
           </div>
           <p class="text-xs">Cover image not available</p>

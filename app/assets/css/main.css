@@ -1,6 +1,69 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/*
+ * SNCBT Library visual system
+ * ---------------------------
+ * The UI keeps emerald as the institutional accent, but moves the page canvas
+ * away from pure white so cards, panels, and navigation have visible depth.
+ * These variables intentionally live outside @layer so they remain stable when
+ * Nuxt UI reapplies light/dark theme variables during client navigation.
+ */
+:root {
+  /* Match Nuxt UI containers to the dashboard workspace instead of the default narrower content width. */
+  --ui-container: 100rem;
+
+  --sncbt-canvas: #f4f8f6;
+  --sncbt-canvas-deep: #edf5f1;
+  --sncbt-surface: #ffffff;
+  --sncbt-surface-soft: #f8fbfa;
+  --sncbt-sidebar: rgba(255, 255, 255, 0.9);
+  --sncbt-navbar: rgba(255, 255, 255, 0.82);
+  --sncbt-border-soft: rgba(15, 118, 110, 0.11);
+
+  --sncbt-shadow-control:
+    0 1px 2px rgba(15, 23, 42, 0.035);
+  --sncbt-shadow-card:
+    0 1px 2px rgba(15, 23, 42, 0.045),
+    0 10px 30px -22px rgba(5, 150, 105, 0.32),
+    0 8px 22px -20px rgba(15, 23, 42, 0.28);
+  --sncbt-shadow-card-hover:
+    0 3px 8px rgba(15, 23, 42, 0.065),
+    0 20px 42px -24px rgba(5, 150, 105, 0.38),
+    0 14px 30px -24px rgba(15, 23, 42, 0.32);
+  --sncbt-shadow-overlay:
+    0 24px 70px -24px rgba(2, 44, 34, 0.34),
+    0 10px 28px -18px rgba(15, 23, 42, 0.32);
+
+  --sncbt-hero-glow: rgba(16, 185, 129, 0.12);
+  --sncbt-hero-glow-secondary: rgba(14, 165, 233, 0.07);
+}
+
+.dark {
+  --sncbt-canvas: #07110f;
+  --sncbt-canvas-deep: #0a1513;
+  --sncbt-surface: #0f1b18;
+  --sncbt-surface-soft: #12211d;
+  --sncbt-sidebar: rgba(8, 20, 17, 0.92);
+  --sncbt-navbar: rgba(8, 20, 17, 0.84);
+  --sncbt-border-soft: rgba(110, 231, 183, 0.1);
+
+  --sncbt-shadow-control:
+    0 1px 2px rgba(0, 0, 0, 0.16);
+  --sncbt-shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.025) inset,
+    0 18px 38px -28px rgba(0, 0, 0, 0.78);
+  --sncbt-shadow-card-hover:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 46px -28px rgba(0, 0, 0, 0.86);
+  --sncbt-shadow-overlay:
+    0 28px 80px -26px rgba(0, 0, 0, 0.82),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+
+  --sncbt-hero-glow: rgba(16, 185, 129, 0.12);
+  --sncbt-hero-glow-secondary: rgba(56, 189, 248, 0.05);
+}
+
 @layer base {
   :root {
     color-scheme: light;
@@ -13,13 +76,13 @@
   html {
     min-height: 100%;
     scroll-behavior: smooth;
-    background-color: var(--ui-bg);
+    background-color: var(--sncbt-canvas);
   }
 
   body {
     min-height: 100dvh;
     margin: 0;
-    background-color: var(--ui-bg);
+    background-color: var(--sncbt-canvas);
     color: var(--ui-text);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -30,7 +93,7 @@
 
   #__nuxt {
     min-height: 100dvh;
-    background-color: var(--ui-bg);
+    background-color: var(--sncbt-canvas);
     color: var(--ui-text);
   }
 }
@@ -42,4 +105,186 @@
       var(--ui-primary) 24%,
       transparent
     );
+}
+
+/* Dashboard canvas: gentle emerald atmosphere without washing out content. */
+.sncbt-dashboard-canvas {
+  min-height: 100%;
+  background:
+    radial-gradient(
+      circle at 8% -10%,
+      var(--sncbt-hero-glow) 0,
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 96% 2%,
+      var(--sncbt-hero-glow-secondary) 0,
+      transparent 24rem
+    ),
+    linear-gradient(180deg, var(--sncbt-canvas) 0%, var(--sncbt-canvas-deep) 100%);
+}
+
+.sncbt-sidebar-surface {
+  background: var(--sncbt-sidebar);
+  border-color: var(--sncbt-border-soft);
+  box-shadow: 10px 0 34px -34px rgba(2, 44, 34, 0.42);
+  backdrop-filter: blur(18px) saturate(135%);
+}
+
+.dark .sncbt-sidebar-surface {
+  box-shadow:
+    1px 0 0 rgba(255, 255, 255, 0.015) inset,
+    12px 0 38px -34px rgba(0, 0, 0, 0.8);
+}
+
+.sncbt-navbar-surface {
+  background: var(--sncbt-navbar);
+  border-color: var(--sncbt-border-soft);
+  box-shadow: 0 10px 30px -30px rgba(2, 44, 34, 0.55);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+.sncbt-card {
+  border: 1px solid var(--ui-border);
+  border-radius: 1rem;
+  background: var(--ui-bg);
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-card-interactive {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.sncbt-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ui-primary) 28%, var(--ui-border));
+  box-shadow: var(--sncbt-shadow-card-hover);
+}
+
+.sncbt-page-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 20%, var(--ui-border));
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--ui-primary) 13%, transparent), transparent 24rem),
+    radial-gradient(circle at 100% 0, rgba(14, 165, 233, 0.07), transparent 20rem),
+    var(--ui-bg);
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.dark .sncbt-page-hero {
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--ui-primary) 13%, transparent), transparent 24rem),
+    radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.05), transparent 20rem),
+    var(--ui-bg);
+}
+
+.sncbt-icon-tile {
+  box-shadow:
+    0 8px 20px -14px color-mix(in srgb, var(--ui-primary) 48%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+.sncbt-table-surface {
+  border: 1px solid var(--ui-border);
+  border-radius: 1rem;
+  background: var(--ui-bg);
+  box-shadow: var(--sncbt-shadow-card);
+  overflow: hidden;
+}
+
+
+/* Librarian dashboard welcome panel: stronger structure without turning it into a heavy banner. */
+.sncbt-welcome-card {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ui-primary) 7%, transparent), transparent 46%),
+    var(--ui-bg);
+}
+
+.sncbt-welcome-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ui-primary), #14b8a6 52%, #38bdf8);
+  pointer-events: none;
+}
+
+.sncbt-welcome-card::after {
+  content: "";
+  position: absolute;
+  top: -7rem;
+  right: 14rem;
+  z-index: -1;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
+  filter: blur(54px);
+  pointer-events: none;
+}
+
+.dark .sncbt-welcome-card {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ui-primary) 8%, transparent), transparent 48%),
+    var(--ui-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sncbt-card-interactive {
+    transition: none;
+  }
+
+  .sncbt-card-interactive:hover {
+    transform: none;
+  }
+}
+
+/* Upgrade legacy hand-built card surfaces without requiring page-by-page rewrites. */
+.sncbt-dashboard-canvas .rounded-2xl.border.border-default.bg-default,
+.sncbt-dashboard-canvas .rounded-3xl.border.border-default.bg-default {
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-dashboard-canvas a.rounded-2xl.border.border-default.bg-default:hover,
+.sncbt-dashboard-canvas button.rounded-2xl.border.border-default.bg-default:hover {
+  box-shadow: var(--sncbt-shadow-card-hover);
+}
+
+
+/* Librarian navigation: compact emerald hierarchy with no horizontal overflow. */
+.sncbt-librarian-navigation,
+.sncbt-librarian-compact-nav {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.sncbt-librarian-navigation a,
+.sncbt-librarian-navigation button,
+.sncbt-librarian-compact-nav a,
+.sncbt-librarian-compact-nav button {
+  max-width: 100%;
+}
+
+.sncbt-librarian-navigation [data-active],
+.sncbt-librarian-compact-nav [data-active] {
+  box-shadow:
+    0 8px 20px -18px color-mix(in srgb, var(--ui-primary) 70%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--ui-primary) 14%, transparent);
+}
+
+.dark .sncbt-librarian-navigation [data-active],
+.dark .sncbt-librarian-compact-nav [data-active] {
+  box-shadow:
+    0 10px 24px -20px color-mix(in srgb, var(--ui-primary) 78%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--ui-primary) 18%, transparent);
 }

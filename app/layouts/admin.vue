@@ -288,11 +288,11 @@ watch(
         icon: 'i-lucide-x',
       }"
       :ui="{
-        root: 'overflow-hidden border-e border-default bg-default transition-[width] duration-300 ease-out motion-reduce:transition-none data-[dragging=true]:transition-none',
-        header: 'border-b border-default bg-default/95 px-3 py-3 backdrop-blur',
+        root: 'sncbt-sidebar-surface overflow-hidden border-e transition-[width] duration-300 ease-out motion-reduce:transition-none data-[dragging=true]:transition-none',
+        header: 'border-b border-default/70 bg-transparent px-3 py-3',
         body: 'gap-2 overflow-y-auto overscroll-contain px-2 py-3 ps-4 [scrollbar-gutter:stable]',
-        footer: 'border-t border-default bg-default/95 px-2 py-3 backdrop-blur',
-        content: 'w-[min(88vw,21rem)] max-w-none bg-default shadow-2xl',
+        footer: 'border-t border-default/70 bg-transparent px-2 py-3',
+        content: 'sncbt-sidebar-surface w-[min(88vw,21rem)] max-w-none shadow-2xl',
         overlay: 'bg-black/40 backdrop-blur-[1px]',
       }"
     >
@@ -393,7 +393,7 @@ watch(
 
     <UDashboardPanel
       id="admin-main"
-      :ui="{ root: 'min-w-0 bg-default', body: 'p-0 sm:p-0' }"
+      :ui="{ root: 'min-w-0 bg-transparent', body: 'p-0 sm:p-0' }"
     >
       <template #header>
         <UDashboardNavbar
@@ -401,7 +401,7 @@ watch(
           :icon="pageIcon"
           :toggle="false"
           :ui="{
-            root: 'border-b border-default bg-default/90 px-2 backdrop-blur sm:px-4 lg:px-6',
+            root: 'sncbt-navbar-surface border-b px-2 sm:px-4 lg:px-6',
             left: 'min-w-0 gap-1 sm:gap-1.5',
             icon: 'hidden size-5 sm:block',
             title: 'max-w-[12rem] truncate text-sm font-semibold sm:max-w-none sm:text-base',
@@ -454,7 +454,7 @@ watch(
       </template>
 
       <template #body>
-        <main class="min-h-[calc(100dvh-var(--ui-header-height))] bg-muted/40 text-default transition-colors dark:bg-default">
+        <main class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="mx-auto w-full max-w-[1600px]">
             <slot />
           </div>

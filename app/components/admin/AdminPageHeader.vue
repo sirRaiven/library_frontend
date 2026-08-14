@@ -8,11 +8,11 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+  <div class="sncbt-page-hero flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
     <div class="flex min-w-0 items-start gap-3">
       <div
         v-if="icon"
-        class="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15"
+        class="sncbt-icon-tile mt-0.5 flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white ring-1 ring-primary/20"
       >
         <UIcon :name="icon" class="size-5" />
       </div>

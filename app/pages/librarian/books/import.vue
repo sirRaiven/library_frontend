@@ -305,7 +305,7 @@ async function printImportedBarcodes(): Promise<void> {
 
 <template>
   <UContainer class="py-6 sm:py-8">
-    <div class="mx-auto max-w-7xl space-y-6">
+    <div class="mx-auto w-full max-w-[1600px] space-y-6">
       <div
         class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
       >

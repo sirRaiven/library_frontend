@@ -684,7 +684,7 @@ watch(
     storage="local"
     storage-key="sncbt-librarian-dashboard"
     unit="rem"
-    class="min-h-dvh bg-default text-default"
+    class="min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="main-navigation"
@@ -704,29 +704,26 @@ watch(
       }"
       :ui="{
         root: [
-          'overflow-hidden bg-default border-e border-default',
+          'sncbt-sidebar-surface overflow-hidden',
           'transition-[width] duration-300 ease-out',
           'motion-reduce:transition-none',
           'data-[dragging=true]:transition-none',
         ].join(' '),
         header: [
-          'border-b border-default',
-          'bg-default/95 backdrop-blur',
+          'bg-transparent',
           'px-3 py-3',
         ].join(' '),
         body: [
-          'gap-2 px-2 py-3 ps-4',
-          'overflow-y-auto overscroll-contain',
-          '[scrollbar-gutter:stable]',
+          'min-w-0 gap-1.5 px-2.5 py-3',
+          'overflow-y-auto overflow-x-hidden overscroll-contain',
         ].join(' '),
         footer: [
-          'border-t border-default',
-          'bg-default/95 backdrop-blur',
-          'px-2 py-3',
+          'bg-transparent',
+          'px-2.5 py-3',
         ].join(' '),
         content: [
           'w-[min(88vw,20rem)] max-w-none',
-          'bg-default shadow-2xl',
+          'sncbt-sidebar-surface shadow-2xl',
         ].join(' '),
         overlay: 'bg-black/40 backdrop-blur-[1px]',
       }"
@@ -786,30 +783,36 @@ watch(
             :default-open="true"
             type="multiple"
             :collapsible="true"
-            color="success"
+            color="primary"
             variant="pill"
             highlight
-            highlight-color="success"
-            class="w-full"
+            highlight-color="primary"
+            class="sncbt-librarian-navigation w-full min-w-0 max-w-full overflow-x-hidden"
             :ui="{
-              root: 'w-full',
-              list: 'space-y-1',
-              item: 'w-full',
-              itemWithChildren: 'w-full',
+              root: 'w-full min-w-0 max-w-full overflow-hidden',
+              list: 'w-full min-w-0 space-y-1.5',
+              item: 'w-full min-w-0',
+              itemWithChildren: 'w-full min-w-0',
               link: [
-                'min-h-10 w-full rounded-xl px-3 py-2',
-                'text-sm transition-colors duration-150',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50',
+                'group min-h-10 w-full min-w-0 rounded-xl px-3 py-2',
+                'text-sm font-medium text-muted transition-[background-color,color,box-shadow] duration-150',
+                'hover:bg-primary/8 hover:text-primary',
+                'data-[active]:bg-primary/12 data-[active]:font-semibold data-[active]:text-primary data-[active]:shadow-sm',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
               ].join(' '),
-              trigger: 'font-semibold',
-              content: 'pt-1',
+              trigger: [
+                'font-semibold text-toned',
+                'hover:bg-primary/8 hover:text-primary',
+                'data-[state=open]:bg-primary/6 data-[state=open]:text-primary',
+              ].join(' '),
+              content: 'min-w-0 pt-1',
               listWithChildren: [
-                'ms-4 space-y-0.5 border-s border-default ps-2',
+                'ms-3 w-auto min-w-0 space-y-0.5 border-s border-primary/15 ps-2 pe-1',
               ].join(' '),
-              linkLeadingIcon: 'size-5 shrink-0',
+              linkLeadingIcon: 'size-5 shrink-0 text-primary/85',
               linkTitle: 'min-w-0 flex-1 truncate',
               linkTrailing: 'ms-auto shrink-0',
-              linkTrailingIcon: 'size-4 text-dimmed',
+              linkTrailingIcon: 'size-4 text-primary/60',
               linkTrailingBadge: 'max-w-20 truncate',
             }"
             aria-label="Librarian portal navigation"
@@ -831,17 +834,22 @@ watch(
               },
               arrow: true,
             }"
-            color="success"
+            color="primary"
             variant="pill"
             highlight
-            class="w-full"
+            class="sncbt-librarian-compact-nav w-full min-w-0 overflow-hidden"
             :ui="{
-              root: 'w-full gap-1',
-              list: 'w-full gap-1',
-              item: 'w-full',
-              link: 'min-h-10 justify-center rounded-xl px-0 transition-colors duration-150',
-              linkLeadingIcon: 'size-5',
-              linkLabel: 'text-xs',
+              root: 'w-full min-w-0 gap-1.5',
+              list: 'w-full min-w-0 gap-1.5',
+              item: 'w-full min-w-0',
+              link: [
+                'group min-h-10 justify-center rounded-xl px-0 text-primary',
+                'transition-[background-color,color,box-shadow,transform] duration-150',
+                'hover:bg-primary/10 hover:text-primary',
+                'data-[active]:bg-primary/14 data-[active]:text-primary data-[active]:shadow-sm',
+              ].join(' '),
+              linkLeadingIcon: 'size-5 text-primary',
+              linkLabel: 'text-xs font-semibold text-primary',
             }"
             aria-label="Compact Librarian portal navigation"
             @click="handleSidebarNavigationClick"
@@ -922,7 +930,7 @@ watch(
     <UDashboardPanel
       id="librarian-main"
       :ui="{
-        root: 'min-w-0 bg-default',
+        root: 'min-w-0 bg-transparent',
         body: 'p-0 sm:p-0',
       }"
     >
@@ -934,7 +942,7 @@ watch(
           toggle-side="left"
           :ui="{
             root: [
-              'border-b border-default bg-default/90 backdrop-blur',
+              'sncbt-navbar-surface border-b',
               'px-2 sm:px-4 lg:px-6',
               'transition-colors duration-200',
             ].join(' '),
@@ -1112,7 +1120,7 @@ watch(
 
       <template #body>
         <main
-          class="min-h-[calc(100dvh-var(--ui-header-height))] bg-muted/40 text-default transition-colors duration-200 dark:bg-default"
+          class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors duration-200"
         >
           <div
             class="mx-auto w-full max-w-[1600px]"
