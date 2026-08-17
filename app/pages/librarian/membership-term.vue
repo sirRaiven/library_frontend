@@ -129,7 +129,7 @@ onMounted(loadTerm);
 
 <template>
   <UContainer class="py-6 sm:py-8">
-    <div class="mx-auto max-w-6xl space-y-6">
+    <div class="mx-auto max-w-[1500px] space-y-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex items-start gap-3">
           <div class="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">

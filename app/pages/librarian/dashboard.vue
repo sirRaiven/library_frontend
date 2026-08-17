@@ -387,7 +387,7 @@ async function refreshDashboard() {
 <template>
   <div class="space-y-6 m-4">
     <UCard
-      class="sncbt-welcome-card border-primary/15 rounded-3xl shadow-md shadow-primary/15"
+      class="sncbt-welcome-card border-primary/15 rounded-3xl shadow-md shadow-primary/15 p-0"
       :ui="{ body: 'p-0' }"
     >
       <div
