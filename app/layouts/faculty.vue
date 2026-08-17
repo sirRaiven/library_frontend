@@ -11,7 +11,6 @@ const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
 const logoutOpen = ref(false);
 const loggingOut = ref(false);
-let monitoringTimer: ReturnType<typeof setInterval> | null = null;
 
 const faculty = computed(() => portal.dashboard.value.faculty);
 const userName = computed(
@@ -157,15 +156,9 @@ onMounted(async () => {
     appLogger.warn("Unable to initialize Faculty portal monitoring.", error);
   }
 
-  monitoringTimer = setInterval(() => {
-    if (document.visibilityState === "visible") {
-      void monitoring.touch();
-    }
-  }, 60_000);
 });
 
 onBeforeUnmount(() => {
-  if (monitoringTimer) clearInterval(monitoringTimer);
 });
 
 watch(
@@ -173,7 +166,6 @@ watch(
   async () => {
     sidebarOpen.value = false;
     await nextTick();
-    void monitoring.touch();
     void monitoring.recordPageView(route.path, pageTitle.value);
   },
 );

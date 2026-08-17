@@ -138,7 +138,7 @@ async function confirm() {
       reason.value.trim(),
     );
     const description = action.value === "block"
-      ? "The selected account-and-device combination is now denied at sign-in, refresh, heartbeat, and every protected API request."
+      ? "The selected account-and-device combination is now denied at sign-in, refresh, and every protected API request."
       : action.value === "revoke-sessions"
         ? `${response.data.authenticationRevocationScope} were revoked for safety.`
         : `${selected.value.displayName} was updated successfully.`;
@@ -393,7 +393,7 @@ onMounted(refresh);
           variant="soft"
           icon="i-lucide-shield-ban"
           title="Device access will be denied"
-          description="This account-specific device will be blocked at sign-in, refresh, every protected API request, and the portal heartbeat. Other devices for the same account remain allowed."
+          description="This account-specific device will be blocked at sign-in, refresh, and every protected API request. Other devices for the same account remain allowed."
         />
         <UAlert
           v-else-if="action === 'revoke-sessions'"

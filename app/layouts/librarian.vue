@@ -20,7 +20,6 @@ const isLoggingOut = ref(false);
 const globalSearch = ref("");
 
 let desktopMediaQuery: MediaQueryList | undefined;
-let monitoringTimer: ReturnType<typeof setInterval> | undefined;
 
 function closeMobileSidebarOnDesktop(
   event: MediaQueryListEvent,
@@ -646,18 +645,12 @@ onMounted(async () => {
     closeMobileSidebarOnDesktop,
   );
 
-  monitoringTimer = setInterval(() => {
-    if (document.visibilityState === "visible") {
-      void monitoring.touch();
-    }
-  }, 60_000);
 });
 
 onBeforeUnmount(() => {
   notificationCenter
     .stopPolling();
 
-  if (monitoringTimer) clearInterval(monitoringTimer);
 
   desktopMediaQuery?.removeEventListener(
     "change",
@@ -672,7 +665,6 @@ watch(
     sidebarOpen.value = false;
 
     await nextTick();
-    void monitoring.touch();
     void monitoring.recordPageView(route.path, pageTitle.value);
 
   },

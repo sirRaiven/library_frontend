@@ -15,7 +15,6 @@ const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
 const logoutOpen = ref(false);
 const loggingOut = ref(false);
-let heartbeat: ReturnType<typeof setInterval> | null = null;
 
 const userName = computed(() =>
   dashboard.student.value?.fullName ||
@@ -221,22 +220,10 @@ async function signOut() {
 onMounted(async () => {
   await initializeMonitoring();
   notificationCenter.startPolling(120_000);
-  heartbeat = setInterval(() => {
-    if (document.visibilityState === "visible") {
-      void monitoring.touch();
-    }
-  }, 60_000);
 });
 
-watch(
-  () => route.fullPath,
-  () => {
-    if (import.meta.client) void monitoring.touch();
-  },
-);
 
 onBeforeUnmount(() => {
-  if (heartbeat) clearInterval(heartbeat);
   notificationCenter.stopPolling();
 });
 </script>

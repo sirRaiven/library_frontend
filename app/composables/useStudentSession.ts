@@ -19,8 +19,6 @@ export interface StudentSessionData {
   device: StudentSessionDevice;
 }
 
-const TOUCH_THROTTLE_MS = 55_000;
-
 let activeStartRequest: Promise<StudentSessionData | null> | null = null;
 
 function randomIdentifier(): string {
@@ -72,7 +70,6 @@ export function useStudentSession() {
   );
   const starting = useState<boolean>("student-session-starting", () => false);
   const error = useState<string>("student-session-error", () => "");
-  const lastTouch = useState<number>("student-session-last-touch", () => 0);
 
   function ensureDeviceKey(): string {
     if (!deviceKey.value) {
@@ -103,7 +100,6 @@ export function useStudentSession() {
 
       data.value = response.data;
       sessionKey.value = response.data.sessionKey;
-      lastTouch.value = Date.now();
       return response.data;
     } catch (caught) {
       error.value = auth.getErrorMessage(caught);
@@ -123,40 +119,6 @@ export function useStudentSession() {
     return await activeStartRequest;
   }
 
-  async function touch(force = false): Promise<void> {
-    if (!import.meta.client || !auth.isStudent.value || !sessionKey.value) {
-      return;
-    }
-
-    const now = Date.now();
-
-    if (!force && now - lastTouch.value < TOUCH_THROTTLE_MS) {
-      return;
-    }
-
-    try {
-      const response = await auth.authFetch<{
-        data: Pick<StudentSessionData, "sessionKey" | "status" | "loginAt" | "lastActivityAt">;
-      }>("/api/student-portal/session/touch", {
-        method: "POST",
-        body: { sessionKey: sessionKey.value },
-      });
-
-      if (data.value) {
-        data.value = {
-          ...data.value,
-          ...response.data,
-        };
-      }
-
-      lastTouch.value = now;
-    } catch (caught) {
-      if ((caught as { statusCode?: number }).statusCode === 404) {
-        sessionKey.value = null;
-        data.value = null;
-      }
-    }
-  }
 
   async function end(): Promise<void> {
     const key = sessionKey.value;
@@ -173,7 +135,6 @@ export function useStudentSession() {
     } finally {
       sessionKey.value = null;
       data.value = null;
-      lastTouch.value = 0;
     }
   }
 
@@ -184,7 +145,6 @@ export function useStudentSession() {
     starting,
     error,
     start,
-    touch,
     end,
   };
 }

@@ -9,7 +9,6 @@ const route = useRoute();
 const auth = useAuth();
 const monitoring = usePortalMonitoring();
 
-let monitoringTimer: ReturnType<typeof setInterval> | undefined;
 
 const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
@@ -243,15 +242,9 @@ onMounted(async () => {
     appLogger.warn("Unable to initialize Administrator portal monitoring.", error);
   }
 
-  monitoringTimer = setInterval(() => {
-    if (document.visibilityState === "visible") {
-      void monitoring.touch();
-    }
-  }, 60_000);
 });
 
 onBeforeUnmount(() => {
-  if (monitoringTimer) clearInterval(monitoringTimer);
 });
 
 watch(
@@ -259,7 +252,6 @@ watch(
   async () => {
     sidebarOpen.value = false;
     await nextTick();
-    void monitoring.touch();
     void monitoring.recordPageView(route.path, pageTitle.value);
   },
 );

@@ -19,8 +19,6 @@ export interface PortalMonitoringSession {
   device: PortalMonitoringDevice;
 }
 
-const TOUCH_THROTTLE_MS = 55_000;
-
 let activeStartRequest: Promise<PortalMonitoringSession | null> | null = null;
 
 function randomIdentifier(): string {
@@ -54,7 +52,6 @@ export function usePortalMonitoring() {
   const data = useState<PortalMonitoringSession | null>("portal-monitoring-session-data", () => null);
   const starting = useState<boolean>("portal-monitoring-starting", () => false);
   const error = useState<string>("portal-monitoring-error", () => "");
-  const lastTouch = useState<number>("portal-monitoring-last-touch", () => 0);
   const lastPageRecord = useState<string>("portal-monitoring-last-page", () => "");
 
   const supported = computed(() =>
@@ -87,7 +84,6 @@ export function usePortalMonitoring() {
       );
       data.value = response.data;
       sessionKey.value = response.data.sessionKey;
-      lastTouch.value = Date.now();
       return response.data;
     } catch (caught) {
       error.value = auth.getErrorMessage(caught);
@@ -106,28 +102,6 @@ export function usePortalMonitoring() {
     return await activeStartRequest;
   }
 
-  async function touch(force = false) {
-    if (!import.meta.client || !supported.value || !sessionKey.value) return;
-    const now = Date.now();
-    if (!force && now - lastTouch.value < TOUCH_THROTTLE_MS) return;
-    try {
-      const response = await auth.authFetch<{
-        data: Pick<PortalMonitoringSession, "sessionKey" | "status" | "loginAt" | "lastActivityAt">;
-      }>("/api/system-monitoring/session/touch", {
-        method: "POST",
-        body: { sessionKey: sessionKey.value },
-      });
-      if (data.value) data.value = { ...data.value, ...response.data };
-      lastTouch.value = now;
-    } catch (caught) {
-      const status = (caught as { statusCode?: number; response?: { status?: number } }).response?.status ?? (caught as { statusCode?: number }).statusCode;
-      if (status === 404) {
-        sessionKey.value = null;
-        data.value = null;
-        await start();
-      }
-    }
-  }
 
   async function recordPageView(route: string, title: string) {
     if (!import.meta.client || !supported.value || !route) return;
@@ -163,7 +137,6 @@ export function usePortalMonitoring() {
     } finally {
       sessionKey.value = null;
       data.value = null;
-      lastTouch.value = 0;
       lastPageRecord.value = "";
     }
   }
@@ -176,7 +149,6 @@ export function usePortalMonitoring() {
     error,
     supported,
     start,
-    touch,
     recordPageView,
     end,
   };
