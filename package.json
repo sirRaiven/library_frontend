@@ -13,10 +13,18 @@
     "postinstall": "nuxt prepare && npm run prepare:barcode",
     "typecheck": "nuxt typecheck",
     "analyze": "nuxt build --analyze",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:unit": "vitest run --project unit",
-    "test:nuxt": "vitest run --project nuxt"
+    "test": "vitest --run --project unit --project nuxt",
+    "test:watch": "vitest --watch --project unit --project nuxt",
+    "test:unit": "vitest --run --project unit",
+    "test:nuxt": "vitest --run --project nuxt",
+    "test:e2e:chromium": "vitest --run --project e2e-chromium",
+    "test:e2e:firefox": "vitest --run --project e2e-firefox",
+    "test:e2e:webkit": "vitest --run --project e2e-webkit",
+    "test:e2e": "npm run test:e2e:chromium && npm run test:e2e:firefox && npm run test:e2e:webkit",
+    "test:live": "vitest --run --project live",
+    "test:regression": "npm run test:unit && npm run test:nuxt && npm run test:e2e:chromium",
+    "test:full": "npm run test:unit && npm run test:nuxt && npm run test:e2e",
+    "test:browsers:install": "playwright-core install chromium firefox webkit"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

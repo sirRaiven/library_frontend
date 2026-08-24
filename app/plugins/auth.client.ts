@@ -12,6 +12,26 @@ export default defineNuxtPlugin((nuxtApp) => {
     );
   }
 
+  function canAccessPortalPath(path: string): boolean {
+    if (path.startsWith("/admin")) {
+      return auth.isAdministrator.value;
+    }
+
+    if (path.startsWith("/librarian")) {
+      return auth.isLibrarian.value;
+    }
+
+    if (path === "/student" || path.startsWith("/student/")) {
+      return auth.isStudent.value;
+    }
+
+    if (path.startsWith("/faculty")) {
+      return auth.isFaculty.value;
+    }
+
+    return true;
+  }
+
   nuxtApp.hook("app:mounted", async () => {
     await auth.initialize();
 
@@ -36,10 +56,11 @@ export default defineNuxtPlugin((nuxtApp) => {
       return;
     }
 
-    if (
-      path.startsWith("/admin") &&
-      !auth.isAdministrator.value
-    ) {
+    // Global route middleware is intentionally skipped during SSR/hydration.
+    // Re-apply all portal-role boundaries after the client restores the
+    // authenticated session so a direct hard-load cannot leave the wrong
+    // portal shell visible after refresh.
+    if (!canAccessPortalPath(path)) {
       await navigateTo(auth.homeRoute.value, { replace: true });
     }
   });
