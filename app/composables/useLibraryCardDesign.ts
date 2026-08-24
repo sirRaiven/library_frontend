@@ -786,7 +786,7 @@ export function useLibraryCardDesign() {
     if (source.startsWith("/uploads/")) {
       const strapiUrl = String(
         runtimeConfig.public.strapiUrl ??
-          "http://localhost:1337",
+          "",
       ).replace(/\/$/, "");
 
       return `${strapiUrl}${source}`;

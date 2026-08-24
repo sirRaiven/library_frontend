@@ -53,10 +53,24 @@ const emit = defineEmits<{
 }>();
 
 const QrcodeStream = defineAsyncComponent({
-  loader: () =>
-    import("vue-qrcode-reader").then(
-      (module) => module.QrcodeStream,
-    ),
+  loader: async () => {
+    const module = await import("vue-qrcode-reader");
+
+    // Keep the detector's WebAssembly dependency first-party. This prevents
+    // scanner failures on restricted/offline school networks and avoids a
+    // third-party CDN dependency under the production CSP.
+    module.setZXingModuleOverrides({
+      locateFile: (path, prefix) => {
+        if (path.endsWith(".wasm")) {
+          return "/barcode/zxing_reader.wasm";
+        }
+
+        return `${prefix}${path}`;
+      },
+    });
+
+    return module.QrcodeStream;
+  },
   suspensible: false,
 });
 

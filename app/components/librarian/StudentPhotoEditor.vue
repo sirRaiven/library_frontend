@@ -183,7 +183,7 @@ function resolveAssetUrl(
       String(
         runtimeConfig.public
           .strapiUrl ??
-          "http://localhost:1337",
+          "",
       ).replace(/\/$/, "");
 
     return `${strapiUrl}${source}`;

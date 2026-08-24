@@ -109,7 +109,7 @@ export function useLibraryVisits() {
       String(
         config.public
           .strapiUrl ??
-          "http://localhost:1337",
+          "",
       ).replace(/\/+$/, "");
 
     return `${base}/${

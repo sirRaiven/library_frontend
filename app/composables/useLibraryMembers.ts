@@ -281,7 +281,7 @@ export function useLibraryMembers() {
   function strapiBaseUrl(): string {
     return String(
       runtimeConfig.public.strapiUrl ??
-        "http://localhost:1337",
+        "",
     )
       .replace(/\/api\/?$/, "")
       .replace(/\/$/, "");

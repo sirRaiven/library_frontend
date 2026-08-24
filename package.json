@@ -3,13 +3,20 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "build": "npm run prepare:barcode && nuxt build",
+    "build:production": "npm run verify:production-env && npm run build",
+    "dev": "npm run prepare:barcode && nuxt dev",
+    "generate": "npm run prepare:barcode && nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
+    "prepare:barcode": "node scripts/copy-zxing-wasm.mjs",
+    "verify:production-env": "node scripts/verify-production-env.mjs",
+    "postinstall": "nuxt prepare && npm run prepare:barcode",
     "typecheck": "nuxt typecheck",
-    "analyze": "nuxt build --analyze"
+    "analyze": "nuxt build --analyze",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --project unit",
+    "test:nuxt": "vitest run --project nuxt"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",
@@ -29,8 +36,13 @@
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.119",
+    "@nuxt/test-utils": "^4.1.0",
     "@types/qrcode": "^1.5.6",
-    "typescript": "^6.0.3"
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^20.11.6",
+    "playwright-core": "^1.62.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=22.5.0 <25",
