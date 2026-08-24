@@ -109,6 +109,16 @@ export function useLibraryFines() {
     );
   }
 
+  async function checkOrNumber(orNumber: string) {
+    const response = await auth.authFetch<{
+      data: { orNumber: string; available: boolean; existingFineNo: string | null };
+    }>("/api/library-fines/or-number/check", {
+      query: { orNumber },
+      cache: "no-store",
+    });
+    return response.data;
+  }
+
   async function verifyPayment(documentId: string, input: { orNumber: string; paymentDate: string; notes?: string }) {
     return await auth.authFetch<{ data: LibraryFineRecord }>(
       `/api/library-fines/${encodeURIComponent(documentId)}/verify-payment`,
@@ -206,6 +216,7 @@ export function useLibraryFines() {
   return {
     list,
     createCardReplacement,
+    checkOrNumber,
     verifyPayment,
     waive,
     listCalendar,

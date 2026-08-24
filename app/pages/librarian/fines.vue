@@ -35,6 +35,9 @@ const paymentOpen = ref(false);
 const waiverOpen = ref(false);
 const selectedFine = ref<LibraryFineRecord | null>(null);
 const payment = reactive({ orNumber: "", paymentDate: new Date().toISOString().slice(0, 10), notes: "" });
+const paymentOrChecking = ref(false);
+const paymentOrAvailable = ref<boolean | null>(null);
+const paymentOrMessage = ref("");
 const waiverReason = ref("");
 const saving = ref(false);
 const cancelCalendarOpen = ref(false);
@@ -311,27 +314,67 @@ async function syncPhilippineHolidays() {
   }
 }
 
+function resetPaymentOrValidation() {
+  paymentOrAvailable.value = null;
+  paymentOrMessage.value = "";
+}
+
 function openPayment(record: LibraryFineRecord) {
   selectedFine.value = record;
   payment.orNumber = "";
   payment.paymentDate = new Date().toISOString().slice(0, 10);
   payment.notes = "";
+  resetPaymentOrValidation();
   paymentOpen.value = true;
 }
 
+async function checkPaymentOrNumber() {
+  const candidate = payment.orNumber.trim();
+  if (!candidate) {
+    resetPaymentOrValidation();
+    return null;
+  }
+
+  paymentOrChecking.value = true;
+  try {
+    const result = await finesApi.checkOrNumber(candidate);
+    payment.orNumber = result.orNumber;
+    paymentOrAvailable.value = result.available;
+    paymentOrMessage.value = result.available
+      ? "OR number is available and has not been recorded yet."
+      : `This OR number is already recorded${result.existingFineNo ? ` under ${result.existingFineNo}` : ""}. Use the actual cashier receipt for this payment.`;
+    return result;
+  } catch (error) {
+    paymentOrAvailable.value = null;
+    paymentOrMessage.value = auth.getErrorMessage(error);
+    return null;
+  } finally {
+    paymentOrChecking.value = false;
+  }
+}
+
 async function verifyPayment() {
-  if (!selectedFine.value || !payment.orNumber.trim()) return;
+  if (!selectedFine.value || !payment.orNumber.trim() || paymentOrAvailable.value === false) return;
   saving.value = true;
   try {
+    let orNumber = payment.orNumber.trim();
+    if (paymentOrAvailable.value !== true) {
+      const availability = await checkPaymentOrNumber();
+      if (!availability?.available) return;
+      orNumber = availability.orNumber;
+    }
+
     await finesApi.verifyPayment(selectedFine.value.documentId, {
-      orNumber: payment.orNumber.trim(),
+      orNumber,
       paymentDate: payment.paymentDate,
       notes: payment.notes.trim() || undefined,
     });
     paymentOpen.value = false;
-    toast.add({ title: "Payment verified", description: "The cashier Official Receipt was recorded and the fine is now marked Paid.", color: "success", icon: "i-lucide-badge-check" });
+    toast.add({ title: "Payment verified", description: `Official Receipt ${orNumber} was recorded and the fine is now marked Paid.`, color: "success", icon: "i-lucide-badge-check" });
     await loadFines();
   } catch (error) {
+    paymentOrAvailable.value = false;
+    paymentOrMessage.value = auth.getErrorMessage(error);
     toast.add({ title: "Payment verification failed", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
   } finally {
     saving.value = false;
@@ -815,7 +858,7 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
       </template>
     </div>
 
-    <UModal v-model:open="paymentOpen" :ui="{ content: 'sm:max-w-lg' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold">Verify Cashier Payment</h2><p class="mt-1 text-sm text-muted">Record the Official Receipt before marking {{ selectedFine?.fineNo }} as Paid.</p></div><UAlert color="warning" variant="soft" icon="i-lucide-receipt-text" :title="selectedFine ? money(selectedFine.amount) : ''" description="Compare the OR with the Student or Faculty record before confirming." /><UFormField label="Official Receipt (OR) Number" required><UInput v-model="payment.orNumber" placeholder="Enter cashier OR number" /></UFormField><UFormField label="Payment Date" required><UInput v-model="payment.paymentDate" type="date" /></UFormField><UFormField label="Verification Notes" hint="Optional"><UTextarea v-model="payment.notes" :rows="3" /></UFormField><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="ghost" @click="paymentOpen = false" /><UButton label="Verify Payment" icon="i-lucide-badge-check" color="success" :loading="saving" :disabled="!payment.orNumber.trim()" @click="verifyPayment" /></div></div></template></UModal>
+    <UModal v-model:open="paymentOpen" :ui="{ content: 'sm:max-w-lg' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold">Verify Cashier Payment</h2><p class="mt-1 text-sm text-muted">Record the Official Receipt before marking {{ selectedFine?.fineNo }} as Paid.</p></div><UAlert color="warning" variant="soft" icon="i-lucide-receipt-text" :title="selectedFine ? money(selectedFine.amount) : ''" description="Compare the OR with the Student or Faculty record before confirming." /><UFormField label="Official Receipt (OR) Number" required><UInput v-model="payment.orNumber" maxlength="120" autocomplete="off" spellcheck="false" placeholder="Enter unique cashier OR number" @update:model-value="resetPaymentOrValidation" @blur="checkPaymentOrNumber" /><p v-if="paymentOrChecking" class="mt-1 text-xs text-muted">Checking OR number…</p><p v-else-if="paymentOrMessage" class="mt-1 text-xs" :class="paymentOrAvailable === false ? 'text-error' : paymentOrAvailable === true ? 'text-success' : 'text-muted'">{{ paymentOrMessage }}</p></UFormField><UFormField label="Payment Date" required><UInput v-model="payment.paymentDate" type="date" /></UFormField><UFormField label="Verification Notes" hint="Optional"><UTextarea v-model="payment.notes" :rows="3" /></UFormField><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="ghost" @click="paymentOpen = false" /><UButton label="Verify Payment" icon="i-lucide-badge-check" color="success" :loading="saving || paymentOrChecking" :disabled="!payment.orNumber.trim() || paymentOrAvailable === false" @click="verifyPayment" /></div></div></template></UModal>
 
     <UModal v-model:open="waiverOpen" :ui="{ content: 'sm:max-w-lg' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold">Waive Fine</h2><p class="mt-1 text-sm text-muted">A reason is required and will be included in the audit trail.</p></div><UFormField label="Waiver Reason" required><UTextarea v-model="waiverReason" :rows="4" /></UFormField><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="ghost" @click="waiverOpen = false" /><UButton label="Confirm Waiver" icon="i-lucide-scale" color="warning" :loading="saving" :disabled="!waiverReason.trim()" @click="waiveFine" /></div></div></template></UModal>
 
