@@ -94,6 +94,30 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   ],
   [
     {
+      label: "Library Operations",
+      type: "label",
+    },
+    {
+      label: "Operations Overview",
+      icon: "i-lucide-chart-no-axes-combined",
+      to: "/admin/operations",
+      active: active("/admin/operations"),
+    },
+  ],
+  [
+    {
+      label: "Reports",
+      type: "label",
+    },
+    {
+      label: "Reports Center",
+      icon: "i-lucide-file-chart-column-increasing",
+      to: "/admin/reports",
+      active: active("/admin/reports"),
+    },
+  ],
+  [
+    {
       label: "Security and Monitoring",
       type: "label",
     },
@@ -122,7 +146,7 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       active: active("/admin/monitoring-reports"),
     },
     {
-      label: "Audit Logs",
+      label: "Audit Trail",
       icon: "i-lucide-scroll-text",
       to: "/admin/audit-logs",
       active: active("/admin/audit-logs"),
@@ -160,6 +184,12 @@ function pageInformation() {
   if (path.startsWith("/admin/settings")) {
     return { title: "Library Rules and Settings", icon: "i-lucide-settings-2" };
   }
+  if (path.startsWith("/admin/operations")) {
+    return { title: "Library Operations", icon: "i-lucide-chart-no-axes-combined" };
+  }
+  if (path.startsWith("/admin/reports")) {
+    return { title: "Reports", icon: "i-lucide-file-chart-column-increasing" };
+  }
   if (path.startsWith("/admin/activity")) {
     return { title: "User Activity", icon: "i-lucide-activity" };
   }
@@ -173,7 +203,7 @@ function pageInformation() {
     return { title: "Monitoring Reports", icon: "i-lucide-file-chart-column" };
   }
   if (path.startsWith("/admin/audit-logs")) {
-    return { title: "Audit Logs", icon: "i-lucide-scroll-text" };
+    return { title: "Audit Trail", icon: "i-lucide-scroll-text" };
   }
 
   return { title: "System Overview", icon: "i-lucide-layout-dashboard" };
@@ -195,7 +225,7 @@ const accountItems = computed<DropdownMenuItem[][]>(() => [
   ],
   [
     {
-      label: "Security Audit Log",
+      label: "Audit Trail",
       icon: "i-lucide-shield-check",
       to: "/admin/audit-logs",
     },

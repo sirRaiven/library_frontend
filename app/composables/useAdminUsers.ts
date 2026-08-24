@@ -201,7 +201,7 @@ function unavailableGovernance(
     profile: null,
     profiles: [],
     issues: [
-      "Profile connection details were not returned by the backend. Restart Strapi after applying the Phase 3A backend files.",
+      "Profile connection details are currently unavailable. Refresh after the backend service is restarted, or contact a system administrator.",
     ],
     canLink: required,
   };

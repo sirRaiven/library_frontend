@@ -1,28 +1,42 @@
 <script setup lang="ts">
 import type { TableColumn } from "@nuxt/ui";
-import type { AdminAuditLogRecord } from "~/composables/useAdminAuditLogs";
+import type {
+  AdminAuditCategory,
+  AdminAuditIntegrity,
+  AdminAuditLogRecord,
+  AdminAuditSeverity,
+  AdminAuditSummary,
+} from "~/composables/useAdminAuditLogs";
 
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "Audit Logs",
+  title: "Audit Trail",
 });
 
 const api = useAdminAuditLogs();
 const auth = useAuth();
 const toast = useToast();
 const records = ref<AdminAuditLogRecord[]>([]);
+const summary = ref<AdminAuditSummary | null>(null);
+const integrity = ref<AdminAuditIntegrity | null>(null);
 const loading = ref(false);
+const checkingIntegrity = ref(false);
 const page = ref(1);
 const pageSize = 25;
 const total = ref(0);
 const search = ref("");
 const outcome = ref("All");
+const category = ref("All");
+const severity = ref("All");
+const dateFrom = ref("");
+const dateTo = ref("");
 const detail = ref<AdminAuditLogRecord | null>(null);
 const detailOpen = ref(false);
 
 const columns: TableColumn<AdminAuditLogRecord>[] = [
-  { id: "activity", header: "Administrative Activity" },
+  { id: "event", header: "Audit Event" },
+  { id: "classification", header: "Classification" },
   { id: "actor", header: "Performed By" },
   { id: "target", header: "Affected Record" },
   { accessorKey: "outcome", header: "Result" },
@@ -30,7 +44,17 @@ const columns: TableColumn<AdminAuditLogRecord>[] = [
   { id: "actions", header: "" },
 ];
 
-const outcomeItems = ["All", "Success", "Failure"];
+const outcomeItems = ["All", "Success", "Failure", "Denied"];
+const categoryItems = [
+  "All",
+  "Administrative",
+  "Security",
+  "Configuration",
+  "Transaction",
+  "Privacy",
+  "System",
+];
+const severityItems = ["All", "Info", "Notice", "Warning", "Critical"];
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("en-PH", {
@@ -40,20 +64,52 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function categoryColor(value: AdminAuditCategory) {
+  const colors = {
+    Administrative: "primary",
+    Security: "warning",
+    Configuration: "info",
+    Transaction: "success",
+    Privacy: "neutral",
+    System: "neutral",
+  } as const;
+  return colors[value] ?? "neutral";
+}
+
+function severityColor(value: AdminAuditSeverity) {
+  const colors = {
+    Info: "neutral",
+    Notice: "info",
+    Warning: "warning",
+    Critical: "error",
+  } as const;
+  return colors[value] ?? "neutral";
+}
+
+function filters() {
+  return {
+    search: search.value,
+    outcome: outcome.value,
+    category: category.value,
+    severity: severity.value,
+    dateFrom: dateFrom.value,
+    dateTo: dateTo.value,
+  };
+}
+
 async function load() {
   loading.value = true;
   try {
-    const response = await api.list({
-      search: search.value,
-      outcome: outcome.value,
-      page: page.value,
-      pageSize,
-    });
+    const [response, summaryResponse] = await Promise.all([
+      api.list({ ...filters(), page: page.value, pageSize }),
+      api.summary(filters()),
+    ]);
     records.value = response.data;
     total.value = response.meta.total;
+    summary.value = summaryResponse;
   } catch (error) {
     toast.add({
-      title: "Unable to load audit logs",
+      title: "Unable to load the audit trail",
       description: auth.getErrorMessage(error),
       color: "error",
       icon: "i-lucide-circle-alert",
@@ -63,13 +119,62 @@ async function load() {
   }
 }
 
+async function verifyIntegrity() {
+  checkingIntegrity.value = true;
+  try {
+    integrity.value = await api.integrity();
+    toast.add({
+      title:
+        integrity.value.status === "Valid"
+          ? "Audit chain is valid"
+          : "Audit integrity requires attention",
+      description:
+        integrity.value.status === "Valid"
+          ? `${integrity.value.checkedCount} sealed audit records were verified.`
+          : `${integrity.value.issues.length} integrity issue(s) were detected.`,
+      color: integrity.value.status === "Valid" ? "success" : "error",
+      icon:
+        integrity.value.status === "Valid"
+          ? "i-lucide-shield-check"
+          : "i-lucide-shield-alert",
+    });
+    await load();
+  } catch (error) {
+    toast.add({
+      title: "Unable to verify audit integrity",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    checkingIntegrity.value = false;
+  }
+}
+
 function openDetail(record: AdminAuditLogRecord) {
   detail.value = record;
   detailOpen.value = true;
 }
 
+function resetFilters() {
+  search.value = "";
+  outcome.value = "All";
+  category.value = "All";
+  severity.value = "All";
+  dateFrom.value = "";
+  dateTo.value = "";
+  page.value = 1;
+}
+
+function formatJson(value: unknown) {
+  if (!value || (typeof value === "object" && !Object.keys(value as object).length)) {
+    return "No structured values recorded.";
+  }
+  return JSON.stringify(value, null, 2);
+}
+
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
-watch(outcome, () => {
+watch([outcome, category, severity, dateFrom, dateTo], () => {
   page.value = 1;
   load();
 });
@@ -88,30 +193,122 @@ onMounted(load);
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      eyebrow="Security and Monitoring"
-      title="Administrative Audit Logs"
-      description="Review successful and failed administrator actions. Audit records are append-only in normal operation and should never contain passwords or authentication tokens."
+      title="Audit Trail"
+      description="Review administrative, security, configuration, privacy, system, and Library transaction records."
       icon="i-lucide-scroll-text"
     />
 
-    <UAlert
-      color="primary"
-      variant="soft"
-      icon="i-lucide-fingerprint"
-      title="Accountability record"
-      description="Each protected write records the administrator, action, affected record, result, request path, IP address, and time. Keep direct Audit Log create, update, and delete permissions disabled in Strapi."
-    />
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <AdminMetricCard
+        label="Matching Events"
+        :value="summary?.total ?? total"
+        description="Current audit filters"
+        icon="i-lucide-scroll-text"
+        tone="primary"
+        :loading="loading"
+      />
+      <AdminMetricCard
+        label="Transactions"
+        :value="summary?.categories?.Transaction ?? 0"
+        description="Borrow, return, reservation, fine and membership events"
+        icon="i-lucide-arrow-left-right"
+        tone="success"
+        :loading="loading"
+      />
+      <AdminMetricCard
+        label="Security Events"
+        :value="summary?.categories?.Security ?? 0"
+        description="Account, session, device and audit-access events"
+        icon="i-lucide-shield"
+        tone="warning"
+        :loading="loading"
+      />
+      <AdminMetricCard
+        label="Failed / Denied"
+        :value="(summary?.outcomes?.failure ?? 0) + (summary?.outcomes?.denied ?? 0)"
+        description="Events that require review"
+        icon="i-lucide-triangle-alert"
+        tone="error"
+        :loading="loading"
+      />
+      <AdminMetricCard
+        label="Protected Records"
+        :value="summary?.integrity?.sealed ?? 0"
+        description="Integrity-protected audit records"
+        icon="i-lucide-shield-check"
+        tone="info"
+        :loading="loading"
+      />
+    </div>
+
+    <UCard>
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <UIcon
+              :name="integrity?.status === 'Attention Required' ? 'i-lucide-shield-alert' : 'i-lucide-shield-check'"
+              class="size-5"
+              :class="integrity?.status === 'Attention Required' ? 'text-error' : 'text-success'"
+            />
+            <h2 class="font-semibold text-highlighted">Audit Integrity</h2>
+          </div>
+          <p class="mt-1 text-sm text-muted">
+            {{
+              integrity
+                ? `${integrity.status} · ${integrity.checkedCount} protected record(s) checked`
+                : 'Run an integrity check to verify protected audit records.'
+            }}
+          </p>
+        </div>
+        <UButton
+          label="Verify Integrity"
+          icon="i-lucide-shield-check"
+          :loading="checkingIntegrity"
+          @click="verifyIntegrity"
+        />
+      </div>
+      <UAlert
+        v-if="integrity?.issues?.length"
+        class="mt-4"
+        color="error"
+        variant="soft"
+        icon="i-lucide-shield-alert"
+        title="Integrity issue detected"
+        :description="`${integrity.issues.length} issue(s) were found. Preserve the database and investigate before changing or deleting any audit data.`"
+      />
+    </UCard>
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <template #header>
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 class="font-semibold text-highlighted">Security-Relevant Activity</h2>
-            <p class="mt-1 text-xs text-muted">{{ total }} audit record{{ total === 1 ? '' : 's' }}</p>
+        <div class="space-y-4">
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 class="font-semibold text-highlighted">Audit Records</h2>
+              <p class="mt-1 text-xs text-muted">{{ total }} audit record{{ total === 1 ? '' : 's' }}</p>
+            </div>
+            <UButton
+              label="Clear Filters"
+              icon="i-lucide-filter-x"
+              color="neutral"
+              variant="outline"
+              @click="resetFilters"
+            />
           </div>
-          <div class="grid gap-2 sm:grid-cols-[minmax(0,22rem)_10rem]">
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search action, actor, or record" />
+
+          <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
+            <UInput
+              v-model="search"
+              class="xl:col-span-2"
+              icon="i-lucide-search"
+              placeholder="Search event, actor, request, or record"
+            />
+            <USelect v-model="category" :items="categoryItems" />
+            <USelect v-model="severity" :items="severityItems" />
             <USelect v-model="outcome" :items="outcomeItems" />
+            <div class="grid grid-cols-2 gap-2 xl:col-span-1">
+              <UInput v-model="dateFrom" type="date" aria-label="Audit start date" />
+              <UInput v-model="dateTo" type="date" aria-label="Audit end date" />
+            </div>
           </div>
         </div>
       </template>
@@ -123,13 +320,23 @@ onMounted(load);
       <div v-else-if="!records.length" class="px-6 py-16 text-center">
         <UIcon name="i-lucide-scroll-text" class="mx-auto size-11 text-dimmed" />
         <h3 class="mt-3 font-semibold text-highlighted">No matching audit records</h3>
-        <p class="mt-1 text-sm text-muted">Adjust the search or result filter.</p>
+        <p class="mt-1 text-sm text-muted">Adjust the search, classification, result, severity, or date filters.</p>
       </div>
 
       <UTable v-else :data="records" :columns="columns">
-        <template #activity-cell="{ row }">
+        <template #event-cell="{ row }">
           <p class="font-semibold text-highlighted">{{ row.original.action }}</p>
           <p class="mt-1 max-w-xl truncate text-xs text-muted">{{ row.original.description }}</p>
+          <p v-if="row.original.eventId" class="mt-1 max-w-52 truncate font-mono text-[10px] text-dimmed">
+            {{ row.original.eventId }}
+          </p>
+        </template>
+        <template #classification-cell="{ row }">
+          <div class="flex flex-wrap gap-1.5">
+            <UBadge :label="row.original.category" :color="categoryColor(row.original.category)" variant="soft" size="sm" />
+            <UBadge :label="row.original.severity" :color="severityColor(row.original.severity)" variant="subtle" size="sm" />
+          </div>
+          <p class="mt-1 text-xs text-muted">{{ row.original.module }}</p>
         </template>
         <template #actor-cell="{ row }">
           <p class="text-sm font-medium text-highlighted">{{ row.original.actor }}</p>
@@ -143,7 +350,10 @@ onMounted(load);
           <AdminStatusBadge :label="row.original.outcome" />
         </template>
         <template #created-cell="{ row }">
-          <time class="text-sm text-default">{{ formatDateTime(row.original.createdAt) }}</time>
+          <time class="text-sm text-default">{{ formatDateTime(row.original.occurredAt || row.original.createdAt) }}</time>
+          <p class="mt-1 text-[11px]" :class="row.original.sealed ? 'text-success' : 'text-muted'">
+            {{ row.original.sealed ? 'Sealed' : 'Legacy unsealed' }}
+          </p>
         </template>
         <template #actions-cell="{ row }">
           <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View audit record" @click="openDetail(row.original)" />
@@ -159,23 +369,69 @@ onMounted(load);
     </UCard>
   </div>
 
-  <UModal v-model:open="detailOpen" :ui="{ content: 'sm:max-w-2xl' }">
+  <UModal v-model:open="detailOpen" :ui="{ content: 'sm:max-w-4xl' }">
     <template #content>
-      <div v-if="detail" class="space-y-5 bg-default p-6">
+      <div v-if="detail" class="max-h-[85vh] space-y-5 overflow-y-auto bg-default p-6">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-highlighted">{{ detail.action }}</h2>
-            <p class="mt-1 text-sm text-muted">{{ formatDateTime(detail.createdAt) }}</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-xl font-bold text-highlighted">{{ detail.action }}</h2>
+              <UBadge :label="detail.category" :color="categoryColor(detail.category)" variant="soft" />
+              <UBadge :label="detail.severity" :color="severityColor(detail.severity)" variant="soft" />
+            </div>
+            <p class="mt-1 text-sm text-muted">{{ formatDateTime(detail.occurredAt || detail.createdAt) }}</p>
           </div>
           <AdminStatusBadge :label="detail.outcome" />
         </div>
+
         <p class="rounded-xl border border-default bg-elevated/40 p-4 text-sm leading-6 text-default">{{ detail.description }}</p>
-        <dl class="grid gap-4 text-sm sm:grid-cols-2">
+        <UAlert
+          v-if="detail.reason"
+          color="warning"
+          variant="soft"
+          icon="i-lucide-message-square-warning"
+          title="Recorded reason"
+          :description="detail.reason"
+        />
+
+        <dl class="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Performed By</dt><dd class="mt-1 text-highlighted">{{ detail.actor }} · {{ detail.actorRole || 'Unknown role' }}</dd></div>
           <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Affected Record</dt><dd class="mt-1 text-highlighted">{{ detail.targetLabel || detail.targetType || 'System' }}</dd></div>
-          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Request</dt><dd class="mt-1 font-mono text-xs text-highlighted">{{ detail.requestMethod || '—' }} {{ detail.requestPath || '—' }}</dd></div>
+          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Module</dt><dd class="mt-1 text-highlighted">{{ detail.module }}</dd></div>
+          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Request</dt><dd class="mt-1 break-all font-mono text-xs text-highlighted">{{ detail.requestMethod || '—' }} {{ detail.requestPath || '—' }}</dd></div>
+          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Request ID</dt><dd class="mt-1 break-all font-mono text-xs text-highlighted">{{ detail.requestId || 'Not recorded' }}</dd></div>
           <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">IP Address</dt><dd class="mt-1 font-mono text-xs text-highlighted">{{ detail.ipAddress || 'Not recorded' }}</dd></div>
         </dl>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+          <div>
+            <h3 class="mb-2 text-sm font-semibold text-highlighted">Before</h3>
+            <pre class="max-h-64 overflow-auto rounded-xl border border-default bg-elevated/40 p-4 text-xs text-default">{{ formatJson(detail.before) }}</pre>
+          </div>
+          <div>
+            <h3 class="mb-2 text-sm font-semibold text-highlighted">After</h3>
+            <pre class="max-h-64 overflow-auto rounded-xl border border-default bg-elevated/40 p-4 text-xs text-default">{{ formatJson(detail.after) }}</pre>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="mb-2 text-sm font-semibold text-highlighted">Metadata</h3>
+          <pre class="max-h-64 overflow-auto rounded-xl border border-default bg-elevated/40 p-4 text-xs text-default">{{ formatJson(detail.metadata) }}</pre>
+        </div>
+
+        <div class="rounded-xl border border-default p-4">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-highlighted">Integrity seal</h3>
+            <UBadge :label="detail.sealed ? 'Sealed' : 'Legacy unsealed'" :color="detail.sealed ? 'success' : 'neutral'" variant="soft" />
+          </div>
+          <dl class="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+            <div><dt class="font-semibold uppercase tracking-wide text-muted">Event ID</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.eventId || 'Legacy record' }}</dd></div>
+            <div><dt class="font-semibold uppercase tracking-wide text-muted">Integrity Version</dt><dd class="mt-1 font-mono text-default">{{ detail.integrityVersion ?? '—' }}</dd></div>
+            <div><dt class="font-semibold uppercase tracking-wide text-muted">Previous Hash</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.previousHash || 'Chain start / legacy' }}</dd></div>
+            <div><dt class="font-semibold uppercase tracking-wide text-muted">Record Hash</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.recordHash || 'Not sealed' }}</dd></div>
+          </dl>
+        </div>
+
         <div class="flex justify-end"><UButton label="Close" color="neutral" variant="outline" @click="detailOpen = false" /></div>
       </div>
     </template>

@@ -10,12 +10,16 @@ const badge = computed(() => {
     return { color: "success" as const, icon: "i-lucide-circle-check" };
   }
 
-  if (["blocked", "inactive", "failure", "failed"].includes(normalized)) {
+  if (["blocked", "inactive", "failure", "failed", "critical"].includes(normalized)) {
     return { color: "error" as const, icon: "i-lucide-circle-x" };
   }
 
-  if (["unconfirmed", "pending", "warning", "checking"].includes(normalized)) {
+  if (["denied", "unconfirmed", "pending", "warning", "checking"].includes(normalized)) {
     return { color: "warning" as const, icon: "i-lucide-clock-3" };
+  }
+
+  if (["notice", "info"].includes(normalized)) {
+    return { color: "info" as const, icon: "i-lucide-info" };
   }
 
   return { color: "neutral" as const, icon: "i-lucide-circle" };

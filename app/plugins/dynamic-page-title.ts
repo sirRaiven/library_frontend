@@ -70,8 +70,9 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/admin\/librarians\/?$/, title: "Librarian Accounts" },
   { pattern: /^\/admin\/roles\/[^/]+\/?$/, title: "Role Details" },
   { pattern: /^\/admin\/roles\/?$/, title: "Roles and Permissions" },
-  { pattern: /^\/admin\/audit-logs\/?$/, title: "Audit Logs" },
+  { pattern: /^\/admin\/audit-logs\/?$/, title: "Audit Trail" },
   { pattern: /^\/admin\/settings\/?$/, title: "Library Rules and Settings" },
+  { pattern: /^\/admin\/operations\/?$/, title: "Library Operations" },
   { pattern: /^\/admin\/reports\/?$/, title: "System Reports" },
 ];
 
