@@ -534,8 +534,42 @@ export function useAuth() {
     };
 
     const method = String(options.method ?? "GET").toUpperCase();
+    const maintenance = useSystemMaintenance();
+    const maintenanceReadMethod = ["GET", "HEAD", "OPTIONS"].includes(method);
+    const maintenanceInfrastructurePath =
+      path === "/api/auth/local" ||
+      path === "/api/auth/refresh" ||
+      path === "/api/auth/logout" ||
+      path.startsWith("/api/admin-") ||
+      path.startsWith("/api/admin-management");
+
+    if (
+      maintenance.enabled.value &&
+      !isAdministrator.value &&
+      !maintenanceReadMethod &&
+      !maintenanceInfrastructurePath
+    ) {
+      throw createError({
+        statusCode: 503,
+        statusMessage: maintenance.status.value.message,
+        data: {
+          error: {
+            status: 503,
+            name: "MaintenanceReadOnlyError",
+            message: maintenance.status.value.message,
+            details: { code: "SYSTEM_MAINTENANCE_READ_ONLY" },
+          },
+        },
+      });
+    }
+
     if (method !== "GET" || options.body) {
-      return await executeWithRefresh();
+      try {
+        return await executeWithRefresh();
+      } catch (caught) {
+        maintenance.applyReadOnlyError(caught);
+        throw caught;
+      }
     }
 
     // Coalesce only identical GETs that are currently in flight. This does not

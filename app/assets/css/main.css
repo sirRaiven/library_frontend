@@ -288,3 +288,25 @@
     0 10px 24px -20px color-mix(in srgb, var(--ui-primary) 78%, transparent),
     inset 0 0 0 1px color-mix(in srgb, var(--ui-primary) 18%, transparent);
 }
+
+/* Maintenance Mode: caution without presenting a temporary restriction as a system failure. */
+.sncbt-maintenance-banner {
+  margin: 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-warning) 34%, var(--ui-border));
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--ui-warning) 9%, var(--ui-bg));
+  padding: 0.9rem 1rem;
+  box-shadow: var(--sncbt-shadow-control);
+}
+
+@media (min-width: 640px) {
+  .sncbt-maintenance-banner {
+    margin-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .sncbt-maintenance-banner {
+    margin-inline: 2rem;
+  }
+}

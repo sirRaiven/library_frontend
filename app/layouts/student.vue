@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import type {
   DropdownMenuItem,
   NavigationMenuItem,
@@ -6,6 +7,7 @@ import type {
 
 const route = useRoute();
 const auth = useAuth();
+const maintenance = useSystemMaintenance();
 const dashboard = useStudentDashboard();
 const monitoring = useStudentSession();
 const notificationCenter = useStudentNotifications();
@@ -218,6 +220,7 @@ async function signOut() {
 }
 
 onMounted(async () => {
+  await maintenance.refresh().catch(() => undefined);
   await initializeMonitoring();
   notificationCenter.startPolling(120_000);
 });
@@ -453,6 +456,7 @@ onBeforeUnmount(() => {
       <template #body>
         <main class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="mx-auto w-full max-w-[1500px]">
+            <SystemMaintenanceBanner />
             <slot />
           </div>
         </main>

@@ -50,6 +50,7 @@ function applicationMode(): string {
 
 export function useStudentSession() {
   const auth = useAuth();
+  const maintenance = useSystemMaintenance();
 
   const deviceKey = useCookie<string | null>("sncbt-device-id", {
     default: () => null,
@@ -80,7 +81,7 @@ export function useStudentSession() {
   }
 
   async function performStart(): Promise<StudentSessionData | null> {
-    if (!import.meta.client || !auth.isStudent.value) return null;
+    if (!import.meta.client || !auth.isStudent.value || maintenance.enabled.value) return null;
 
     starting.value = true;
     error.value = "";
@@ -124,7 +125,7 @@ export function useStudentSession() {
     const key = sessionKey.value;
 
     try {
-      if (key && auth.isStudent.value) {
+      if (key && auth.isStudent.value && !maintenance.enabled.value) {
         await auth.authFetch("/api/student-portal/session/end", {
           method: "POST",
           body: { sessionKey: key },

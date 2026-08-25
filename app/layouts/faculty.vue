@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { appLogger } from "~/utils/app-logger";
 
 const route = useRoute();
 const auth = useAuth();
+const maintenance = useSystemMaintenance();
 const portal = useFacultyPortal();
 const monitoring = usePortalMonitoring();
 
@@ -142,6 +144,7 @@ async function signOut() {
 }
 
 onMounted(async () => {
+  await maintenance.refresh().catch(() => undefined);
   // The dashboard page loads its own data. Avoid issuing the same request twice
   // when the Faculty first signs in. Other Faculty pages still load the small
   // dashboard summary once so the sidebar can display the account details.
@@ -333,7 +336,8 @@ watch(
 
       <template #body>
         <main class="sncbt-dashboard-canvas min-h-[calc(100vh-4rem)]">
-          <slot />
+          <SystemMaintenanceBanner />
+            <slot />
         </main>
       </template>
     </UDashboardPanel>

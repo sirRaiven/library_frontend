@@ -38,6 +38,7 @@ function applicationMode(): string {
 
 export function usePortalMonitoring() {
   const auth = useAuth();
+  const maintenance = useSystemMaintenance();
   const deviceKey = useCookie<string | null>("sncbt-device-id", {
     default: () => null,
     sameSite: "lax",
@@ -67,7 +68,7 @@ export function usePortalMonitoring() {
   }
 
   async function performStart() {
-    if (!import.meta.client || !supported.value) return null;
+    if (!import.meta.client || !supported.value || maintenance.enabled.value) return null;
     starting.value = true;
     error.value = "";
     try {
@@ -104,7 +105,7 @@ export function usePortalMonitoring() {
 
 
   async function recordPageView(route: string, title: string) {
-    if (!import.meta.client || !supported.value || !route) return;
+    if (!import.meta.client || !supported.value || maintenance.enabled.value || !route) return;
     const signature = `${sessionKey.value ?? "none"}:${route}`;
     if (lastPageRecord.value === signature) return;
     lastPageRecord.value = signature;
@@ -126,7 +127,7 @@ export function usePortalMonitoring() {
   async function end() {
     const key = sessionKey.value;
     try {
-      if (key && supported.value) {
+      if (key && supported.value && !maintenance.enabled.value) {
         await auth.authFetch("/api/system-monitoring/session/end", {
           method: "POST",
           body: { sessionKey: key },

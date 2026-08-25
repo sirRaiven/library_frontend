@@ -174,6 +174,8 @@ export function useLibraryNotifications() {
   async function loadSummary(
     sync = true,
   ): Promise<NotificationSummary> {
+    const maintenance = useSystemMaintenance();
+    const shouldSync = sync && !maintenance.enabled.value;
     if (isLoadingSummary.value) {
       return summary.value;
     }
@@ -191,7 +193,7 @@ export function useLibraryNotifications() {
             cache: "no-store",
             query: {
               sync:
-                sync
+                shouldSync
                   ? "true"
                   : "false",
               timestamp:

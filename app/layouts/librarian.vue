@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 
 import { appLogger } from "~/utils/app-logger";
 import type {
@@ -8,6 +9,7 @@ import type {
 
 const route = useRoute();
 const auth = useAuth();
+const maintenance = useSystemMaintenance();
 const toast = useToast();
 const notificationCenter =
   useLibraryNotifications();
@@ -626,6 +628,7 @@ async function handleLogout() {
 }
 
 onMounted(async () => {
+  await maintenance.refresh().catch(() => undefined);
   notificationCenter
     .startPolling(120_000);
 
@@ -702,7 +705,7 @@ watch(
           'data-[dragging=true]:transition-none',
         ].join(' '),
         header: [
-          'bg-transparent border-b border-default/70',
+          'bg-transparent',
           'px-3 py-3',
         ].join(' '),
         body: [
@@ -710,7 +713,7 @@ watch(
           'overflow-y-auto overflow-x-hidden overscroll-contain',
         ].join(' '),
         footer: [
-          'bg-transparent border-t border-default/70',
+          'bg-transparent',
           'px-2.5 py-3',
         ].join(' '),
         content: [
@@ -1117,6 +1120,7 @@ watch(
           <div
             class="mx-auto w-full max-w-[1600px]"
           >
+            <SystemMaintenanceBanner />
             <slot />
           </div>
         </main>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import { appLogger } from "~/utils/app-logger";
 import type {
   DropdownMenuItem,
@@ -7,6 +8,7 @@ import type {
 
 const route = useRoute();
 const auth = useAuth();
+const maintenance = useSystemMaintenance();
 const monitoring = usePortalMonitoring();
 
 
@@ -90,6 +92,24 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       icon: "i-lucide-settings-2",
       to: "/admin/settings",
       active: active("/admin/settings"),
+    },
+    {
+      label: "System Health & Maintenance",
+      icon: "i-lucide-server-cog",
+      to: "/admin/system-health",
+      active: active("/admin/system-health"),
+    },
+  ],
+  [
+    {
+      label: "Governance and Privacy",
+      type: "label",
+    },
+    {
+      label: "Privacy & Retention",
+      icon: "i-lucide-shield-check",
+      to: "/admin/privacy-retention",
+      active: active("/admin/privacy-retention"),
     },
   ],
   [
@@ -184,6 +204,12 @@ function pageInformation() {
   if (path.startsWith("/admin/settings")) {
     return { title: "Library Rules and Settings", icon: "i-lucide-settings-2" };
   }
+  if (path.startsWith("/admin/system-health")) {
+    return { title: "System Health & Maintenance", icon: "i-lucide-server-cog" };
+  }
+  if (path.startsWith("/admin/privacy-retention")) {
+    return { title: "Privacy & Retention", icon: "i-lucide-shield-check" };
+  }
   if (path.startsWith("/admin/operations")) {
     return { title: "Library Operations", icon: "i-lucide-chart-no-axes-combined" };
   }
@@ -265,6 +291,7 @@ async function signOut() {
 }
 
 onMounted(async () => {
+  await maintenance.refresh().catch(() => undefined);
   try {
     await monitoring.start();
     await monitoring.recordPageView(route.path, pageTitle.value);
@@ -478,6 +505,7 @@ watch(
       <template #body>
         <main class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="mx-auto w-full max-w-[1600px]">
+            <SystemMaintenanceBanner admin />
             <slot />
           </div>
         </main>

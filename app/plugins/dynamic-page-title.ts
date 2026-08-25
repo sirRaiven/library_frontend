@@ -72,6 +72,8 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/admin\/roles\/?$/, title: "Roles and Permissions" },
   { pattern: /^\/admin\/audit-logs\/?$/, title: "Audit Trail" },
   { pattern: /^\/admin\/settings\/?$/, title: "Library Rules and Settings" },
+  { pattern: /^\/admin\/system-health\/?$/, title: "System Health & Maintenance" },
+  { pattern: /^\/admin\/privacy-retention\/?$/, title: "Privacy & Retention" },
   { pattern: /^\/admin\/operations\/?$/, title: "Library Operations" },
   { pattern: /^\/admin\/reports\/?$/, title: "System Reports" },
 ];
