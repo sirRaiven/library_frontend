@@ -2,7 +2,7 @@
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminActivityRecord, AdminMonitoringSummary } from "~/composables/useAdminMonitoring";
 
-definePageMeta({ layout: "admin", middleware: ["admin"], title: "User Activity" });
+definePageMeta({ layout: "admin", middleware: ["admin"], title: "Activity Log" });
 
 const api = useAdminMonitoring();
 const auth = useAuth();
@@ -76,14 +76,14 @@ onMounted(() => { load(); loadSummary(); });
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      eyebrow="Security and Monitoring"
-      title="User Activity"
+      eyebrow="System & Monitoring"
+      title="Activity Log"
       description="Review meaningful authentication, navigation, account, and Library activities recorded for Student, Faculty, Librarian, and Administrator accounts."
       icon="i-lucide-activity"
     >
       <template #actions>
         <div class="flex flex-wrap gap-2">
-          <UButton label="Monitoring Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/monitoring-reports" />
+          <UButton label="Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/reports?view=monitoring" />
           <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" />
         </div>
       </template>

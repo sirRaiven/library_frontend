@@ -8,7 +8,7 @@ import type {
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "User Accounts",
+  title: "Users",
 });
 
 const usersApi = useAdminUsers();
@@ -193,7 +193,7 @@ async function loadUsers() {
     total.value = response.meta.total;
   } catch (error) {
     toast.add({
-      title: "Unable to load user accounts",
+      title: "Unable to load users",
       description: auth.getErrorMessage(error),
       color: "error",
       icon: "i-lucide-circle-alert",
@@ -410,13 +410,13 @@ onMounted(async () => {
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       eyebrow="Accounts and Access"
-      title="User Account Management"
+      title="Users"
       description="Create accounts, assign application roles, confirm access, and block compromised or inactive accounts. Passwords and refresh tokens are never displayed in this panel."
       icon="i-lucide-users"
     >
       <template #actions>
         <UButton
-          label="Add User Account"
+          label="Add User"
           icon="i-lucide-user-plus"
           @click="openCreate"
         />
@@ -427,15 +427,15 @@ onMounted(async () => {
       color="primary"
       variant="soft"
       icon="i-lucide-shield-check"
-      title="Protected account administration"
-      description="Administrator actions are checked again by Strapi and written to the audit log. Regular administrators cannot assign administrator roles or modify other administrator accounts."
+      title="Account security"
+      description="Administrator actions are access-controlled and recorded in the Audit Trail. Regular administrators cannot assign administrator roles or modify other administrator accounts."
     />
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <template #header>
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 class="font-semibold text-highlighted">Application User Accounts</h2>
+            <h2 class="font-semibold text-highlighted">Users</h2>
             <p class="mt-1 text-xs text-muted">{{ total }} account{{ total === 1 ? '' : 's' }} found</p>
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 xl:w-[64rem]">
@@ -458,7 +458,7 @@ onMounted(async () => {
 
       <div v-else-if="!records.length" class="px-6 py-16 text-center">
         <UIcon name="i-lucide-users" class="mx-auto size-11 text-dimmed" />
-        <h3 class="mt-3 font-semibold text-highlighted">No matching user accounts</h3>
+        <h3 class="mt-3 font-semibold text-highlighted">No matching users</h3>
         <p class="mt-1 text-sm text-muted">Adjust the search or account-status filters.</p>
       </div>
 

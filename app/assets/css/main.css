@@ -9,60 +9,60 @@
  * These variables intentionally live outside @layer so they remain stable when
  * Nuxt UI reapplies light/dark theme variables during client navigation.
  */
+
 :root {
-  /* Match Nuxt UI containers to the dashboard workspace instead of the default narrower content width. */
   --ui-container: 100rem;
 
-  --sncbt-canvas: #f4f8f6;
-  --sncbt-canvas-deep: #edf5f1;
+  /* Neutral surfaces keep the product calm; emerald is reserved for brand and action. */
+  --sncbt-canvas: #f8fafc;
+  --sncbt-canvas-deep: #f1f5f9;
   --sncbt-surface: #ffffff;
-  --sncbt-surface-soft: #f8fbfa;
-  --sncbt-sidebar: rgba(255, 255, 255, 0.9);
-  --sncbt-navbar: rgba(255, 255, 255, 0.82);
-  --sncbt-border-soft: rgba(15, 118, 110, 0.11);
+  --sncbt-surface-soft: #f8fafc;
+  --sncbt-sidebar: rgba(255, 255, 255, 0.96);
+  --sncbt-navbar: rgba(255, 255, 255, 0.9);
+  --sncbt-border-soft: rgba(15, 23, 42, 0.09);
 
-  --sncbt-shadow-control:
-    0 1px 2px rgba(15, 23, 42, 0.035);
+  --sncbt-shadow-control: 0 1px 2px rgba(15, 23, 42, 0.045);
   --sncbt-shadow-card:
-    0 1px 2px rgba(15, 23, 42, 0.045),
-    0 10px 30px -22px rgba(5, 150, 105, 0.32),
-    0 8px 22px -20px rgba(15, 23, 42, 0.28);
+    0 1px 2px rgba(15, 23, 42, 0.035),
+    0 8px 24px -20px rgba(15, 23, 42, 0.22);
   --sncbt-shadow-card-hover:
-    0 3px 8px rgba(15, 23, 42, 0.065),
-    0 20px 42px -24px rgba(5, 150, 105, 0.38),
-    0 14px 30px -24px rgba(15, 23, 42, 0.32);
+    0 2px 5px rgba(15, 23, 42, 0.05),
+    0 14px 32px -22px rgba(15, 23, 42, 0.28);
   --sncbt-shadow-overlay:
-    0 24px 70px -24px rgba(2, 44, 34, 0.34),
-    0 10px 28px -18px rgba(15, 23, 42, 0.32);
+    0 24px 60px -24px rgba(15, 23, 42, 0.34),
+    0 4px 12px -8px rgba(15, 23, 42, 0.18);
 
-  --sncbt-hero-glow: rgba(16, 185, 129, 0.12);
-  --sncbt-hero-glow-secondary: rgba(14, 165, 233, 0.07);
+  --sncbt-brand-soft: rgba(5, 150, 105, 0.08);
+  --sncbt-brand-border: rgba(5, 150, 105, 0.18);
+  --sncbt-focus: rgba(5, 150, 105, 0.46);
 }
 
 .dark {
-  --sncbt-canvas: #07110f;
-  --sncbt-canvas-deep: #0a1513;
-  --sncbt-surface: #0f1b18;
-  --sncbt-surface-soft: #12211d;
-  --sncbt-sidebar: rgba(8, 20, 17, 0.92);
-  --sncbt-navbar: rgba(8, 20, 17, 0.84);
-  --sncbt-border-soft: rgba(110, 231, 183, 0.1);
+  --sncbt-canvas: #090f0e;
+  --sncbt-canvas-deep: #0c1311;
+  --sncbt-surface: #111916;
+  --sncbt-surface-soft: #141e1a;
+  --sncbt-sidebar: rgba(12, 19, 17, 0.97);
+  --sncbt-navbar: rgba(12, 19, 17, 0.92);
+  --sncbt-border-soft: rgba(226, 232, 240, 0.09);
 
-  --sncbt-shadow-control:
-    0 1px 2px rgba(0, 0, 0, 0.16);
+  --sncbt-shadow-control: 0 1px 2px rgba(0, 0, 0, 0.24);
   --sncbt-shadow-card:
     0 1px 0 rgba(255, 255, 255, 0.025) inset,
-    0 18px 38px -28px rgba(0, 0, 0, 0.78);
+    0 12px 30px -24px rgba(0, 0, 0, 0.82);
   --sncbt-shadow-card-hover:
     0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 24px 46px -28px rgba(0, 0, 0, 0.86);
+    0 18px 38px -24px rgba(0, 0, 0, 0.88);
   --sncbt-shadow-overlay:
-    0 28px 80px -26px rgba(0, 0, 0, 0.82),
-    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    0 30px 72px -28px rgba(0, 0, 0, 0.88),
+    0 1px 0 rgba(255, 255, 255, 0.035) inset;
 
-  --sncbt-hero-glow: rgba(16, 185, 129, 0.12);
-  --sncbt-hero-glow-secondary: rgba(56, 189, 248, 0.05);
+  --sncbt-brand-soft: rgba(52, 211, 153, 0.08);
+  --sncbt-brand-border: rgba(52, 211, 153, 0.18);
+  --sncbt-focus: rgba(52, 211, 153, 0.52);
 }
+
 
 @layer base {
   :root {
@@ -110,18 +110,7 @@
 /* Dashboard canvas: gentle emerald atmosphere without washing out content. */
 .sncbt-dashboard-canvas {
   min-height: 100%;
-  background:
-    radial-gradient(
-      circle at 8% -10%,
-      var(--sncbt-hero-glow) 0,
-      transparent 28rem
-    ),
-    radial-gradient(
-      circle at 96% 2%,
-      var(--sncbt-hero-glow-secondary) 0,
-      transparent 24rem
-    ),
-    linear-gradient(180deg, var(--sncbt-canvas) 0%, var(--sncbt-canvas-deep) 100%);
+  background: linear-gradient(180deg, var(--sncbt-canvas) 0%, var(--sncbt-canvas-deep) 100%);
 }
 
 .sncbt-sidebar-surface {
@@ -146,42 +135,44 @@
 
 .sncbt-card {
   border: 1px solid var(--ui-border);
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   background: var(--ui-bg);
   box-shadow: var(--sncbt-shadow-card);
 }
 
 .sncbt-card-interactive {
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease;
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
 }
 
 .sncbt-card-interactive:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--ui-primary) 28%, var(--ui-border));
+  border-color: color-mix(in srgb, var(--ui-primary) 24%, var(--ui-border));
   box-shadow: var(--sncbt-shadow-card-hover);
 }
 
 .sncbt-page-hero {
   position: relative;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--ui-primary) 20%, var(--ui-border));
-  border-radius: 1.5rem;
-  background:
-    radial-gradient(circle at 0 0, color-mix(in srgb, var(--ui-primary) 13%, transparent), transparent 24rem),
-    radial-gradient(circle at 100% 0, rgba(14, 165, 233, 0.07), transparent 20rem),
-    var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: 1rem;
+  background: var(--ui-bg);
   box-shadow: var(--sncbt-shadow-card);
 }
 
-.dark .sncbt-page-hero {
-  background:
-    radial-gradient(circle at 0 0, color-mix(in srgb, var(--ui-primary) 13%, transparent), transparent 24rem),
-    radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.05), transparent 20rem),
-    var(--ui-bg);
+.sncbt-page-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--ui-primary);
+}
+
+.sncbt-page-icon {
+  color: var(--ui-primary);
+  background: var(--sncbt-brand-soft);
+  border: 1px solid var(--sncbt-brand-border);
 }
 
 .sncbt-icon-tile {
@@ -199,43 +190,19 @@
 }
 
 
-/* Librarian dashboard welcome panel: stronger structure without turning it into a heavy banner. */
+/* Librarian dashboard welcome panel: restrained institutional accent. */
 .sncbt-welcome-card {
   position: relative;
-  isolation: isolate;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--ui-primary) 7%, transparent), transparent 46%),
-    var(--ui-bg);
+  background: var(--ui-bg);
 }
 
 .sncbt-welcome-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  z-index: 2;
   height: 3px;
-  background: linear-gradient(90deg, var(--ui-primary), #14b8a6 52%, #38bdf8);
+  background: var(--ui-primary);
   pointer-events: none;
-}
-
-.sncbt-welcome-card::after {
-  content: "";
-  position: absolute;
-  top: -7rem;
-  right: 14rem;
-  z-index: -1;
-  width: 22rem;
-  height: 22rem;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
-  filter: blur(54px);
-  pointer-events: none;
-}
-
-.dark .sncbt-welcome-card {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--ui-primary) 8%, transparent), transparent 48%),
-    var(--ui-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -243,9 +210,6 @@
     transition: none;
   }
 
-  .sncbt-card-interactive:hover {
-    transform: none;
-  }
 }
 
 /* Upgrade legacy hand-built card surfaces without requiring page-by-page rewrites. */
@@ -308,5 +272,70 @@
 @media (min-width: 1024px) {
   .sncbt-maintenance-banner {
     margin-inline: 2rem;
+  }
+}
+
+
+/* Shared product layout and accessibility primitives. */
+.sncbt-page-shell {
+  width: 100%;
+  max-width: 100rem;
+  margin-inline: auto;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .sncbt-page-shell { padding: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .sncbt-page-shell { padding: 2rem; }
+}
+
+.sncbt-skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  border-radius: 0.5rem;
+  background: var(--ui-primary);
+  color: white;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: var(--sncbt-shadow-overlay);
+  transition: transform 120ms ease;
+}
+
+.sncbt-skip-link:focus { transform: translateY(0); }
+
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--sncbt-focus);
+  outline-offset: 2px;
+}
+
+:where(button, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sncbt-table-surface :where(th) {
+  font-weight: 600;
+}
+
+.sncbt-table-surface :where(tbody tr) {
+  transition: background-color 120ms ease;
+}
+
+.sncbt-table-surface :where(tbody tr:hover) {
+  background: color-mix(in srgb, var(--ui-primary) 3%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

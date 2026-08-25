@@ -9,7 +9,7 @@ import type { AdminUserRecord } from "~/composables/useAdminUsers";
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "User Activity",
+  title: "Account Activity",
 });
 
 const route = useRoute();
@@ -151,8 +151,8 @@ onMounted(refresh);
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      eyebrow="User Investigation"
-      :title="account ? `Activity for ${account.username}` : 'User Activity'"
+      eyebrow="User Monitoring"
+      :title="account ? `Activity for ${account.username}` : 'Account Activity'"
       description="Review meaningful activity recorded for this account without collecting intrusive device or personal information."
       icon="i-lucide-activity"
     >

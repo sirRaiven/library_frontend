@@ -17,6 +17,7 @@ definePageMeta({
 const route = useRoute();
 const colorMode = useColorMode();
 const auth = useAuth();
+const maintenance = useSystemMaintenance();
 
 const form = reactive<LoginForm>({
   identifier: "",
@@ -116,18 +117,22 @@ async function handleLogin(
     isLoggingIn.value = false;
   }
 }
+
+onMounted(() => {
+  void maintenance.refresh().catch(() => undefined);
+});
 </script>
 
 <template>
   <div
   class="min-h-screen flex flex-col justify-center items-center bg-[#f4fbf8] dark:bg-neutral-950 p-4 transition-colors relative overflow-hidden"
   >
-    <!-- Keep the soft emerald / sky atmosphere from the refreshed theme. -->
+    <!-- Restrained brand atmosphere keeps the form visually focused. -->
     <div
-      class="pointer-events-none absolute -left-28 top-12 size-72 rounded-full bg-primary/10 blur-3xl sm:size-96"
+      class="pointer-events-none absolute -left-28 top-12 size-72 rounded-full bg-primary/7 blur-3xl sm:size-96"
     />
     <div
-      class="pointer-events-none absolute -right-28 bottom-0 size-80 rounded-full bg-info/10 blur-3xl sm:size-[28rem]"
+      class="pointer-events-none absolute -right-28 bottom-0 size-80 rounded-full bg-primary/5 blur-3xl sm:size-[28rem]"
     />
 
     <!-- Color mode stays available without competing with the sign-in form. -->
@@ -147,23 +152,23 @@ async function handleLogin(
 
     <main class="relative z-10 flex w-full justify-center">
       <UCard
-        class="w-full max-w-md overflow-hidden border border-default/80 bg-default/95 shadow-[var(--sncbt-shadow-overlay)] backdrop-blur-sm"
+        class="w-full max-w-md overflow-hidden border border-default bg-default shadow-[var(--sncbt-shadow-overlay)]"
         :ui="{
-          root: 'rounded-[2rem]',
+          root: 'rounded-2xl',
           header: 'p-0 sm:p-0',
           body: 'p-6 sm:p-8',
         }"
       >
         <template #header>
           <div
-            class="relative overflow-hidden border-b border-default/70 bg-gradient-to-b from-primary/10 via-primary/4 to-transparent px-6 pb-7 pt-8 text-center sm:px-8 sm:pb-8 sm:pt-9"
+            class="relative border-b border-default bg-elevated/25 px-6 pb-7 pt-8 text-center sm:px-8 sm:pb-8 sm:pt-9"
           >
             <div
-              class="pointer-events-none absolute inset-x-12 top-0 h-24 rounded-full bg-primary/10 blur-3xl"
+              class="pointer-events-none absolute inset-x-12 top-0 h-24 rounded-full bg-primary/7 blur-3xl"
             />
 
             <div
-              class="relative mx-auto flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-primary/15 bg-white p-2 shadow-lg shadow-emerald-500/15 dark:bg-slate-950"
+              class="relative mx-auto flex size-16 items-center justify-center overflow-hidden rounded-xl border border-primary/15 bg-white p-2 shadow-sm dark:bg-slate-950"
             >
               <img
                 src="/sncbt-library-logo.png"
@@ -177,7 +182,7 @@ async function handleLogin(
             </div>
 
             <div class="relative mt-5">
-              <h1 class="text-2xl font-bold tracking-tight text-highlighted">
+              <h1 class="text-2xl font-semibold tracking-tight text-highlighted">
                 SNCBT Library
               </h1>
               <p class="mt-1 text-sm text-muted">
@@ -191,6 +196,15 @@ async function handleLogin(
         </template>
 
         <div class="space-y-5">
+          <UAlert
+            v-if="maintenance.enabled.value"
+            color="warning"
+            variant="soft"
+            icon="i-lucide-construction"
+            title="System maintenance in progress"
+            description="Student, Faculty and Librarian portals are currently read-only. Administrators may still sign in to manage the system."
+          />
+
           <UAlert
             v-if="blockedDeviceNotice"
             color="error"
@@ -282,7 +296,7 @@ async function handleLogin(
               block
               icon="i-lucide-log-in"
               :loading="isLoggingIn"
-              class="h-12 font-semibold shadow-lg shadow-emerald-500/20 transition-transform active:translate-y-px"
+              class="h-12 font-semibold"
             >
               Sign In
             </UButton>

@@ -6,20 +6,29 @@ function source(path: string) {
   return readFileSync(resolve(process.cwd(), path), "utf8");
 }
 
-describe("Administrator Reports Center contract", () => {
-  it("exposes the Reports Center in the Administrator navigation", () => {
+describe("Administrator unified reports contract", () => {
+  it("exposes one Reports destination in Administrator navigation", () => {
     const layout = source("app/layouts/admin.vue");
+    expect(layout).toContain('label: "Reports"');
     expect(layout).toContain('to: "/admin/reports"');
-    expect(layout).toContain("Reports Center");
+    expect(layout).not.toContain('label: "Monitoring Reports"');
   });
 
-  it("reuses the existing monitoring and audit workspaces", () => {
+  it("combines Library and Monitoring reports in one page", () => {
     const page = source("app/pages/admin/reports.vue");
-    expect(page).toContain('to="/admin/monitoring-reports"');
-    expect(page).toContain('to="/admin/audit-logs"');
+    expect(page).toContain("Library Reports");
+    expect(page).toContain("Monitoring Reports");
+    expect(page).toContain("AdminMonitoringReportsPanel");
   });
 
-  it("generates Library reports without adding a mutation workflow", () => {
+  it("keeps the legacy monitoring-report URL as a redirect only", () => {
+    const legacyPage = source("app/pages/admin/monitoring-reports.vue");
+    expect(legacyPage).toContain('path: "/admin/reports"');
+    expect(legacyPage).toContain('view: "monitoring"');
+    expect(legacyPage).not.toContain("Report Configuration");
+  });
+
+  it("generates Library and audit reports without adding mutations", () => {
     const page = source("app/pages/admin/reports.vue");
     const composable = source("app/composables/useAdminReports.ts");
     expect(page).toContain("libraryReports.generate");

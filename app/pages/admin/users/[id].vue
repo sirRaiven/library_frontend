@@ -9,7 +9,7 @@ import type { AdminProfileCandidate } from "~/composables/useAdminAccountGoverna
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "Account Details",
+  title: "User Details",
 });
 
 const route = useRoute();
@@ -355,13 +355,13 @@ watch(monitoringChildActive, (isChild) => {
     <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       eyebrow="Accounts and Access"
-      title="Account Details"
+      title="User Details"
       description="Review the account identity, assigned role, access status, and Library details used by the assigned portal."
       icon="i-lucide-user-round-cog"
     >
       <template #actions>
         <UButton
-          label="Back to User Accounts"
+          label="Back to Users"
           icon="i-lucide-arrow-left"
           color="neutral"
           variant="outline"
@@ -559,7 +559,7 @@ watch(monitoringChildActive, (isChild) => {
                 @click="unlinkOpen = true"
               />
               <UButton
-                label="Open Accounts Needing Review"
+                label="Open Account Review"
                 icon="i-lucide-list-checks"
                 color="neutral"
                 variant="ghost"

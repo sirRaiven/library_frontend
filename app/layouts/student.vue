@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import type {
   DropdownMenuItem,
@@ -232,10 +233,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <AppSkipLink />
   <UDashboardGroup
     storage="local"
     storage-key="sncbt-student-dashboard"
     unit="rem"
+    class="min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="student-main-navigation"
@@ -454,8 +457,8 @@ onBeforeUnmount(() => {
       </template>
 
       <template #body>
-        <main class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
-          <div class="mx-auto w-full max-w-[1500px]">
+        <main id="main-content" class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+          <div class="mx-auto w-full max-w-[1600px]">
             <SystemMaintenanceBanner />
             <slot />
           </div>

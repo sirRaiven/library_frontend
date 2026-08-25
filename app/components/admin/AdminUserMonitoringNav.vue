@@ -7,7 +7,7 @@ const props = defineProps<{
 const items = computed(() => [
   {
     key: "overview" as const,
-    label: "Account Overview",
+    label: "Overview",
     icon: "i-lucide-user-round-cog",
     to: `/admin/users/${props.userId}`,
   },

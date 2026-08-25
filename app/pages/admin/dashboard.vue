@@ -2,7 +2,7 @@
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "System Overview",
+  title: "Dashboard",
 });
 
 const dashboard = useAdminDashboard();
@@ -10,7 +10,7 @@ const toast = useToast();
 
 const metricCards = computed(() => [
   {
-    label: "User Accounts",
+    label: "Users",
     value: dashboard.metrics.value.totalUsers,
     description: `${dashboard.metrics.value.activeUsers} active accounts`,
     icon: "i-lucide-users",
@@ -18,7 +18,7 @@ const metricCards = computed(() => [
     to: "/admin/users",
   },
   {
-    label: "Librarian Accounts",
+    label: "Librarians",
     value: dashboard.metrics.value.totalLibrarians,
     description: `${dashboard.metrics.value.activeLibrarians} active Librarians`,
     icon: "i-lucide-user-round-cog",
@@ -78,8 +78,8 @@ const metricCards = computed(() => [
 ]);
 
 const systemChecks = computed(() => [
-  { label: "Strapi API", value: dashboard.system.value.api },
-  { label: "PostgreSQL Database", value: dashboard.system.value.database },
+  { label: "Backend API", value: dashboard.system.value.api },
+  { label: "Database", value: dashboard.system.value.database },
   { label: "Authentication", value: dashboard.system.value.authentication },
   { label: "System Time Zone", value: dashboard.system.value.timezone },
 ]);
@@ -99,7 +99,7 @@ async function refresh() {
     await dashboard.refresh();
   } catch (error) {
     toast.add({
-      title: "Unable to load administration overview",
+      title: "Unable to load dashboard",
       description: useAuth().getErrorMessage(error),
       color: "error",
       icon: "i-lucide-circle-alert",
@@ -113,9 +113,9 @@ onMounted(refresh);
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      eyebrow="System Administration"
-      title="Administration Overview"
-      description="Review account security, system status, Library activity, and administrative actions from one protected workspace."
+      eyebrow="Administration"
+      title="Admin Dashboard"
+      description="View key account, Library, and system information in one place."
       icon="i-lucide-shield-check"
     >
       <template #actions>
@@ -148,10 +148,10 @@ onMounted(refresh);
       <div class="mb-3 flex items-center justify-between">
         <div>
           <h2 id="account-overview-heading" class="text-base font-semibold text-highlighted">
-            Account and Library Overview
+            System Summary
           </h2>
           <p class="mt-1 text-xs text-muted">
-            Current figures from protected Strapi records.
+            Current figures from the Library system.
           </p>
         </div>
         <p v-if="dashboard.data.value.generatedAt" class="hidden text-xs text-muted sm:block">
@@ -194,14 +194,6 @@ onMounted(refresh);
           </div>
         </div>
 
-        <div class="border-t border-default bg-elevated/40 px-5 py-4 sm:px-6">
-          <div class="flex items-start gap-3 text-xs leading-5 text-muted">
-            <UIcon name="i-lucide-shield-check" class="mt-0.5 size-4 shrink-0 text-primary" />
-            <p>
-              Frontend route guards improve navigation, but all administrator data is independently protected by a Strapi administrator policy and role permissions.
-            </p>
-          </div>
-        </div>
       </UCard>
 
       <UCard :ui="{ body: 'p-0 sm:p-0' }">
@@ -211,8 +203,8 @@ onMounted(refresh);
               <UIcon name="i-lucide-history" class="size-5" />
             </div>
             <div>
-              <h2 class="font-semibold text-highlighted">Recent Administrative Activity</h2>
-              <p class="text-xs text-muted">Latest security-relevant account and system actions.</p>
+              <h2 class="font-semibold text-highlighted">Recent Admin Activity</h2>
+              <p class="text-xs text-muted">Latest account, configuration, and system changes.</p>
             </div>
           </div>
           <UButton

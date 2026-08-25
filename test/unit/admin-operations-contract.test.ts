@@ -35,7 +35,7 @@ describe("Administrator Library Operations monitoring contract", () => {
   });
 
   it("adds Library Operations to Administrator navigation", () => {
-    expect(layout).toContain('label: "Operations Overview"');
+    expect(layout).toContain('label: "Library Operations"');
     expect(layout).toContain('to: "/admin/operations"');
   });
 });

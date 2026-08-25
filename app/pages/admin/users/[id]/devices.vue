@@ -9,7 +9,7 @@ import type { AdminUserRecord } from "~/composables/useAdminUsers";
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "User Devices",
+  title: "Account Devices",
 });
 
 const route = useRoute();
@@ -174,8 +174,8 @@ onMounted(refresh);
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      eyebrow="User Investigation"
-      :title="account ? `Devices for ${account.username}` : 'User Devices'"
+      eyebrow="User Monitoring"
+      :title="account ? `Devices for ${account.username}` : 'Account Devices'"
       description="Review and control the privacy-safe devices recognized for this account."
       icon="i-lucide-monitor-smartphone"
     >

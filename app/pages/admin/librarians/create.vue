@@ -99,7 +99,7 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      eyebrow="Librarian Accounts"
+      eyebrow="Librarians"
       title="Add a Librarian"
       description="Create one linked Library staff profile and application account. The account is assigned only to the Librarian role and every creation is recorded in the security audit log."
       icon="i-lucide-user-plus"

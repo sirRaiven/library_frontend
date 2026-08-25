@@ -2,7 +2,7 @@
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "System Overview",
+  title: "Dashboard",
 });
 
 await navigateTo("/admin/dashboard", { replace: true });

@@ -4,7 +4,7 @@ import type { AdminRoleSummary } from "~/composables/useAdminUsers";
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "Roles and Permissions",
+  title: "Roles & Permissions",
 });
 
 const api = useAdminRoles();
@@ -52,8 +52,8 @@ onMounted(load);
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       eyebrow="Accounts and Access"
-      title="Roles and Permissions"
-      description="Review the roles available to application users and inspect the exact Strapi actions granted to each role. Role assignment is performed from User Accounts."
+      title="Roles & Permissions"
+      description="Review application roles, their permissions, and the users assigned to each role. Role assignment is performed from Users."
       icon="i-lucide-shield-check"
     />
 

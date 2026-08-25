@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import { appLogger } from "~/utils/app-logger";
 import type {
@@ -41,136 +42,34 @@ function active(path: string, exact = false) {
 
 const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
+    { label: "Overview", type: "label" },
     {
-      label: "Administration",
-      type: "label",
-    },
-    {
-      label: "System Overview",
+      label: "Dashboard",
       icon: "i-lucide-layout-dashboard",
       to: "/admin/dashboard",
       active: active("/admin/dashboard", true),
     },
   ],
   [
-    {
-      label: "Accounts and Access",
-      type: "label",
-    },
-    {
-      label: "User Accounts",
-      icon: "i-lucide-users",
-      to: "/admin/users",
-      active: active("/admin/users"),
-    },
-    {
-      label: "Librarian Accounts",
-      icon: "i-lucide-user-round-cog",
-      to: "/admin/librarians",
-      active: active("/admin/librarians"),
-    },
-    {
-      label: "Accounts Needing Review",
-      icon: "i-lucide-list-checks",
-      to: "/admin/accounts-review",
-      active: active("/admin/accounts-review"),
-    },
-    {
-      label: "Roles and Permissions",
-      icon: "i-lucide-shield-check",
-      to: "/admin/roles",
-      active: active("/admin/roles"),
-    },
+    { label: "Accounts & Access", type: "label" },
+    { label: "Users", icon: "i-lucide-users", to: "/admin/users", active: active("/admin/users") },
+    { label: "Librarians", icon: "i-lucide-user-round-cog", to: "/admin/librarians", active: active("/admin/librarians") },
+    { label: "Account Review", icon: "i-lucide-list-checks", to: "/admin/accounts-review", active: active("/admin/accounts-review") },
+    { label: "Roles & Permissions", icon: "i-lucide-shield-check", to: "/admin/roles", active: active("/admin/roles") },
   ],
   [
-    {
-      label: "Library Configuration",
-      type: "label",
-    },
-    {
-      label: "Library Rules and Settings",
-      icon: "i-lucide-settings-2",
-      to: "/admin/settings",
-      active: active("/admin/settings"),
-    },
-    {
-      label: "System Health & Maintenance",
-      icon: "i-lucide-server-cog",
-      to: "/admin/system-health",
-      active: active("/admin/system-health"),
-    },
+    { label: "Library Management", type: "label" },
+    { label: "Library Operations", icon: "i-lucide-chart-no-axes-combined", to: "/admin/operations", active: active("/admin/operations") },
+    { label: "Reports", icon: "i-lucide-file-chart-column-increasing", to: "/admin/reports", active: active("/admin/reports") || active("/admin/monitoring-reports") },
+    { label: "Library Settings", icon: "i-lucide-settings-2", to: "/admin/settings", active: active("/admin/settings") },
   ],
   [
-    {
-      label: "Governance and Privacy",
-      type: "label",
-    },
-    {
-      label: "Privacy & Retention",
-      icon: "i-lucide-shield-check",
-      to: "/admin/privacy-retention",
-      active: active("/admin/privacy-retention"),
-    },
-  ],
-  [
-    {
-      label: "Library Operations",
-      type: "label",
-    },
-    {
-      label: "Operations Overview",
-      icon: "i-lucide-chart-no-axes-combined",
-      to: "/admin/operations",
-      active: active("/admin/operations"),
-    },
-  ],
-  [
-    {
-      label: "Reports",
-      type: "label",
-    },
-    {
-      label: "Reports Center",
-      icon: "i-lucide-file-chart-column-increasing",
-      to: "/admin/reports",
-      active: active("/admin/reports"),
-    },
-  ],
-  [
-    {
-      label: "Security and Monitoring",
-      type: "label",
-    },
-    {
-      label: "User Activity",
-      icon: "i-lucide-activity",
-      to: "/admin/activity",
-      active: active("/admin/activity"),
-    },
-    {
-      label: "Active Sessions",
-      icon: "i-lucide-monitor-dot",
-      to: "/admin/sessions",
-      active: active("/admin/sessions"),
-    },
-    {
-      label: "Devices",
-      icon: "i-lucide-monitor-smartphone",
-      to: "/admin/devices",
-      active: active("/admin/devices"),
-    },
-    {
-      label: "Monitoring Reports",
-      icon: "i-lucide-file-chart-column",
-      to: "/admin/monitoring-reports",
-      active: active("/admin/monitoring-reports"),
-    },
-    {
-      label: "Audit Trail",
-      icon: "i-lucide-scroll-text",
-      to: "/admin/audit-logs",
-      active: active("/admin/audit-logs"),
-    },
+    { label: "System & Monitoring", type: "label" },
+    { label: "Activity Log", icon: "i-lucide-activity", to: "/admin/activity", active: active("/admin/activity") },
+    { label: "Sessions", icon: "i-lucide-monitor-dot", to: "/admin/sessions", active: active("/admin/sessions") },
+    { label: "Devices", icon: "i-lucide-monitor-smartphone", to: "/admin/devices", active: active("/admin/devices") },
+    { label: "Audit Trail", icon: "i-lucide-scroll-text", to: "/admin/audit-logs", active: active("/admin/audit-logs") },
+    { label: "System & Maintenance", icon: "i-lucide-server-cog", to: "/admin/system-health", active: active("/admin/system-health") },
   ],
 ]);
 
@@ -178,37 +77,34 @@ function pageInformation() {
   const path = route.path;
 
   if (/^\/admin\/users\/[^/]+\/activity/.test(path)) {
-    return { title: "User Activity", icon: "i-lucide-activity" };
+    return { title: "Account Activity", icon: "i-lucide-activity" };
   }
   if (/^\/admin\/users\/[^/]+\/sessions/.test(path)) {
-    return { title: "User Sessions", icon: "i-lucide-monitor-dot" };
+    return { title: "Account Sessions", icon: "i-lucide-monitor-dot" };
   }
   if (/^\/admin\/users\/[^/]+\/devices/.test(path)) {
-    return { title: "User Devices", icon: "i-lucide-monitor-smartphone" };
+    return { title: "Account Devices", icon: "i-lucide-monitor-smartphone" };
   }
   if (/^\/admin\/users\/[^/]+$/.test(path)) {
-    return { title: "Account Details", icon: "i-lucide-user-round-cog" };
+    return { title: "User Details", icon: "i-lucide-user-round-cog" };
   }
   if (path.startsWith("/admin/users")) {
-    return { title: "User Accounts", icon: "i-lucide-users" };
+    return { title: "Users", icon: "i-lucide-users" };
   }
   if (path.startsWith("/admin/librarians")) {
-    return { title: "Librarian Accounts", icon: "i-lucide-user-round-cog" };
+    return { title: "Librarians", icon: "i-lucide-user-round-cog" };
   }
   if (path.startsWith("/admin/accounts-review")) {
-    return { title: "Accounts Needing Review", icon: "i-lucide-list-checks" };
+    return { title: "Account Review", icon: "i-lucide-list-checks" };
   }
   if (path.startsWith("/admin/roles")) {
-    return { title: "Roles and Permissions", icon: "i-lucide-shield-check" };
+    return { title: "Roles & Permissions", icon: "i-lucide-shield-check" };
   }
   if (path.startsWith("/admin/settings")) {
-    return { title: "Library Rules and Settings", icon: "i-lucide-settings-2" };
+    return { title: "Library Settings", icon: "i-lucide-settings-2" };
   }
   if (path.startsWith("/admin/system-health")) {
-    return { title: "System Health & Maintenance", icon: "i-lucide-server-cog" };
-  }
-  if (path.startsWith("/admin/privacy-retention")) {
-    return { title: "Privacy & Retention", icon: "i-lucide-shield-check" };
+    return { title: "System & Maintenance", icon: "i-lucide-server-cog" };
   }
   if (path.startsWith("/admin/operations")) {
     return { title: "Library Operations", icon: "i-lucide-chart-no-axes-combined" };
@@ -217,22 +113,22 @@ function pageInformation() {
     return { title: "Reports", icon: "i-lucide-file-chart-column-increasing" };
   }
   if (path.startsWith("/admin/activity")) {
-    return { title: "User Activity", icon: "i-lucide-activity" };
+    return { title: "Activity Log", icon: "i-lucide-activity" };
   }
   if (path.startsWith("/admin/sessions")) {
-    return { title: "Active Sessions", icon: "i-lucide-monitor-dot" };
+    return { title: "Sessions", icon: "i-lucide-monitor-dot" };
   }
   if (path.startsWith("/admin/devices")) {
     return { title: "Devices", icon: "i-lucide-monitor-smartphone" };
   }
   if (path.startsWith("/admin/monitoring-reports")) {
-    return { title: "Monitoring Reports", icon: "i-lucide-file-chart-column" };
+    return { title: "Reports", icon: "i-lucide-file-chart-column-increasing" };
   }
   if (path.startsWith("/admin/audit-logs")) {
     return { title: "Audit Trail", icon: "i-lucide-scroll-text" };
   }
 
-  return { title: "System Overview", icon: "i-lucide-layout-dashboard" };
+  return { title: "Dashboard", icon: "i-lucide-layout-dashboard" };
 }
 
 const pageTitle = computed(() =>
@@ -315,10 +211,12 @@ watch(
 </script>
 
 <template>
+  <AppSkipLink />
   <UDashboardGroup
     storage="local"
     storage-key="sncbt-admin-dashboard"
     unit="rem"
+    class="min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="admin-main-navigation"
@@ -503,7 +401,7 @@ watch(
       </template>
 
       <template #body>
-        <main class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+        <main id="main-content" class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="mx-auto w-full max-w-[1600px]">
             <SystemMaintenanceBanner admin />
             <slot />

@@ -29,6 +29,20 @@ const adminReports = useAdminReports();
 const reportExport = useLibraryReportExport();
 const toast = useToast();
 const auth = useAuth();
+const route = useRoute();
+
+const reportView = computed<"library" | "monitoring">(() =>
+  route.query.view === "monitoring" ? "monitoring" : "library",
+);
+
+async function setReportView(view: "library" | "monitoring") {
+  await navigateTo(
+    view === "monitoring"
+      ? { path: "/admin/reports", query: { view: "monitoring" } }
+      : { path: "/admin/reports" },
+    { replace: true },
+  );
+}
 
 const now = new Date();
 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -229,185 +243,169 @@ watch(
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       title="Reports"
-      description="Generate official Library reports and open specialized monitoring and audit records from one administrative workspace."
+      description="Generate Library, audit, and monitoring reports from one place."
       icon="i-lucide-file-chart-column-increasing"
     />
 
-    <div class="grid gap-4 md:grid-cols-3">
-      <UCard>
-        <div class="flex h-full flex-col gap-3">
-          <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <UIcon name="i-lucide-chart-no-axes-combined" class="size-5" />
-          </div>
-          <div>
-            <h2 class="font-semibold text-highlighted">Library Operations</h2>
-            <p class="mt-1 text-sm text-muted">Review the current collection, circulation, membership, fines, attendance, and Faculty accountability overview.</p>
-          </div>
-          <UButton class="mt-auto self-start" label="Open Operations" icon="i-lucide-arrow-right" variant="soft" to="/admin/operations" />
-        </div>
-      </UCard>
-
-      <UCard>
-        <div class="flex h-full flex-col gap-3">
-          <div class="flex size-10 items-center justify-center rounded-xl bg-info/10 text-info">
-            <UIcon name="i-lucide-monitor-dot" class="size-5" />
-          </div>
-          <div>
-            <h2 class="font-semibold text-highlighted">Monitoring Reports</h2>
-            <p class="mt-1 text-sm text-muted">Open login, failed-access, session, device, revocation, and new-device reports.</p>
-          </div>
-          <UButton class="mt-auto self-start" label="Open Monitoring Reports" icon="i-lucide-arrow-right" variant="soft" color="info" to="/admin/monitoring-reports" />
-        </div>
-      </UCard>
-
-      <UCard>
-        <div class="flex h-full flex-col gap-3">
-          <div class="flex size-10 items-center justify-center rounded-xl bg-success/10 text-success">
-            <UIcon name="i-lucide-shield-check" class="size-5" />
-          </div>
-          <div>
-            <h2 class="font-semibold text-highlighted">Audit Trail</h2>
-            <p class="mt-1 text-sm text-muted">Review protected accountability records and verify the audit integrity chain.</p>
-          </div>
-          <UButton class="mt-auto self-start" label="Open Audit Trail" icon="i-lucide-arrow-right" variant="soft" color="success" to="/admin/audit-logs" />
-        </div>
-      </UCard>
+    <div class="inline-flex rounded-xl border border-default bg-elevated/30 p-1" role="tablist" aria-label="Report categories">
+      <UButton
+        label="Library Reports"
+        icon="i-lucide-library-big"
+        :color="reportView === 'library' ? 'primary' : 'neutral'"
+        :variant="reportView === 'library' ? 'soft' : 'ghost'"
+        role="tab"
+        :aria-selected="reportView === 'library'"
+        @click="setReportView('library')"
+      />
+      <UButton
+        label="Monitoring Reports"
+        icon="i-lucide-monitor-dot"
+        :color="reportView === 'monitoring' ? 'primary' : 'neutral'"
+        :variant="reportView === 'monitoring' ? 'soft' : 'ghost'"
+        role="tab"
+        :aria-selected="reportView === 'monitoring'"
+        @click="setReportView('monitoring')"
+      />
     </div>
 
-    <UCard>
-      <template #header>
-        <div>
-          <h2 class="font-semibold text-highlighted">Generate Formal Report</h2>
-          <p class="mt-1 text-sm text-muted">Select a report and reporting period. Generated reports can be printed or exported without changing Library records.</p>
-        </div>
-      </template>
-
-      <div class="grid gap-4 lg:grid-cols-4">
-        <UFormField label="Report">
-          <USelect v-model="selectedType" :items="formalReportOptions" value-key="value" class="w-full" />
-        </UFormField>
-        <UFormField label="From">
-          <UInput v-model="filters.from" type="date" class="w-full" />
-        </UFormField>
-        <UFormField label="To">
-          <UInput v-model="filters.to" type="date" class="w-full" />
-        </UFormField>
-        <div class="flex items-end">
-          <UButton
-            class="w-full justify-center"
-            label="Generate Report"
-            icon="i-lucide-file-chart-column-increasing"
-            :loading="loading"
-            @click="generateReport"
-          />
-        </div>
-      </div>
-
-      <div v-if="!isAudit" class="mt-4 grid gap-4 sm:grid-cols-2">
-        <UFormField label="Academic Year">
-          <USelect v-model="filters.academicYear" :items="academicYearItems" class="w-full" />
-        </UFormField>
-        <UFormField label="Semester">
-          <USelect v-model="filters.semester" :items="semesterItems" class="w-full" />
-        </UFormField>
-      </div>
-
-      <div v-else class="mt-4 grid gap-4 sm:grid-cols-3">
-        <UFormField label="Classification">
-          <USelect v-model="auditCategory" :items="auditCategories" class="w-full" />
-        </UFormField>
-        <UFormField label="Severity">
-          <USelect v-model="auditSeverity" :items="auditSeverities" class="w-full" />
-        </UFormField>
-        <UFormField label="Result">
-          <USelect v-model="auditOutcome" :items="auditOutcomes" class="w-full" />
-        </UFormField>
-      </div>
-
-      <div class="mt-4 rounded-xl border border-default bg-elevated/30 p-4">
-        <div class="flex items-start gap-3">
-          <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <UIcon :name="selectedDefinition.icon" class="size-4" />
-          </div>
-          <div>
-            <p class="font-medium text-highlighted">{{ selectedDefinition.label }}</p>
-            <p class="mt-1 text-sm text-muted">{{ selectedDefinition.description }}</p>
-          </div>
-        </div>
-      </div>
-    </UCard>
-
-    <UCard v-if="activeReport">
-      <template #header>
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Official Library Report</p>
-            <h2 class="mt-1 text-xl font-semibold text-highlighted">{{ activeReport.title }}</h2>
-            <p class="mt-1 text-sm text-muted">{{ activeReport.periodLabel }}</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <UButton label="Print" icon="i-lucide-printer" color="neutral" variant="outline" :loading="exporting === 'print'" @click="printCurrent" />
-            <UButton label="PDF" icon="i-lucide-file-text" color="neutral" variant="outline" :loading="exporting === 'pdf'" @click="exportCurrent('pdf')" />
-            <UButton label="DOCX" icon="i-lucide-file-type-2" color="neutral" variant="outline" :loading="exporting === 'docx'" @click="exportCurrent('docx')" />
-            <UButton label="Excel" icon="i-lucide-sheet" color="neutral" variant="outline" :loading="exporting === 'xlsx'" @click="exportCurrent('xlsx')" />
-          </div>
-        </div>
-      </template>
-
-      <div v-if="activeReport.metrics.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <div v-for="metric in activeReport.metrics" :key="metric.label" class="rounded-xl border border-default bg-elevated/30 p-4">
-          <p class="text-xs text-muted">{{ metric.label }}</p>
-          <p class="mt-1 text-xl font-bold text-highlighted">{{ formatMetric(metric.value, metric.format) }}</p>
-        </div>
-      </div>
-
-      <div class="mt-6 space-y-6">
-        <section v-for="table in activeReport.tables" :key="table.id" class="overflow-hidden rounded-xl border border-default">
-          <div class="border-b border-default bg-elevated/30 px-4 py-3">
-            <div class="flex items-center justify-between gap-3">
+    <div v-if="reportView === 'library'" class="space-y-6">
+      <UCard>
+            <template #header>
               <div>
-                <h3 class="font-medium text-highlighted">{{ table.title }}</h3>
-                <p v-if="table.description" class="mt-1 text-xs text-muted">{{ table.description }}</p>
+                <h2 class="font-semibold text-highlighted">Generate Formal Report</h2>
+                <p class="mt-1 text-sm text-muted">Select a report and reporting period. Generated reports can be printed or exported without changing Library records.</p>
               </div>
-              <span class="text-xs text-muted">{{ table.rows.length.toLocaleString() }} records</span>
-            </div>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-default text-sm">
-              <thead class="bg-elevated/20">
-                <tr>
-                  <th v-for="column in table.columns" :key="column.key" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-muted">
-                    {{ column.label }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-default">
-                <tr v-for="(row, rowIndex) in table.rows.slice(0, 25)" :key="rowIndex">
-                  <td v-for="column in table.columns" :key="column.key" class="max-w-80 px-4 py-3 align-top text-default">
-                    {{ previewValue(row[column.key], column.format) }}
-                  </td>
-                </tr>
-                <tr v-if="!table.rows.length">
-                  <td :colspan="table.columns.length" class="px-4 py-8 text-center text-muted">No records matched the selected reporting period.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-if="table.rows.length > 25" class="border-t border-default px-4 py-3 text-xs text-muted">
-            Preview shows the first 25 records. Print or export the report to include the complete generated table.
-          </div>
-        </section>
-      </div>
+            </template>
 
-      <UAlert
-        v-if="activeReport.notes?.length"
-        class="mt-6"
-        color="neutral"
-        variant="soft"
-        icon="i-lucide-info"
-        title="Report Notes"
-        :description="activeReport.notes.join(' ')"
-      />
-    </UCard>
+            <div class="grid gap-4 lg:grid-cols-4">
+              <UFormField label="Report">
+                <USelect v-model="selectedType" :items="formalReportOptions" value-key="value" class="w-full" />
+              </UFormField>
+              <UFormField label="From">
+                <UInput v-model="filters.from" type="date" class="w-full" />
+              </UFormField>
+              <UFormField label="To">
+                <UInput v-model="filters.to" type="date" class="w-full" />
+              </UFormField>
+              <div class="flex items-end">
+                <UButton
+                  class="w-full justify-center"
+                  label="Generate Report"
+                  icon="i-lucide-file-chart-column-increasing"
+                  :loading="loading"
+                  @click="generateReport"
+                />
+              </div>
+            </div>
+
+            <div v-if="!isAudit" class="mt-4 grid gap-4 sm:grid-cols-2">
+              <UFormField label="Academic Year">
+                <USelect v-model="filters.academicYear" :items="academicYearItems" class="w-full" />
+              </UFormField>
+              <UFormField label="Semester">
+                <USelect v-model="filters.semester" :items="semesterItems" class="w-full" />
+              </UFormField>
+            </div>
+
+            <div v-else class="mt-4 grid gap-4 sm:grid-cols-3">
+              <UFormField label="Classification">
+                <USelect v-model="auditCategory" :items="auditCategories" class="w-full" />
+              </UFormField>
+              <UFormField label="Severity">
+                <USelect v-model="auditSeverity" :items="auditSeverities" class="w-full" />
+              </UFormField>
+              <UFormField label="Result">
+                <USelect v-model="auditOutcome" :items="auditOutcomes" class="w-full" />
+              </UFormField>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-default bg-elevated/30 p-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <UIcon :name="selectedDefinition.icon" class="size-4" />
+                </div>
+                <div>
+                  <p class="font-medium text-highlighted">{{ selectedDefinition.label }}</p>
+                  <p class="mt-1 text-sm text-muted">{{ selectedDefinition.description }}</p>
+                </div>
+              </div>
+            </div>
+          </UCard>
+
+          <UCard v-if="activeReport">
+            <template #header>
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Official Library Report</p>
+                  <h2 class="mt-1 text-xl font-semibold text-highlighted">{{ activeReport.title }}</h2>
+                  <p class="mt-1 text-sm text-muted">{{ activeReport.periodLabel }}</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <UButton label="Print" icon="i-lucide-printer" color="neutral" variant="outline" :loading="exporting === 'print'" @click="printCurrent" />
+                  <UButton label="PDF" icon="i-lucide-file-text" color="neutral" variant="outline" :loading="exporting === 'pdf'" @click="exportCurrent('pdf')" />
+                  <UButton label="DOCX" icon="i-lucide-file-type-2" color="neutral" variant="outline" :loading="exporting === 'docx'" @click="exportCurrent('docx')" />
+                  <UButton label="Excel" icon="i-lucide-sheet" color="neutral" variant="outline" :loading="exporting === 'xlsx'" @click="exportCurrent('xlsx')" />
+                </div>
+              </div>
+            </template>
+
+            <div v-if="activeReport.metrics.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div v-for="metric in activeReport.metrics" :key="metric.label" class="rounded-xl border border-default bg-elevated/30 p-4">
+                <p class="text-xs text-muted">{{ metric.label }}</p>
+                <p class="mt-1 text-xl font-bold text-highlighted">{{ formatMetric(metric.value, metric.format) }}</p>
+              </div>
+            </div>
+
+            <div class="mt-6 space-y-6">
+              <section v-for="table in activeReport.tables" :key="table.id" class="overflow-hidden rounded-xl border border-default">
+                <div class="border-b border-default bg-elevated/30 px-4 py-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 class="font-medium text-highlighted">{{ table.title }}</h3>
+                      <p v-if="table.description" class="mt-1 text-xs text-muted">{{ table.description }}</p>
+                    </div>
+                    <span class="text-xs text-muted">{{ table.rows.length.toLocaleString() }} records</span>
+                  </div>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-default text-sm">
+                    <thead class="bg-elevated/20">
+                      <tr>
+                        <th v-for="column in table.columns" :key="column.key" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-muted">
+                          {{ column.label }}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-default">
+                      <tr v-for="(row, rowIndex) in table.rows.slice(0, 25)" :key="rowIndex">
+                        <td v-for="column in table.columns" :key="column.key" class="max-w-80 px-4 py-3 align-top text-default">
+                          {{ previewValue(row[column.key], column.format) }}
+                        </td>
+                      </tr>
+                      <tr v-if="!table.rows.length">
+                        <td :colspan="table.columns.length" class="px-4 py-8 text-center text-muted">No records matched the selected reporting period.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="table.rows.length > 25" class="border-t border-default px-4 py-3 text-xs text-muted">
+                  Preview shows the first 25 records. Print or export the report to include the complete generated table.
+                </div>
+              </section>
+            </div>
+
+            <UAlert
+              v-if="activeReport.notes?.length"
+              class="mt-6"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-info"
+              title="Report Notes"
+              :description="activeReport.notes.join(' ')"
+            />
+          </UCard>
+    </div>
+
+    <AdminMonitoringReportsPanel v-else />
   </div>
 </template>

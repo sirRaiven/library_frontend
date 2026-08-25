@@ -10,7 +10,7 @@ import type { AdminAccountsReviewSummary } from "~/composables/useAdminAccountGo
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "Accounts Needing Review",
+  title: "Account Review",
 });
 
 const governanceApi = useAdminAccountGovernance();
@@ -210,13 +210,13 @@ onMounted(loadReview);
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       eyebrow="Accounts and Access"
-      title="Accounts Needing Review"
+      title="Account Review"
       description="Find login accounts that need identity-record review and institutional records that do not yet have portal access. Faculty accounts do not require a pre-existing profile; their basic Library record can be prepared automatically."
       icon="i-lucide-list-checks"
     >
       <template #actions>
         <UButton
-          label="User Accounts"
+          label="Users"
           icon="i-lucide-users"
           color="neutral"
           variant="outline"

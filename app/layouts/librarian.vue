@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 
 import { appLogger } from "~/utils/app-logger";
@@ -675,6 +676,7 @@ watch(
 </script>
 
 <template>
+  <AppSkipLink />
   <UDashboardGroup
     storage="local"
     storage-key="sncbt-librarian-dashboard"
@@ -1115,6 +1117,7 @@ watch(
 
       <template #body>
         <main
+          id="main-content"
           class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors duration-200"
         >
           <div

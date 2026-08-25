@@ -3,7 +3,7 @@ import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "System Health & Maintenance",
+  title: "System & Maintenance",
 });
 
 const system = useAdminSystem();
@@ -118,7 +118,7 @@ onMounted(refresh);
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      title="System Health & Maintenance"
+      title="System & Maintenance"
       description="Review application health, control read-only maintenance mode, and confirm the latest server-side backup verification."
       icon="i-lucide-server-cog"
     >

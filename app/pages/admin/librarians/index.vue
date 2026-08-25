@@ -5,7 +5,7 @@ import type { AdminLibrarianRecord } from "~/composables/useAdminLibrarians";
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "Librarian Accounts",
+  title: "Librarians",
 });
 
 const api = useAdminLibrarians();
@@ -46,7 +46,7 @@ async function load() {
     total.value = response.meta.total;
   } catch (error) {
     toast.add({
-      title: "Unable to load Librarian accounts",
+      title: "Unable to load librarians",
       description: auth.getErrorMessage(error),
       color: "error",
       icon: "i-lucide-circle-alert",
@@ -120,7 +120,7 @@ onMounted(load);
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       eyebrow="Accounts and Access"
-      title="Librarian Account Management"
+      title="Librarians"
       description="Manage Library staff profiles together with their secured sign-in accounts. Deactivating a Librarian also blocks the linked application account."
       icon="i-lucide-user-round-cog"
     >

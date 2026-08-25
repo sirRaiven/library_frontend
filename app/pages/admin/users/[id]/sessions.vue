@@ -9,7 +9,7 @@ import type { AdminUserRecord } from "~/composables/useAdminUsers";
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "User Sessions",
+  title: "Account Sessions",
 });
 
 const route = useRoute();
@@ -169,9 +169,9 @@ onMounted(refresh);
 <template>
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
-      eyebrow="User Investigation"
-      :title="account ? `Sessions for ${account.username}` : 'User Sessions'"
-      description="Review authentication and privacy-safe portal-monitoring sessions for this account."
+      eyebrow="User Monitoring"
+      :title="account ? `Sessions for ${account.username}` : 'Account Sessions'"
+      description="Review authentication and privacy-safe portal sessions for this account."
       icon="i-lucide-monitor-dot"
     >
       <template #actions>

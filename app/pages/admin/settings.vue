@@ -7,7 +7,7 @@ import type {
 definePageMeta({
   layout: "admin",
   middleware: ["admin"],
-  title: "Library Rules and Settings",
+  title: "Library Settings",
 });
 
 const api = useAdminSettings();
@@ -273,7 +273,7 @@ onMounted(() => {
   <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <AdminPageHeader
       eyebrow="Library Configuration"
-      title="Library Rules and Settings"
+      title="Library Settings"
       description="Control the official Library policies used for borrowing, memberships, reservations, and fines. Changes apply to future transactions and are recorded in the security Audit Log."
       icon="i-lucide-settings-2"
     >

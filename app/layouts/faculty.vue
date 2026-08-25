@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { appLogger } from "~/utils/app-logger";
@@ -175,6 +176,7 @@ watch(
 </script>
 
 <template>
+  <AppSkipLink />
   <UDashboardGroup
     storage="local"
     storage-key="sncbt-faculty-dashboard"
@@ -335,9 +337,11 @@ watch(
       </template>
 
       <template #body>
-        <main class="sncbt-dashboard-canvas min-h-[calc(100vh-4rem)]">
-          <SystemMaintenanceBanner />
+        <main id="main-content" class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+          <div class="mx-auto w-full max-w-[1600px]">
+            <SystemMaintenanceBanner />
             <slot />
+          </div>
         </main>
       </template>
     </UDashboardPanel>
