@@ -346,7 +346,7 @@ async function printImportedBarcodes(): Promise<void> {
             to="/librarian/books/register"
             label="Manual Registration"
             icon="i-lucide-book-plus"
-            color="success"
+            color="primary"
           />
         </div>
       </div>
@@ -392,7 +392,7 @@ async function printImportedBarcodes(): Promise<void> {
               <UButton
                 :label="selectedFile ? 'Choose Another File' : 'Choose Excel File'"
                 icon="i-lucide-upload"
-                color="success"
+                color="primary"
                 size="lg"
                 :loading="isParsing"
                 @click="openFilePicker"
@@ -457,7 +457,7 @@ async function printImportedBarcodes(): Promise<void> {
             <UButton
               label="Import & Generate Barcodes"
               icon="i-lucide-database-zap"
-              color="success"
+              color="primary"
               size="xl"
               block
               :loading="isImporting"
@@ -637,7 +637,7 @@ async function printImportedBarcodes(): Promise<void> {
               <UButton
                 label="Print Accession Barcodes"
                 icon="i-lucide-printer"
-                color="success"
+                color="primary"
                 @click="printImportedBarcodes"
               />
               <UButton

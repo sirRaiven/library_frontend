@@ -595,7 +595,7 @@ const saveButtonLabel = computed(() => {
 
 const saveStatusText = computed(() => {
   if (saveState.value === "saving") {
-    return "Saving the active design to Strapi…";
+    return "Saving the active card design…";
   }
 
   if (saveState.value === "error") {

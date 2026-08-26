@@ -1,3 +1,4 @@
+import { registrationErrorMessage } from "~/utils/user-facing-error";
 import type {
   LibraryCardStatus,
   StudentEducationalLevel,
@@ -192,20 +193,7 @@ interface ResetCredentialResult {
 }
 
 function errorMessage(error: unknown): string {
-  const candidate = error as {
-    data?: { error?: { message?: string } };
-    response?: { _data?: { error?: { message?: string } } };
-    statusMessage?: string;
-    message?: string;
-  };
-
-  return (
-    candidate.data?.error?.message ??
-    candidate.response?._data?.error?.message ??
-    candidate.statusMessage ??
-    candidate.message ??
-    "The request could not be completed."
-  );
+  return registrationErrorMessage(error);
 }
 
 export function useStudentSelfRegistration() {

@@ -395,7 +395,7 @@ onMounted(async () => {
                 type="submit"
                 label="Find Student"
                 icon="i-lucide-search"
-                color="success"
+                color="primary"
                 size="xl"
                 :loading="lookupLoading"
                 :disabled="!barcode.trim() || lookupLoading"
@@ -554,7 +554,7 @@ onMounted(async () => {
               <div class="grid gap-3 sm:grid-cols-3">
                 <UButton label="Scan Another" icon="i-lucide-scan-line" color="neutral" variant="outline" block @click="clearScanner" />
                 <UButton label="Lost Card / Replace" icon="i-lucide-credit-card" color="warning" variant="outline" block @click="openReplacementCharge" />
-                <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="success" block :disabled="!termIsOpen || !canRenew || (librarySettings.settings.value.membership.requireEnrollmentVerification && !renewal.enrollmentVerified)" :loading="renewing" @click="renewMembership" />
+                <UButton label="Renew Membership" icon="i-lucide-rotate-cw" color="primary" block :disabled="!termIsOpen || !canRenew || (librarySettings.settings.value.membership.requireEnrollmentVerification && !renewal.enrollmentVerified)" :loading="renewing" @click="renewMembership" />
               </div>
             </div>
           </div>

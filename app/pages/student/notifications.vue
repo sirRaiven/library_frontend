@@ -323,7 +323,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="space-y-6 p-4 sm:p-6 lg:p-8"
+    class="sncbt-page-shell space-y-6"
   >
     <StudentPageHeader
       eyebrow="Messages and Reminders"
@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
       variant="soft"
       icon="i-lucide-radio"
       title="Live Library updates"
-      :description="`This page checks for new notices every 30 seconds while open. Last updated: ${lastUpdatedLabel}.`"
+      :description="`This page checks for new notices every 2 minutes while open. Last updated: ${lastUpdatedLabel}.`"
     />
 
     <UAlert

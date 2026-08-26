@@ -381,7 +381,7 @@ onMounted(() => {
             to="/librarian/books/register"
             label="Register Another"
             icon="i-lucide-plus"
-            color="success"
+            color="primary"
           />
         </div>
       </div>
@@ -627,7 +627,7 @@ onMounted(() => {
                   <UButton
                     label="Print Selected"
                     icon="i-lucide-printer"
-                    color="success"
+                    color="primary"
                     size="sm"
                     :disabled="selectedCopies.length === 0"
                     @click="queueLabels(selectedCopies)"

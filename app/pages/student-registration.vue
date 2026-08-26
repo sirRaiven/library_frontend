@@ -341,15 +341,15 @@ onMounted(loadAccess);
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
-    <header class="border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+  <div class="min-h-screen bg-[var(--sncbt-canvas)] text-default">
+    <header class="sncbt-navbar-surface border-b border-default/70">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <div class="flex min-w-0 items-center gap-3">
-          <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-sm dark:border-emerald-900/50 dark:bg-slate-900">
+          <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-default p-1.5 shadow-sm">
             <img src="/sncbt-library-logo.png" alt="SNCBT Library" class="size-full object-contain">
           </div>
           <div class="min-w-0">
-            <p class="truncate text-sm font-bold text-emerald-600">SNCBT LIBRARY</p>
+            <p class="truncate text-sm font-bold text-primary">SNCBT LIBRARY</p>
             <h1 class="truncate text-base font-bold sm:text-lg">Student Membership Registration</h1>
           </div>
         </div>
@@ -367,9 +367,9 @@ onMounted(loadAccess);
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
+    <main class="sncbt-page-shell py-8 lg:py-10">
       <div v-if="accessLoading" class="flex min-h-80 items-center justify-center">
-        <UIcon name="i-lucide-loader-circle" class="size-10 animate-spin text-emerald-500" />
+        <UIcon name="i-lucide-loader-circle" class="size-10 animate-spin text-primary" />
       </div>
 
       <UAlert
@@ -382,16 +382,16 @@ onMounted(loadAccess);
       />
 
       <template v-else-if="access">
-        <section class="mb-7 overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-white to-sky-500/10 p-6 shadow-sm dark:via-slate-900 sm:p-8">
+        <section class="sncbt-page-hero mb-7 p-6 sm:p-8">
           <div class="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p class="text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">Student Registration</p>
-              <h2 class="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Register your Library membership and Portal account</h2>
-              <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Student Registration</p>
+              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]">Register your Library membership and Portal account</h2>
+              <p class="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 Complete the same essential information collected at the Library counter. Your Student number will be your Portal username. The Librarian must approve the request before you can sign in.
               </p>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+            <div class="rounded-xl border border-default bg-elevated/50 p-4 text-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="font-semibold">{{ access.membership.academicYear }}</p>
@@ -422,7 +422,7 @@ onMounted(loadAccess);
         />
 
         <div class="mb-6 flex flex-wrap gap-2">
-          <UButton label="New Membership Registration" icon="i-lucide-user-plus" :variant="activeView === 'registration' ? 'solid' : 'outline'" color="success" @click="activeView = 'registration'" />
+          <UButton label="New Membership Registration" icon="i-lucide-user-plus" :variant="activeView === 'registration' ? 'solid' : 'outline'" color="primary" @click="activeView = 'registration'" />
           <UButton label="Forgotten Credentials" icon="i-lucide-key-round" :variant="activeView === 'help' ? 'solid' : 'outline'" color="neutral" @click="activeView = 'help'" />
         </div>
 
@@ -433,7 +433,7 @@ onMounted(loadAccess);
           class="space-y-6"
           @submit="submitRegistration"
         >
-          <section class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-7">
+          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
             <div class="mb-5">
               <h3 class="text-xl font-bold text-highlighted">Student Library Card Photo</h3>
               <p class="mt-1 text-sm text-muted">Upload a clear, recent, front-facing photo and complete the 1:1 crop.</p>
@@ -449,7 +449,7 @@ onMounted(loadAccess);
             </UFormField>
           </section>
 
-          <section class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-7">
+          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
             <h3 class="text-xl font-bold text-highlighted">Student Information</h3>
             <p class="mt-1 text-sm text-muted">Enter information that matches your school records.</p>
             <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -487,19 +487,19 @@ onMounted(loadAccess);
               </div>
               <UFormField name="account.password" label="Password" required>
                 <UInput v-model="registration.account.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" class="w-full" :ui="{ trailing: 'pe-1' }">
-                  <template #trailing><UButton :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" size="sm" square @click="showPassword = !showPassword" /></template>
+                  <template #trailing><UButton :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" :aria-label="showPassword ? 'Hide password' : 'Show password'" color="neutral" variant="ghost" size="sm" square @click="showPassword = !showPassword" /></template>
                 </UInput>
               </UFormField>
               <UFormField name="account.confirmPassword" label="Confirm Password" required>
                 <UInput v-model="registration.account.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" class="w-full" :ui="{ trailing: 'pe-1' }">
-                  <template #trailing><UButton :icon="showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" size="sm" square @click="showConfirmPassword = !showConfirmPassword" /></template>
+                  <template #trailing><UButton :icon="showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" :aria-label="showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'" color="neutral" variant="ghost" size="sm" square @click="showConfirmPassword = !showConfirmPassword" /></template>
                 </UInput>
               </UFormField>
             </div>
             <UAlert class="mt-4" color="info" variant="soft" icon="i-lucide-shield-check" title="Password requirements" description="Use 12 or more characters with uppercase, lowercase, number, and symbol. Do not include your Student number or email name." />
           </section>
 
-          <section class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-7">
+          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
             <h3 class="text-xl font-bold text-highlighted">Initial Library Membership</h3>
             <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div class="rounded-xl border border-default p-4"><p class="text-xs uppercase text-muted">Academic Year</p><p class="mt-2 font-semibold">{{ access.membership.academicYear }}</p></div>
@@ -509,7 +509,7 @@ onMounted(loadAccess);
             </div>
           </section>
 
-          <section class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-7">
+          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
             <UFormField name="privacyNoticeAccepted"><UCheckbox v-model="registration.privacyNoticeAccepted" label="I understand that the information and photo will be used for Library membership, account verification, and Library Card processing." /></UFormField>
             <UFormField name="termsAccepted" class="mt-4"><UCheckbox v-model="registration.termsAccepted" label="I confirm that the submitted information is complete and matches my school records." /></UFormField>
           </section>
@@ -519,7 +519,7 @@ onMounted(loadAccess);
               type="submit"
               label="Submit Registration for Approval"
               icon="i-lucide-send"
-              color="success"
+              color="primary"
               size="lg"
               :loading="submitting"
               :disabled="!registrationAvailable"
@@ -527,7 +527,7 @@ onMounted(loadAccess);
           </div>
         </UForm>
 
-        <UForm v-else :state="credentialHelp" :validate="helpErrors" class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-7" @submit="submitCredentialHelp">
+        <UForm v-else :state="credentialHelp" :validate="helpErrors" class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6" @submit="submitCredentialHelp">
           <h3 class="text-xl font-bold text-highlighted">Forgotten Student Portal Credentials</h3>
           <p class="mt-1 text-sm text-muted">Submit a request, then visit the Library counter. The Librarian must validate your identity before resetting credentials.</p>
           <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -587,7 +587,7 @@ onMounted(loadAccess);
             <UButton
               label="Continue to Sign In"
               icon="i-lucide-log-in"
-              color="success"
+              color="primary"
               @click="proceedToSignIn"
             />
           </div>
@@ -631,7 +631,7 @@ onMounted(loadAccess);
             <UButton
               label="Continue to Sign In"
               icon="i-lucide-log-in"
-              color="success"
+              color="primary"
               @click="proceedAfterCredentialHelp"
             />
           </div>

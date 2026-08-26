@@ -907,7 +907,7 @@ onMounted(() => {
         <UButton
           label="New Reservation"
           icon="i-lucide-calendar-plus"
-          color="success"
+          color="primary"
           class="self-start"
           @click="() => { isCreateOpen = true }"
         />
@@ -1227,7 +1227,7 @@ onMounted(() => {
                     : 'Checkout Reserved Book'
                 "
                 icon="i-lucide-book-check"
-                color="success"
+                color="primary"
                 variant="solid"
                 size="sm"
                 :disabled="updatingReservationId !== null || isCheckingOut"
@@ -1379,7 +1379,7 @@ onMounted(() => {
           <UButton
             label="Confirm Checkout"
             icon="i-lucide-book-check"
-            color="success"
+            color="primary"
             :loading="isCheckingOut"
             :disabled="!checkoutCopyBarcode.trim() || !checkoutDueDate"
             @click="confirmReservedCheckout"
@@ -1556,7 +1556,7 @@ onMounted(() => {
                   type="submit"
                   label="Verify Member"
                   icon="i-lucide-user-check"
-                  color="success"
+                  color="primary"
                   :loading="
                     isLookingUpMember
                   "
@@ -1960,7 +1960,7 @@ onMounted(() => {
           <UButton
             :label="createButtonLabel"
             icon="i-lucide-calendar-plus"
-            color="success"
+            color="primary"
             :loading="isSaving"
             :disabled="
               !canCreateReservation

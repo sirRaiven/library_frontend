@@ -4,7 +4,7 @@ import type { FacultyBorrowing, FacultyUsageStatus } from "~/composables/useFacu
 definePageMeta({
   layout: "faculty",
   middleware: ["faculty"],
-  title: "Borrowed Department Books",
+  title: "Borrowed Books",
 });
 
 const route = useRoute();
@@ -221,19 +221,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
-    <section class="rounded-3xl border border-default bg-elevated/30 p-6 shadow-sm sm:p-8">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div class="max-w-3xl">
-          <UBadge label="Department accountability" icon="i-lucide-library-big" color="primary" variant="soft" />
-          <h1 class="mt-3 text-3xl font-bold text-highlighted">Borrowed Department Books</h1>
-          <p class="mt-2 text-sm leading-6 text-muted">
-            Confirm that each book remains in good condition. Report a lost book immediately and provide a new replacement copy for Library verification.
-          </p>
-        </div>
-        <UButton label="View Status Reports" icon="i-lucide-clipboard-check" to="/faculty/reports" color="neutral" variant="outline" />
-      </div>
-    </section>
+  <div class="sncbt-page-shell space-y-6">
+    <FacultyPageHeader
+      eyebrow="Library Services"
+      title="Borrowed Books"
+      description="Review books assigned to you, update their condition, and report lost or replacement items to the Library."
+      icon="i-lucide-library-big"
+    >
+      <template #actions>
+        <UButton label="Book Status Reports" icon="i-lucide-clipboard-check" to="/faculty/reports" color="neutral" variant="outline" />
+      </template>
+    </FacultyPageHeader>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }">

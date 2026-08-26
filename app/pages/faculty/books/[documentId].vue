@@ -33,7 +33,7 @@ watch(documentId, load, { immediate: true });
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell sncbt-page-shell-narrow space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <UButton label="Back to Collection" icon="i-lucide-arrow-left" to="/faculty/books" color="neutral" variant="ghost" />
       <UButton label="View Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" color="neutral" variant="outline" />

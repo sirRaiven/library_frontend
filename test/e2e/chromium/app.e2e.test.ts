@@ -63,18 +63,20 @@ describe("chromium full browser regression", async () => {
     }
   });
 
-  it("has no horizontal overflow at a phone-sized viewport", async () => {
-    const page = await createPage("/");
-    await page.setViewportSize({ width: 360, height: 800 });
-    await page.getByRole("heading", { name: "SNCBT Library" }).waitFor();
+  it("has no horizontal overflow across common release viewports", async () => {
+    for (const width of [360, 390, 430, 768, 1024, 1280]) {
+      const page = await createPage("/");
+      await page.setViewportSize({ width, height: width < 768 ? 800 : 900 });
+      await page.getByRole("heading", { name: "SNCBT Library" }).waitFor();
 
-    const sizes = await page.evaluate(() => ({
-      innerWidth: window.innerWidth,
-      documentWidth: document.documentElement.scrollWidth,
-    }));
+      const sizes = await page.evaluate(() => ({
+        innerWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+      }));
 
-    expect(sizes.documentWidth).toBeLessThanOrEqual(sizes.innerWidth + 1);
-    await page.close();
+      expect(sizes.documentWidth, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(sizes.innerWidth + 1);
+      await page.close();
+    }
   });
 
   it("keeps the public registration route reachable", async () => {

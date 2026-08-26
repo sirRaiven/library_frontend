@@ -49,7 +49,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="Roles & Permissions"
@@ -62,7 +62,7 @@ onMounted(load);
       variant="soft"
       icon="i-lucide-shield-alert"
       title="Permission changes require controlled review"
-      description="This first secure release provides a read-only permission review. Direct permission editing should only be added with a named permission matrix, dual confirmation, and a rollback record to avoid accidentally exposing protected APIs."
+      description="Permissions are shown for review only. Role assignments are managed from Users to reduce accidental access changes."
     />
 
     <div v-if="loading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

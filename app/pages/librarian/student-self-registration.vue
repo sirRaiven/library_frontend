@@ -90,7 +90,7 @@ onMounted(generateLink);
             to="/librarian/student-registration-approvals"
             label="Open Registration Approvals"
             icon="i-lucide-clipboard-check"
-            color="success"
+            color="primary"
           />
           <UButton
             to="/librarian/students"
@@ -154,7 +154,7 @@ onMounted(generateLink);
             <UButton
               label="Download QR"
               icon="i-lucide-download"
-              color="success"
+              color="primary"
               variant="soft"
               :disabled="!qrDataUrl"
               @click="downloadQr"

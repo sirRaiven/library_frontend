@@ -95,7 +95,7 @@ function getPageInformation(): {
 
   if (path.startsWith("/librarian/visits")) {
     return {
-      title: "Library Entry Log",
+      title: "Library Visits",
       icon: "i-lucide-scan-line",
     };
   }
@@ -148,7 +148,7 @@ function getPageInformation(): {
 
   if (path.startsWith("/librarian/membership-term")) {
     return {
-      title: "Academic Term and Membership Validity",
+      title: "Membership Term",
       icon: "i-lucide-calendar-range",
     };
   }
@@ -177,7 +177,7 @@ function getPageInformation(): {
 
   if (path.startsWith("/librarian/history")) {
     return {
-      title: "History Logs",
+      title: "History",
       icon: "i-lucide-history",
     };
   }
@@ -249,7 +249,8 @@ const contentNavigationItems = computed(() => {
     isRouteActive("/librarian/reservations");
   const usersActive =
     isRouteActive("/librarian/students") ||
-    isRouteActive("/librarian/faculty") ||
+    isRouteActive("/librarian/faculty");
+  const membershipActive =
     isRouteActive("/librarian/membership-term") ||
     isRouteActive("/librarian/memberships") ||
     isRouteActive("/librarian/library-card-designer");
@@ -292,7 +293,7 @@ const contentNavigationItems = computed(() => {
       active: servicesActive,
       children: [
         {
-          title: "Library Entry Log",
+          title: "Library Visits",
           icon: "i-lucide-scan-line",
           path: "/librarian/visits",
           active: isRouteActive("/librarian/visits"),
@@ -348,8 +349,16 @@ const contentNavigationItems = computed(() => {
           path: "/librarian/faculty-book-reports",
           active: isRouteActive("/librarian/faculty-book-reports"),
         },
+
+      ],
+    },
+    {
+      title: "Membership & Cards",
+      icon: "i-lucide-id-card",
+      active: membershipActive,
+      children: [
         {
-          title: "Academic Term & Validity",
+          title: "Membership Term",
           icon: "i-lucide-calendar-range",
           path: "/librarian/membership-term",
           active: isRouteActive("/librarian/membership-term"),
@@ -361,7 +370,7 @@ const contentNavigationItems = computed(() => {
           active: isRouteActive("/librarian/memberships"),
         },
         {
-          title: "Design Library Card",
+          title: "Card Design",
           icon: "i-lucide-palette",
           path: "/librarian/library-card-designer",
           active: isRouteActive("/librarian/library-card-designer"),
@@ -375,7 +384,7 @@ const contentNavigationItems = computed(() => {
       badge: notificationBadge,
       children: [
         {
-          title: "History Logs",
+          title: "History",
           icon: "i-lucide-history",
           path: "/librarian/history",
           active: isRouteActive("/librarian/history"),
@@ -435,7 +444,7 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
       isRouteActive("/librarian/reservations"),
     children: [
       {
-        label: "Library Entry Log",
+        label: "Library Visits",
         icon: "i-lucide-scan-line",
         to: "/librarian/visits",
       },
@@ -466,10 +475,7 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
     icon: "i-lucide-users-round",
     active:
       isRouteActive("/librarian/students") ||
-      isRouteActive("/librarian/faculty") ||
-      isRouteActive("/librarian/membership-term") ||
-      isRouteActive("/librarian/memberships") ||
-      isRouteActive("/librarian/library-card-designer"),
+      isRouteActive("/librarian/faculty"),
     children: [
       {
         label: "Students",
@@ -486,8 +492,18 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
         icon: "i-lucide-clipboard-check",
         to: "/librarian/faculty-book-reports",
       },
+    ],
+  },
+  {
+    label: "Membership & Cards",
+    icon: "i-lucide-id-card",
+    active:
+      isRouteActive("/librarian/membership-term") ||
+      isRouteActive("/librarian/memberships") ||
+      isRouteActive("/librarian/library-card-designer"),
+    children: [
       {
-        label: "Academic Term & Validity",
+        label: "Membership Term",
         icon: "i-lucide-calendar-range",
         to: "/librarian/membership-term",
       },
@@ -497,7 +513,7 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
         to: "/librarian/memberships",
       },
       {
-        label: "Design Library Card",
+        label: "Card Design",
         icon: "i-lucide-palette",
         to: "/librarian/library-card-designer",
       },
@@ -512,7 +528,7 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
       isRouteActive("/librarian/notifications"),
     children: [
       {
-        label: "History Logs",
+        label: "History",
         icon: "i-lucide-history",
         to: "/librarian/history",
       },

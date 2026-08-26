@@ -78,7 +78,7 @@ const metricCards = computed(() => [
 ]);
 
 const systemChecks = computed(() => [
-  { label: "Backend API", value: dashboard.system.value.api },
+  { label: "Application Service", value: dashboard.system.value.api },
   { label: "Database", value: dashboard.system.value.database },
   { label: "Authentication", value: dashboard.system.value.authentication },
   { label: "System Time Zone", value: dashboard.system.value.timezone },
@@ -111,11 +111,11 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="Administration"
-      title="Admin Dashboard"
-      description="View key account, Library, and system information in one place."
+      title="Dashboard"
+      description="Review key Library activity, accounts, and system status at a glance."
       icon="i-lucide-shield-check"
     >
       <template #actions>
@@ -178,7 +178,7 @@ onMounted(refresh);
             </div>
             <div>
               <h2 class="font-semibold text-highlighted">System Status</h2>
-              <p class="text-xs text-muted">Protected services used by the Library application.</p>
+              <p class="text-xs text-muted">Core services used by the Library System.</p>
             </div>
           </div>
         </div>

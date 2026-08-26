@@ -188,7 +188,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <StudentPageHeader
       eyebrow="Account and Privacy"
       title="Profile and Security"
@@ -475,7 +475,7 @@ onMounted(refresh);
             variant="soft"
             icon="i-lucide-info"
             title="Individual session management is unavailable"
-            description="The current Strapi authentication mode does not expose refresh-session management."
+            description="Individual sign-in session management is not available for this account right now."
           />
 
           <div v-else-if="center.sessions.value.length" class="mt-5 divide-y divide-default rounded-xl border border-default">

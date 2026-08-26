@@ -64,19 +64,17 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
-    <section class="rounded-3xl border border-default bg-elevated/30 p-6 shadow-sm sm:p-8">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div class="max-w-3xl">
-          <UBadge label="Read-only report history" icon="i-lucide-clipboard-check" color="primary" variant="soft" />
-          <h1 class="mt-3 text-3xl font-bold text-highlighted">Book Status Reports</h1>
-          <p class="mt-2 text-sm leading-6 text-muted">
-            Track the updates you sent to the Library and see whether the Librarian acknowledged, verified, or resolved each report.
-          </p>
-        </div>
-        <UButton label="Update a Borrowed Book" icon="i-lucide-clipboard-pen" to="/faculty/borrowings" />
-      </div>
-    </section>
+  <div class="sncbt-page-shell space-y-6">
+    <FacultyPageHeader
+      eyebrow="Library Services"
+      title="Book Status Reports"
+      description="Review the condition updates you submitted and the Library's current review status."
+      icon="i-lucide-clipboard-check"
+    >
+      <template #actions>
+        <UButton label="Update Borrowed Book" icon="i-lucide-clipboard-pen" to="/faculty/borrowings" color="neutral" variant="outline" />
+      </template>
+    </FacultyPageHeader>
 
     <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-4 sm:p-5' }">
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">

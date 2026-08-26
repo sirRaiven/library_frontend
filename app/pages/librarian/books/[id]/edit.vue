@@ -463,7 +463,7 @@ onMounted(() => {
                 type="submit"
                 label="Save Changes"
                 icon="i-lucide-save"
-                color="success"
+                color="primary"
                 :loading="isSaving"
               />
             </div>

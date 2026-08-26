@@ -307,7 +307,7 @@ async function submitRegistration(
 
     if (!identifier) {
       throw new Error(
-        "The book was registered, but Strapi did not return its identifier.",
+        "The book was registered, but its record could not be opened automatically. Return to the collection and locate the new book there.",
       );
     }
 
@@ -721,7 +721,7 @@ async function submitRegistration(
                   type="submit"
                   label="Register & View Barcodes"
                   icon="i-lucide-check"
-                  color="success"
+                  color="primary"
                   size="xl"
                   block
                   :loading="isSubmitting"

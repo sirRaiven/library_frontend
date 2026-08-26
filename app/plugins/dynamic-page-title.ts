@@ -13,9 +13,11 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/(?:forgot-password|auth\/forgot-password)\/?$/, title: "Forgot Password" },
   { pattern: /^\/(?:reset-password|auth\/reset-password)\/?$/, title: "Reset Password" },
 
+  { pattern: /^\/student-registration\/?$/, title: "Student Registration" },
+
   // Librarian pages
   { pattern: /^\/librarian\/dashboard\/?$/, title: "Library Overview" },
-  { pattern: /^\/librarian\/visits\/?$/, title: "Library Entry Log" },
+  { pattern: /^\/librarian\/visits\/?$/, title: "Library Visits" },
   { pattern: /^\/librarian\/borrow\/?$/, title: "Borrow Books" },
   { pattern: /^\/librarian\/return\/?$/, title: "Return Books" },
   { pattern: /^\/librarian\/reservations\/?$/, title: "Book Reservations" },
@@ -57,9 +59,9 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   // Common role pages
   { pattern: /^\/faculty\/dashboard\/?$/, title: "Faculty Dashboard" },
   { pattern: /^\/faculty\/books(?:\/.*)?$/, title: "Book Collection" },
-  { pattern: /^\/faculty\/borrowings\/?$/, title: "Borrowed Department Books" },
+  { pattern: /^\/faculty\/borrowings\/?$/, title: "Borrowed Books" },
   { pattern: /^\/faculty\/reports\/?$/, title: "Book Status Reports" },
-  { pattern: /^\/faculty\/profile\/?$/, title: "Faculty Profile" },
+  { pattern: /^\/faculty\/profile\/?$/, title: "Profile" },
   { pattern: /^\/(?:admin|faculty)\/dashboard\/?$/, title: "Dashboard" },
   { pattern: /^\/(?:admin|student|faculty)\/profile\/?$/, title: "My Profile" },
   { pattern: /^\/(?:student|faculty)\/catalog\/?$/, title: "Book Catalog" },

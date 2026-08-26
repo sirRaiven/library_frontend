@@ -97,7 +97,7 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="Librarians"
       title="Add a Librarian"
@@ -147,7 +147,7 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
           <template #header>
             <div>
               <h2 class="font-semibold text-highlighted">Secured Sign-In Account</h2>
-              <p class="mt-1 text-xs text-muted">The temporary password is accepted once here and is never returned by the API.</p>
+              <p class="mt-1 text-xs text-muted">The temporary password is shown only during account creation. Provide it securely to the Librarian.</p>
             </div>
           </template>
           <div class="grid gap-4 sm:grid-cols-2">
@@ -200,7 +200,7 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
           </template>
           <ul class="space-y-3 text-sm leading-5 text-muted">
             <li class="flex gap-2"><UIcon name="i-lucide-check" class="mt-0.5 size-4 shrink-0 text-success" />Assigned only to the Librarian application role.</li>
-            <li class="flex gap-2"><UIcon name="i-lucide-check" class="mt-0.5 size-4 shrink-0 text-success" />Password is hashed by Strapi Users & Permissions.</li>
+            <li class="flex gap-2"><UIcon name="i-lucide-check" class="mt-0.5 size-4 shrink-0 text-success" />The password is stored securely and is not displayed again.</li>
             <li class="flex gap-2"><UIcon name="i-lucide-check" class="mt-0.5 size-4 shrink-0 text-success" />Profile and account are explicitly linked.</li>
             <li class="flex gap-2"><UIcon name="i-lucide-check" class="mt-0.5 size-4 shrink-0 text-success" />Creation is written to the audit log.</li>
           </ul>

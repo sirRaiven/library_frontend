@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "npm run prepare:barcode && nuxt build",
-    "build:production": "npm run verify:production-env && npm run build",
+    "build:production": "npm run verify:production-env && npm run verify:security && npm run build",
     "dev": "npm run prepare:barcode && nuxt dev",
     "generate": "npm run prepare:barcode && nuxt generate",
     "preview": "nuxt preview",
@@ -13,6 +13,7 @@
     "postinstall": "nuxt prepare && npm run prepare:barcode",
     "typecheck": "nuxt typecheck",
     "analyze": "nuxt build --analyze",
+    "verify:security": "node scripts/verify-production-security.mjs",
     "test": "vitest --run --project unit --project nuxt",
     "test:watch": "vitest --watch --project unit --project nuxt",
     "test:unit": "vitest --run --project unit",
@@ -24,7 +25,8 @@
     "test:live": "vitest --run --project live",
     "test:regression": "npm run test:unit && npm run test:nuxt && npm run test:e2e:chromium",
     "test:full": "npm run test:unit && npm run test:nuxt && npm run test:e2e",
-    "test:browsers:install": "playwright-core install chromium firefox webkit"
+    "test:browsers:install": "playwright-core install chromium firefox webkit",
+    "verify:test-dependencies": "node scripts/verify-test-dependencies.mjs"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

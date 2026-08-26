@@ -51,13 +51,13 @@ const selectedReportDescription = computed(() => {
     return "Failed or denied activities that may require administrative review.";
   }
   if (reportType.value === "active-session-register") {
-    return "Current Strapi authentication sessions and active portal-monitoring sessions.";
+    return "Current sign-in sessions and active portal sessions.";
   }
   if (reportType.value === "device-register") {
     return "Privacy-safe user device records observed during the reporting period.";
   }
   if (reportType.value === "session-revocations") {
-    return "Portal sessions that were revoked, blocked, or invalidated.";
+    return "Sign-in or portal sessions that were revoked, blocked, or ended by an Administrator.";
   }
   return "Devices first observed during the selected reporting period.";
 });

@@ -382,7 +382,7 @@ onMounted(async () => {
           <UButton
             :label="`Release Cards (${releaseCandidates.length})`"
             icon="i-lucide-handshake"
-            color="success"
+            color="primary"
             size="lg"
             :disabled="releaseCandidates.length === 0"
             @click="openStatusDialog('Released')"

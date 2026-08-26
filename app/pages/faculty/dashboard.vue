@@ -92,7 +92,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <section class="overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/10 via-default to-default shadow-sm">
       <div class="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
         <div>

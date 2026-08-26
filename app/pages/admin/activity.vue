@@ -74,7 +74,7 @@ onMounted(() => { load(); loadSummary(); });
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="System & Monitoring"
       title="Activity Log"
@@ -94,7 +94,7 @@ onMounted(() => { load(); loadSummary(); });
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminMetricCard label="Activities Today" :value="summary?.activityToday ?? 0" description="Recorded meaningful events since midnight." icon="i-lucide-activity" tone="primary" :loading="!summary" />
       <AdminMetricCard label="Failed or Denied" :value="summary?.failedOrDeniedToday ?? 0" description="Events requiring review today." icon="i-lucide-triangle-alert" tone="warning" :loading="!summary" />
-      <AdminMetricCard label="Active Sign-ins" :value="summary?.activeAuthenticationSessions ?? 0" description="Current Strapi authentication sessions." icon="i-lucide-log-in" tone="success" :loading="!summary" to="/admin/sessions" />
+      <AdminMetricCard label="Active Sign-ins" :value="summary?.activeAuthenticationSessions ?? 0" description="Current sign-in sessions." icon="i-lucide-log-in" tone="success" :loading="!summary" to="/admin/sessions" />
       <AdminMetricCard label="Known Devices" :value="summary?.knownDevices ?? 0" description="Privacy-safe portal device records." icon="i-lucide-monitor-smartphone" tone="neutral" :loading="!summary" to="/admin/devices" />
     </div>
 

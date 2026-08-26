@@ -950,7 +950,7 @@ onMounted(() => {
                 type="submit"
                 label="Load Borrowed Books"
                 icon="i-lucide-search"
-                color="success"
+                color="primary"
                 block
                 :loading="isScanning"
                 :disabled="
@@ -1304,7 +1304,7 @@ onMounted(() => {
                   type="submit"
                   label="Verify Book"
                   icon="i-lucide-shield-check"
-                  color="success"
+                  color="primary"
                   size="xl"
                   :loading="
                     isVerifyingBook
@@ -1711,7 +1711,7 @@ onMounted(() => {
                       : `Return Verified (${verifiedCount})`
                 "
                 icon="i-lucide-check-check"
-                color="success"
+                color="primary"
                 size="lg"
                 :loading="isProcessing"
                 :disabled="!canProcess"

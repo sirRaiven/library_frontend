@@ -3,6 +3,8 @@ import {
   errorCode,
   errorStatus,
   userFacingErrorMessage,
+  signInErrorMessage,
+  registrationErrorMessage,
 } from "../../app/utils/user-facing-error";
 
 describe("user-facing error sanitizer", () => {
@@ -33,10 +35,35 @@ describe("user-facing error sanitizer", () => {
     });
 
     expect(message).toBe(
-      "The Library System could not complete the request. Please try again.",
+      "Something went wrong while processing the request. Please try again.",
     );
     expect(message.toLowerCase()).not.toContain("postgres");
     expect(message).not.toContain("api::");
+  });
+
+  it("shows a clear and safe invalid-credentials message", () => {
+    expect(
+      signInErrorMessage({
+        statusCode: 400,
+        data: { error: { message: "Invalid identifier or password" } },
+      }),
+    ).toBe("The username/email or password is incorrect.");
+  });
+
+  it("uses domain-friendly maintenance and registration messages", () => {
+    expect(
+      userFacingErrorMessage({
+        statusCode: 503,
+        data: { error: { details: { code: "SYSTEM_MAINTENANCE_READ_ONLY" } } },
+      }),
+    ).toBe("This action is unavailable while the system is under maintenance.");
+
+    expect(
+      registrationErrorMessage({
+        statusCode: 409,
+        data: { error: { message: "Student account already exists." } },
+      }),
+    ).toContain("registration or account already exists");
   });
 
   it("preserves safe validation messages", () => {

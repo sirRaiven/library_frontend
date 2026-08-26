@@ -717,7 +717,7 @@ onMounted(loadRequests);
                     v-if="request.type === 'Registration' && request.status === 'Pending Verification'"
                     label="Approve"
                     icon="i-lucide-check"
-                    color="success"
+                    color="primary"
                     variant="soft"
                     size="sm"
                     @click="openVerify(request)"
@@ -1099,7 +1099,7 @@ onMounted(loadRequests);
                   v-if="selectedRequest.type === 'Registration'"
                   label="Approve Registration"
                   icon="i-lucide-check"
-                  color="success"
+                  color="primary"
                   @click="openVerifyFromDetails"
                 />
                 <UButton
@@ -1154,7 +1154,7 @@ onMounted(loadRequests);
           <UAlert color="info" variant="soft" icon="i-lucide-shield-check" title="Approval effect" description="Approval activates the Student profile, membership, Portal account, and saves the submitted photo for the Library Card." />
           <div class="flex justify-end gap-2">
             <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="verifyOpen = false" />
-            <UButton type="submit" label="Approve Student" icon="i-lucide-badge-check" color="success" :loading="actionLoading" />
+            <UButton type="submit" label="Approve Student" icon="i-lucide-badge-check" color="primary" :loading="actionLoading" />
           </div>
         </UForm>
       </template>
@@ -1301,7 +1301,7 @@ onMounted(loadRequests);
           </div>
           <div class="flex justify-end gap-2">
             <UButton label="Copy Credentials" icon="i-lucide-copy" color="neutral" variant="outline" @click="copyCredentials" />
-            <UButton label="I Have Provided Them Securely" color="success" @click="credentialsOpen = false; credentials = null" />
+            <UButton label="I Have Provided Them Securely" color="primary" @click="credentialsOpen = false; credentials = null" />
           </div>
         </div>
       </template>

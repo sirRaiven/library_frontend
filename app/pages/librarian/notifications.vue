@@ -337,6 +337,9 @@ async function refreshNotifications() {
 async function toggleRead(
   notification:
     LibraryNotification,
+  options: {
+    refreshUnreadList?: boolean;
+  } = {},
 ) {
   actingDocumentId.value =
     notification.documentId;
@@ -363,7 +366,8 @@ async function toggleRead(
     if (
       filters.view ===
         "unread" &&
-      nextReadState
+      nextReadState &&
+      options.refreshUnreadList !== false
     ) {
       await notificationCenter
         .loadNotifications(
@@ -499,9 +503,36 @@ async function openNotification(
   isDetailsOpen.value = true;
 
   if (!notification.isRead) {
+    // Mark it read immediately, but leave the card in place behind the modal.
+    // The Unread view is refreshed after the details modal closes so the UI
+    // does not appear to remove the item while the Librarian is reading it.
     await toggleRead(
       notification,
+      {
+        refreshUnreadList: false,
+      },
     );
+  }
+}
+
+async function refreshUnreadAfterDetailsClose() {
+  if (
+    filters.view === "unread" &&
+    selectedNotification.value?.isRead
+  ) {
+    await notificationCenter
+      .loadNotifications(filters);
+  }
+}
+
+async function closeNotificationDetails() {
+  isDetailsOpen.value = false;
+  await refreshUnreadAfterDetailsClose();
+}
+
+function handleDetailsOpenChange(open: boolean) {
+  if (!open) {
+    void refreshUnreadAfterDetailsClose();
   }
 }
 
@@ -820,7 +851,7 @@ onBeforeUnmount(() => {
           <UButton
             label="Refresh Alerts"
             icon="i-lucide-refresh-cw"
-            color="success"
+            color="primary"
             :loading="
               notificationCenter
                 .isSyncing.value
@@ -837,7 +868,7 @@ onBeforeUnmount(() => {
         variant="soft"
         icon="i-lucide-radio"
         title="Live circulation notices"
-        :description="`New reservation, checkout, return, membership, and inventory events are checked every 30 seconds. Last updated: ${lastLiveRefreshLabel}.`"
+        :description="`New reservation, checkout, return, membership, and inventory events are checked every 2 minutes while this page is open. Last updated: ${lastLiveRefreshLabel}.`"
       />
 
       <section
@@ -1321,7 +1352,7 @@ onBeforeUnmount(() => {
                       'Review Record'
                     "
                     icon="i-lucide-arrow-up-right"
-                    color="success"
+                    color="primary"
                     variant="soft"
                     size="sm"
                     @click="
@@ -1401,6 +1432,7 @@ onBeforeUnmount(() => {
     v-model:open="
       isDetailsOpen
     "
+    @update:open="handleDetailsOpenChange"
     :ui="{
       content:
         'sm:max-w-2xl',
@@ -1577,7 +1609,7 @@ onBeforeUnmount(() => {
             color="neutral"
             variant="outline"
             @click="
-              isDetailsOpen = false
+              closeNotificationDetails()
             "
           />
 
@@ -1593,7 +1625,7 @@ onBeforeUnmount(() => {
               'Review Record'
             "
             icon="i-lucide-arrow-up-right"
-            color="success"
+            color="primary"
             @click="
               openAction(
                 selectedNotification,

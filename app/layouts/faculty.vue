@@ -52,7 +52,7 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       active: active("/faculty/books"),
     },
     {
-      label: "Borrowed Department Books",
+      label: "Borrowed Books",
       icon: "i-lucide-library-big",
       to: "/faculty/borrowings",
       active: active("/faculty/borrowings"),
@@ -67,7 +67,7 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     { label: "Account", type: "label" },
     {
-      label: "My Faculty Profile",
+      label: "Profile",
       icon: "i-lucide-user-round-cog",
       to: "/faculty/profile",
       active: active("/faculty/profile"),
@@ -81,13 +81,13 @@ function pageInfo() {
     return { title: "Book Collection", icon: "i-lucide-book-open" };
   }
   if (path.startsWith("/faculty/borrowings")) {
-    return { title: "Borrowed Department Books", icon: "i-lucide-library-big" };
+    return { title: "Borrowed Books", icon: "i-lucide-library-big" };
   }
   if (path.startsWith("/faculty/reports")) {
     return { title: "Book Status Reports", icon: "i-lucide-clipboard-check" };
   }
   if (path.startsWith("/faculty/profile")) {
-    return { title: "Faculty Profile", icon: "i-lucide-user-round-cog" };
+    return { title: "Profile", icon: "i-lucide-user-round-cog" };
   }
   return { title: "Faculty Dashboard", icon: "i-lucide-layout-dashboard" };
 }
@@ -106,7 +106,7 @@ const accountItems = computed<DropdownMenuItem[][]>(() => [
   ],
   [
     {
-      label: "My Faculty Profile",
+      label: "Profile",
       icon: "i-lucide-user-round-cog",
       to: "/faculty/profile",
     },

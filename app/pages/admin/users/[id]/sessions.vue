@@ -167,7 +167,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="User Monitoring"
       :title="account ? `Sessions for ${account.username}` : 'Account Sessions'"
@@ -193,14 +193,14 @@ onMounted(refresh);
       variant="soft"
       icon="i-lucide-info"
       title="Two session sources"
-      description="Authentication Sessions control actual refresh-token sign-ins. Portal Monitoring Sessions record portal presence without storing authentication tokens."
+      description="Sign-in Sessions show active account access. Portal Sessions show recent portal activity."
     />
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminMetricCard
         label="Authentication Sessions"
         :value="summary?.activeAuthenticationSessions ?? 0"
-        description="Current Strapi refresh-token sign-ins."
+        description="Current sign-in sessions."
         icon="i-lucide-key-round"
         tone="success"
         :loading="!summary"

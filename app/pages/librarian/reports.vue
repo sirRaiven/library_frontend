@@ -997,7 +997,7 @@ onMounted(async () => {
               <UButton
                 label="Excel"
                 icon="i-lucide-sheet"
-                color="success"
+                color="primary"
                 variant="soft"
                 :loading="exportingFormat === 'xlsx'"
                 @click="exportActive('xlsx')"

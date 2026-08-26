@@ -706,7 +706,7 @@ onBeforeUnmount(() => {
             to="/librarian/books/register"
             label="Register Book"
             icon="i-lucide-plus"
-            color="success"
+            color="primary"
           />
         </div>
       </div>
@@ -1168,7 +1168,7 @@ onBeforeUnmount(() => {
               to="/librarian/books/register"
               label="Register Book"
               icon="i-lucide-plus"
-              color="success"
+              color="primary"
             />
           </div>
         </div>

@@ -263,7 +263,7 @@ onMounted(loadSecurity);
         variant="soft"
         icon="i-lucide-triangle-alert"
         title="Authentication-session management is unavailable"
-        description="Strapi must use refresh-token session management before individual authentication sessions can be revoked."
+        description="Individual sign-in session management is not available in the current authentication setup."
         class="mb-5"
       />
 
@@ -271,14 +271,14 @@ onMounted(loadSecurity);
         <AdminMetricCard
           label="Active Sign-ins"
           :value="security.summary.activeAuthenticationSessions"
-          :description="`${security.summary.activeTrackedSessions} active portal-monitoring session(s)`"
+          :description="`${security.summary.activeTrackedSessions} active portal session(s)`"
           icon="i-lucide-monitor-dot"
           :tone="security.summary.activeAuthenticationSessions > 1 ? 'warning' : 'primary'"
         />
         <AdminMetricCard
           label="Known Devices"
           :value="security.summary.knownDevices"
-          :description="`${security.summary.registeredDevices} portal · ${security.summary.sessionDerivedDevices} from sign-ins`"
+          :description="`${security.summary.registeredDevices} registered · ${security.summary.sessionDerivedDevices} observed during sign-ins`"
           icon="i-lucide-monitor-smartphone"
           :tone="security.summary.blockedDevices ? 'error' : 'neutral'"
         />
@@ -303,7 +303,7 @@ onMounted(loadSecurity);
           <div class="flex items-center justify-between gap-3">
             <div>
               <h3 class="font-bold text-highlighted">Authentication Sessions</h3>
-              <p class="mt-1 text-xs text-muted">Refresh-token sessions currently recognized by Strapi.</p>
+              <p class="mt-1 text-xs text-muted">Current sign-in sessions recognized by the system.</p>
             </div>
             <UBadge
               :label="`${security.authenticationSessions.length} active`"
@@ -353,7 +353,7 @@ onMounted(loadSecurity);
           <div class="flex items-center justify-between gap-3">
             <div>
               <h3 class="font-bold text-highlighted">Known Devices</h3>
-              <p class="mt-1 text-xs text-muted">Recognized from active Strapi sign-ins and privacy-safe portal device records.</p>
+              <p class="mt-1 text-xs text-muted">Recognized from recent sign-ins and registered portal devices.</p>
             </div>
             <UBadge :label="`${security.devices.length} device(s)`" color="neutral" variant="soft" />
           </div>

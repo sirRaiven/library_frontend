@@ -2,7 +2,7 @@
 definePageMeta({
   layout: "faculty",
   middleware: ["faculty"],
-  title: "Faculty Account",
+  title: "Profile",
 });
 
 const portal = useFacultyPortal();
@@ -65,14 +65,13 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
-    <section class="rounded-3xl border border-default bg-elevated/30 p-6 shadow-sm sm:p-8">
-      <UBadge label="Faculty account" icon="i-lucide-user-round-cog" color="primary" variant="soft" />
-      <h1 class="mt-3 text-3xl font-bold text-highlighted">My Faculty Account</h1>
-      <p class="mt-2 max-w-3xl text-sm leading-6 text-muted">
-        Review your Faculty Library account details and keep your contact information current for Library notices and replacement coordination.
-      </p>
-    </section>
+  <div class="sncbt-page-shell sncbt-page-shell-narrow space-y-6">
+    <FacultyPageHeader
+      eyebrow="Account"
+      title="Profile"
+      description="Review your Faculty Library account details and keep your contact information current."
+      icon="i-lucide-user-round-cog"
+    />
 
     <div v-if="portal.loading.value && !faculty" class="grid gap-6 lg:grid-cols-[20rem_1fr]">
       <USkeleton class="h-96 rounded-3xl" />

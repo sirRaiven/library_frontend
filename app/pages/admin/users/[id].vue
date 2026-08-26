@@ -352,7 +352,7 @@ watch(monitoringChildActive, (isChild) => {
   <NuxtPage v-if="monitoringChildActive" />
 
   <template v-else>
-    <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+    <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="User Details"
@@ -478,7 +478,7 @@ watch(monitoringChildActive, (isChild) => {
                 v-if="record.blocked"
                 label="Restore Account"
                 icon="i-lucide-user-round-check"
-                color="success"
+                color="primary"
                 variant="soft"
                 @click="openStatus(false)"
               />

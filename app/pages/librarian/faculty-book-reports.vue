@@ -212,19 +212,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
-    <section class="rounded-3xl border border-warning/25 bg-gradient-to-br from-warning/10 via-default to-default p-6 shadow-sm sm:p-8">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div class="max-w-3xl">
-          <UBadge label="Faculty accountability" icon="i-lucide-clipboard-check" color="warning" variant="soft" />
-          <h1 class="mt-3 text-3xl font-bold text-highlighted">Faculty Book Reports</h1>
-          <p class="mt-2 text-sm leading-6 text-muted">
-            Review department book condition updates, acknowledge lost-book reports, and confirm when replacement copies have been submitted and accepted.
-          </p>
-        </div>
+  <div class="sncbt-page-shell space-y-6">
+    <LibrarianPageHeader
+      eyebrow="Faculty Accountability"
+      title="Faculty Book Reports"
+      description="Review Faculty book condition updates, lost-book reports, and replacement submissions."
+      icon="i-lucide-clipboard-check"
+    >
+      <template #actions>
         <UButton label="Faculty Directory" icon="i-lucide-briefcase-business" to="/librarian/faculty" color="neutral" variant="outline" />
-      </div>
-    </section>
+      </template>
+    </LibrarianPageHeader>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }"><p class="text-xs font-semibold uppercase tracking-wide text-muted">All Reports</p><p class="mt-2 text-3xl font-bold text-highlighted">{{ summary.total }}</p></UCard>

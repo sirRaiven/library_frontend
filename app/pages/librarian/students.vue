@@ -1509,7 +1509,7 @@ onBeforeUnmount(() => {
           <UButton
             label="Register Student"
             icon="i-lucide-user-plus"
-            color="success"
+            color="primary"
             @click="openRegistrationModal"
           />
         </div>
@@ -1747,7 +1747,7 @@ onBeforeUnmount(() => {
                 />
               </UTooltip>
 
-              <UButton icon="i-lucide-rotate-cw" color="success" variant="ghost" square aria-label="Renew membership" @click="renew(row.original)" />
+              <UButton icon="i-lucide-rotate-cw" color="primary" variant="ghost" square aria-label="Renew membership" @click="renew(row.original)" />
               <UTooltip text="Edit profile and Library Card photo">
                 <UButton
                   icon="i-lucide-pencil"
@@ -2308,7 +2308,7 @@ onBeforeUnmount(() => {
 
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="cancelRegistration" />
-              <UButton type="submit" label="Register & Generate Card" icon="i-lucide-id-card" color="success" :loading="submitting" />
+              <UButton type="submit" label="Register & Generate Card" icon="i-lucide-id-card" color="primary" :loading="submitting" />
             </div>
           </UForm>
         </div>
@@ -2370,7 +2370,7 @@ onBeforeUnmount(() => {
               <UButton
                 label="Copy Credentials"
                 icon="i-lucide-copy"
-                color="success"
+                color="primary"
                 variant="soft"
                 @click="copyPortalCredentials"
               />
@@ -2602,7 +2602,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="mt-6 flex justify-end gap-3">
             <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="cancelEdit" />
-            <UButton label="Save Changes" icon="i-lucide-save" color="success" :loading="submitting" @click="saveStudent" />
+            <UButton label="Save Changes" icon="i-lucide-save" color="primary" :loading="submitting" @click="saveStudent" />
           </div>
         </div>
       </template>

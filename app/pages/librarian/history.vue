@@ -7,7 +7,7 @@ import type {
 
 definePageMeta({
   layout: "librarian",
-  title: "History Logs",
+  title: "History",
 });
 
 const history = usePortalHistory("librarian");
@@ -167,33 +167,24 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
-    <section
-      class="overflow-hidden rounded-2xl border border-default bg-default shadow-sm"
+  <div class="sncbt-page-shell space-y-6">
+    <LibrarianPageHeader
+      eyebrow="Library Activity"
+      title="History"
+      description="Review borrowing, returns, reservations, fines, and Library visit records in one read-only timeline."
+      icon="i-lucide-history"
     >
-      <div class="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-        <div class="max-w-3xl">
-          <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            <UIcon name="i-lucide-history" class="size-4" />
-            Library activity
-          </div>
-          <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">
-            History Logs
-          </h1>
-          <p class="mt-2 text-sm leading-relaxed text-muted sm:text-base">
-            Review borrowing, returns, reservations, fines, and Library entry records in one read-only timeline.
-          </p>
-        </div>
-
+      <template #actions>
         <UButton
-          label="Refresh History"
+          label="Refresh"
           icon="i-lucide-refresh-cw"
-          color="primary"
+          color="neutral"
+          variant="outline"
           :loading="history.loading.value"
           @click="load(true)"
         />
-      </div>
-    </section>
+      </template>
+    </LibrarianPageHeader>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
       <UCard

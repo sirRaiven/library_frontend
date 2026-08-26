@@ -10,7 +10,7 @@ import type { BarcodeScanResult } from "~/composables/useBarcodeScanResult";
 
 definePageMeta({
   layout: "librarian",
-  title: "Library Entry Log",
+  title: "Library Visits",
 });
 
 const visitsApi =
@@ -474,7 +474,7 @@ onMounted(() => {
               <h1
                 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
               >
-                Library Entry Log
+                Library Visits
               </h1>
 
               <UBadge
@@ -564,7 +564,7 @@ onMounted(() => {
             type="submit"
             label="Record Time-In"
             icon="i-lucide-log-in"
-            color="success"
+            color="primary"
             size="xl"
             :loading="scanning"
           />

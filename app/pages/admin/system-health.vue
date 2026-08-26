@@ -116,10 +116,10 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       title="System & Maintenance"
-      description="Review application health, control read-only maintenance mode, and confirm the latest server-side backup verification."
+      description="Review system availability, control maintenance mode, and check the latest backup status."
       icon="i-lucide-server-cog"
     >
       <template #actions>
@@ -149,9 +149,9 @@ onMounted(refresh);
       <UCard>
         <div class="flex items-start justify-between gap-3">
           <div>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted">Frontend</p>
+            <p class="text-xs font-medium uppercase tracking-wide text-muted">Web Application</p>
             <p class="mt-2 text-lg font-semibold text-highlighted">Online</p>
-            <p class="mt-1 text-xs text-muted">This Admin interface is responding.</p>
+            <p class="mt-1 text-xs text-muted">The web application is available.</p>
           </div>
           <UBadge color="success" variant="soft">Healthy</UBadge>
         </div>
@@ -160,7 +160,7 @@ onMounted(refresh);
       <UCard>
         <div class="flex items-start justify-between gap-3">
           <div>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted">Backend API</p>
+            <p class="text-xs font-medium uppercase tracking-wide text-muted">Application Service</p>
             <p class="mt-2 text-lg font-semibold text-highlighted">{{ system.health.value?.backend.status || "Checking…" }}</p>
             <p class="mt-1 text-xs text-muted">Uptime {{ Math.floor((system.health.value?.backend.uptimeSeconds || 0) / 60) }} min</p>
           </div>
@@ -173,9 +173,9 @@ onMounted(refresh);
       <UCard>
         <div class="flex items-start justify-between gap-3">
           <div>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted">PostgreSQL</p>
+            <p class="text-xs font-medium uppercase tracking-wide text-muted">Database</p>
             <p class="mt-2 text-lg font-semibold text-highlighted">{{ system.health.value?.database.latencyMs ?? "—" }} ms</p>
-            <p class="mt-1 text-xs text-muted">Database connectivity probe</p>
+            <p class="mt-1 text-xs text-muted">Connection response time</p>
           </div>
           <UBadge :color="statusColor(system.health.value?.database.status || '')" variant="soft">
             {{ system.health.value?.database.status || "Checking" }}
@@ -188,7 +188,7 @@ onMounted(refresh);
           <div>
             <p class="text-xs font-medium uppercase tracking-wide text-muted">Upload Storage</p>
             <p class="mt-2 text-lg font-semibold text-highlighted">{{ bytes(system.health.value?.storage.freeBytes ?? null) }}</p>
-            <p class="mt-1 text-xs text-muted">Free space available to Library media</p>
+            <p class="mt-1 text-xs text-muted">Free space available for Library files</p>
           </div>
           <UBadge :color="statusColor(system.health.value?.storage.status || '')" variant="soft">
             {{ system.health.value?.storage.status || "Checking" }}
@@ -203,7 +203,7 @@ onMounted(refresh);
           <div class="flex items-center justify-between gap-4">
             <div>
               <h2 class="font-semibold text-highlighted">Maintenance Mode</h2>
-              <p class="mt-1 text-xs text-muted">Keep Admin controls available while Student, Faculty and Librarian business mutations are blocked.</p>
+              <p class="mt-1 text-xs text-muted">Keep Administrator controls available while Student, Faculty, and Librarian portals are temporarily read-only.</p>
             </div>
             <UBadge :color="form.enabled ? 'warning' : 'success'" variant="soft">
               {{ form.enabled ? "Read-only active" : "Normal operations" }}
@@ -215,7 +215,7 @@ onMounted(refresh);
           <div class="flex items-start justify-between gap-5 rounded-xl border border-default bg-elevated/30 p-4">
             <div>
               <p class="text-sm font-medium text-highlighted">Enable maintenance read-only mode</p>
-              <p class="mt-1 text-xs leading-5 text-muted">GET/read requests remain available. Create, update and delete operations are rejected outside the Admin APIs.</p>
+              <p class="mt-1 text-xs leading-5 text-muted">Librarians, Students, and Faculty can continue viewing information, but they cannot create, edit, or delete records.</p>
             </div>
             <USwitch v-model="form.enabled" />
           </div>
@@ -224,7 +224,7 @@ onMounted(refresh);
             <UInput v-model="form.message" class="w-full" maxlength="500" />
           </UFormField>
 
-          <UFormField label="Reason" :required="form.enabled" help="Recorded in the protected Audit Trail when the setting changes.">
+          <UFormField label="Reason" :required="form.enabled" help="The reason is recorded in the Audit Trail when the setting changes.">
             <UTextarea v-model="form.reason" class="w-full" :rows="3" maxlength="4000" />
           </UFormField>
 
@@ -254,7 +254,7 @@ onMounted(refresh);
         <template #header>
           <div>
             <h2 class="font-semibold text-highlighted">Backup Verification</h2>
-            <p class="mt-1 text-xs text-muted">Backups are created on the server, outside the browser, to avoid exposing database files through the Admin UI.</p>
+            <p class="mt-1 text-xs text-muted">Review the most recent backup and verification information.</p>
           </div>
         </template>
 
@@ -274,7 +274,7 @@ onMounted(refresh);
             <span class="text-right text-sm font-medium text-highlighted">{{ dateTime(system.health.value?.backup.verifiedAt ?? null) }}</span>
           </div>
           <div class="flex items-center justify-between gap-3">
-            <span class="text-sm text-muted">Database dump</span>
+            <span class="text-sm text-muted">Database backup</span>
             <span class="text-sm font-medium text-highlighted">{{ bytes(system.health.value?.backup.databaseBytes ?? null) }}</span>
           </div>
           <div class="flex items-center justify-between gap-3">
@@ -286,8 +286,8 @@ onMounted(refresh);
             color="info"
             variant="soft"
             icon="i-lucide-hard-drive-download"
-            title="Server-side backup workflow"
-            description="Run npm run backup:library on the backend host, then npm run backup:verify -- <backup-reference>. Copy verified backups to protected off-host storage."
+            title="Backup procedure"
+            description="Backup creation and restore verification are performed by authorized system operators. Keep verified backup copies in protected storage."
           />
         </div>
       </UCard>

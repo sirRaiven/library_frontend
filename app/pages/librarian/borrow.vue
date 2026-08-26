@@ -507,7 +507,7 @@ onMounted(() => {
                 type="submit"
                 label="Process Scan"
                 icon="i-lucide-scan-barcode"
-                color="success"
+                color="primary"
                 block
                 :loading="isScanning"
                 :disabled="
@@ -935,7 +935,7 @@ onMounted(() => {
                 <UButton
                   label="Confirm Borrowing"
                   icon="i-lucide-check"
-                  color="success"
+                  color="primary"
                   :loading="isConfirming"
                   :disabled="!canConfirm"
                   @click="confirmBorrowing"

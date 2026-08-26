@@ -250,7 +250,7 @@ onMounted(loadTerm);
           <UButton
             :label="form.status === 'Open' ? 'Save and Open Term' : 'Save and Close Term'"
             icon="i-lucide-calendar-check-2"
-            color="success"
+            color="primary"
             size="lg"
             :disabled="!canSave"
             :loading="saving"
@@ -318,7 +318,7 @@ onMounted(loadTerm);
 
           <div class="flex justify-end gap-2">
             <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="confirmOpen = false" />
-            <UButton label="Confirm and Save" icon="i-lucide-check" color="success" :loading="saving" @click="saveTerm" />
+            <UButton label="Confirm and Save" icon="i-lucide-check" color="primary" :loading="saving" @click="saveTerm" />
           </div>
         </div>
       </template>

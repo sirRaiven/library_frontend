@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { signInErrorMessage } from "~/utils/user-facing-error";
 import type {
   FormError,
   FormSubmitEvent,
@@ -112,7 +113,7 @@ async function handleLogin(
       requestedRedirect ?? auth.homeRoute.value,
     );
   } catch (error) {
-    loginError.value = auth.getErrorMessage(error);
+    loginError.value = signInErrorMessage(error);
   } finally {
     isLoggingIn.value = false;
   }
@@ -285,7 +286,7 @@ onMounted(() => {
               color="error"
               variant="soft"
               icon="i-lucide-circle-alert"
-              title="Unable to sign in"
+              title="Check your sign-in details"
               :description="loginError"
             />
 

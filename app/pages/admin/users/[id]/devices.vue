@@ -138,7 +138,7 @@ async function confirm() {
       reason.value.trim(),
     );
     const description = action.value === "block"
-      ? "The selected account-and-device combination is now denied at sign-in, refresh, and every protected API request."
+      ? "The selected device can no longer use this account."
       : action.value === "revoke-sessions"
         ? `${response.data.authenticationRevocationScope} were revoked for safety.`
         : `${selected.value.displayName} was updated successfully.`;
@@ -172,7 +172,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="User Monitoring"
       :title="account ? `Devices for ${account.username}` : 'Account Devices'"
@@ -393,7 +393,7 @@ onMounted(refresh);
           variant="soft"
           icon="i-lucide-shield-ban"
           title="Device access will be denied"
-          description="This account-specific device will be blocked at sign-in, refresh, and every protected API request. Other devices for the same account remain allowed."
+          description="This device will no longer be allowed to use the account. Other devices for the same account remain available."
         />
         <UAlert
           v-else-if="action === 'revoke-sessions'"
@@ -401,7 +401,7 @@ onMounted(refresh);
           variant="soft"
           icon="i-lucide-triangle-alert"
           title="Authentication sessions"
-          description="Because Strapi authentication sessions are not directly linked to the Library device record, this action may revoke every authentication session for the affected account."
+          description="For safety, this action may sign the account out from other active sessions as well."
         />
         <div class="flex justify-end gap-2">
           <UButton label="Cancel" color="neutral" variant="outline" @click="actionOpen = false" />

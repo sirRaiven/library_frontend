@@ -158,7 +158,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <StudentPageHeader
       eyebrow="Library Records"
       title="My History"

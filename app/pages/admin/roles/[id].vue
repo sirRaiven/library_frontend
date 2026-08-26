@@ -32,8 +32,8 @@ const groupedPermissions = computed(() => {
 
     const firstPart = permission.action.split(".")[0] || "Other";
     const group = firstPart
-      .replace(/^api::/, "Library API: ")
-      .replace(/^plugin::/, "Plugin: ");
+      .replace(/^api::/, "Library Features: ")
+      .replace(/^plugin::/, "Account Services: ");
 
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group)!.push(permission);
@@ -66,11 +66,11 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       eyebrow="Role Permission Review"
       :title="role?.name || 'Role Details'"
-      :description="role?.description || 'Review the users and protected API actions assigned to this role.'"
+      :description="role?.description || 'Review the users and permissions assigned to this role.'"
       icon="i-lucide-shield-check"
     >
       <template #actions>
@@ -86,8 +86,8 @@ onMounted(load);
     <template v-else-if="role">
       <div class="grid gap-4 sm:grid-cols-3">
         <AdminMetricCard label="Assigned Users" :value="role.userCount" description="Accounts currently using this role" icon="i-lucide-users" tone="primary" />
-        <AdminMetricCard label="Granted Actions" :value="role.permissions.length" description="Strapi API actions enabled for this role" icon="i-lucide-key-round" tone="success" />
-        <AdminMetricCard label="Role Type" :value="role.type" description="Internal role identifier used during authorization" icon="i-lucide-fingerprint" :tone="role.protected ? 'warning' : 'neutral'" />
+        <AdminMetricCard label="Granted Actions" :value="role.permissions.length" description="Permissions enabled for this role" icon="i-lucide-key-round" tone="success" />
+        <AdminMetricCard label="Role Protection" :value="role.protected ? 'Protected' : 'Standard'" description="Protected roles require extra care when assigning access" icon="i-lucide-shield" :tone="role.protected ? 'warning' : 'neutral'" />
       </div>
 
       <UCard :ui="{ body: 'p-0 sm:p-0' }">
@@ -95,7 +95,7 @@ onMounted(load);
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 class="font-semibold text-highlighted">Granted Permission Actions</h2>
-              <p class="mt-1 text-xs text-muted">Read-only technical review of actions currently stored in Strapi Users & Permissions.</p>
+              <p class="mt-1 text-xs text-muted">Review the capabilities currently granted to this role.</p>
             </div>
             <UInput v-model="permissionSearch" icon="i-lucide-search" placeholder="Search permission action" class="sm:w-80" />
           </div>
@@ -111,7 +111,7 @@ onMounted(load);
                 </div>
                 <div class="min-w-0">
                   <p class="text-sm font-medium text-highlighted">{{ permission.label }}</p>
-                  <p class="mt-1 break-all font-mono text-[11px] text-muted">{{ permission.action }}</p>
+                  <details class="mt-1 text-[11px] text-muted"><summary class="cursor-pointer select-none hover:text-default">Technical identifier</summary><p class="mt-1 break-all font-mono">{{ permission.action }}</p></details>
                 </div>
               </div>
             </div>

@@ -1144,7 +1144,7 @@ onMounted(() => {
         <UButton
           label="Register Faculty"
           icon="i-lucide-user-plus"
-          color="success"
+          color="primary"
           size="lg"
           @click="() => {
             registrationOpen =
@@ -1885,7 +1885,7 @@ onMounted(() => {
                 type="submit"
                 label="Register Faculty"
                 icon="i-lucide-user-plus"
-                color="success"
+                color="primary"
                 :loading="
                   submitting
                 "
@@ -2143,7 +2143,7 @@ onMounted(() => {
             <UButton
               label="Edit Profile"
               icon="i-lucide-pencil"
-              color="success"
+              color="primary"
               @click="
                 openEdit(
                   selected,
@@ -2535,7 +2535,7 @@ onMounted(() => {
                 type="submit"
                 label="Save Changes"
                 icon="i-lucide-save"
-                color="success"
+                color="primary"
                 :loading="
                   submitting
                 "

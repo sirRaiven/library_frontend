@@ -191,7 +191,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell space-y-6">
     <AdminPageHeader
       title="Audit Trail"
       description="Review administrative, security, configuration, privacy, system, and Library transaction records."
@@ -397,10 +397,7 @@ onMounted(load);
         <dl class="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Performed By</dt><dd class="mt-1 text-highlighted">{{ detail.actor }} · {{ detail.actorRole || 'Unknown role' }}</dd></div>
           <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Affected Record</dt><dd class="mt-1 text-highlighted">{{ detail.targetLabel || detail.targetType || 'System' }}</dd></div>
-          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Module</dt><dd class="mt-1 text-highlighted">{{ detail.module }}</dd></div>
-          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Request</dt><dd class="mt-1 break-all font-mono text-xs text-highlighted">{{ detail.requestMethod || '—' }} {{ detail.requestPath || '—' }}</dd></div>
-          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Request ID</dt><dd class="mt-1 break-all font-mono text-xs text-highlighted">{{ detail.requestId || 'Not recorded' }}</dd></div>
-          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">IP Address</dt><dd class="mt-1 font-mono text-xs text-highlighted">{{ detail.ipAddress || 'Not recorded' }}</dd></div>
+          <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Area</dt><dd class="mt-1 text-highlighted">{{ detail.module }}</dd></div>
         </dl>
 
         <div class="grid gap-4 lg:grid-cols-2">
@@ -414,23 +411,34 @@ onMounted(load);
           </div>
         </div>
 
-        <div>
-          <h3 class="mb-2 text-sm font-semibold text-highlighted">Metadata</h3>
-          <pre class="max-h-64 overflow-auto rounded-xl border border-default bg-elevated/40 p-4 text-xs text-default">{{ formatJson(detail.metadata) }}</pre>
-        </div>
-
-        <div class="rounded-xl border border-default p-4">
-          <div class="flex items-center justify-between gap-3">
-            <h3 class="text-sm font-semibold text-highlighted">Integrity seal</h3>
-            <UBadge :label="detail.sealed ? 'Sealed' : 'Legacy unsealed'" :color="detail.sealed ? 'success' : 'neutral'" variant="soft" />
+        <details class="rounded-xl border border-default bg-elevated/20 p-4">
+          <summary class="cursor-pointer select-none text-sm font-semibold text-highlighted">
+            Advanced technical details
+          </summary>
+          <div class="mt-4 space-y-4">
+            <dl class="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+              <div><dt class="font-semibold uppercase tracking-wide text-muted">Request</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.requestMethod || '—' }} {{ detail.requestPath || '—' }}</dd></div>
+              <div><dt class="font-semibold uppercase tracking-wide text-muted">Request ID</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.requestId || 'Not recorded' }}</dd></div>
+              <div><dt class="font-semibold uppercase tracking-wide text-muted">Network Address</dt><dd class="mt-1 font-mono text-default">{{ detail.ipAddress || 'Not recorded' }}</dd></div>
+              <div><dt class="font-semibold uppercase tracking-wide text-muted">Event ID</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.eventId || 'Legacy record' }}</dd></div>
+              <div><dt class="font-semibold uppercase tracking-wide text-muted">Integrity Version</dt><dd class="mt-1 font-mono text-default">{{ detail.integrityVersion ?? '—' }}</dd></div>
+            </dl>
+            <div>
+              <h3 class="mb-2 text-sm font-semibold text-highlighted">Metadata</h3>
+              <pre class="max-h-64 overflow-auto rounded-xl border border-default bg-elevated/40 p-4 text-xs text-default">{{ formatJson(detail.metadata) }}</pre>
+            </div>
+            <div class="rounded-xl border border-default p-4">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold text-highlighted">Integrity seal</h3>
+                <UBadge :label="detail.sealed ? 'Sealed' : 'Legacy unsealed'" :color="detail.sealed ? 'success' : 'neutral'" variant="soft" />
+              </div>
+              <dl class="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+                <div><dt class="font-semibold uppercase tracking-wide text-muted">Previous Hash</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.previousHash || 'Chain start / legacy' }}</dd></div>
+                <div><dt class="font-semibold uppercase tracking-wide text-muted">Record Hash</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.recordHash || 'Not sealed' }}</dd></div>
+              </dl>
+            </div>
           </div>
-          <dl class="mt-3 grid gap-3 text-xs sm:grid-cols-2">
-            <div><dt class="font-semibold uppercase tracking-wide text-muted">Event ID</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.eventId || 'Legacy record' }}</dd></div>
-            <div><dt class="font-semibold uppercase tracking-wide text-muted">Integrity Version</dt><dd class="mt-1 font-mono text-default">{{ detail.integrityVersion ?? '—' }}</dd></div>
-            <div><dt class="font-semibold uppercase tracking-wide text-muted">Previous Hash</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.previousHash || 'Chain start / legacy' }}</dd></div>
-            <div><dt class="font-semibold uppercase tracking-wide text-muted">Record Hash</dt><dd class="mt-1 break-all font-mono text-default">{{ detail.recordHash || 'Not sealed' }}</dd></div>
-          </dl>
-        </div>
+        </details>
 
         <div class="flex justify-end"><UButton label="Close" color="neutral" variant="outline" @click="detailOpen = false" /></div>
       </div>

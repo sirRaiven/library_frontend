@@ -75,19 +75,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
-    <section class="rounded-3xl border border-default bg-elevated/30 p-6 shadow-sm sm:p-8">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div class="max-w-3xl">
-          <UBadge label="Library collection" icon="i-lucide-book-open" color="primary" variant="soft" />
-          <h1 class="mt-3 text-3xl font-bold text-highlighted">Find books for teaching and department use</h1>
-          <p class="mt-2 text-sm leading-6 text-muted">
-            Search the physical collection and check copy availability. Bring the book and your Faculty ID to the Library counter for checkout.
-          </p>
-        </div>
-        <UButton label="My Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" color="neutral" variant="outline" />
-      </div>
-    </section>
+  <div class="sncbt-page-shell space-y-6">
+    <FacultyPageHeader
+      eyebrow="Library Services"
+      title="Book Collection"
+      description="Search the physical collection, check copy availability, and find books for teaching or department use."
+      icon="i-lucide-book-open"
+    >
+      <template #actions>
+        <UButton label="Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" color="neutral" variant="outline" />
+      </template>
+    </FacultyPageHeader>
 
     <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-4 sm:p-5' }">
       <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr]">
