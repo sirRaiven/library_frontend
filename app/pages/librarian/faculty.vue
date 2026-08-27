@@ -1130,46 +1130,17 @@ onMounted(() => {
 
       <section
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+        aria-label="Faculty summary"
       >
-        <UCard
+        <LibrarianMetricCard
           v-for="card in cards"
           :key="card.label"
-        >
-          <div
-            class="flex items-start justify-between gap-4"
-          >
-            <div>
-              <p
-                class="text-sm font-medium text-muted"
-              >
-                {{ card.label }}
-              </p>
-
-              <p
-                class="mt-2 text-3xl font-bold text-highlighted"
-              >
-                {{ card.value }}
-              </p>
-
-              <p
-                class="mt-1 text-xs text-muted"
-              >
-                {{
-                  card.description
-                }}
-              </p>
-            </div>
-
-            <div
-              class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-elevated text-primary"
-            >
-              <UIcon
-                :name="card.icon"
-                class="size-5"
-              />
-            </div>
-          </div>
-        </UCard>
+          :label="card.label"
+          :value="card.value"
+          :description="card.description"
+          :icon="card.icon"
+          :tone="card.label === 'Active' ? 'success' : card.label === 'Inactive' ? 'warning' : card.label === 'Active Loans' ? 'info' : card.label === 'Retired' ? 'neutral' : 'primary'"
+        />
       </section>
 
       <UCard>

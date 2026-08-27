@@ -320,19 +320,17 @@ onMounted(async () => {
         </template>
       </LibrarianPageHeader>
 
-      <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
-        <UCard v-for="card in cards" :key="card.label">
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="text-sm font-medium text-muted">{{ card.label }}</p>
-              <p class="mt-2 text-3xl font-bold text-highlighted">{{ card.value }}</p>
-            </div>
-            <div class="flex size-11 items-center justify-center rounded-xl bg-elevated text-success">
-              <UIcon :name="card.icon" class="size-5" />
-            </div>
-          </div>
-        </UCard>
-      </div>
+      <section class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4" aria-label="Membership summary">
+        <LibrarianMetricCard
+          v-for="card in cards"
+          :key="card.label"
+          :label="card.label"
+          :value="card.value"
+          :icon="card.icon"
+          :tone="card.label === 'Active' ? 'success' : card.label === 'Expired' ? 'warning' : card.label === 'Suspended' ? 'error' : 'primary'"
+          :description="card.label === 'Membership Records' ? 'Memberships recorded in the Library' : card.label === 'Active' ? 'Currently valid memberships' : card.label === 'Expired' ? 'Memberships ready for renewal' : 'Memberships with restricted access'"
+        />
+      </section>
 
       <div class="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_24rem]">
         <UCard>

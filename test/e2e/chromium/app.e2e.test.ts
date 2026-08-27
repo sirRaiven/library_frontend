@@ -41,7 +41,7 @@ describe("chromium full browser regression", async () => {
 
   it("renders the sign-in UI", async () => {
     const page = await createPage("/");
-    await page.getByRole("heading", { name: "SNCBT Library" }).waitFor();
+    await page.getByRole("heading", { name: "Sign in to continue" }).waitFor();
 
     expect(await page.getByPlaceholder("Enter email or username").isVisible()).toBe(true);
     expect(await page.getByPlaceholder("Enter password").isVisible()).toBe(true);
@@ -67,7 +67,7 @@ describe("chromium full browser regression", async () => {
     for (const width of [360, 390, 430, 768, 1024, 1280]) {
       const page = await createPage("/");
       await page.setViewportSize({ width, height: width < 768 ? 800 : 900 });
-      await page.getByRole("heading", { name: "SNCBT Library" }).waitFor();
+      await page.getByRole("heading", { name: "Sign in to continue" }).waitFor();
 
       const sizes = await page.evaluate(() => ({
         innerWidth: window.innerWidth,

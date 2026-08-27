@@ -889,7 +889,7 @@ onMounted(() => {
       <div
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <div
             class="flex items-center gap-4"
           >
@@ -915,7 +915,7 @@ onMounted(() => {
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <div
             class="flex items-center gap-4"
           >
@@ -941,7 +941,7 @@ onMounted(() => {
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <div
             class="flex items-center gap-4"
           >
@@ -967,7 +967,7 @@ onMounted(() => {
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <div
             class="flex items-center gap-4"
           >

@@ -34,7 +34,8 @@ describe("whole-system UI revamp contract", () => {
     expect(signIn).toContain(
       "min-h-screen flex flex-col justify-center items-center bg-[#f4fbf8] dark:bg-neutral-950 p-4 transition-colors relative overflow-hidden",
     );
-    expect(signIn).toContain("One place for your Library services.");
+    expect(signIn).toContain("Library Management System");
+    expect(signIn).not.toContain("Open Student Registration");
     expect(signIn).toContain("Sign in to continue");
   });
 

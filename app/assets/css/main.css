@@ -672,3 +672,64 @@ body {
     transform: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+ * Librarian-wide consistency pass
+ * Keep every portal on one continuous canvas and normalize legacy Librarian
+ * sections without changing business behavior.
+ * -------------------------------------------------------------------------- */
+.sncbt-dashboard-canvas {
+  min-height: 100%;
+  background-color: var(--sncbt-canvas);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-attachment: local;
+}
+
+.sncbt-portal-frame,
+.sncbt-portal-view,
+.sncbt-librarian-view {
+  min-height: 100%;
+}
+
+.sncbt-librarian-view .sncbt-page-shell {
+  padding-bottom: max(var(--sncbt-space-page), 1.5rem);
+}
+
+.sncbt-librarian-view :where(.sncbt-page-hero, .sncbt-card, .sncbt-data-region, .sncbt-filter-panel, .sncbt-form-section) {
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-librarian-view :where(.sncbt-data-region, .sncbt-table-surface) {
+  background: color-mix(in srgb, var(--ui-bg) 98%, var(--ui-bg-elevated));
+}
+
+.sncbt-librarian-view :where(.sncbt-section-band) {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--sncbt-radius-lg);
+  background: color-mix(in srgb, var(--ui-bg) 97%, var(--ui-bg-elevated));
+  padding: clamp(1rem, 1.8vw, 1.35rem);
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-librarian-view :where(.sncbt-record-list) {
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--sncbt-radius-lg);
+  background: var(--ui-bg);
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-librarian-view :where(.sncbt-record-row) {
+  transition: background-color 130ms ease, border-color 130ms ease;
+}
+
+.sncbt-librarian-view :where(.sncbt-record-row:hover) {
+  background: color-mix(in srgb, var(--ui-primary) 3%, transparent);
+}
+
+@media (max-width: 639px) {
+  .sncbt-librarian-view .sncbt-page-shell {
+    padding-bottom: 1.25rem;
+  }
+}

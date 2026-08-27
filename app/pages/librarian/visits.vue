@@ -665,48 +665,17 @@ onMounted(() => {
 
       <section
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        aria-label="Visit summary"
       >
-        <UCard
-          v-for="
-            card in summaryCards
-          "
+        <LibrarianMetricCard
+          v-for="card in summaryCards"
           :key="card.label"
-        >
-          <div
-            class="flex items-start justify-between gap-4"
-          >
-            <div>
-              <p
-                class="text-sm text-muted"
-              >
-                {{ card.label }}
-              </p>
-
-              <p
-                class="mt-2 text-3xl font-bold text-highlighted"
-              >
-                {{ card.value }}
-              </p>
-
-              <p
-                class="mt-1 text-xs text-muted"
-              >
-                {{
-                  card.description
-                }}
-              </p>
-            </div>
-
-            <div
-              class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success"
-            >
-              <UIcon
-                :name="card.icon"
-                class="size-5"
-              />
-            </div>
-          </div>
-        </UCard>
+          :label="card.label"
+          :value="card.value"
+          :description="card.description"
+          :icon="card.icon"
+          :tone="card.label === 'Student Visits' ? 'success' : card.label === 'Faculty Visits' ? 'info' : card.label === 'Unique Visitors' ? 'neutral' : 'primary'"
+        />
       </section>
 
       <UCard>

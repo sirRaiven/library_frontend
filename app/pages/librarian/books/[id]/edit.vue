@@ -305,34 +305,23 @@ onMounted(() => {
 <template>
   <UContainer class="sncbt-page-shell">
     <div class="mx-auto max-w-5xl space-y-6">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex items-start gap-3">
+      <LibrarianPageHeader
+        eyebrow="Books & Collection"
+        title="Edit Book Information"
+        description="Update catalog details, classification, generated call number, and the shelf location used by this title's physical copies."
+        icon="i-lucide-book-open-text"
+      >
+        <template #actions>
           <UButton
             :to="detailRoute"
+            label="Back to Record"
             icon="i-lucide-arrow-left"
             color="neutral"
-            variant="ghost"
-            square
-            aria-label="Back to book record"
+            variant="outline"
+            :disabled="isSaving"
           />
-          <div>
-            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">
-              Edit Book Information
-            </h1>
-            <p class="mt-1 max-w-3xl text-sm text-muted">
-              Update the classification, generated call number, subject, and
-              physical shelf location.
-            </p>
-          </div>
-        </div>
-        <UButton
-          :to="detailRoute"
-          label="Cancel"
-          color="neutral"
-          variant="outline"
-          :disabled="isSaving"
-        />
-      </div>
+        </template>
+      </LibrarianPageHeader>
 
       <UAlert
         color="info"

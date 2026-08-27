@@ -354,7 +354,7 @@ onBeforeUnmount(() => {
 
     <UDashboardPanel
       id="student-main"
-      :ui="{ root: 'min-w-0 bg-transparent', body: 'p-0 sm:p-0' }"
+      :ui="{ root: 'min-w-0 bg-[var(--sncbt-canvas)]', body: 'sncbt-dashboard-canvas p-0 sm:p-0' }"
     >
       <template #header>
         <UDashboardNavbar
@@ -457,7 +457,7 @@ onBeforeUnmount(() => {
       </template>
 
       <template #body>
-        <main id="main-content" class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+        <main id="main-content" class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
             <div class="sncbt-portal-view">

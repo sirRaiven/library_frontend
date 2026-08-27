@@ -943,8 +943,8 @@ watch(
     <UDashboardPanel
       id="librarian-main"
       :ui="{
-        root: 'min-w-0 bg-transparent',
-        body: 'p-0 sm:p-0',
+        root: 'min-w-0 bg-[var(--sncbt-canvas)]',
+        body: 'sncbt-dashboard-canvas p-0 sm:p-0',
       }"
     >
       <template #header>
@@ -1134,13 +1134,13 @@ watch(
       <template #body>
         <main
           id="main-content"
-          class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors duration-200"
+          class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors duration-200"
         >
           <div
             class="sncbt-portal-frame"
           >
             <SystemMaintenanceBanner />
-            <div class="sncbt-portal-view">
+            <div class="sncbt-portal-view sncbt-librarian-view">
               <slot />
             </div>
           </div>

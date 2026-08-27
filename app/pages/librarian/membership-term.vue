@@ -143,7 +143,7 @@ onMounted(loadTerm);
       </LibrarianPageHeader>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <p class="text-sm text-muted">Term Status</p>
           <div class="mt-3 flex items-center gap-2">
             <UBadge :color="form.status === 'Open' ? 'success' : 'neutral'" variant="soft">
@@ -151,17 +151,17 @@ onMounted(loadTerm);
             </UBadge>
           </div>
         </UCard>
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <p class="text-sm text-muted">Student Registration</p>
           <p class="mt-3 text-2xl font-bold text-highlighted">
             {{ form.registrationOpen ? "Open" : "Closed" }}
           </p>
         </UCard>
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <p class="text-sm text-muted">Membership Validity</p>
           <p class="mt-3 text-2xl font-bold text-highlighted">{{ durationDays }} days</p>
         </UCard>
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <p class="text-sm text-muted">Current Term</p>
           <p class="mt-3 font-semibold text-highlighted">{{ form.semester }}</p>
           <p class="text-sm text-muted">{{ form.academicYear }}</p>

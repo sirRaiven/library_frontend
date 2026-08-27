@@ -800,7 +800,7 @@ onBeforeUnmount(() => {
       <div
         class="grid grid-cols-2 gap-3 lg:grid-cols-4"
       >
-        <UCard>
+        <UCard class="sncbt-metric-card block"> 
           <div class="flex items-center gap-3">
             <div
               class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
@@ -824,7 +824,7 @@ onBeforeUnmount(() => {
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <div class="flex items-center gap-3">
             <div
               class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info"
@@ -848,7 +848,7 @@ onBeforeUnmount(() => {
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <div class="flex items-center gap-3">
             <div
               class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success"
@@ -872,7 +872,7 @@ onBeforeUnmount(() => {
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="sncbt-metric-card block">
           <div class="flex items-center gap-3">
             <div
               class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning"

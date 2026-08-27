@@ -559,12 +559,12 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
           :description="`Current policy: ${money(librarySettings.settings.value.fines.overdueFinePerDay || 10)} per chargeable school day and ${money(librarySettings.settings.value.membership.libraryCardReplacementFee || 50)} for a Library Card replacement. Students and Faculty pay at the Cashier; the Librarian records the Official Receipt before a fine is marked Paid.`"
         />
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <UCard><p class="text-sm text-muted">Unpaid Fines</p><p class="mt-2 text-3xl font-bold text-warning">{{ summary.unpaid }}</p></UCard>
-          <UCard><p class="text-sm text-muted">Outstanding Amount</p><p class="mt-2 text-3xl font-bold text-error">{{ money(summary.outstandingAmount) }}</p></UCard>
-          <UCard><p class="text-sm text-muted">Paid and Verified</p><p class="mt-2 text-3xl font-bold text-success">{{ summary.paid }}</p></UCard>
-          <UCard><p class="text-sm text-muted">Card Replacements</p><p class="mt-2 text-3xl font-bold text-highlighted">{{ summary.cardReplacements }}</p></UCard>
-        </div>
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Fine and payment summary">
+          <LibrarianMetricCard label="Unpaid Fines" :value="summary.unpaid" description="Fine records still awaiting payment" icon="i-lucide-receipt-text" tone="warning" />
+          <LibrarianMetricCard label="Outstanding Amount" :value="money(summary.outstandingAmount)" description="Current unpaid assessed amount" icon="i-lucide-philippine-peso" tone="error" />
+          <LibrarianMetricCard label="Paid and Verified" :value="summary.paid" description="Payments verified using an Official Receipt" icon="i-lucide-badge-check" tone="success" />
+          <LibrarianMetricCard label="Card Replacements" :value="summary.cardReplacements" description="Recorded Library Card replacement charges" icon="i-lucide-id-card" tone="info" />
+        </section>
 
         <UCard>
           <template #header>
@@ -617,63 +617,18 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
           description="Regular holidays, special non-working days, and approved school dates pause overdue-fine counting. Special working days are displayed for reference, but fines continue normally."
         />
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <UCard>
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="text-sm text-muted">Next No-Fine Day</p>
-                <p class="mt-2 text-xl font-bold text-highlighted">
-                  {{ nextNoFineDay ? dateLabel(nextNoFineDay.startDate) : 'None scheduled' }}
-                </p>
-                <p v-if="nextNoFineDay" class="mt-1 truncate text-sm text-muted">{{ nextNoFineDay.title }}</p>
-              </div>
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <UIcon name="i-lucide-calendar-clock" class="size-5" />
-              </div>
-            </div>
-          </UCard>
-
-          <UCard>
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-sm text-muted">Upcoming or Ongoing</p>
-                <p class="mt-2 text-3xl font-bold text-highlighted">{{ upcomingNoFineCount }}</p>
-                <p class="mt-1 text-xs text-muted">Active dates from today onward</p>
-              </div>
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
-                <UIcon name="i-lucide-calendar-check-2" class="size-5" />
-              </div>
-            </div>
-          </UCard>
-
-          <UCard>
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-sm text-muted">Official Holiday Dates</p>
-                <p class="mt-2 text-3xl font-bold text-highlighted">{{ automaticHolidayCount }}</p>
-                <p class="mt-1 text-xs text-muted">
-                  {{ regularHolidayCount }} regular · {{ specialNonWorkingCount }} special non-working · {{ specialWorkingCount }} special working
-                </p>
-              </div>
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-                <UIcon name="i-lucide-flag" class="size-5" />
-              </div>
-            </div>
-          </UCard>
-
-          <UCard>
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-sm text-muted">School-Added Dates</p>
-                <p class="mt-2 text-3xl font-bold text-highlighted">{{ schoolAddedCount }}</p>
-                <p class="mt-1 text-xs text-muted">Events, suspensions, and closures</p>
-              </div>
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
-                <UIcon name="i-lucide-school" class="size-5" />
-              </div>
-            </div>
-          </UCard>
-        </div>
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="No-fine calendar summary">
+          <LibrarianMetricCard
+            label="Next No-Fine Day"
+            :value="nextNoFineDay ? dateLabel(nextNoFineDay.startDate) : 'None scheduled'"
+            :description="nextNoFineDay?.title || 'No upcoming no-fine period is scheduled'"
+            icon="i-lucide-calendar-clock"
+            tone="primary"
+          />
+          <LibrarianMetricCard label="Upcoming or Ongoing" :value="upcomingNoFineCount" description="Active dates from today onward" icon="i-lucide-calendar-check-2" tone="success" />
+          <LibrarianMetricCard label="Official Holiday Dates" :value="automaticHolidayCount" :description="`${regularHolidayCount} regular · ${specialNonWorkingCount} special non-working · ${specialWorkingCount} special working`" icon="i-lucide-flag" tone="warning" />
+          <LibrarianMetricCard label="School-Added Dates" :value="schoolAddedCount" description="Events, suspensions, and closures" icon="i-lucide-school" tone="info" />
+        </section>
 
         <UCard>
           <template #header>

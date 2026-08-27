@@ -187,28 +187,15 @@ onMounted(load);
     </LibrarianPageHeader>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-      <UCard
-        v-for="card in summaryCards"
-        :key="card.label"
-        :ui="{ body: 'p-4' }"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-muted">
-              {{ card.label }}
-            </p>
-            <p class="mt-2 text-2xl font-bold text-highlighted">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="flex size-10 items-center justify-center rounded-xl bg-elevated text-primary">
-            <UIcon :name="card.icon" class="size-5" />
-          </div>
-        </div>
-        <p class="mt-3 text-xs leading-relaxed text-muted">
-          {{ card.description }}
-        </p>
-      </UCard>
+      <LibrarianMetricCard
+          v-for="card in summaryCards"
+          :key="card.label"
+          :label="card.label"
+          :value="card.value"
+          :description="card.description"
+          :icon="card.icon"
+          :tone="card.label === 'Critical' ? 'error' : card.label === 'Active Notices' ? 'success' : card.label === 'Resolved' ? 'neutral' : 'primary'"
+        />
     </div>
 
     <UCard :ui="{ body: 'p-4 sm:p-5' }">

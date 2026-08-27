@@ -530,7 +530,10 @@ function preparedReportForOutput(): LibraryReportDocument | null {
   return report;
 }
 
-async function generateReport(key: StandardReportKey) {
+async function generateReport(
+  key: StandardReportKey,
+  options: { scrollToPreview?: boolean } = {},
+) {
   if (!validatePeriod()) {
     return;
   }
@@ -542,11 +545,13 @@ async function generateReport(key: StandardReportKey) {
     activeReport.value = await reportApi.generate(key, filters);
     resetReportCustomization(activeReport.value);
 
-    await nextTick();
-    document.getElementById("report-preview")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+    if (options.scrollToPreview !== false) {
+      await nextTick();
+      document.getElementById("report-preview")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
   } catch (error) {
     toast.add({
       title: "Unable to generate report",
@@ -750,7 +755,7 @@ function metricTone(tone?: LibraryReportMetric["tone"]) {
 
 onMounted(async () => {
   loadBranding();
-  await generateReport("executive-summary");
+  await generateReport("executive-summary", { scrollToPreview: false });
 });
 </script>
 

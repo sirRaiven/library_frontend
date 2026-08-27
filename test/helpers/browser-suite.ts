@@ -15,7 +15,7 @@ export function registerBrowserSmokeSuite(type: BrowserType) {
 
     it("renders the sign-in UI", async () => {
       const page = await createPage("/");
-      await page.getByRole("heading", { name: "SNCBT Library" }).waitFor();
+      await page.getByRole("heading", { name: "Sign in to continue" }).waitFor();
 
       expect(await page.getByPlaceholder("Enter email or username").isVisible()).toBe(true);
       expect(await page.getByPlaceholder("Enter password").isVisible()).toBe(true);
@@ -40,7 +40,7 @@ export function registerBrowserSmokeSuite(type: BrowserType) {
     it("has no horizontal overflow at a phone-sized viewport", async () => {
       const page = await createPage("/");
       await page.setViewportSize({ width: 360, height: 800 });
-      await page.getByRole("heading", { name: "SNCBT Library" }).waitFor();
+      await page.getByRole("heading", { name: "Sign in to continue" }).waitFor();
 
       const sizes = await page.evaluate(() => ({
         innerWidth: window.innerWidth,

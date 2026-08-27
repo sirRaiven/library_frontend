@@ -126,12 +126,13 @@ onMounted(() => {
 
 <template>
   <div
-  class="min-h-screen flex flex-col justify-center items-center bg-[#f4fbf8] dark:bg-neutral-950 p-4 transition-colors relative overflow-hidden"
+    class="min-h-screen flex flex-col justify-center items-center bg-[#f4fbf8] dark:bg-neutral-950 p-4 transition-colors relative overflow-hidden"
   >
+    <div class="pointer-events-none absolute inset-0 bg-slate-200/55 dark:bg-neutral-950" />
     <div class="pointer-events-none absolute inset-0">
-      <div class="absolute -left-24 -top-20 size-80 rounded-full bg-primary/10 blur-3xl sm:size-[30rem]" />
-      <div class="absolute -bottom-28 -right-20 size-96 rounded-full bg-info/7 blur-3xl sm:size-[34rem]" />
-      <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      <div class="absolute -left-32 -top-28 size-[28rem] rounded-full bg-emerald-900/8 blur-3xl dark:bg-emerald-400/5" />
+      <div class="absolute -bottom-36 -right-28 size-[30rem] rounded-full bg-slate-500/8 blur-3xl dark:bg-slate-400/5" />
+      <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-500/15 to-transparent dark:via-white/8" />
     </div>
 
     <div class="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
@@ -142,19 +143,20 @@ onMounted(() => {
           variant="outline"
           size="lg"
           square
-          class="border-default/80 bg-default/85 shadow-[var(--sncbt-shadow-card)] backdrop-blur"
+          class="border-slate-300/80 bg-white/80 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/85"
           aria-label="Change color mode"
           @click="() => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark' }"
         />
       </UTooltip>
     </div>
 
-    <main class="relative z-10 w-full max-w-5xl">
-      <div class="overflow-hidden rounded-[1.5rem] border border-default/80 bg-default shadow-[var(--sncbt-shadow-overlay)] lg:grid lg:grid-cols-[0.9fr_1.1fr]">
-        <section class="relative hidden overflow-hidden border-e border-default bg-primary px-8 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-10 xl:py-12">
-          <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(255,255,255,.16),transparent_32%),radial-gradient(circle_at_85%_88%,rgba(255,255,255,.08),transparent_28%)]" />
+    <main class="relative z-10 w-full max-w-4xl">
+      <div class="overflow-hidden rounded-[1.4rem] border border-slate-300/80 bg-white shadow-[0_22px_60px_rgba(15,23,42,.12)] dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-[0_24px_70px_rgba(0,0,0,.35)] lg:grid lg:grid-cols-[0.82fr_1.18fr]">
+        <section class="relative hidden overflow-hidden border-e border-emerald-950/40 bg-[#163a33] px-8 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-10 xl:py-12">
+          <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(255,255,255,.08),transparent_35%),linear-gradient(145deg,transparent_35%,rgba(0,0,0,.10))]" />
+
           <div class="relative">
-            <div class="flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-white p-2 shadow-lg shadow-black/10">
+            <div class="flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-white/95 p-2 shadow-lg shadow-black/15 ring-1 ring-white/15">
               <img
                 src="/sncbt-library-logo.png"
                 alt="SNCBT Library logo"
@@ -166,59 +168,41 @@ onMounted(() => {
               >
             </div>
 
-            <p class="mt-7 text-xs font-bold uppercase tracking-[0.18em] text-white/70">SNCBT Library</p>
-            <h1 class="mt-2 max-w-md text-3xl font-semibold tracking-tight text-white xl:text-4xl">
-              One place for your Library services.
+            <p class="mt-7 text-xs font-bold uppercase tracking-[0.18em] text-emerald-100/70">SNCBT Library</p>
+            <h1 class="mt-2 max-w-sm text-3xl font-semibold tracking-tight text-white">
+              Library Management System
             </h1>
-            <p class="mt-4 max-w-md text-sm leading-6 text-white/78">
-              Browse the collection, manage borrowing, keep track of Library activity, and stay connected through a secure account.
+            <p class="mt-4 max-w-sm text-sm leading-6 text-emerald-50/70">
+              Secure access to the Library services assigned to your account.
             </p>
           </div>
 
-          <div class="relative mt-10 space-y-3">
-            <div class="flex items-center gap-3 rounded-xl border border-white/15 bg-white/8 px-4 py-3 backdrop-blur-sm">
-              <UIcon name="i-lucide-search" class="size-5 shrink-0 text-white/90" />
-              <div>
-                <p class="text-sm font-semibold">Find information quickly</p>
-                <p class="mt-0.5 text-xs text-white/65">Clear navigation and searchable Library records.</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3 rounded-xl border border-white/15 bg-white/8 px-4 py-3 backdrop-blur-sm">
-              <UIcon name="i-lucide-shield-check" class="size-5 shrink-0 text-white/90" />
-              <div>
-                <p class="text-sm font-semibold">Access the right tools</p>
-                <p class="mt-0.5 text-xs text-white/65">Your portal adapts to your Library role.</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3 rounded-xl border border-white/15 bg-white/8 px-4 py-3 backdrop-blur-sm">
-              <UIcon name="i-lucide-bell" class="size-5 shrink-0 text-white/90" />
-              <div>
-                <p class="text-sm font-semibold">Stay informed</p>
-                <p class="mt-0.5 text-xs text-white/65">See borrowing, reservation, and account updates.</p>
-              </div>
-            </div>
+          <div class="relative mt-12 border-t border-white/10 pt-5">
+            <p class="text-xs leading-5 text-emerald-50/55">
+              SNCBT Library · Authorized users only
+            </p>
           </div>
         </section>
 
         <section class="p-6 sm:p-8 lg:p-10 xl:p-12" aria-labelledby="signin-heading">
           <div class="mx-auto max-w-md">
             <div class="flex items-center gap-3 lg:hidden">
-              <div class="flex size-12 items-center justify-center overflow-hidden rounded-xl border border-primary/15 bg-white p-1.5 shadow-sm dark:bg-slate-950">
+              <div class="flex size-12 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                 <img src="/sncbt-library-logo.png" alt="SNCBT Library logo" class="size-full object-contain">
               </div>
               <div>
                 <p class="font-semibold text-highlighted">SNCBT Library</p>
-                <p class="text-xs text-muted">Management System</p>
+                <p class="text-xs text-muted">Library Management System</p>
               </div>
             </div>
 
             <div class="mt-7 lg:mt-0">
-              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Welcome back</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-400">Account access</p>
               <h2 id="signin-heading" class="mt-1 text-2xl font-semibold tracking-tight text-highlighted sm:text-3xl">
                 Sign in to continue
               </h2>
               <p class="mt-2 text-sm leading-6 text-muted">
-                Use your Library account credentials to open your portal.
+                Enter your Library account credentials.
               </p>
             </div>
 
@@ -271,7 +255,7 @@ onMounted(() => {
                   color="neutral"
                   variant="outline"
                   class="w-full"
-                  :ui="{ base: 'h-12' }"
+                  :ui="{ base: 'h-12 bg-white/80 dark:bg-neutral-950/70' }"
                   autofocus
                 />
               </UFormField>
@@ -291,7 +275,7 @@ onMounted(() => {
                   color="neutral"
                   variant="outline"
                   class="w-full"
-                  :ui="{ base: 'h-12' }"
+                  :ui="{ base: 'h-12 bg-white/80 dark:bg-neutral-950/70' }"
                 >
                   <template #trailing>
                     <UButton
@@ -324,20 +308,11 @@ onMounted(() => {
                 block
                 icon="i-lucide-log-in"
                 :loading="isLoggingIn"
-                class="h-12 font-semibold shadow-sm"
+                class="h-12 bg-emerald-700 font-semibold shadow-sm hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
               >
                 Sign In
               </UButton>
             </UForm>
-
-            <div class="mt-7 border-t border-default pt-5 text-center">
-              <p class="text-xs leading-5 text-muted">
-                Need a Student Library account?
-                <NuxtLink to="/student-registration" class="font-semibold text-primary hover:underline">
-                  Open Student Registration
-                </NuxtLink>
-              </p>
-            </div>
           </div>
         </section>
       </div>

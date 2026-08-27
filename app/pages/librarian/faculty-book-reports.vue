@@ -224,12 +224,12 @@ onBeforeUnmount(() => {
       </template>
     </LibrarianPageHeader>
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }"><p class="text-xs font-semibold uppercase tracking-wide text-muted">All Reports</p><p class="mt-2 text-3xl font-bold text-highlighted">{{ summary.total }}</p></UCard>
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }"><p class="text-xs font-semibold uppercase tracking-wide text-muted">Awaiting Review</p><p class="mt-2 text-3xl font-bold text-highlighted">{{ summary.submitted }}</p></UCard>
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }"><p class="text-xs font-semibold uppercase tracking-wide text-muted">Lost Books</p><p class="mt-2 text-3xl font-bold text-highlighted">{{ summary.lost }}</p></UCard>
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }"><p class="text-xs font-semibold uppercase tracking-wide text-muted">Replacement Submitted</p><p class="mt-2 text-3xl font-bold text-highlighted">{{ summary.replacementSubmitted }}</p></UCard>
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }"><p class="text-xs font-semibold uppercase tracking-wide text-muted">Resolved</p><p class="mt-2 text-3xl font-bold text-highlighted">{{ summary.resolved }}</p></UCard>
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Faculty book report summary">
+      <LibrarianMetricCard label="All Reports" :value="summary.total" description="Faculty accountability records" icon="i-lucide-clipboard-list" tone="primary" />
+      <LibrarianMetricCard label="Awaiting Review" :value="summary.submitted" description="Reports waiting for Librarian review" icon="i-lucide-clock-3" tone="warning" />
+      <LibrarianMetricCard label="Lost Books" :value="summary.lost" description="Books reported lost" icon="i-lucide-book-x" tone="error" />
+      <LibrarianMetricCard label="Replacement Submitted" :value="summary.replacementSubmitted" description="Replacement copies awaiting verification" icon="i-lucide-package-check" tone="info" />
+      <LibrarianMetricCard label="Resolved" :value="summary.resolved" description="Completed accountability cases" icon="i-lucide-circle-check-big" tone="success" />
     </section>
 
     <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-4 sm:p-5' }">

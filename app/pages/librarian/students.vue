@@ -1469,19 +1469,17 @@ onBeforeUnmount(() => {
         </template>
       </LibrarianPageHeader>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <UCard v-for="card in cards" :key="card.label">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm font-medium text-muted">{{ card.label }}</p>
-              <p class="mt-2 text-3xl font-bold text-highlighted">{{ card.value }}</p>
-            </div>
-            <div class="flex size-11 items-center justify-center rounded-xl bg-elevated text-primary">
-              <UIcon :name="card.icon" class="size-5" />
-            </div>
-          </div>
-        </UCard>
-      </div>
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Student summary">
+        <LibrarianMetricCard
+          v-for="card in cards"
+          :key="card.label"
+          :label="card.label"
+          :value="card.value"
+          :icon="card.icon"
+          :tone="card.label === 'Active Memberships' ? 'success' : card.label === 'Needs Renewal' ? 'warning' : card.label === 'Suspended' ? 'error' : 'primary'"
+          :description="card.label === 'Registered Students' ? 'Student profiles in the Library' : card.label === 'Active Memberships' ? 'Ready to use Library services' : card.label === 'Needs Renewal' ? 'Memberships requiring renewal' : 'Temporarily restricted memberships'"
+        />
+      </section>
 
       <UCard>
         <template #header>
