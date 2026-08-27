@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LibraryBookCover from "~/components/shared/LibraryBookCover.vue";
 definePageMeta({
   layout: "faculty",
   middleware: ["faculty"],
@@ -45,12 +46,18 @@ watch(documentId, load, { immediate: true });
     </div>
 
     <UCard v-else-if="book" :ui="{ root: 'overflow-hidden ring-1 ring-default', body: 'p-0' }">
-      <div class="grid lg:grid-cols-[20rem_1fr]">
-        <div class="flex min-h-80 items-center justify-center border-b border-default bg-elevated/50 p-8 lg:border-b-0 lg:border-e">
-          <div class="flex h-80 w-56 items-center justify-center overflow-hidden rounded-2xl border border-default bg-default shadow-sm">
-            <img v-if="book.cover?.url" :src="book.cover.url" :alt="book.cover.alternativeText || book.title" class="size-full object-cover">
-            <UIcon v-else name="i-lucide-book-open" class="size-16 text-dimmed" />
-          </div>
+      <div class="grid lg:grid-cols-[21rem_1fr]">
+        <div class="border-b border-default bg-elevated/25 p-4 sm:p-6 lg:border-b-0 lg:border-e">
+          <LibraryBookCover
+            :title="book.title"
+            :author="book.author"
+            :call-number="book.callNumber"
+            :category="book.category"
+            :cover-url="book.cover?.url"
+            :cover-alt="book.cover?.alternativeText"
+            size="detail"
+            class="min-h-[30rem] w-full shadow-sm"
+          />
         </div>
 
         <div class="p-6 sm:p-8">
@@ -58,24 +65,37 @@ watch(documentId, load, { immediate: true });
             <UBadge :label="book.availability.status" :color="availabilityColor(book.availability.status)" variant="soft" />
             <UBadge v-if="book.category" :label="book.category" color="neutral" variant="outline" />
           </div>
-          <h1 class="mt-4 text-3xl font-bold tracking-tight text-highlighted">{{ book.title }}</h1>
-          <p class="mt-2 text-lg text-muted">{{ book.author }}</p>
+          <h1 class="mt-4 text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">{{ book.title }}</h1>
+          <p class="mt-2 text-base text-muted sm:text-lg">{{ book.author }}</p>
+          <p class="mt-4 max-w-2xl text-sm leading-6 text-muted">Check availability, call number, and shelf location before visiting the Library.</p>
 
           <dl class="mt-8 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-2xl border border-default bg-elevated/30 p-4">
-              <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Available copies</dt>
+            <div class="rounded-2xl border border-success/20 bg-success/5 p-4">
+              <div class="flex items-center gap-2 text-success">
+                <UIcon name="i-lucide-book-check" class="size-4" />
+                <dt class="text-xs font-semibold uppercase tracking-wide">Available copies</dt>
+              </div>
               <dd class="mt-2 text-2xl font-bold text-highlighted">{{ book.availability.availableCopies }} of {{ book.availability.totalCopies }}</dd>
             </div>
             <div class="rounded-2xl border border-default bg-elevated/30 p-4">
-              <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Call number</dt>
+              <div class="flex items-center gap-2 text-muted">
+                <UIcon name="i-lucide-library" class="size-4" />
+                <dt class="text-xs font-semibold uppercase tracking-wide">Call number</dt>
+              </div>
               <dd class="mt-2 font-semibold text-highlighted">{{ book.callNumber || 'Not assigned' }}</dd>
             </div>
             <div class="rounded-2xl border border-default bg-elevated/30 p-4">
-              <dt class="text-xs font-semibold uppercase tracking-wide text-muted">ISBN</dt>
+              <div class="flex items-center gap-2 text-muted">
+                <UIcon name="i-lucide-scan-line" class="size-4" />
+                <dt class="text-xs font-semibold uppercase tracking-wide">ISBN</dt>
+              </div>
               <dd class="mt-2 font-semibold text-highlighted">{{ book.isbn || 'Not recorded' }}</dd>
             </div>
             <div class="rounded-2xl border border-default bg-elevated/30 p-4">
-              <dt class="text-xs font-semibold uppercase tracking-wide text-muted">Publisher / Edition</dt>
+              <div class="flex items-center gap-2 text-muted">
+                <UIcon name="i-lucide-building-2" class="size-4" />
+                <dt class="text-xs font-semibold uppercase tracking-wide">Publisher / Edition</dt>
+              </div>
               <dd class="mt-2 font-semibold text-highlighted">{{ [book.publisher, book.edition].filter(Boolean).join(' · ') || 'Not recorded' }}</dd>
             </div>
           </dl>

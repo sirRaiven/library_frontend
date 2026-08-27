@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PortalBookCard from "~/components/shared/PortalBookCard.vue";
 definePageMeta({
   layout: "faculty",
   middleware: ["faculty"],
@@ -31,9 +32,11 @@ const sortItems = [
   { label: "Newest Added", value: "newest" },
 ];
 
-function availabilityColor(status: string) {
-  return status === "Available" ? "success" as const : "neutral" as const;
-}
+const resultSummary = computed(() => {
+  const total = portal.pagination.value.total;
+  if (!total) return "No book titles found";
+  return `${total.toLocaleString()} book title${total === 1 ? "" : "s"} found`;
+});
 
 async function load() {
   try {
@@ -89,54 +92,48 @@ onBeforeUnmount(() => {
 
     <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-4 sm:p-5' }">
       <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr]">
-        <UInput v-model="search" icon="i-lucide-search" placeholder="Search title, author, ISBN, or call number" class="w-full" />
-        <USelect v-model="category" :items="categoryItems" value-key="value" label-key="label" class="w-full" />
-        <USelect v-model="availability" :items="availabilityItems" value-key="value" label-key="label" class="w-full" />
-        <USelect v-model="sort" :items="sortItems" value-key="value" label-key="label" class="w-full" />
+        <UInput v-model="search" icon="i-lucide-search" placeholder="Search title, author, ISBN, or call number" size="lg" class="w-full" />
+        <USelect v-model="category" :items="categoryItems" value-key="value" label-key="label" icon="i-lucide-tags" size="lg" class="w-full" />
+        <USelect v-model="availability" :items="availabilityItems" value-key="value" label-key="label" icon="i-lucide-book-check" size="lg" class="w-full" />
+        <USelect v-model="sort" :items="sortItems" value-key="value" label-key="label" icon="i-lucide-arrow-up-down" size="lg" class="w-full" />
       </div>
     </UCard>
 
-    <div v-if="portal.loading.value && !portal.books.value.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <USkeleton v-for="item in 6" :key="item" class="h-64 rounded-2xl" />
+    <div>
+      <h2 class="text-lg font-bold text-highlighted">Catalog Results</h2>
+      <p class="text-sm text-muted">{{ resultSummary }}</p>
     </div>
 
-    <section v-else-if="portal.books.value.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <UCard
-        v-for="book in portal.books.value"
-        :key="book.documentId"
-        :ui="{ root: 'h-full overflow-hidden ring-1 ring-default transition hover:-translate-y-0.5 hover:shadow-md', body: 'flex h-full flex-col p-5' }"
-      >
-        <div class="flex gap-4">
-          <div class="flex h-28 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-elevated">
-            <img v-if="book.cover?.url" :src="book.cover.url" :alt="book.cover.alternativeText || book.title" class="size-full object-cover" loading="lazy">
-            <UIcon v-else name="i-lucide-book-open" class="size-8 text-dimmed" />
+    <div v-if="portal.loading.value && !portal.books.value.length" class="grid gap-4 lg:grid-cols-2">
+      <UCard v-for="item in 6" :key="item" :ui="{ body: 'p-0 sm:p-0' }">
+        <div class="flex min-h-56 flex-col sm:flex-row">
+          <USkeleton class="h-48 w-full rounded-none sm:h-auto sm:w-40" />
+          <div class="flex-1 space-y-4 p-5">
+            <USkeleton class="h-5 w-4/5" />
+            <USkeleton class="h-4 w-1/2" />
+            <USkeleton class="h-14 w-full" />
+            <USkeleton class="mt-auto h-10 w-full" />
           </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <UBadge :label="book.availability.status" :color="availabilityColor(book.availability.status)" variant="soft" size="sm" />
-              <UBadge v-if="book.category" :label="book.category" color="neutral" variant="outline" size="sm" />
-            </div>
-            <h2 class="mt-3 line-clamp-2 font-semibold text-highlighted">{{ book.title }}</h2>
-            <p class="mt-1 line-clamp-1 text-sm text-muted">{{ book.author }}</p>
-          </div>
-        </div>
-
-        <dl class="mt-5 grid grid-cols-2 gap-3 text-xs">
-          <div class="rounded-xl bg-elevated/60 p-3">
-            <dt class="text-muted">Available copies</dt>
-            <dd class="mt-1 text-lg font-bold text-highlighted">{{ book.availability.availableCopies }}</dd>
-          </div>
-          <div class="rounded-xl bg-elevated/60 p-3">
-            <dt class="text-muted">Call number</dt>
-            <dd class="mt-1 truncate font-semibold text-highlighted">{{ book.callNumber || 'Not assigned' }}</dd>
-          </div>
-        </dl>
-
-        <div class="mt-auto flex items-center justify-between gap-3 pt-5">
-          <p class="text-xs text-muted">{{ book.availability.totalCopies }} physical {{ book.availability.totalCopies === 1 ? 'copy' : 'copies' }}</p>
-          <UButton label="View Details" icon="i-lucide-arrow-right" trailing :to="`/faculty/books/${book.documentId}`" color="primary" variant="soft" size="sm" />
         </div>
       </UCard>
+    </div>
+
+    <section v-else-if="portal.books.value.length" class="grid gap-4 lg:grid-cols-2">
+      <PortalBookCard
+        v-for="book in portal.books.value"
+        :key="book.documentId"
+        :title="book.title"
+        :author="book.author"
+        :document-id="book.documentId"
+        :to="`/faculty/books/${book.documentId}`"
+        :isbn="book.isbn"
+        :category="book.category"
+        :call-number="book.callNumber"
+        :cover="book.cover"
+        :status="book.availability.status"
+        :total-copies="book.availability.totalCopies"
+        :available-copies="book.availability.availableCopies"
+      />
     </section>
 
     <UCard v-else :ui="{ root: 'ring-1 ring-default', body: 'p-12 text-center' }">

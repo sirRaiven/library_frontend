@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LibraryBookCover from "~/components/shared/LibraryBookCover.vue";
 const route = useRoute();
 const collection = useStudentBooks();
 const toast = useToast();
@@ -122,24 +123,26 @@ watch(bookIdentifier, (value, previous) => {
 
     <template v-else>
       <div class="grid gap-6 lg:grid-cols-[minmax(17rem,0.72fr)_minmax(0,1.28fr)]">
-        <UCard :ui="{ body: 'p-0 sm:p-0' }" class="overflow-hidden">
-          <div class="aspect-[3/4] bg-elevated/50 p-6 sm:p-8">
-            <img
-              v-if="book.cover?.url"
-              :src="book.cover.url"
-              :alt="book.cover.alternativeText || `Cover of ${book.title}`"
-              class="size-full object-contain"
-              decoding="async"
-            >
-            <div
-              v-else
-              class="flex size-full flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-default bg-default text-center text-muted"
-            >
-              <UIcon name="i-lucide-book-open" class="size-14" />
-              <p class="text-sm">Cover image not available</p>
-            </div>
+        <div class="lg:sticky lg:top-24 lg:self-start">
+          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="overflow-hidden">
+            <LibraryBookCover
+              :title="book.title"
+              :author="book.author"
+              :call-number="book.callNumber"
+              :category="book.category"
+              :cover-url="book.cover?.url"
+              :cover-alt="book.cover?.alternativeText"
+              size="detail"
+              class="min-h-[28rem] w-full"
+            />
+          </UCard>
+
+          <div class="mt-3 rounded-2xl border border-default bg-elevated/35 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted">Find this book</p>
+            <p class="mt-2 text-sm font-semibold text-highlighted">{{ book.callNumber || 'Call number not recorded' }}</p>
+            <p class="mt-1 text-xs leading-relaxed text-muted">Use the call number and shelf location when looking for the physical copy.</p>
           </div>
-        </UCard>
+        </div>
 
         <div class="space-y-6">
           <UCard>
@@ -197,7 +200,7 @@ watch(bookIdentifier, (value, previous) => {
               :value="book.availability.borrowedCopies"
               description="Copies issued to members"
               icon="i-lucide-book-open-check"
-              tone="warning"
+              tone="info"
             />
             <StudentMetricCard
               label="Reserved"
@@ -264,9 +267,9 @@ watch(bookIdentifier, (value, previous) => {
           <UAlert
             color="neutral"
             variant="soft"
-            icon="i-lucide-lock-keyhole"
-            title="Protected inventory information"
-            description="Control numbers, accession numbers, acquisition prices, copy conditions, and internal remarks are intentionally excluded from the Student Portal."
+            icon="i-lucide-circle-help"
+            title="Need help finding a copy?"
+            description="This page shows the catalog and shelf information you need. Ask a Librarian if you cannot locate an available copy."
           />
         </div>
       </div>

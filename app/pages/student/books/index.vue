@@ -154,14 +154,6 @@ onMounted(async () => {
       </template>
     </StudentPageHeader>
 
-    <UAlert
-      color="primary"
-      variant="soft"
-      icon="i-lucide-shield-check"
-      title="Student-safe collection view"
-      description="Only catalog details, availability totals, and shelf locations are shown. Physical-copy barcodes, accession numbers, prices, and internal inventory remarks remain protected."
-    />
-
     <UCard :ui="{ body: 'p-4 sm:p-5' }">
       <form class="space-y-4" @submit.prevent="submitSearch">
         <div class="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_15rem_13rem_13rem]">
@@ -255,19 +247,21 @@ onMounted(async () => {
 
     <div
       v-if="collection.loading.value && !collection.books.value.length"
-      class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      class="grid gap-4 lg:grid-cols-2"
     >
       <UCard
         v-for="index in PAGE_SIZE"
         :key="index"
-        :ui="{ body: 'space-y-4 p-0 sm:p-0' }"
+        :ui="{ body: 'p-0 sm:p-0' }"
       >
-        <USkeleton class="aspect-[4/3] w-full" />
-        <div class="space-y-3 p-5">
-          <USkeleton class="h-5 w-4/5" />
-          <USkeleton class="h-4 w-1/2" />
-          <USkeleton class="h-16 w-full" />
-          <USkeleton class="h-9 w-full" />
+        <div class="flex min-h-56 flex-col sm:flex-row">
+          <USkeleton class="h-48 w-full rounded-none sm:h-auto sm:w-40" />
+          <div class="flex-1 space-y-4 p-5">
+            <USkeleton class="h-5 w-4/5" />
+            <USkeleton class="h-4 w-1/2" />
+            <USkeleton class="h-14 w-full" />
+            <USkeleton class="mt-auto h-10 w-full" />
+          </div>
         </div>
       </UCard>
     </div>
@@ -292,7 +286,7 @@ onMounted(async () => {
 
     <div
       v-else-if="collection.books.value.length"
-      class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      class="grid gap-4 lg:grid-cols-2"
       :class="collection.loading.value ? 'pointer-events-none opacity-60' : ''"
     >
       <StudentBookCard
