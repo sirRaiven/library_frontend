@@ -16,6 +16,7 @@ definePageMeta({
 });
 
 const route = useRoute();
+const colorMode = useColorMode();
 const auth = useAuth();
 const maintenance = useSystemMaintenance();
 
@@ -31,10 +32,7 @@ const loginError = ref("");
 const blockedDeviceNotice = computed(() => {
   if (route.query.access !== "device-blocked") return "";
 
-  return (
-    auth.deviceAccessMessage.value ||
-    "This device has been blocked by the system administrator. Use another authorized device or contact the Library administrator."
-  );
+  return "This device cannot be used to sign in. Please try another device or ask Library staff for help.";
 });
 
 const membershipAccessNotice = computed(() => {
@@ -45,10 +43,7 @@ const membershipAccessNotice = computed(() => {
     return "";
   }
 
-  return (
-    auth.membershipAccessMessage.value ||
-    "Your Student Portal account requires an active and verified Library membership. Visit the Library to renew your membership before signing in again."
-  );
+  return "Your library membership needs to be renewed before you can sign in. Please visit the Library for assistance.";
 });
 
 function validate(
@@ -98,7 +93,7 @@ async function handleLogin(
     ) {
       auth.clearSession();
       loginError.value =
-        "This account is not assigned to an available Library System portal. Please contact the system administrator.";
+        "We could not open a Library page for this account. Please ask Library staff for help.";
       return;
     }
 
@@ -123,23 +118,37 @@ onMounted(() => {
 });
 </script>
 
-
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-[#020c12] text-white">
-    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(16,185,129,0.10),transparent_25%),radial-gradient(circle_at_90%_85%,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,#031118_0%,#020b11_100%)]" />
-    <div class="pointer-events-none absolute -left-28 top-8 size-72 rounded-full bg-emerald-400/8 blur-3xl" />
-    <div class="pointer-events-none absolute -bottom-32 -right-24 size-96 rounded-full bg-emerald-400/6 blur-3xl" />
+  <div class="relative min-h-screen overflow-hidden bg-[#eef6f2] text-slate-900 transition-colors dark:bg-[#020c12] dark:text-white">
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(5,150,105,0.10),transparent_25%),radial-gradient(circle_at_90%_85%,rgba(14,165,233,0.06),transparent_24%),linear-gradient(180deg,#f4faf7_0%,#eaf3ef_100%)] dark:bg-[radial-gradient(circle_at_10%_10%,rgba(16,185,129,0.10),transparent_25%),radial-gradient(circle_at_90%_85%,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,#031118_0%,#020b11_100%)]" />
+    <div class="pointer-events-none absolute -left-28 top-8 size-72 rounded-full bg-emerald-500/8 blur-3xl dark:bg-emerald-400/8" />
+    <div class="pointer-events-none absolute -bottom-32 -right-24 size-96 rounded-full bg-emerald-600/6 blur-3xl dark:bg-emerald-400/6" />
 
-    <main class="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
-      <div class="grid w-full overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#041725]/92 shadow-[0_28px_80px_rgba(0,0,0,0.42)] backdrop-blur lg:grid-cols-[0.88fr_1.12fr]">
-        <section class="relative hidden min-h-[620px] overflow-hidden border-r border-white/10 px-9 py-10 lg:flex lg:flex-col lg:justify-between xl:px-11 xl:py-11">
-          <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(6,34,48,0.34),rgba(2,13,23,0.36))]" />
-          <div class="pointer-events-none absolute -right-16 top-16 size-40 rounded-full border border-emerald-300/10 bg-emerald-400/6" />
-          <div class="pointer-events-none absolute -bottom-20 right-4 size-64 rounded-full bg-emerald-400/8" />
+    <div class="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+      <UTooltip :text="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+        <UButton
+          :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
+          color="neutral"
+          variant="outline"
+          size="lg"
+          square
+          class="border-slate-300/80 bg-white/85 text-slate-700 shadow-sm backdrop-blur hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:shadow-lg dark:shadow-black/20 dark:hover:bg-white/10"
+          :aria-label="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          @click="() => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark' }"
+        />
+      </UTooltip>
+    </div>
+
+    <main class="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-16 sm:px-6 sm:py-14 lg:px-8 lg:py-10">
+      <div class="grid w-full overflow-hidden rounded-[1.6rem] border border-slate-200/90 bg-white/88 shadow-[0_24px_70px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-[#041725]/92 dark:shadow-[0_28px_80px_rgba(0,0,0,0.42)] lg:grid-cols-[0.88fr_1.12fr]">
+        <section class="relative hidden min-h-[600px] overflow-hidden border-r border-slate-200/80 bg-[#f8fbf9]/80 px-9 py-10 lg:flex lg:flex-col lg:justify-between xl:px-11 xl:py-11 dark:border-white/10 dark:bg-transparent">
+          <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(5,150,105,0.035),rgba(255,255,255,0.10))] dark:bg-[linear-gradient(145deg,rgba(6,34,48,0.34),rgba(2,13,23,0.36))]" />
+          <div class="pointer-events-none absolute -right-16 top-16 size-40 rounded-full border border-emerald-600/10 bg-emerald-500/6 dark:border-emerald-300/10 dark:bg-emerald-400/6" />
+          <div class="pointer-events-none absolute -bottom-20 right-4 size-64 rounded-full bg-emerald-500/7 dark:bg-emerald-400/8" />
 
           <div class="relative">
             <div class="flex items-center gap-3">
-              <div class="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-white p-2 shadow-lg shadow-black/20">
+              <div class="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-white p-2 shadow-md ring-1 ring-slate-200/80 dark:shadow-lg dark:shadow-black/20 dark:ring-0">
                 <img
                   src="/sncbt-library-logo.png"
                   alt="SNCBT Library logo"
@@ -151,66 +160,66 @@ onMounted(() => {
                 >
               </div>
               <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.19em] text-emerald-200/80">SNCBT Library</p>
-                <p class="mt-1 text-sm text-slate-300">Library Management System</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.19em] text-emerald-700 dark:text-emerald-200/80">SNCBT Library</p>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-300">Library Management System</p>
               </div>
             </div>
 
             <div class="mt-14 max-w-md">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300/80">Library portal</p>
-              <h1 class="mt-3 text-[2.7rem] font-semibold leading-[1.08] tracking-tight text-white">
-                Welcome back to your Library workspace.
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300/80">Welcome</p>
+              <h1 class="mt-3 text-[2.7rem] font-semibold leading-[1.08] tracking-tight text-slate-950 dark:text-white">
+                Your Library, all in one place.
               </h1>
-              <p class="mt-5 text-sm leading-7 text-slate-300">
-                Sign in with your assigned account to continue to the Library portal available for your role.
+              <p class="mt-5 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Sign in to view and use the Library services available to your account.
               </p>
             </div>
           </div>
 
-          <div class="relative overflow-hidden rounded-[1.35rem] border border-emerald-300/15 bg-[#071f35] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.26)]">
-            <div class="pointer-events-none absolute -bottom-12 -right-8 size-40 rounded-full bg-emerald-400/8" />
+          <div class="relative overflow-hidden rounded-[1.35rem] border border-emerald-700/15 bg-[#f1f8f4] p-5 shadow-[0_14px_32px_rgba(15,23,42,0.08)] dark:border-emerald-300/15 dark:bg-[#071f35] dark:shadow-[0_18px_40px_rgba(0,0,0,0.26)]">
+            <div class="pointer-events-none absolute -bottom-12 -right-8 size-40 rounded-full bg-emerald-500/8 dark:bg-emerald-400/8" />
             <div class="relative flex items-start justify-between gap-5">
               <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-300">Portal access</p>
-                <p class="mt-2 text-3xl font-bold tracking-tight text-white">Secure</p>
-                <p class="mt-2 text-sm leading-6 text-slate-300">Authorized Library accounts only</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-300">Library access</p>
+                <p class="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Ready</p>
+                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Sign in to continue</p>
               </div>
-              <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-400/10 text-emerald-300 shadow-[0_10px_22px_rgba(16,185,129,0.16)]">
-                <UIcon name="i-lucide-shield-check" class="size-5" />
+              <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-600/15 bg-emerald-500/10 text-emerald-700 shadow-[0_10px_22px_rgba(5,150,105,0.12)] dark:border-emerald-300/15 dark:bg-emerald-400/10 dark:text-emerald-300 dark:shadow-[0_10px_22px_rgba(16,185,129,0.16)]">
+                <UIcon name="i-lucide-library" class="size-5" />
               </div>
             </div>
           </div>
         </section>
 
         <section class="relative px-4 py-4 sm:px-7 sm:py-7 lg:flex lg:items-center lg:px-10 lg:py-10 xl:px-12">
-          <div class="pointer-events-none absolute right-3 top-3 size-24 rounded-full border border-emerald-300/10 bg-emerald-400/6 lg:hidden" />
+          <div class="pointer-events-none absolute right-3 top-3 size-24 rounded-full border border-emerald-600/10 bg-emerald-500/6 lg:hidden dark:border-emerald-300/10 dark:bg-emerald-400/6" />
 
-          <div class="relative mx-auto w-full max-w-lg overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#071c31]/95 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.32)] sm:p-7">
-            <div class="pointer-events-none absolute -bottom-16 -right-10 size-48 rounded-full bg-emerald-400/7" />
+          <div class="relative mx-auto w-full max-w-lg overflow-hidden rounded-[1.5rem] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.10)] sm:p-7 dark:border-white/10 dark:bg-[#071c31]/95 dark:shadow-[0_18px_45px_rgba(0,0,0,0.32)]">
+            <div class="pointer-events-none absolute -bottom-16 -right-10 size-48 rounded-full bg-emerald-500/6 dark:bg-emerald-400/7" />
 
             <div class="relative">
               <div class="flex items-center gap-3 lg:hidden">
-                <div class="flex size-11 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-md shadow-black/20">
+                <div class="flex size-11 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200/80 dark:shadow-md dark:shadow-black/20 dark:ring-0">
                   <img src="/sncbt-library-logo.png" alt="SNCBT Library logo" class="size-full object-contain">
                 </div>
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-semibold text-white">SNCBT Library</p>
-                  <p class="truncate text-xs text-slate-400">Library Management System</p>
+                  <p class="truncate text-sm font-semibold text-slate-950 dark:text-white">SNCBT Library</p>
+                  <p class="truncate text-xs text-slate-500 dark:text-slate-400">Library Management System</p>
                 </div>
               </div>
 
               <div class="mt-6 flex items-start justify-between gap-4 lg:mt-0">
                 <div class="min-w-0">
-                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300/85">Account access</p>
-                  <h2 id="signin-heading" class="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                    Sign in to continue
+                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300/85">Welcome back</p>
+                  <h2 id="signin-heading" class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl dark:text-white">
+                    Sign in
                   </h2>
-                  <p class="mt-2 text-sm leading-6 text-slate-300">
-                    Enter your Library account credentials.
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    Enter your email or username and password.
                   </p>
                 </div>
 
-                <div class="hidden size-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-400/10 text-emerald-300 sm:flex">
+                <div class="hidden size-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-600/15 bg-emerald-500/10 text-emerald-700 sm:flex dark:border-emerald-300/15 dark:bg-emerald-400/10 dark:text-emerald-300">
                   <UIcon name="i-lucide-user-round-check" class="size-5" />
                 </div>
               </div>
@@ -221,8 +230,8 @@ onMounted(() => {
                   color="warning"
                   variant="soft"
                   icon="i-lucide-construction"
-                  title="System maintenance in progress"
-                  description="Student, Faculty and Librarian portals are currently read-only. Administrators may still sign in to manage the system."
+                  title="Library maintenance"
+                  description="Some Library features are temporarily limited. You can still sign in and view available information."
                 />
 
                 <UAlert
@@ -230,7 +239,7 @@ onMounted(() => {
                   color="error"
                   variant="soft"
                   icon="i-lucide-shield-ban"
-                  title="Device access blocked"
+                  title="Sign-in unavailable on this device"
                   :description="blockedDeviceNotice"
                 />
 
@@ -239,7 +248,7 @@ onMounted(() => {
                   color="warning"
                   variant="soft"
                   icon="i-lucide-calendar-x-2"
-                  title="Library membership renewal required"
+                  title="Membership renewal needed"
                   :description="membershipAccessNotice"
                 />
               </div>
@@ -253,7 +262,7 @@ onMounted(() => {
                 <UFormField
                   name="identifier"
                   label="Email or Username"
-                  :ui="{ label: 'text-sm font-semibold text-slate-100' }"
+                  :ui="{ label: 'text-sm font-semibold text-slate-800 dark:text-slate-100' }"
                 >
                   <UInput
                     v-model="form.identifier"
@@ -265,8 +274,8 @@ onMounted(() => {
                     variant="outline"
                     class="w-full"
                     :ui="{
-                      base: 'h-12 rounded-xl border-white/10 bg-[#08172a]/85 text-white placeholder:text-slate-500',
-                      leadingIcon: 'text-emerald-300'
+                      base: 'h-12 rounded-xl border-slate-300/90 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-[#08172a]/85 dark:text-white dark:placeholder:text-slate-500',
+                      leadingIcon: 'text-emerald-700 dark:text-emerald-300'
                     }"
                     autofocus
                   />
@@ -275,7 +284,7 @@ onMounted(() => {
                 <UFormField
                   name="password"
                   label="Password"
-                  :ui="{ label: 'text-sm font-semibold text-slate-100' }"
+                  :ui="{ label: 'text-sm font-semibold text-slate-800 dark:text-slate-100' }"
                 >
                   <UInput
                     v-model="form.password"
@@ -288,8 +297,8 @@ onMounted(() => {
                     variant="outline"
                     class="w-full"
                     :ui="{
-                      base: 'h-12 rounded-xl border-white/10 bg-[#08172a]/85 text-white placeholder:text-slate-500',
-                      leadingIcon: 'text-emerald-300'
+                      base: 'h-12 rounded-xl border-slate-300/90 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-[#08172a]/85 dark:text-white dark:placeholder:text-slate-500',
+                      leadingIcon: 'text-emerald-700 dark:text-emerald-300'
                     }"
                   >
                     <template #trailing>
@@ -301,7 +310,7 @@ onMounted(() => {
                         variant="ghost"
                         size="sm"
                         square
-                        class="text-slate-300 hover:bg-white/5 hover:text-white"
+                        class="text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
                         @click="() => { showPassword = !showPassword; }"
                       />
                     </template>
@@ -313,7 +322,7 @@ onMounted(() => {
                   color="error"
                   variant="soft"
                   icon="i-lucide-circle-alert"
-                  title="Check your sign-in details"
+                  title="Unable to sign in"
                   :description="loginError"
                 />
 
@@ -324,15 +333,15 @@ onMounted(() => {
                   block
                   icon="i-lucide-log-in"
                   :loading="isLoggingIn"
-                  class="h-12 rounded-xl border border-emerald-300/20 bg-emerald-500 font-semibold text-slate-950 shadow-[0_14px_28px_rgba(16,185,129,0.22)] transition hover:bg-emerald-400"
+                  class="h-12 rounded-xl border border-emerald-500/20 bg-emerald-600 font-semibold text-white shadow-[0_12px_26px_rgba(5,150,105,0.20)] transition hover:bg-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-500 dark:text-slate-950 dark:shadow-[0_14px_28px_rgba(16,185,129,0.22)] dark:hover:bg-emerald-400"
                 >
                   Sign In
                 </UButton>
               </UForm>
 
-              <div class="mt-5 flex items-center gap-2 border-t border-white/8 pt-4 text-xs text-slate-400">
-                <UIcon name="i-lucide-lock-keyhole" class="size-3.5 text-emerald-300/80" />
-                <span>Authorized SNCBT Library users only</span>
+              <div class="mt-5 flex items-center gap-2 border-t border-slate-200/80 pt-4 text-xs text-slate-500 dark:border-white/8 dark:text-slate-400">
+                <UIcon name="i-lucide-circle-help" class="size-3.5 text-emerald-700 dark:text-emerald-300/80" />
+                <span>Need help signing in? Please ask Library staff.</span>
               </div>
             </div>
           </div>
