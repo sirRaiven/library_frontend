@@ -401,7 +401,7 @@ watch(monitoringChildActive, (isChild) => {
         <AdminMetricCard
           label="Assigned Role"
           :value="record.role?.name || 'No role'"
-          description="Role used for backend authorization."
+          description="Controls what this account can access and manage in the Library System."
           icon="i-lucide-shield-check"
           tone="primary"
         />

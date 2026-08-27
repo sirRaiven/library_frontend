@@ -385,7 +385,7 @@ async function refreshDashboard() {
 </script>
 
 <template>
-  <div class="space-y-6 m-4">
+  <div class="sncbt-page-shell space-y-6">
     <UCard
       class="sncbt-welcome-card border-primary/15 rounded-3xl shadow-md shadow-primary/15 p-0"
       :ui="{ body: 'p-0' }"
@@ -560,7 +560,7 @@ async function refreshDashboard() {
           v-else
           :key="stat.label"
           :to="stat.to"
-          class="group rounded-2xl border border-default bg-default p-5 shadow-sm shadow-emerald-100 transition hover:-translate-y-0.5 hover:border-success/40 hover:shadow-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+          class="sncbt-metric-card sncbt-card-interactive group cursor-pointer"
         >
           <div
             class="flex items-start justify-between gap-4"
@@ -608,7 +608,7 @@ async function refreshDashboard() {
             </p>
             <UIcon
               name="i-lucide-arrow-up-right"
-              class="size-4 text-dimmed transition group-hover:text-success"
+              class="size-4 text-dimmed transition group-hover:text-primary"
             />
           </div>
         </NuxtLink>
@@ -618,7 +618,7 @@ async function refreshDashboard() {
     <section
       class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.6fr)]"
     >
-      <UCard class="rounded-2xl shadow-sm shadow-emerald-100">
+      <UCard class="rounded-2xl">
         <template #header>
           <div
             class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -635,7 +635,7 @@ async function refreshDashboard() {
             </div>
 
             <UBadge
-              color="success"
+              color="primary"
               variant="soft"
             >
               Frequently used
@@ -650,10 +650,10 @@ async function refreshDashboard() {
             v-for="action in quickActions"
             :key="action.title"
             :to="action.to"
-            class="group flex items-start gap-4 rounded-2xl border border-default bg-elevated/50 p-4 transition hover:translate-y-0.5 hover:border-success/40 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+            class="sncbt-quick-action group flex items-start gap-4 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <div
-              class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success transition group-hover:bg-success group-hover:text-white"
+              class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"
             >
               <UIcon
                 :name="action.icon"
@@ -676,13 +676,13 @@ async function refreshDashboard() {
 
             <UIcon
               name="i-lucide-chevron-right"
-              class="mt-1 size-4 shrink-0 text-dimmed transition group-hover:translate-x-0.5 group-hover:text-success"
+              class="mt-1 size-4 shrink-0 text-dimmed transition group-hover:translate-x-0.5 group-hover:text-primary"
             />
           </NuxtLink>
         </div>
       </UCard>
 
-      <UCard class="rounded-2xl shadow-sm shadow-emerald-100">
+      <UCard class="rounded-2xl">
         <template #header>
           <div>
             <h2

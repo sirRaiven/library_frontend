@@ -304,52 +304,20 @@ async function printImportedBarcodes(): Promise<void> {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="mx-auto w-full max-w-[1600px] space-y-6">
-      <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Books & Collection"
+        title="Import Existing Inventory"
+        description="Upload the Library inventory workbook to register book titles, physical copies, accession numbers, and barcode values in batches."
+        icon="i-lucide-file-up"
       >
-        <div class="flex items-start gap-3">
-          <UButton
-            to="/librarian/books"
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="ghost"
-            square
-            aria-label="Back to Library Collection"
-          />
-
-          <div>
-            <h1
-              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-            >
-              Import Existing Inventory
-            </h1>
-            <p class="mt-1 max-w-3xl text-sm text-muted">
-              Upload the institution's existing Excel record. Each row can
-              register one book title with multiple physical copies, consecutive
-              accession numbers, and automatically generated barcode values.
-            </p>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            label="Download Template"
-            icon="i-lucide-file-down"
-            color="neutral"
-            variant="outline"
-            @click="excel.downloadImportTemplate"
-          />
-
-          <UButton
-            to="/librarian/books/register"
-            label="Manual Registration"
-            icon="i-lucide-book-plus"
-            color="primary"
-          />
-        </div>
-      </div>
+        <template #actions>
+          <UButton to="/librarian/books" label="Back to Collection" icon="i-lucide-arrow-left" color="neutral" variant="ghost" />
+          <UButton label="Download Template" icon="i-lucide-file-down" color="neutral" variant="outline" @click="excel.downloadImportTemplate" />
+          <UButton to="/librarian/books/register" label="Manual Registration" icon="i-lucide-book-plus" color="primary" />
+        </template>
+      </LibrarianPageHeader>
 
       <UAlert
         color="info"

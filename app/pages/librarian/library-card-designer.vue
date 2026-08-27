@@ -1096,91 +1096,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div
       class="mx-auto max-w-[1750px] space-y-6"
     >
-      <div
-        class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Membership & Cards"
+        title="Card Design"
+        description="Customize the permanent Student Library Card using a preset or your own layout, then save the design used for future printed cards."
+        icon="i-lucide-palette"
       >
-        <div
-          class="flex items-start gap-3"
-        >
-          <div
-            class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"
-          >
-            <UIcon
-              name="i-lucide-palette"
-              class="size-6"
-            />
-          </div>
-
-          <div>
-            <h1
-              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-            >
-              Library Card Designer
-            </h1>
-
-            <p
-              class="mt-1 max-w-4xl text-sm leading-relaxed text-muted"
-            >
-              Choose a categorized preset or
-              build a custom Student Library
-              Card. The printed card remains
-              permanent; current semester
-              membership is verified digitally
-              through the barcode.
-            </p>
-          </div>
-        </div>
-
-        <div
-          class="flex flex-wrap items-center gap-2"
-        >
-          <UButton
-            label="Import JSON"
-            icon="i-lucide-file-up"
-            color="neutral"
-            variant="outline"
-            :loading="importing"
-            @click="chooseImportFile"
-          />
-
-          <UButton
-            label="Export JSON"
-            icon="i-lucide-file-down"
-            color="neutral"
-            variant="outline"
-            @click="exportDesign"
-          />
-
-          <UButton
-            label="Reset"
-            icon="i-lucide-rotate-ccw"
-            color="neutral"
-            variant="soft"
-            @click="resetToDefault"
-          />
-
-          <UButton
-            :label="saveButtonLabel"
-            :icon="
-              hasUnsavedChanges
-                ? 'i-lucide-save'
-                : 'i-lucide-circle-check'
-            "
-            color="primary"
-            size="lg"
-            :loading="saving"
-            :disabled="
-              !hasUnsavedChanges
-            "
-            aria-keyshortcuts="Control+S Meta+S"
-            @click="saveDesign"
-          />
-        </div>
-      </div>
+        <template #actions>
+          <UButton label="Import JSON" icon="i-lucide-file-up" color="neutral" variant="outline" :loading="importing" @click="chooseImportFile" />
+          <UButton label="Export JSON" icon="i-lucide-file-down" color="neutral" variant="outline" @click="exportDesign" />
+          <UButton label="Reset" icon="i-lucide-rotate-ccw" color="neutral" variant="soft" @click="resetToDefault" />
+          <UButton :label="saveButtonLabel" :icon="hasUnsavedChanges ? 'i-lucide-save' : 'i-lucide-circle-check'" color="primary" size="lg" :loading="saving" :disabled="!hasUnsavedChanges" aria-keyshortcuts="Control+S Meta+S" @click="saveDesign" />
+        </template>
+      </LibrarianPageHeader>
 
       <input
         ref="importInput"

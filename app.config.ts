@@ -13,7 +13,7 @@ export default defineAppConfig({
     card: {
       slots: {
         root: [
-          "rounded-xl border border-default/80 bg-default",
+          "rounded-2xl border border-default/80 bg-default",
           "shadow-[var(--sncbt-shadow-card)]",
           "transition-[box-shadow,border-color,background-color] duration-150",
         ].join(" "),
@@ -26,7 +26,7 @@ export default defineAppConfig({
     button: {
       slots: {
         base: [
-          "rounded-lg font-semibold",
+          "min-h-9 rounded-lg font-semibold",
           "transition-[color,background-color,border-color,box-shadow,transform] duration-150",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-default",
         ].join(" "),
@@ -67,7 +67,7 @@ export default defineAppConfig({
 
     modal: {
       slots: {
-        content: "rounded-2xl border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
+        content: "rounded-2xl border border-default/80 shadow-[var(--sncbt-shadow-overlay)] sm:rounded-3xl",
       },
     },
 

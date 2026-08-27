@@ -352,44 +352,19 @@ async function submitRegistration(
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="mx-auto w-full max-w-[1600px] space-y-6">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex items-start gap-3">
-          <UButton
-            to="/librarian/books"
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="ghost"
-            square
-            aria-label="Back to library collection"
-          />
-
-          <div>
-            <div class="flex flex-wrap items-center gap-2">
-              <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">
-                Register a Book
-              </h1>
-              <UBadge color="success" variant="soft">
-                Accession-number barcode
-              </UBadge>
-            </div>
-            <p class="mt-1 max-w-3xl text-sm text-muted">
-              Enter the catalog and physical-copy information. The call number is
-              generated from the Dewey classification number, author number, and
-              copyright date.
-            </p>
-          </div>
-        </div>
-
-        <UButton
-          to="/librarian/books/import"
-          label="Import Excel"
-          icon="i-lucide-file-up"
-          color="neutral"
-          variant="outline"
-        />
-      </div>
+      <LibrarianPageHeader
+        eyebrow="Books & Collection"
+        title="Register a Book"
+        description="Add the bibliographic record and physical-copy information. Call numbers and accession barcodes are generated from the catalog details you enter."
+        icon="i-lucide-book-plus"
+      >
+        <template #actions>
+          <UButton to="/librarian/books" label="Back to Collection" icon="i-lucide-arrow-left" color="neutral" variant="ghost" />
+          <UButton to="/librarian/books/import" label="Import Excel" icon="i-lucide-file-up" color="neutral" variant="outline" />
+        </template>
+      </LibrarianPageHeader>
 
       <UAlert
         color="info"

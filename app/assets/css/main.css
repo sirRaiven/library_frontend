@@ -14,10 +14,10 @@
   --ui-container: 100rem;
 
   /* Neutral surfaces keep the product calm; emerald is reserved for brand and action. */
-  --sncbt-canvas: #f8fafc;
-  --sncbt-canvas-deep: #f1f5f9;
+  --sncbt-canvas: #f6f9f7;
+  --sncbt-canvas-deep: #eef4f0;
   --sncbt-surface: #ffffff;
-  --sncbt-surface-soft: #f8fafc;
+  --sncbt-surface-soft: #f7faf8;
   --sncbt-sidebar: rgba(255, 255, 255, 0.96);
   --sncbt-navbar: rgba(255, 255, 255, 0.9);
   --sncbt-border-soft: rgba(15, 23, 42, 0.09);
@@ -39,10 +39,10 @@
 }
 
 .dark {
-  --sncbt-canvas: #090f0e;
-  --sncbt-canvas-deep: #0c1311;
-  --sncbt-surface: #111916;
-  --sncbt-surface-soft: #141e1a;
+  --sncbt-canvas: #07110d;
+  --sncbt-canvas-deep: #0b1712;
+  --sncbt-surface: #101b16;
+  --sncbt-surface-soft: #14221b;
   --sncbt-sidebar: rgba(12, 19, 17, 0.97);
   --sncbt-navbar: rgba(12, 19, 17, 0.92);
   --sncbt-border-soft: rgba(226, 232, 240, 0.09);
@@ -110,7 +110,10 @@
 /* Dashboard canvas: gentle emerald atmosphere without washing out content. */
 .sncbt-dashboard-canvas {
   min-height: 100%;
-  background: linear-gradient(180deg, var(--sncbt-canvas) 0%, var(--sncbt-canvas-deep) 100%);
+  background:
+    radial-gradient(circle at 12% -8%, color-mix(in srgb, var(--ui-primary) 8%, transparent) 0, transparent 28rem),
+    radial-gradient(circle at 92% 4%, color-mix(in srgb, var(--ui-info) 4%, transparent) 0, transparent 24rem),
+    linear-gradient(180deg, var(--sncbt-canvas) 0%, var(--sncbt-canvas-deep) 100%);
 }
 
 .sncbt-sidebar-surface {
@@ -156,8 +159,9 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--ui-border);
-  border-radius: 1rem;
-  background: var(--ui-bg);
+  border-radius: 1.125rem;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ui-primary) 4%, var(--ui-bg)) 0%, var(--ui-bg) 46%, var(--ui-bg) 100%);
   box-shadow: var(--sncbt-shadow-card);
 }
 
@@ -386,3 +390,285 @@ details > summary:focus-visible {
 }
 
 .sncbt-page-shell.sncbt-page-shell-narrow { max-width: 72rem; }
+
+
+/* --------------------------------------------------------------------------
+ * Whole-system UI revamp
+ * Modern institutional design: calm surfaces, clear hierarchy, strong focus,
+ * dense-enough operational screens, and consistent mobile behavior.
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --sncbt-content-max: 94rem;
+  --sncbt-content-readable: 72rem;
+  --sncbt-radius-sm: 0.625rem;
+  --sncbt-radius-md: 0.875rem;
+  --sncbt-radius-lg: 1.125rem;
+  --sncbt-radius-xl: 1.375rem;
+  --sncbt-space-page: clamp(0.875rem, 1.6vw, 1.75rem);
+  --sncbt-header-height: 3.75rem;
+}
+
+body {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  letter-spacing: -0.005em;
+}
+
+.sncbt-page-shell {
+  max-width: var(--sncbt-content-max);
+  padding: var(--sncbt-space-page);
+}
+
+.sncbt-page-shell > * + * {
+  scroll-margin-top: calc(var(--sncbt-header-height) + 1rem);
+}
+
+.sncbt-portal-frame {
+  width: 100%;
+  max-width: 100rem;
+  margin-inline: auto;
+}
+
+.sncbt-portal-view {
+  min-width: 0;
+}
+
+.sncbt-portal-view > :where(.sncbt-page-shell) {
+  animation: sncbt-page-enter 180ms ease-out both;
+}
+
+@keyframes sncbt-page-enter {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sncbt-card,
+.sncbt-metric-card,
+.sncbt-filter-panel,
+.sncbt-table-surface {
+  border-color: color-mix(in srgb, var(--ui-border) 88%, transparent);
+}
+
+.sncbt-metric-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 8.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--sncbt-radius-lg);
+  background: var(--ui-bg);
+  padding: 1.15rem;
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-metric-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -2rem -3rem auto;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-primary) 4%, transparent);
+  pointer-events: none;
+}
+
+.sncbt-section-icon,
+.sncbt-empty-icon {
+  color: var(--ui-primary);
+  background: var(--sncbt-brand-soft);
+  border: 1px solid var(--sncbt-brand-border);
+}
+
+.sncbt-filter-panel {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--sncbt-radius-lg);
+  background: color-mix(in srgb, var(--ui-bg) 96%, var(--ui-bg-elevated));
+  padding: 0.875rem;
+  box-shadow: var(--sncbt-shadow-control);
+}
+
+.sncbt-filter-panel-sticky {
+  position: sticky;
+  top: calc(var(--sncbt-header-height) + 0.5rem);
+  z-index: 20;
+  backdrop-filter: blur(14px) saturate(135%);
+}
+
+.sncbt-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sncbt-action-row > :where(button, a) {
+  min-width: 0;
+}
+
+.sncbt-form-section {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--sncbt-radius-lg);
+  background: var(--ui-bg);
+  padding: clamp(1rem, 2vw, 1.5rem);
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-form-section-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.sncbt-context-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--ui-bg-elevated) 55%, transparent);
+  padding: 0.625rem 0.75rem;
+}
+
+.sncbt-quick-action {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--sncbt-radius-md);
+  background: var(--ui-bg);
+  box-shadow: var(--sncbt-shadow-control);
+  transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.sncbt-quick-action:hover {
+  border-color: color-mix(in srgb, var(--ui-primary) 26%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-primary) 3%, var(--ui-bg));
+  transform: translateY(-1px);
+}
+
+.sncbt-data-region {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--sncbt-radius-lg);
+  background: var(--ui-bg);
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-scroll-x {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.sncbt-prose-readable {
+  max-width: 72ch;
+  line-height: 1.65;
+}
+
+/* Normalize legacy Librarian pages while they progressively move to shared components. */
+.sncbt-portal-view :where(h1) {
+  text-wrap: balance;
+}
+
+.sncbt-portal-view :where(h2, h3) {
+  text-wrap: pretty;
+}
+
+.sncbt-portal-view :where(.max-w-\[1600px\], .max-w-\[1500px\]) {
+  max-width: none;
+}
+
+/* Navigation behaves like one product across all authenticated portals. */
+.sncbt-navigation :where(a, button) {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.sncbt-navigation [data-active] {
+  background: color-mix(in srgb, var(--ui-primary) 9%, transparent);
+  color: var(--ui-primary);
+}
+
+.sncbt-navigation [data-active] svg {
+  color: var(--ui-primary);
+}
+
+/* Better operational density for data-heavy screens without becoming cramped. */
+.sncbt-table-surface :where(th) {
+  background: color-mix(in srgb, var(--ui-bg-elevated) 58%, var(--ui-bg));
+  color: var(--ui-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.025em;
+}
+
+.sncbt-table-surface :where(td, th) {
+  padding-block: 0.75rem;
+}
+
+/* Strong, predictable controls on touch devices. */
+@media (pointer: coarse) {
+  :where(button, [role="button"], a) {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sncbt-action-row > :where(button, a) {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-width: 639px) {
+  :root { --sncbt-header-height: 3.5rem; }
+
+  .sncbt-page-shell {
+    padding: 0.875rem;
+  }
+
+  .sncbt-page-hero {
+    border-radius: 1rem;
+  }
+
+  .sncbt-page-hero::before {
+    width: 2px;
+  }
+
+  .sncbt-metric-card {
+    min-height: 7.75rem;
+    padding: 1rem;
+  }
+
+  .sncbt-filter-panel {
+    border-radius: 1rem;
+  }
+
+  .sncbt-filter-panel-sticky {
+    position: static;
+  }
+
+  .sncbt-mobile-stack-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .sncbt-mobile-stack-actions > :where(button, a) {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .sncbt-page-shell {
+    padding: 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sncbt-portal-view > :where(.sncbt-page-shell) {
+    animation: none;
+  }
+
+  .sncbt-quick-action:hover {
+    transform: none;
+  }
+}

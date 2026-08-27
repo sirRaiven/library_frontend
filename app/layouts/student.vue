@@ -308,7 +308,7 @@ onBeforeUnmount(() => {
           color="primary"
           variant="pill"
           highlight
-          class="w-full"
+          class="sncbt-navigation w-full"
           :ui="{
             root: 'w-full gap-1',
             list: 'w-full gap-1',
@@ -317,8 +317,8 @@ onBeforeUnmount(() => {
               ? 'min-h-10 justify-center rounded-lg px-0 transition-colors duration-150'
               : 'min-h-10 rounded-lg px-3 transition-colors duration-150',
             linkLeadingIcon: 'size-5',
-            linkLabel: 'text-xs font-medium',
-            label: 'px-1 pb-1 pt-2 text-[8px] font-bold uppercase tracking-[0.1em] text-muted',
+            linkLabel: 'text-sm font-medium',
+            label: 'px-2 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted',
           }"
           @click="sidebarOpen = false"
         />
@@ -458,9 +458,11 @@ onBeforeUnmount(() => {
 
       <template #body>
         <main id="main-content" class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
-          <div class="mx-auto w-full max-w-[1600px]">
+          <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
-            <slot />
+            <div class="sncbt-portal-view">
+              <slot />
+            </div>
           </div>
         </main>
       </template>

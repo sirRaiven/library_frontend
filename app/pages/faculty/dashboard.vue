@@ -93,36 +93,29 @@ onMounted(load);
 
 <template>
   <div class="sncbt-page-shell space-y-6">
-    <section class="overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/10 via-default to-default shadow-sm">
-      <div class="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
-        <div>
-          <UBadge label="Faculty Library account" icon="i-lucide-briefcase-business" color="primary" variant="soft" />
-          <h1 class="mt-4 text-3xl font-bold tracking-tight text-highlighted sm:text-4xl">
-            Good day, {{ firstName }}
-          </h1>
-          <p class="mt-3 max-w-3xl text-sm leading-6 text-muted sm:text-base">
-            Review books assigned to your department, confirm their condition, and report lost books or replacement updates directly to the Library.
-          </p>
-          <div v-if="portal.dashboard.value.faculty" class="mt-5 flex flex-wrap gap-2 text-xs text-muted">
-            <span class="rounded-full border border-default bg-default/70 px-3 py-1.5">
-              {{ portal.dashboard.value.faculty.department }}
-            </span>
-            <span class="rounded-full border border-default bg-default/70 px-3 py-1.5">
-              {{ portal.dashboard.value.faculty.employeeNo }}
-            </span>
-            <span class="rounded-full border border-default bg-default/70 px-3 py-1.5">
-              {{ portal.dashboard.value.faculty.designation || 'Faculty member' }}
-            </span>
-          </div>
-        </div>
+    <FacultyPageHeader
+      eyebrow="Faculty Library Services"
+      :title="`Good day, ${firstName}`"
+      description="Review books assigned to your department, update their status when needed, and quickly open the Faculty Library services you use most."
+      icon="i-lucide-briefcase-business"
+    >
+      <template #actions>
+        <UButton label="Review Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" color="primary" />
+        <UButton label="Browse Collection" icon="i-lucide-search" to="/faculty/books" color="neutral" variant="outline" />
+        <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="portal.loading.value" @click="load" />
+      </template>
+    </FacultyPageHeader>
 
-        <div class="flex flex-col gap-2 sm:flex-row lg:flex-col">
-          <UButton label="Review Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" size="lg" />
-          <UButton label="Browse Collection" icon="i-lucide-search" to="/faculty/books" color="neutral" variant="outline" size="lg" />
-          <UButton label="Refresh Dashboard" icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="portal.loading.value" @click="load" />
-        </div>
-      </div>
-    </section>
+    <div v-if="portal.dashboard.value.faculty" class="sncbt-context-strip">
+      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-muted">
+        <UIcon name="i-lucide-building-2" class="size-3.5 text-primary" />
+        {{ portal.dashboard.value.faculty.department }}
+      </span>
+      <span class="hidden h-4 w-px bg-default sm:block" aria-hidden="true" />
+      <span class="text-xs text-muted">{{ portal.dashboard.value.faculty.employeeNo }}</span>
+      <span class="hidden h-4 w-px bg-default sm:block" aria-hidden="true" />
+      <span class="text-xs text-muted">{{ portal.dashboard.value.faculty.designation || 'Faculty member' }}</span>
+    </div>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UCard v-for="card in metricCards" :key="card.label" :ui="{ root: 'ring-1 ring-default shadow-sm', body: 'p-5' }">

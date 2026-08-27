@@ -367,73 +367,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="space-y-6">
-      <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Books & Collection"
+        title="Physical Copies"
+        description="Search individual accession numbers, review copy status, verify barcode labels, and print labels for selected inventory items."
+        icon="i-lucide-book-copy"
       >
-        <div class="flex items-start gap-3">
-          <UButton
-            to="/librarian/books"
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="ghost"
-            square
-            aria-label="Back to library collection"
-          />
-
-          <div>
-            <div
-              class="flex flex-wrap items-center gap-2"
-            >
-              <h1
-                class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-              >
-                Physical Copies
-              </h1>
-
-              <UBadge
-                color="neutral"
-                variant="soft"
-              >
-                {{ totalCopies }} inventory
-                {{
-                  totalCopies === 1
-                    ? "item"
-                    : "items"
-                }}
-              </UBadge>
-            </div>
-
-            <p class="mt-1 text-sm text-muted">
-              Search individual accession numbers,
-              verify barcode labels, and print selected
-              copies in one place.
-            </p>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            label="Print Selected"
-            icon="i-lucide-printer"
-            color="primary"
-            :disabled="
-              selectedCopies.length === 0
-            "
-            @click="
-              printCopies(selectedCopies)
-            "
-          />
-
-          <UButton
-            to="/librarian/books/register"
-            label="Register Book"
-            icon="i-lucide-plus"
-            color="primary"
-          />
-        </div>
-      </div>
+        <template #actions>
+          <UBadge color="neutral" variant="soft" class="self-center">{{ totalCopies }} {{ totalCopies === 1 ? "copy" : "copies" }}</UBadge>
+          <UButton to="/librarian/books" label="Back to Collection" icon="i-lucide-arrow-left" color="neutral" variant="ghost" />
+          <UButton label="Print Selected" icon="i-lucide-printer" color="neutral" variant="outline" :disabled="selectedCopies.length === 0" @click="printCopies(selectedCopies)" />
+          <UButton to="/librarian/books/register" label="Register Book" icon="i-lucide-plus" color="primary" />
+        </template>
+      </LibrarianPageHeader>
 
       <UCard>
         <div

@@ -870,48 +870,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div
       class="mx-auto max-w-[1600px] space-y-6"
     >
-      <div
-        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Circulation"
+        title="Reservations"
+        description="Create and manage title-level reservations for Students and Faculty, track pickup status, and keep the waiting queue organized."
+        icon="i-lucide-calendar-check-2"
       >
-        <div>
-          <div
-            class="flex flex-wrap items-center gap-2"
-          >
-            <h1
-              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-            >
-              Reservations
-            </h1>
-
-            <UBadge
-              color="info"
-              variant="soft"
-            >
-              Title-level queue
-            </UBadge>
-          </div>
-
-          <p
-            class="mt-1 max-w-3xl text-sm text-muted"
-          >
-            Create and manage student or faculty
-            reservations without assigning a
-            specific physical copy.
-          </p>
-        </div>
-
-        <UButton
-          label="New Reservation"
-          icon="i-lucide-calendar-plus"
-          color="primary"
-          class="self-start"
-          @click="() => { isCreateOpen = true }"
-        />
-      </div>
+        <template #actions>
+          <UBadge color="info" variant="soft" class="self-center">Title-level queue</UBadge>
+          <UButton label="New Reservation" icon="i-lucide-calendar-plus" color="primary" @click="() => { isCreateOpen = true }" />
+        </template>
+      </LibrarianPageHeader>
 
       <div
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"

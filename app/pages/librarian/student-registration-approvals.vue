@@ -528,37 +528,18 @@ onMounted(loadRequests);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6">
-    <section class="rounded-xl border border-default bg-default p-5 shadow-sm sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <UBadge label="Library Users" color="success" variant="soft" />
-          <h1 class="mt-3 text-2xl font-black text-highlighted sm:text-3xl">
-            Student Registration Approvals
-          </h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Review submitted Student membership applications and approve verified records. Printing and card release are managed from the Library Card Print page.
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            to="/librarian/student-self-registration"
-            label="Registration QR Code"
-            icon="i-lucide-qr-code"
-            color="neutral"
-            variant="outline"
-          />
-          <UButton
-            label="Refresh Requests"
-            icon="i-lucide-refresh-cw"
-            color="neutral"
-            variant="outline"
-            :loading="loading"
-            @click="loadRequests"
-          />
-        </div>
-      </div>
-    </section>
+  <div class="sncbt-page-shell space-y-6">
+    <LibrarianPageHeader
+      eyebrow="Library Users"
+      title="Student Registration Approvals"
+      description="Review Student membership applications, verify submitted information, and approve eligible accounts before Library access is enabled."
+      icon="i-lucide-clipboard-check"
+    >
+      <template #actions>
+        <UButton to="/librarian/student-self-registration" label="Registration QR" icon="i-lucide-qr-code" color="neutral" variant="outline" />
+        <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="loadRequests" />
+      </template>
+    </LibrarianPageHeader>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div class="rounded-xl border border-warning/30 bg-warning/5 p-5">

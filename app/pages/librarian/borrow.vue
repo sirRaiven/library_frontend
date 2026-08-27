@@ -381,49 +381,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div
       class="mx-auto max-w-[1600px] space-y-6"
     >
-      <div
-        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Circulation"
+        title="Borrow Books"
+        description="Scan the member once, add the physical books they are borrowing, then review and confirm the checkout."
+        icon="i-lucide-book-up"
       >
-        <div>
-          <div
-            class="flex flex-wrap items-center gap-2"
-          >
-            <h1
-              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-            >
-              Borrow Books
-            </h1>
-
-            <UBadge
-              color="success"
-              variant="soft"
-            >
-              Scanner workflow
-            </UBadge>
-          </div>
-
-          <p
-            class="mt-1 max-w-3xl text-sm text-muted"
-          >
-            Scan the member once, scan all
-            physical copies, then confirm the
-            transaction.
-          </p>
-        </div>
-
-        <UButton
-          to="/librarian/reservations"
-          label="View Reservations"
-          icon="i-lucide-calendar-check-2"
-          color="neutral"
-          variant="outline"
-          class="self-start"
-        />
-      </div>
+        <template #actions>
+          <UBadge color="primary" variant="soft" class="self-center">Scanner workflow</UBadge>
+          <UButton to="/librarian/reservations" label="View Reservations" icon="i-lucide-calendar-check-2" color="neutral" variant="outline" />
+        </template>
+      </LibrarianPageHeader>
 
       <div
         class="grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]"
@@ -471,7 +443,7 @@ onMounted(() => {
                   :placeholder="scannerPlaceholder"
                   icon="i-lucide-barcode"
                   size="xl"
-                  color="success"
+                  color="primary"
                   autocomplete="off"
                   autofocus
                   :loading="isScanning"

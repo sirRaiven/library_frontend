@@ -1105,53 +1105,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer
-    class="py-6 sm:py-8"
-  >
+  <UContainer class="sncbt-page-shell">
     <div
       class="mx-auto max-w-[1500px] space-y-6"
     >
-      <header
-        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Library Users"
+        title="Faculty"
+        description="Register Faculty using their institutional ID barcode and manage the profiles used for borrowing, returns, and reservations."
+        icon="i-lucide-briefcase-business"
       >
-        <div
-          class="flex items-start gap-3"
-        >
-          <div
-            class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
-          >
-            <UIcon
-              name="i-lucide-briefcase-business"
-              class="size-6"
-            />
-          </div>
-
-          <div>
-            <h1
-              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-            >
-              Faculty Directory
-            </h1>
-
-            <p
-              class="mt-1 max-w-3xl text-sm leading-relaxed text-muted"
-            >
-              Register Faculty using the barcode already printed on their institutional ID. Faculty do not need a separate Library Card or semester membership.
-            </p>
-          </div>
-        </div>
-
-        <UButton
-          label="Register Faculty"
-          icon="i-lucide-user-plus"
-          color="primary"
-          size="lg"
-          @click="() => {
-            registrationOpen =
-              true
-          }"
-        />
-      </header>
+        <template #actions>
+          <UButton label="Register Faculty" icon="i-lucide-user-plus" color="primary" size="lg" @click="() => { registrationOpen = true }" />
+        </template>
+      </LibrarianPageHeader>
 
       <UAlert
         color="info"

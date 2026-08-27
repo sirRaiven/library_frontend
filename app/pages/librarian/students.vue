@@ -1453,67 +1453,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="mx-auto max-w-[1500px] space-y-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex items-center gap-3">
-          <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <UIcon name="i-lucide-graduation-cap" class="size-6" />
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">Student Library Members</h1>
-            <p class="mt-1 max-w-3xl text-sm text-muted">Register students, review semester validity, generate library cards, and renew memberships with fewer steps.</p>
-          </div>
-        </div>
-        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <UButton
-            to="/librarian/student-registration-approvals"
-            label="Registration Approvals"
-            icon="i-lucide-clipboard-check"
-            color="warning"
-            variant="soft"
-          />
-
-          <UButton
-            to="/librarian/student-self-registration"
-            label="Registration QR"
-            icon="i-lucide-qr-code"
-            color="neutral"
-            variant="outline"
-          />
-
-          <UButton
-            to="/librarian/library-card-designer"
-            label="Card Designer"
-            icon="i-lucide-palette"
-            color="neutral"
-            variant="outline"
-          />
-
-          <UButton
-            to="/librarian/memberships"
-            label="Renew by Barcode"
-            icon="i-lucide-scan-barcode"
-            color="neutral"
-            variant="outline"
-          />
-
-          <UButton
-            to="/librarian/membership-term"
-            label="Academic Term"
-            icon="i-lucide-calendar-range"
-            color="neutral"
-            variant="outline"
-          />
-
-          <UButton
-            label="Register Student"
-            icon="i-lucide-user-plus"
-            color="primary"
-            @click="openRegistrationModal"
-          />
-        </div>
-      </div>
+      <LibrarianPageHeader
+        eyebrow="Library Users"
+        title="Students"
+        description="Register Students, review membership status, prepare Library Cards, and renew access for the current academic term."
+        icon="i-lucide-graduation-cap"
+      >
+        <template #actions>
+          <UButton to="/librarian/student-registration-approvals" label="Registration Approvals" icon="i-lucide-clipboard-check" color="warning" variant="soft" />
+          <UButton to="/librarian/student-self-registration" label="Registration QR" icon="i-lucide-qr-code" color="neutral" variant="outline" />
+          <UButton to="/librarian/memberships" label="Renew by Barcode" icon="i-lucide-scan-barcode" color="neutral" variant="outline" />
+          <UButton label="Register Student" icon="i-lucide-user-plus" color="primary" @click="openRegistrationModal" />
+        </template>
+      </LibrarianPageHeader>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <UCard v-for="card in cards" :key="card.label">
@@ -2046,7 +2000,7 @@ onBeforeUnmount(() => {
                   variant="soft"
                   icon="i-lucide-shield-check"
                   title="Secure password will be generated"
-                  description="The backend will generate a unique 16-character password containing uppercase and lowercase letters, numbers, and symbols. Give it privately to the Student after registration."
+                  description="The system will generate a unique 16-character temporary password containing uppercase and lowercase letters, numbers, and symbols. Give it privately to the Student after registration."
                 />
 
                 <template

@@ -250,7 +250,7 @@ onMounted(refresh);
         <div v-else class="p-8 text-center">
           <UIcon name="i-lucide-scroll-text" class="mx-auto size-10 text-dimmed" />
           <p class="mt-3 text-sm font-medium text-highlighted">No administrative activity recorded yet</p>
-          <p class="mt-1 text-xs text-muted">New protected actions will appear here automatically.</p>
+          <p class="mt-1 text-xs text-muted">Recent administrative changes will appear here automatically.</p>
         </div>
       </UCard>
     </div>

@@ -446,61 +446,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer
-    class="py-6 sm:py-8"
-  >
+  <UContainer class="sncbt-page-shell">
     <div
       class="mx-auto max-w-[1500px] space-y-6"
     >
-      <header
-        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Library Services"
+        title="Library Visits"
+        description="Record Library entry by scanning a Student Library Card or Faculty institutional ID. Each accepted scan creates one visit record."
+        icon="i-lucide-scan-line"
       >
-        <div
-          class="flex items-start gap-3"
-        >
-          <div
-            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-success/10 text-success"
-          >
-            <UIcon
-              name="i-lucide-scan-line"
-              class="size-6"
-            />
-          </div>
-
-          <div>
-            <div
-              class="flex flex-wrap items-center gap-2"
-            >
-              <h1
-                class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-              >
-                Library Visits
-              </h1>
-
-              <UBadge
-                color="success"
-                variant="soft"
-              >
-                Time-in only
-              </UBadge>
-            </div>
-
-            <p
-              class="mt-1 max-w-3xl text-sm leading-relaxed text-muted"
-            >
-              Students scan their Library Card barcode and Faculty scan the barcode on their institutional ID. Each accepted scan records one Library visit; no time-out is required.
-            </p>
-          </div>
-        </div>
-
-        <UButton
-          label="Open Visitor Reports"
-          icon="i-lucide-file-chart-column"
-          color="neutral"
-          variant="outline"
-          to="/librarian/reports"
-        />
-      </header>
+        <template #actions>
+          <UBadge color="primary" variant="soft" class="self-center">Time-in only</UBadge>
+          <UButton label="Open Visitor Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/librarian/reports" />
+        </template>
+      </LibrarianPageHeader>
 
       <UCard
         class="overflow-hidden border-success/30"

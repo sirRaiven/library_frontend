@@ -72,36 +72,18 @@ onMounted(generateLink);
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6">
-    <section class="rounded-3xl border border-default bg-default p-5 shadow-sm sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <UBadge label="Student Registration" color="success" variant="soft" />
-          <h1 class="mt-3 text-2xl font-black text-highlighted sm:text-3xl">
-            Student Registration QR Code
-          </h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Display, download, or print this QR code so Students can submit their Library membership and Student Portal account application.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            to="/librarian/student-registration-approvals"
-            label="Open Registration Approvals"
-            icon="i-lucide-clipboard-check"
-            color="primary"
-          />
-          <UButton
-            to="/librarian/students"
-            label="Back to Students"
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="outline"
-          />
-        </div>
-      </div>
-    </section>
+  <div class="sncbt-page-shell space-y-6">
+    <LibrarianPageHeader
+      eyebrow="Student Registration"
+      title="Registration QR Code"
+      description="Display, download, or print the QR code Students can use to submit their Library membership and Portal account application."
+      icon="i-lucide-qr-code"
+    >
+      <template #actions>
+        <UButton to="/librarian/student-registration-approvals" label="Registration Approvals" icon="i-lucide-clipboard-check" color="primary" />
+        <UButton to="/librarian/students" label="Back to Students" icon="i-lucide-arrow-left" color="neutral" variant="outline" />
+      </template>
+    </LibrarianPageHeader>
 
     <UAlert
       color="warning"

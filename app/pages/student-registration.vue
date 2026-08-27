@@ -433,7 +433,7 @@ onMounted(loadAccess);
           class="space-y-6"
           @submit="submitRegistration"
         >
-          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
+          <section class="sncbt-form-section">
             <div class="mb-5">
               <h3 class="text-xl font-bold text-highlighted">Student Library Card Photo</h3>
               <p class="mt-1 text-sm text-muted">Upload a clear, recent, front-facing photo and complete the 1:1 crop.</p>
@@ -449,7 +449,7 @@ onMounted(loadAccess);
             </UFormField>
           </section>
 
-          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
+          <section class="sncbt-form-section">
             <h3 class="text-xl font-bold text-highlighted">Student Information</h3>
             <p class="mt-1 text-sm text-muted">Enter information that matches your school records.</p>
             <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -473,7 +473,7 @@ onMounted(loadAccess);
             </div>
           </section>
 
-          <section class="rounded-3xl border border-primary/30 bg-primary/5 p-5 shadow-sm sm:p-7">
+          <section class="sncbt-form-section border-primary/25 bg-primary/5">
             <h3 class="text-xl font-bold text-highlighted">Student Portal Account</h3>
             <p class="mt-1 text-sm text-muted">Your Student number is automatically used as your username and cannot be changed during registration.</p>
             <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -499,7 +499,7 @@ onMounted(loadAccess);
             <UAlert class="mt-4" color="info" variant="soft" icon="i-lucide-shield-check" title="Password requirements" description="Use 12 or more characters with uppercase, lowercase, number, and symbol. Do not include your Student number or email name." />
           </section>
 
-          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
+          <section class="sncbt-form-section">
             <h3 class="text-xl font-bold text-highlighted">Initial Library Membership</h3>
             <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div class="rounded-xl border border-default p-4"><p class="text-xs uppercase text-muted">Academic Year</p><p class="mt-2 font-semibold">{{ access.membership.academicYear }}</p></div>
@@ -509,7 +509,7 @@ onMounted(loadAccess);
             </div>
           </section>
 
-          <section class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6">
+          <section class="sncbt-form-section">
             <UFormField name="privacyNoticeAccepted"><UCheckbox v-model="registration.privacyNoticeAccepted" label="I understand that the information and photo will be used for Library membership, account verification, and Library Card processing." /></UFormField>
             <UFormField name="termsAccepted" class="mt-4"><UCheckbox v-model="registration.termsAccepted" label="I confirm that the submitted information is complete and matches my school records." /></UFormField>
           </section>
@@ -527,7 +527,7 @@ onMounted(loadAccess);
           </div>
         </UForm>
 
-        <UForm v-else :state="credentialHelp" :validate="helpErrors" class="rounded-xl border border-default bg-default p-5 shadow-[var(--sncbt-shadow-card)] sm:p-6" @submit="submitCredentialHelp">
+        <UForm v-else :state="credentialHelp" :validate="helpErrors" class="sncbt-form-section" @submit="submitCredentialHelp">
           <h3 class="text-xl font-bold text-highlighted">Forgotten Student Portal Credentials</h3>
           <p class="mt-1 text-sm text-muted">Submit a request, then visit the Library counter. The Librarian must validate your identity before resetting credentials.</p>
           <div class="mt-5 grid gap-4 md:grid-cols-2">

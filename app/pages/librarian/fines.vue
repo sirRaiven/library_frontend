@@ -532,32 +532,23 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="mx-auto max-w-[1500px] space-y-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex items-start gap-3">
-          <div
-            class="flex size-11 items-center justify-center rounded-2xl"
-            :class="activeView === 'calendar' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'"
-          >
-            <UIcon :name="activeView === 'calendar' ? 'i-lucide-calendar-off' : 'i-lucide-receipt-text'" class="size-6" />
+      <LibrarianPageHeader
+        eyebrow="Fines & Payments"
+        :title="activeView === 'calendar' ? 'No-Fine Days' : 'Fines & Cashier Payments'"
+        :description="activeView === 'calendar'
+          ? 'Review official holidays and Library-approved no-fine dates used when calculating overdue charges.'
+          : 'Review fines, verify Cashier Official Receipts, and process Library Card replacement charges.'"
+        :icon="activeView === 'calendar' ? 'i-lucide-calendar-off' : 'i-lucide-receipt-text'"
+      >
+        <template #actions>
+          <div class="inline-flex w-full rounded-xl border border-default bg-elevated p-1 sm:w-auto">
+            <UButton class="flex-1 sm:flex-none" label="Fines & Payments" icon="i-lucide-philippine-peso" :variant="activeView === 'payments' ? 'solid' : 'ghost'" :color="activeView === 'payments' ? 'primary' : 'neutral'" @click="activeView = 'payments'" />
+            <UButton class="flex-1 sm:flex-none" label="No-Fine Days" icon="i-lucide-calendar-off" :variant="activeView === 'calendar' ? 'solid' : 'ghost'" :color="activeView === 'calendar' ? 'primary' : 'neutral'" @click="activeView = 'calendar'" />
           </div>
-          <div>
-            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">
-              {{ activeView === 'calendar' ? 'No-Fine Days' : 'Fines and Cashier Payments' }}
-            </h1>
-            <p class="mt-1 max-w-3xl text-sm text-muted">
-              {{ activeView === 'calendar'
-                ? 'View official Philippine holidays and school-approved no-fine dates. Special working days are shown for reference.'
-                : 'Review fines, verify cashier Official Receipts, and process Library Card replacement charges.' }}
-            </p>
-          </div>
-        </div>
-        <div class="inline-flex w-full rounded-xl border border-default bg-elevated p-1 sm:w-auto">
-          <UButton class="flex-1 sm:flex-none" label="Fines & Payments" icon="i-lucide-philippine-peso" :variant="activeView === 'payments' ? 'solid' : 'ghost'" :color="activeView === 'payments' ? 'primary' : 'neutral'" @click="activeView = 'payments'" />
-          <UButton class="flex-1 sm:flex-none" label="No-Fine Days" icon="i-lucide-calendar-off" :variant="activeView === 'calendar' ? 'solid' : 'ghost'" :color="activeView === 'calendar' ? 'primary' : 'neutral'" @click="activeView = 'calendar'" />
-        </div>
-      </div>
+        </template>
+      </LibrarianPageHeader>
 
       <template v-if="activeView === 'payments'">
         <UAlert

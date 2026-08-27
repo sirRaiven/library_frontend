@@ -38,7 +38,7 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/librarian\/memberships\/?$/, title: "Library Memberships" },
   { pattern: /^\/librarian\/patrons\/?$/, title: "Library Members" },
 
-  { pattern: /^\/librarian\/library-card-designer\/?$/, title: "Library Card Designer" },
+  { pattern: /^\/librarian\/library-card-designer\/?$/, title: "Card Design" },
   { pattern: /^\/librarian\/library-card-print\/?$/, title: "Print Library Cards" },
 
   { pattern: /^\/librarian\/notifications\/?$/, title: "Notifications" },

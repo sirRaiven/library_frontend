@@ -819,47 +819,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div
       class="mx-auto max-w-[1600px] space-y-6"
     >
-      <div
-        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Circulation"
+        title="Return Books"
+        description="Scan the Library member, verify each physical book being returned, and review any overdue or condition details before completing the return."
+        icon="i-lucide-book-down"
       >
-        <div>
-          <div
-            class="flex flex-wrap items-center gap-2"
-          >
-            <h1
-              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-            >
-              Return Books
-            </h1>
-
-            <UBadge
-              color="success"
-              variant="soft"
-            >
-              Member-based return
-            </UBadge>
-          </div>
-
-          <p
-            class="mt-1 max-w-3xl text-sm text-muted"
-          >
-            Scan the member first, then scan every physical book presented at the counter. Only verified book barcodes can be returned.
-          </p>
-        </div>
-
-        <UButton
-          to="/librarian/borrow"
-          label="Borrow Books"
-          icon="i-lucide-book-up"
-          color="neutral"
-          variant="outline"
-          class="self-start"
-        />
-      </div>
+        <template #actions>
+          <UBadge color="primary" variant="soft" class="self-center">Member-based return</UBadge>
+          <UButton to="/librarian/borrow" label="Borrow Books" icon="i-lucide-book-up" color="neutral" variant="outline" />
+        </template>
+      </LibrarianPageHeader>
 
       <div
         class="grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]"
@@ -907,7 +881,7 @@ onMounted(() => {
                   icon="i-lucide-scan-barcode"
                   placeholder="Scan LC-2026-000001 or Faculty ID"
                   size="xl"
-                  color="success"
+                  color="primary"
                   autocomplete="off"
                   autofocus
                   :loading="isScanning"
@@ -1288,7 +1262,7 @@ onMounted(() => {
                   icon="i-lucide-barcode"
                   placeholder="Scan LIB-2026-0001"
                   size="xl"
-                  color="success"
+                  color="primary"
                   autocomplete="off"
                   :loading="
                     isVerifyingBook

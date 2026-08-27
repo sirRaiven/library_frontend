@@ -641,75 +641,24 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="space-y-6">
-      <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Books & Collection"
+        title="Library Collection"
+        description="Search and manage book titles, physical copies, accession numbers, barcodes, and inventory records from one workspace."
+        icon="i-lucide-library"
       >
-        <div>
-          <div
-            class="flex flex-wrap items-center gap-2"
-          >
-            <h1
-              class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-            >
-              Library Collection
-            </h1>
-
-            <UBadge
-              color="neutral"
-              variant="soft"
-            >
-              {{ totalBooks }} book
-              {{
-                totalBooks === 1
-                  ? "title"
-                  : "titles"
-              }}
-            </UBadge>
-          </div>
-
-          <p class="mt-1 text-sm text-muted">
-            Register books manually or import existing Excel records, then
-            manage physical copies, accession numbers, and barcodes from one
-            place.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            to="/librarian/books/import"
-            label="Import Excel"
-            icon="i-lucide-file-up"
-            color="neutral"
-            variant="outline"
-          />
-
-          <UButton
-            label="Export Excel"
-            icon="i-lucide-file-down"
-            color="neutral"
-            variant="outline"
-            :loading="isExporting"
-            @click="exportInventory"
-          />
-
-          <UButton
-            to="/librarian/books/copies"
-            label="Physical Copies"
-            icon="i-lucide-book-copy"
-            color="neutral"
-            variant="outline"
-          />
-
-          <UButton
-            to="/librarian/books/register"
-            label="Register Book"
-            icon="i-lucide-plus"
-            color="primary"
-          />
-        </div>
-      </div>
+        <template #actions>
+          <UBadge color="neutral" variant="soft" class="self-center">
+            {{ totalBooks }} {{ totalBooks === 1 ? "title" : "titles" }}
+          </UBadge>
+          <UButton to="/librarian/books/import" label="Import Excel" icon="i-lucide-file-up" color="neutral" variant="outline" />
+          <UButton label="Export Excel" icon="i-lucide-file-down" color="neutral" variant="outline" :loading="isExporting" @click="exportInventory" />
+          <UButton to="/librarian/books/copies" label="Physical Copies" icon="i-lucide-book-copy" color="neutral" variant="outline" />
+          <UButton to="/librarian/books/register" label="Register Book" icon="i-lucide-plus" color="primary" />
+        </template>
+      </LibrarianPageHeader>
 
       <UCard>
         <div

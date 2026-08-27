@@ -307,26 +307,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="mx-auto max-w-[1500px] space-y-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex items-start gap-3">
-          <div class="flex size-11 items-center justify-center rounded-2xl bg-success/10 text-success">
-            <UIcon name="i-lucide-id-card" class="size-6" />
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">Student Membership Renewal</h1>
-            <p class="mt-1 max-w-3xl text-sm text-muted">Scan the permanent library-card barcode, verify the new-semester enrollment copy, and renew using the centrally managed academic term.</p>
-          </div>
-        </div>
-        <UButton
-          to="/librarian/membership-term"
-          label="Academic Term & Validity"
-          icon="i-lucide-calendar-range"
-          color="neutral"
-          variant="outline"
-        />
-      </div>
+      <LibrarianPageHeader
+        eyebrow="Membership & Cards"
+        title="Membership Renewal"
+        description="Scan a Student Library Card, verify enrollment, and renew membership using the current academic term."
+        icon="i-lucide-id-card"
+      >
+        <template #actions>
+          <UButton to="/librarian/membership-term" label="Membership Term" icon="i-lucide-calendar-range" color="neutral" variant="outline" />
+        </template>
+      </LibrarianPageHeader>
 
       <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         <UCard v-for="card in cards" :key="card.label">

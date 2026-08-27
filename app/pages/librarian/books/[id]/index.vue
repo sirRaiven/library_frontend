@@ -320,7 +320,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="space-y-6">
       <div
         class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"

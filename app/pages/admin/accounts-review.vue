@@ -450,7 +450,7 @@ onMounted(loadReview);
           variant="soft"
           icon="i-lucide-key-round"
           title="Temporary password handling"
-          description="The temporary password is used only to create the account. It is never returned by the backend or displayed again."
+          description="The temporary password is used only when the account is created and is not displayed again afterward."
         />
 
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

@@ -128,41 +128,19 @@ onMounted(loadTerm);
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div class="mx-auto max-w-[1500px] space-y-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex items-start gap-3">
-          <div class="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <UIcon name="i-lucide-calendar-range" class="size-6" />
-          </div>
-          <div>
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">Membership Administration</p>
-            <h1 class="mt-1 text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">
-              Academic Term and Membership Validity
-            </h1>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Open the current semester once, define the membership-validity dates, and use the same term for Librarian registration, QR self-registration, and membership renewal.
-            </p>
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            to="/librarian/memberships"
-            label="Membership Records"
-            icon="i-lucide-id-card"
-            color="neutral"
-            variant="outline"
-          />
-          <UButton
-            label="Refresh"
-            icon="i-lucide-refresh-cw"
-            color="neutral"
-            variant="outline"
-            :loading="termManager.loading.value"
-            @click="loadTerm"
-          />
-        </div>
-      </div>
+      <LibrarianPageHeader
+        eyebrow="Membership & Cards"
+        title="Membership Term"
+        description="Set the current academic term and membership validity used for registration, renewal, and Library Card access."
+        icon="i-lucide-calendar-range"
+      >
+        <template #actions>
+          <UButton to="/librarian/memberships" label="Membership Records" icon="i-lucide-id-card" color="neutral" variant="outline" />
+          <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="termManager.loading.value" @click="loadTerm" />
+        </template>
+      </LibrarianPageHeader>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <UCard>

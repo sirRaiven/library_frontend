@@ -766,102 +766,29 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-8">
+  <UContainer class="sncbt-page-shell">
     <div
       class="mx-auto max-w-[1600px] space-y-6"
     >
-      <header
-        class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
+      <LibrarianPageHeader
+        eyebrow="Reports & Notices"
+        title="Notifications"
+        description="Review Library updates and operational reminders. Opening a notification marks it as read while keeping its active or resolved status separate."
+        icon="i-lucide-bell-ring"
       >
-        <div
-          class="flex items-start gap-3"
-        >
+        <template #actions>
           <UChip
-            v-if="
-              notificationCenter
-                .badgeCount.value > 0
-            "
-            :text="
-              notificationCenter
-                .chipText.value
-            "
-            :color="
-              notificationCenter
-                .chipColor.value
-            "
-            size="lg"
-            position="top-right"
+            v-if="notificationCenter.badgeCount.value > 0"
+            :text="notificationCenter.chipText.value"
+            :color="notificationCenter.chipColor.value"
+            size="sm"
           >
-            <div
-              class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-warning/10 text-warning"
-            >
-              <UIcon
-                name="i-lucide-bell-ring"
-                class="size-6"
-              />
-            </div>
+            <UButton label="Unread" icon="i-lucide-bell-dot" color="neutral" variant="soft" />
           </UChip>
-
-          <div
-            v-else
-            class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-warning/10 text-warning"
-          >
-            <UIcon
-              name="i-lucide-bell-ring"
-              class="size-6"
-            />
-          </div>
-
-          <div>
-            <div
-              class="flex flex-wrap items-center gap-2"
-            >
-              <h1
-                class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl"
-              >
-                Notification
-              </h1>
-            </div>
-
-            <p
-              class="mt-1 max-w-3xl text-sm leading-relaxed text-muted"
-            >
-              Review Library updates. Opening a notification automatically marks it as read and updates the unread counter.
-            </p>
-          </div>
-        </div>
-
-        <div
-          class="flex flex-wrap gap-2"
-        >
-          <UButton
-            label="Mark All Read"
-            icon="i-lucide-check-check"
-            color="neutral"
-            variant="outline"
-            :loading="isMarkingAll"
-            :disabled="
-              notificationCenter
-                .summary.value.unread ===
-              0
-            "
-            @click="markAllRead"
-          />
-
-          <UButton
-            label="Refresh Alerts"
-            icon="i-lucide-refresh-cw"
-            color="primary"
-            :loading="
-              notificationCenter
-                .isSyncing.value
-            "
-            @click="
-              refreshNotifications
-            "
-          />
-        </div>
-      </header>
+          <UButton label="Mark All Read" icon="i-lucide-check-check" color="neutral" variant="outline" :loading="isMarkingAll" :disabled="notificationCenter.summary.value.unread === 0" @click="markAllRead" />
+          <UButton label="Refresh" icon="i-lucide-refresh-cw" color="primary" :loading="notificationCenter.isSyncing.value" @click="refreshNotifications" />
+        </template>
+      </LibrarianPageHeader>
 
       <UAlert
         color="info"

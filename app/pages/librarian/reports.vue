@@ -755,32 +755,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="space-y-6 py-6 sm:py-8">
-    <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div class="flex items-start gap-4">
-        <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <UIcon name="i-lucide-file-chart-column-increasing" class="size-6" />
-        </div>
-
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            Library Records and Statistics
-          </p>
-          <h1 class="mt-1 text-3xl font-bold text-highlighted">Library Reports</h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Choose an understandable report, select the reporting period, review the result, and export it to PDF, Word, or Excel.
-          </p>
-        </div>
-      </div>
-
-      <UButton
-        label="Report Header"
-        icon="i-lucide-panel-top"
-        color="neutral"
-        variant="outline"
-        @click="brandingOpen = true"
-      />
-    </header>
+  <UContainer class="sncbt-page-shell space-y-6">
+    <LibrarianPageHeader
+      eyebrow="Reports & Notices"
+      title="Reports"
+      description="Choose a report, set the reporting period, review the result, and export it in the format you need."
+      icon="i-lucide-file-chart-column-increasing"
+    >
+      <template #actions>
+        <UButton label="Report Header" icon="i-lucide-panel-top" color="neutral" variant="outline" @click="brandingOpen = true" />
+      </template>
+    </LibrarianPageHeader>
 
     <UAlert
       color="info"

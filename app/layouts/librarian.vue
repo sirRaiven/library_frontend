@@ -170,7 +170,7 @@ function getPageInformation(): {
     )
   ) {
     return {
-      title: "Library Card Designer",
+      title: "Card Design",
       icon: "i-lucide-palette",
     };
   }
@@ -800,7 +800,7 @@ watch(
             variant="pill"
             highlight
             highlight-color="primary"
-            class="sncbt-librarian-navigation w-full min-w-0 max-w-full overflow-x-hidden"
+            class="sncbt-navigation sncbt-librarian-navigation w-full min-w-0 max-w-full overflow-x-hidden"
             :ui="{
               root: 'w-full min-w-0 max-w-full overflow-hidden',
               list: 'w-full min-w-0 space-y-1.5',
@@ -850,7 +850,7 @@ watch(
             color="primary"
             variant="pill"
             highlight
-            class="sncbt-librarian-compact-nav w-full min-w-0 overflow-hidden"
+            class="sncbt-navigation sncbt-librarian-compact-nav w-full min-w-0 overflow-hidden"
             :ui="{
               root: 'w-full min-w-0 gap-1.5',
               list: 'w-full min-w-0 gap-1.5',
@@ -1137,10 +1137,12 @@ watch(
           class="sncbt-dashboard-canvas min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors duration-200"
         >
           <div
-            class="mx-auto w-full max-w-[1600px]"
+            class="sncbt-portal-frame"
           >
             <SystemMaintenanceBanner />
-            <slot />
+            <div class="sncbt-portal-view">
+              <slot />
+            </div>
           </div>
         </main>
       </template>
