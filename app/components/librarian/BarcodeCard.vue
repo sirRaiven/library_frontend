@@ -356,7 +356,7 @@ defineExpose({
         v-if="showDownload"
         label="Download PNG"
         icon="i-lucide-download"
-        color="primary"
+        color="neutral"
         variant="soft"
         :loading="isDownloading"
         :disabled="

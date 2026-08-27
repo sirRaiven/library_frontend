@@ -400,6 +400,71 @@ function editBookRoute(book: CatalogBook) {
     : "/librarian/books";
 }
 
+const bookCoverThemes = [
+  "bg-gradient-to-br from-emerald-100 via-teal-50 to-sky-100 text-emerald-700 ring-emerald-200/70 dark:from-emerald-950/85 dark:via-teal-950/60 dark:to-sky-950/45 dark:text-emerald-300 dark:ring-emerald-800/60",
+  "bg-gradient-to-br from-indigo-100 via-violet-50 to-fuchsia-100 text-indigo-700 ring-indigo-200/70 dark:from-indigo-950/85 dark:via-violet-950/60 dark:to-fuchsia-950/45 dark:text-indigo-300 dark:ring-indigo-800/60",
+  "bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 text-amber-800 ring-amber-200/70 dark:from-amber-950/80 dark:via-orange-950/55 dark:to-rose-950/45 dark:text-amber-300 dark:ring-amber-800/60",
+  "bg-gradient-to-br from-sky-100 via-cyan-50 to-emerald-100 text-sky-700 ring-sky-200/70 dark:from-sky-950/85 dark:via-cyan-950/60 dark:to-emerald-950/45 dark:text-sky-300 dark:ring-sky-800/60",
+] as const;
+
+function bookCoverTheme(book: CatalogBook): string {
+  const seed = `${book.title}|${book.author}|${book.call_number ?? ""}`;
+  let hash = 0;
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+
+  return bookCoverThemes[hash % bookCoverThemes.length] ?? bookCoverThemes[0];
+}
+
+function bookCoverLabel(book: CatalogBook): string {
+  return (
+    book.classification_number?.trim() ||
+    book.call_number?.trim() ||
+    "Library Book"
+  );
+}
+
+function bookCoverSecondaryLabel(book: CatalogBook): string {
+  return (
+    book.author_number?.trim() ||
+    book.call_number?.trim() ||
+    "SNCBT Collection"
+  );
+}
+
+function bookActionItems(book: CatalogBook) {
+  return [
+    [
+      {
+        label: "Open record",
+        icon: "i-lucide-arrow-up-right",
+        onSelect() {
+          void openBook(book);
+        },
+      },
+      {
+        label: "Edit book",
+        icon: "i-lucide-pencil",
+        onSelect() {
+          void navigateTo(editBookRoute(book));
+        },
+      },
+    ],
+    [
+      {
+        label: "Print all labels",
+        icon: "i-lucide-printer",
+        disabled: book.totalCopies === 0,
+        onSelect() {
+          void printAllCopies(book);
+        },
+      },
+    ],
+  ];
+}
+
 async function openBook(
   book: CatalogBook,
 ): Promise<void> {
@@ -859,7 +924,7 @@ onBeforeUnmount(() => {
         >
           <div class="flex gap-4">
             <USkeleton
-              class="h-32 w-24 shrink-0 rounded-xl"
+              class="h-52 w-full shrink-0 rounded-2xl sm:min-h-[248px] sm:w-40"
             />
 
             <div class="flex-1 space-y-3">
@@ -879,34 +944,84 @@ onBeforeUnmount(() => {
         <UCard
           v-for="book in books"
           :key="book.documentId ?? book.id"
-          class="group"
+          class="group transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg hover:shadow-neutral-950/5 motion-reduce:transform-none dark:hover:shadow-black/20"
         >
           <div
             class="flex flex-col gap-5 sm:flex-row"
           >
             <button
               type="button"
-              class="flex h-36 w-full shrink-0 items-center justify-center rounded-2xl border border-default bg-elevated transition-colors hover:bg-accented sm:w-28"
+              class="relative flex min-h-52 w-full shrink-0 overflow-hidden rounded-2xl ring-1 ring-inset transition-[transform,box-shadow] duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-[248px] sm:w-40 sm:self-stretch"
+              :class="bookCoverTheme(book)"
               :aria-label="`Open ${book.title}`"
               @click="openBook(book)"
             >
-              <UIcon
-                name="i-lucide-book-open"
-                class="size-10 text-muted transition-transform group-hover:scale-105"
+              <span
+                class="pointer-events-none absolute -right-8 -top-8 size-28 rounded-full bg-white/40 blur-sm dark:bg-white/5"
+                aria-hidden="true"
               />
+              <span
+                class="pointer-events-none absolute -bottom-10 -left-10 size-32 rounded-full bg-white/35 blur-sm dark:bg-white/5"
+                aria-hidden="true"
+              />
+              <span
+                class="pointer-events-none absolute inset-y-0 left-0 w-1.5 bg-current opacity-40"
+                aria-hidden="true"
+              />
+              <span
+                class="pointer-events-none absolute inset-x-5 top-[45%] border-t border-current/10"
+                aria-hidden="true"
+              />
+
+              <span
+                class="relative flex h-full w-full flex-col p-4 text-left sm:p-5"
+              >
+                <span
+                  class="flex size-12 items-center justify-center rounded-xl bg-white/75 shadow-sm ring-1 ring-black/5 backdrop-blur-sm dark:bg-neutral-950/35 dark:ring-white/10"
+                >
+                  <UIcon
+                    name="i-lucide-book-open"
+                    class="size-6.5 transition-transform duration-200 group-hover:scale-105"
+                  />
+                </span>
+
+                <span class="mt-auto min-w-0">
+                  <span
+                    class="block text-[10px] font-bold uppercase tracking-[0.2em] opacity-65"
+                  >
+                    SNCBT Library
+                  </span>
+                  <span
+                    class="mt-2 block break-words text-lg font-bold leading-tight tracking-tight sm:text-xl"
+                  >
+                    {{ bookCoverLabel(book) }}
+                  </span>
+                  <span
+                    class="mt-1.5 block truncate text-[11px] font-semibold uppercase tracking-[0.14em] opacity-60"
+                  >
+                    {{ bookCoverSecondaryLabel(book) }}
+                  </span>
+                  <span
+                    class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ring-1 ring-black/5 backdrop-blur-sm dark:bg-neutral-950/25 dark:ring-white/10"
+                  >
+                    <UIcon name="i-lucide-library" class="size-3" />
+                    Collection
+                  </span>
+                </span>
+              </span>
             </button>
 
             <div class="min-w-0 flex-1">
               <div
-                class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                class="flex items-start justify-between gap-3"
               >
                 <button
                   type="button"
-                  class="min-w-0 text-left"
+                  class="min-w-0 flex-1 text-left focus-visible:outline-none"
                   @click="openBook(book)"
                 >
                   <h2
-                    class="line-clamp-2 text-lg font-semibold text-highlighted hover:text-primary"
+                    class="line-clamp-2 text-lg font-semibold leading-snug text-highlighted transition-colors hover:text-primary focus-visible:text-primary"
                   >
                     {{ book.title }}
                   </h2>
@@ -918,21 +1033,36 @@ onBeforeUnmount(() => {
                   </p>
                 </button>
 
-                <UBadge
-                  :color="
-                    book.record_status ===
-                    'Archived'
-                      ? 'neutral'
-                      : 'success'
-                  "
-                  variant="soft"
-                  class="self-start"
-                >
-                  {{
-                    book.record_status ??
-                    "Active"
-                  }}
-                </UBadge>
+                <div class="flex shrink-0 items-center gap-1.5">
+                  <UBadge
+                    :color="
+                      book.record_status ===
+                      'Archived'
+                        ? 'neutral'
+                        : 'success'
+                    "
+                    variant="soft"
+                  >
+                    {{
+                      book.record_status ??
+                      "Active"
+                    }}
+                  </UBadge>
+
+                  <UDropdownMenu
+                    :items="bookActionItems(book)"
+                    :content="{ align: 'end' }"
+                    :ui="{ content: 'w-52' }"
+                  >
+                    <UButton
+                      icon="i-lucide-ellipsis-vertical"
+                      color="neutral"
+                      variant="ghost"
+                      square
+                      :aria-label="`Actions for ${book.title}`"
+                    />
+                  </UDropdownMenu>
+                </div>
               </div>
 
               <div
@@ -1030,35 +1160,37 @@ onBeforeUnmount(() => {
               </div>
 
               <div
-                class="mt-5 flex flex-wrap gap-2"
+                class="mt-5 flex flex-col gap-3 border-t border-default/80 pt-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <UButton
-                  label="Open Record"
-                  icon="i-lucide-arrow-right"
-                  trailing
-                  color="primary"
-                  variant="soft"
+                <div class="min-w-0">
+                  <p class="text-xs font-medium text-muted">
+                    Availability
+                  </p>
+                  <p
+                    class="mt-0.5 text-sm font-semibold"
+                    :class="book.availableCopies > 0 ? 'text-success' : 'text-warning'"
+                  >
+                    {{
+                      book.availableCopies > 0
+                        ? `${book.availableCopies} of ${book.totalCopies} copies ready`
+                        : book.totalCopies > 0
+                          ? 'No copies currently available'
+                          : 'No physical copies registered'
+                    }}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:self-auto"
                   @click="openBook(book)"
-                />
-
-                <UButton
-                  :to="editBookRoute(book)"
-                  label="Edit Book"
-                  icon="i-lucide-pencil"
-                  color="neutral"
-                  variant="outline"
-                />
-
-                <UButton
-                  label="Print All Labels"
-                  icon="i-lucide-printer"
-                  color="neutral"
-                  variant="ghost"
-                  :disabled="
-                    book.totalCopies === 0
-                  "
-                  @click="printAllCopies(book)"
-                />
+                >
+                  View record
+                  <UIcon
+                    name="i-lucide-arrow-right"
+                    class="size-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                  />
+                </button>
               </div>
             </div>
           </div>
