@@ -307,6 +307,7 @@ onMounted(load);
     <UAlert
       color="neutral"
       variant="soft"
+      class="mb-12"
       icon="i-lucide-shield-check"
       title="Private account history"
       description="Only records connected to your Student account are shown on this page. Contact the Library if you notice an incorrect transaction."

@@ -306,7 +306,7 @@ onMounted(load);
 
     <div
       v-if="borrowings.pagination.value.pageCount > 1"
-      class="flex justify-center border-t border-default pt-6"
+      class="flex justify-center border-t border-default pt-6 mb-12"
     >
       <UPagination
         v-model:page="page"
@@ -321,6 +321,7 @@ onMounted(load);
       variant="soft"
       icon="i-lucide-info"
       title="About fines and renewals"
+      class="mb-12"
       :description="`${borrowings.notes.value.fineAmount} ${borrowings.notes.value.renewal}`"
     />
   </div>

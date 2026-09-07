@@ -255,7 +255,7 @@ onMounted(refresh);
     </UCard>
 
     <template v-if="activeSection === 'profile'">
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.7fr)]">
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.7fr)] mb-12">
         <UCard :ui="{ body: 'p-5 sm:p-6' }">
           <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
             <UAvatar

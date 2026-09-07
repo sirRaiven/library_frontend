@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell space-y-6 ">
     <StudentPageHeader
       eyebrow="Membership and Identification"
       title="Digital Library Card"
@@ -491,7 +491,7 @@ onBeforeUnmount(() => {
         </p>
       </UCard>
 
-      <div class="grid gap-5 xl:grid-cols-2">
+      <div class="grid gap-5 xl:grid-cols-2 mb-12">
         <UCard :ui="{ body: 'p-5 sm:p-6' }">
           <template #header>
             <div class="flex items-center gap-3">
@@ -613,55 +613,6 @@ onBeforeUnmount(() => {
           <p class="mt-5 rounded-xl border border-default bg-elevated/40 p-3 text-xs text-muted">
             Online membership renewal is not enabled. Library personnel must verify enrollment and update the official membership record.
           </p>
-        </UCard>
-      </div>
-
-      <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <UCard :ui="{ body: 'p-5 sm:p-6' }">
-          <template #header>
-            <div class="flex items-center gap-3">
-              <UIcon name="i-lucide-shield-check" class="size-5 text-primary" />
-              <h2 class="font-bold text-highlighted">Digital Card Usage</h2>
-            </div>
-          </template>
-
-          <ul class="grid gap-3 sm:grid-cols-2">
-            <li
-              v-for="notice in libraryCard.card.value.usageNotice"
-              :key="notice"
-              class="flex gap-3 rounded-xl border border-default bg-elevated/30 p-3 text-sm text-toned"
-            >
-              <UIcon name="i-lucide-check" class="mt-0.5 size-4 shrink-0 text-primary" />
-              <span>{{ notice }}</span>
-            </li>
-          </ul>
-        </UCard>
-
-        <UCard :ui="{ body: 'p-5 sm:p-6' }">
-          <template #header>
-            <div class="flex items-center gap-3">
-              <UIcon name="i-lucide-building-2" class="size-5 text-primary" />
-              <h2 class="font-bold text-highlighted">Library Contact</h2>
-            </div>
-          </template>
-
-          <div class="space-y-3 text-sm">
-            <p class="font-semibold text-highlighted">
-              {{ libraryCard.card.value.institution.libraryName }}
-            </p>
-            <p v-if="libraryCard.card.value.institution.address" class="flex gap-2 text-muted">
-              <UIcon name="i-lucide-map-pin" class="mt-0.5 size-4 shrink-0" />
-              <span>{{ libraryCard.card.value.institution.address }}</span>
-            </p>
-            <p v-if="libraryCard.card.value.institution.contactEmail" class="flex gap-2 text-muted">
-              <UIcon name="i-lucide-mail" class="mt-0.5 size-4 shrink-0" />
-              <span>{{ libraryCard.card.value.institution.contactEmail }}</span>
-            </p>
-            <p v-if="libraryCard.card.value.institution.contactNumber" class="flex gap-2 text-muted">
-              <UIcon name="i-lucide-phone" class="mt-0.5 size-4 shrink-0" />
-              <span>{{ libraryCard.card.value.institution.contactNumber }}</span>
-            </p>
-          </div>
         </UCard>
       </div>
 

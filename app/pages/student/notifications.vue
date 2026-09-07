@@ -488,6 +488,7 @@ onBeforeUnmount(() => {
       v-else-if="
         !center.notifications.value.length
       "
+      class="mb-12"
     >
       <div class="py-12 text-center">
         <div
@@ -515,7 +516,7 @@ onBeforeUnmount(() => {
 
     <div
       v-else
-      class="space-y-3"
+      class="space-y-3 mb-12"
     >
       <StudentNotificationCard
         v-for="
@@ -552,7 +553,7 @@ onBeforeUnmount(() => {
         center.pagination.value.pageCount >
         1
       "
-      class="flex justify-center"
+      class="flex justify-center mb-12"
     >
       <UPagination
         v-model:page="filters.page"

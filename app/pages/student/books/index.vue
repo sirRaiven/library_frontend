@@ -319,7 +319,7 @@ onMounted(async () => {
 
     <div
       v-if="collection.pagination.value.total > PAGE_SIZE"
-      class="flex justify-center border-t border-default pt-6"
+      class="flex justify-center border-t border-default pt-6 mb-12"
     >
       <UPagination
         v-model:page="page"
