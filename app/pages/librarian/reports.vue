@@ -52,6 +52,9 @@ interface ReportSectionCustomization {
 
 const reportApi = useLibraryReports();
 const reportExport = useLibraryReportExport();
+const referenceData = useReferenceData();
+const academicSemesters = referenceData.academicSemesters;
+const academicTerms = referenceData.academicTerms;
 const auth = useAuth();
 const toast = useToast();
 
@@ -248,8 +251,8 @@ const REPORTS: ReportDefinition[] = [
 const filters = reactive<LibraryReportFilter>({
   from: monthStart(),
   to: today(),
-  academicYear: defaultAcademicYear(),
-  semester: "First Semester",
+  academicYear: "",
+  semester: "",
 });
 
 const branding = reactive<LibraryReportBranding>({
@@ -291,15 +294,25 @@ const combinedSelections = ref<StandardReportKey[]>([
   "return-summary",
 ]);
 
-const semesterItems = ["First Semester", "Second Semester", "Summer"];
-const academicYearItems = computed(() => {
-  const current = new Date().getFullYear();
+const semesterItems = computed(() =>
+  academicSemesters.value
+    .filter(item => item.active !== false)
+    .map(item => item.name),
+);
+const academicYearItems = computed(() =>
+  [...new Set(
+    academicTerms.value
+      .filter(item => item.active !== false)
+      .map(item => item.academicYear),
+  )].sort().reverse(),
+);
 
-  return Array.from({ length: 9 }, (_, index) => {
-    const start = current - 4 + index;
-    return `${start}-${start + 1}`;
-  });
-});
+function applyCurrentAcademicTerm() {
+  const term = referenceData.currentAcademicTerm.value;
+  if (!term) return;
+  if (!filters.academicYear) filters.academicYear = term.academicYear;
+  if (!filters.semester) filters.semester = term.semesterName;
+}
 
 const groupedReports = computed(() =>
   REPORT_GROUPS.map((group) => ({
@@ -755,6 +768,12 @@ function metricTone(tone?: LibraryReportMetric["tone"]) {
 
 onMounted(async () => {
   loadBranding();
+  try {
+    await referenceData.loadOperational();
+    applyCurrentAcademicTerm();
+  } catch {
+    // Preserve report access even if reference data cannot be refreshed.
+  }
   await generateReport("executive-summary", { scrollToPreview: false });
 });
 </script>

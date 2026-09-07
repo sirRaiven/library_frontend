@@ -529,6 +529,7 @@ async function printImportedBarcodes(): Promise<void> {
                 <th class="px-3 py-3">Classification</th>
                 <th class="px-3 py-3">Author No.</th>
                 <th class="px-3 py-3">Call Number</th>
+                <th class="px-3 py-3">Book Category</th>
                 <th class="px-3 py-3">Shelf Location</th>
                 <th class="px-3 py-3">Subject</th>
                 <th class="px-3 py-3">Title</th>
@@ -556,6 +557,7 @@ async function printImportedBarcodes(): Promise<void> {
                 <td class="px-3 py-3 font-mono">{{ row.classification_number }}</td>
                 <td class="px-3 py-3 font-mono">{{ row.author_number }}</td>
                 <td class="px-3 py-3 font-mono font-semibold">{{ row.call_number }}</td>
+                <td class="px-3 py-3">{{ row.category }}</td>
                 <td class="px-3 py-3">{{ row.shelf_location }}</td>
                 <td class="px-3 py-3">{{ row.subject || "—" }}</td>
                 <td class="px-3 py-3 font-medium text-highlighted">

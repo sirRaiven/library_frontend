@@ -7,7 +7,6 @@ import type {
 } from "@nuxt/ui";
 import type {
   FacultyCredentialCheck,
-  FacultyEmploymentType,
   FacultyMember,
   FacultyRegistrationInput,
   FacultySex,
@@ -28,11 +27,9 @@ interface FacultyFormState {
   lastName: string;
   suffix: string;
   sex: FacultySex | null;
-  departmentChoice: string;
-  otherDepartment: string;
+  departmentCode: string;
   designation: string;
-  employmentType:
-    FacultyEmploymentType;
+  employmentTypeCode: string;
   email: string;
   contactNo: string;
   address: string;
@@ -45,6 +42,7 @@ interface FacultyEditState
 
 const members =
   useLibraryMembers();
+const referenceData = useReferenceData();
 const auth = useAuth();
 const toast = useToast();
 
@@ -99,28 +97,17 @@ const summary = reactive({
   facultyWithActiveLoans: 0,
 });
 
-const departmentItems = [
-  "College Department",
-  "Senior High School Department",
-  "Diploma Department",
-  "Basic Education Department",
-  "Administration",
-  "Registrar's Office",
-  "Library",
-  "Guidance Office",
-  "Finance Office",
-  "Information Technology Office",
-  "Other",
-];
+const departmentOptions = computed(() =>
+  referenceData.facultyDepartments.value
+    .filter((item) => item.active !== false)
+    .map((item) => ({ label: item.name, value: item.code })),
+);
 
-const employmentTypeItems:
-  FacultyEmploymentType[] = [
-    "Full-Time",
-    "Part-Time",
-    "Guest Lecturer",
-    "Administrative Personnel",
-    "Other",
-  ];
+const employmentTypeOptions = computed(() =>
+  referenceData.facultyEmploymentTypes.value
+    .filter((item) => item.active !== false)
+    .map((item) => ({ label: item.name, value: item.code })),
+);
 
 const sexItems:
   FacultySex[] = [
@@ -148,11 +135,9 @@ const form =
     lastName: "",
     suffix: "",
     sex: null,
-    departmentChoice: "",
-    otherDepartment: "",
+    departmentCode: "",
     designation: "",
-    employmentType:
-      "Full-Time",
+    employmentTypeCode: "",
     email: "",
     contactNo: "",
     address: "",
@@ -167,11 +152,9 @@ const editForm =
     lastName: "",
     suffix: "",
     sex: null,
-    departmentChoice: "",
-    otherDepartment: "",
+    departmentCode: "",
     designation: "",
-    employmentType:
-      "Full-Time",
+    employmentTypeCode: "",
     email: "",
     contactNo: "",
     address: "",
@@ -339,23 +322,6 @@ function emptyToUndefined(
     undefined;
 }
 
-function selectedDepartment(
-  state:
-    | FacultyFormState
-    | FacultyEditState,
-): string {
-  if (
-    state.departmentChoice ===
-    "Other"
-  ) {
-    return state.otherDepartment
-      .trim();
-  }
-
-  return state.departmentChoice
-    .trim();
-}
-
 function registrationPayload():
   FacultyRegistrationInput {
   return {
@@ -377,14 +343,14 @@ function registrationPayload():
     sex:
       form.sex ??
       undefined,
-    department:
-      selectedDepartment(form),
+    departmentCode:
+      form.departmentCode,
     designation:
       emptyToUndefined(
         form.designation,
       ),
-    employmentType:
-      form.employmentType,
+    employmentTypeCode:
+      form.employmentTypeCode,
     email:
       emptyToUndefined(
         form.email,
@@ -422,16 +388,14 @@ function editPayload():
     sex:
       editForm.sex ??
       undefined,
-    department:
-      selectedDepartment(
-        editForm,
-      ),
+    departmentCode:
+      emptyToUndefined(editForm.departmentCode),
     designation:
       emptyToUndefined(
         editForm.designation,
       ),
-    employmentType:
-      editForm.employmentType,
+    employmentTypeCode:
+      emptyToUndefined(editForm.employmentTypeCode),
     email:
       emptyToUndefined(
         editForm.email,
@@ -453,6 +417,7 @@ function validateCommon(
   state:
     | FacultyFormState
     | FacultyEditState,
+  requireReferenceSelections: boolean,
 ): FormError[] {
   const errors: FormError[] =
     [];
@@ -489,27 +454,17 @@ function validateCommon(
     });
   }
 
-  if (
-    !state.departmentChoice
-  ) {
+  if (!state.departmentCode && requireReferenceSelections) {
     errors.push({
-      name:
-        "departmentChoice",
-      message:
-        "Select a department or office.",
+      name: "departmentCode",
+      message: "Select a department or office.",
     });
   }
 
-  if (
-    state.departmentChoice ===
-      "Other" &&
-    !state.otherDepartment.trim()
-  ) {
+  if (!state.employmentTypeCode && requireReferenceSelections) {
     errors.push({
-      name:
-        "otherDepartment",
-      message:
-        "Enter the department or office name.",
+      name: "employmentTypeCode",
+      message: "Select an employment type.",
     });
   }
 
@@ -534,6 +489,7 @@ function validateRegistration(
 ) {
   return validateCommon(
     state,
+    true,
   );
 }
 
@@ -542,7 +498,27 @@ function validateEdit(
 ) {
   return validateCommon(
     state,
+    false,
   );
+}
+
+async function loadReferenceData() {
+  try {
+    await referenceData.loadOperational();
+    if (!form.departmentCode) {
+      form.departmentCode = departmentOptions.value[0]?.value ?? "";
+    }
+    if (!form.employmentTypeCode) {
+      form.employmentTypeCode = employmentTypeOptions.value[0]?.value ?? "";
+    }
+  } catch (error) {
+    toast.add({
+      title: "Unable to load Faculty choices",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  }
 }
 
 async function loadFaculty() {
@@ -598,11 +574,9 @@ function resetForm() {
     lastName: "",
     suffix: "",
     sex: null,
-    departmentChoice: "",
-    otherDepartment: "",
+    departmentCode: departmentOptions.value[0]?.value ?? "",
     designation: "",
-    employmentType:
-      "Full-Time",
+    employmentTypeCode: employmentTypeOptions.value[0]?.value ?? "",
     email: "",
     contactNo: "",
     address: "",
@@ -763,28 +737,16 @@ async function registerFaculty(
   }
 }
 
-function departmentState(
-  department: string,
-) {
-  if (
-    departmentItems.includes(
-      department,
-    ) &&
-    department !== "Other"
-  ) {
-    return {
-      departmentChoice:
-        department,
-      otherDepartment: "",
-    };
+function activeReferenceCode(
+  options: Array<{ code: string; name: string; active: boolean }>,
+  reference: { code: string; name: string; active?: boolean } | null | undefined,
+  legacyName: string,
+): string {
+  if (reference?.active !== false && options.some((item) => item.code === reference?.code)) {
+    return reference.code;
   }
 
-  return {
-    departmentChoice:
-      "Other",
-    otherDepartment:
-      department,
-  };
+  return options.find((item) => item.name === legacyName)?.code ?? "";
 }
 
 function openProfile(
@@ -799,10 +761,16 @@ function openEdit(
 ) {
   selected.value = record;
 
-  const department =
-    departmentState(
-      record.department,
-    );
+  const departmentCode = activeReferenceCode(
+    referenceData.facultyDepartments.value,
+    record.departmentReference,
+    record.department,
+  );
+  const employmentTypeCode = activeReferenceCode(
+    referenceData.facultyEmploymentTypes.value,
+    record.employmentTypeReference,
+    record.employmentType,
+  );
 
   Object.assign(
     editForm,
@@ -821,12 +789,10 @@ function openEdit(
         record.suffix,
       sex:
         record.sex ?? null,
-      ...department,
+      departmentCode,
       designation:
         record.designation,
-      employmentType:
-        record.employmentType ??
-        "Full-Time",
+      employmentTypeCode,
       email:
         record.email,
       contactNo:
@@ -1100,7 +1066,7 @@ watch(page, () => {
 });
 
 onMounted(() => {
-  void loadFaculty();
+  void Promise.all([loadReferenceData(), loadFaculty()]);
 });
 </script>
 
@@ -1682,16 +1648,16 @@ onMounted(() => {
                 class="mt-4 grid gap-4 md:grid-cols-2"
               >
                 <UFormField
-                  name="departmentChoice"
+                  name="departmentCode"
                   label="Department or Office"
                   required
                 >
                   <USelect
                     v-model="
-                      form.departmentChoice
+                      form.departmentCode
                     "
                     :items="
-                      departmentItems
+                      departmentOptions
                     "
                     placeholder="Select department or office"
                     class="w-full"
@@ -1699,33 +1665,16 @@ onMounted(() => {
                 </UFormField>
 
                 <UFormField
-                  name="employmentType"
+                  name="employmentTypeCode"
                   label="Employment Type"
                   required
                 >
                   <USelect
                     v-model="
-                      form.employmentType
+                      form.employmentTypeCode
                     "
                     :items="
-                      employmentTypeItems
-                    "
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField
-                  v-if="
-                    form.departmentChoice ===
-                    'Other'
-                  "
-                  name="otherDepartment"
-                  label="Department or Office Name"
-                  required
-                >
-                  <UInput
-                    v-model="
-                      form.otherDepartment
+                      employmentTypeOptions
                     "
                     class="w-full"
                   />
@@ -2338,49 +2287,32 @@ onMounted(() => {
                 class="mt-4 grid gap-4 md:grid-cols-2"
               >
                 <UFormField
-                  name="departmentChoice"
+                  name="departmentCode"
                   label="Department or Office"
                   required
                 >
                   <USelect
                     v-model="
-                      editForm.departmentChoice
+                      editForm.departmentCode
                     "
                     :items="
-                      departmentItems
+                      departmentOptions
                     "
                     class="w-full"
                   />
                 </UFormField>
 
                 <UFormField
-                  name="employmentType"
+                  name="employmentTypeCode"
                   label="Employment Type"
                   required
                 >
                   <USelect
                     v-model="
-                      editForm.employmentType
+                      editForm.employmentTypeCode
                     "
                     :items="
-                      employmentTypeItems
-                    "
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField
-                  v-if="
-                    editForm.departmentChoice ===
-                    'Other'
-                  "
-                  name="otherDepartment"
-                  label="Department or Office Name"
-                  required
-                >
-                  <UInput
-                    v-model="
-                      editForm.otherDepartment
+                      employmentTypeOptions
                     "
                     class="w-full"
                   />

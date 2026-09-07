@@ -11,6 +11,8 @@ definePageMeta({
 });
 
 const api = useAdminSettings();
+const referenceData = useReferenceData();
+const academicTerms = referenceData.academicTerms;
 const auth = useAuth();
 const toast = useToast();
 
@@ -29,11 +31,9 @@ const forms = reactive({
     contactEmail: "",
     contactNumber: "",
     timeZone: "Asia/Manila" as const,
+    academicTermCode: "",
     currentAcademicYear: "",
-    currentSemester: "First Semester" as
-      | "First Semester"
-      | "Second Semester"
-      | "Summer",
+    currentSemester: "",
   },
   borrowing: {
     studentBorrowLimit: 5,
@@ -113,11 +113,12 @@ const sectionItems = [
   },
 ];
 
-const semesterItems = [
-  "First Semester",
-  "Second Semester",
-  "Summer",
-];
+const academicTermItems = computed(() =>
+  academicTerms.value.map(term => ({
+    value: term.code,
+    label: `${term.academicYear} · ${term.semesterName}`,
+  })),
+);
 
 const cardStatusItems = [
   "None",
@@ -160,9 +161,28 @@ function copyIntoForms(value: AdminLibrarySettings) {
     "fines",
   ] as AdminSettingsSection[]) {
     Object.assign(forms[section], value[section]);
+    if (section === "general") {
+      const selected = referenceData.currentAcademicTerm.value
+        ?? academicTerms.value.find(term =>
+          term.academicYear === value.general.currentAcademicYear
+          && term.semesterName === value.general.currentSemester
+        )
+        ?? null;
+      forms.general.academicTermCode = selected?.code ?? "";
+    }
     snapshots[section] = serialize(section);
   }
 }
+
+watch(
+  () => forms.general.academicTermCode,
+  code => {
+    const selected = academicTerms.value.find(term => term.code === code);
+    if (!selected) return;
+    forms.general.currentAcademicYear = selected.academicYear;
+    forms.general.currentSemester = selected.semesterName;
+  },
+);
 
 function formatDateTime(value: string | null) {
   if (!value) return "Not updated yet";
@@ -179,6 +199,7 @@ async function load(force = false) {
   loading.value = true;
 
   try {
+    await referenceData.loadOperational(force);
     settings.value = await api.get();
     copyIntoForms(settings.value);
 
@@ -403,11 +424,19 @@ onMounted(() => {
             <UFormField label="Contact Number">
               <UInput v-model="forms.general.contactNumber" class="w-full" />
             </UFormField>
-            <UFormField label="Current Academic Year" hint="Example: 2026-2027" required>
-              <UInput v-model="forms.general.currentAcademicYear" class="w-full" />
+            <UFormField label="Current Academic Term" required class="md:col-span-2">
+              <USelect
+                v-model="forms.general.academicTermCode"
+                :items="academicTermItems"
+                placeholder="Select the current academic term"
+                class="w-full"
+              />
             </UFormField>
-            <UFormField label="Current Semester" required>
-              <USelect v-model="forms.general.currentSemester" :items="semesterItems" class="w-full" />
+            <UFormField label="Current Academic Year">
+              <UInput v-model="forms.general.currentAcademicYear" disabled class="w-full" />
+            </UFormField>
+            <UFormField label="Current Semester">
+              <UInput v-model="forms.general.currentSemester" disabled class="w-full" />
             </UFormField>
             <UFormField label="System Time Zone">
               <UInput v-model="forms.general.timeZone" disabled class="w-full" />

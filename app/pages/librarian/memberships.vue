@@ -13,6 +13,8 @@ const route = useRoute();
 const members = useLibraryMembers();
 const librarySettings = useLibrarySettings();
 const termManager = useMembershipTerm();
+const referenceData = useReferenceData();
+const academicSemesters = referenceData.academicSemesters;
 const fines = useLibraryFines();
 const auth = useAuth();
 const toast = useToast();
@@ -40,21 +42,6 @@ const loading = ref(false);
 const pagination = reactive({ page: 1, pageSize, pageCount: 1, total: 0 });
 const summary = reactive({ totalMemberships: 0, active: 0, expired: 0, suspended: 0 });
 
-function currentAcademicYear() {
-  const date = new Date();
-  const year = date.getFullYear();
-  return date.getMonth() + 1 >= 6
-    ? `${year}-${year + 1}`
-    : `${year - 1}-${year}`;
-}
-
-function currentSemester() {
-  const month = new Date().getMonth() + 1;
-  if (month >= 6) return "First Semester";
-  if (month <= 4) return "Second Semester";
-  return "Summer";
-}
-
 function defaultExpiry() {
   const date = new Date();
   date.setMonth(date.getMonth() + 5);
@@ -62,8 +49,9 @@ function defaultExpiry() {
 }
 
 const renewal = reactive({
-  academicYear: currentAcademicYear(),
-  semester: currentSemester(),
+  academicTermCode: "",
+  academicYear: "",
+  semester: "",
   issuedDate: new Date().toISOString().slice(0, 10),
   expiryDate: defaultExpiry(),
   enrollmentVerified: false,
@@ -75,16 +63,26 @@ const activeTerm = computed(() => termManager.term.value);
 const termIsOpen = computed(() => activeTerm.value.status === "Open");
 
 function syncRenewalTerm() {
+  const selectedTerm = activeTerm.value.academicTerm
+    ?? referenceData.currentAcademicTerm.value
+    ?? null;
+
   Object.assign(renewal, {
-    academicYear: activeTerm.value.academicYear,
-    semester: activeTerm.value.semester,
+    academicTermCode: selectedTerm?.code ?? "",
+    academicYear: selectedTerm?.academicYear ?? activeTerm.value.academicYear,
+    semester: selectedTerm?.semesterName ?? activeTerm.value.semester,
     issuedDate: activeTerm.value.validFrom,
     expiryDate: activeTerm.value.validUntil,
   });
 }
 
 const statusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
-const semesterItems = ["All", "First Semester", "Second Semester", "Summer"];
+const semesterItems = computed(() => [
+  { label: "All Semesters", value: "All" },
+  ...academicSemesters.value
+    .filter(item => item.active !== false)
+    .map(item => ({ label: item.name, value: item.name })),
+]);
 
 const columns: TableColumn<MembershipListItem>[] = [
   { id: "student", header: "Student" },
@@ -288,6 +286,7 @@ onMounted(async () => {
   try {
     await Promise.all([
       librarySettings.load(true),
+      referenceData.loadOperational(true),
       termManager.load(true),
     ]);
     syncRenewalTerm();
@@ -580,7 +579,12 @@ onMounted(async () => {
             <div class="grid gap-2 sm:grid-cols-4">
               <UInput v-model="search" icon="i-lucide-search" placeholder="Search" />
               <UInput v-model="academicYearFilter" placeholder="2026-2027" />
-              <USelect v-model="semesterFilter" :items="semesterItems" />
+              <USelect
+                v-model="semesterFilter"
+                :items="semesterItems"
+                value-key="value"
+                label-key="label"
+              />
               <USelect v-model="statusFilter" :items="statusItems" />
             </div>
           </div>

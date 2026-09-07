@@ -11,7 +11,7 @@ describe("product design and human-friendly messaging contract", () => {
     const errors = read("app/utils/user-facing-error.ts");
 
     expect(page).toContain("signInErrorMessage(error)");
-    expect(page).toContain("Check your sign-in details");
+    expect(page).toContain("Unable to sign in");
     expect(errors).toContain("The username/email or password is incorrect.");
     expect(page).not.toContain("HTTP 401");
     expect(page).not.toContain("Strapi");

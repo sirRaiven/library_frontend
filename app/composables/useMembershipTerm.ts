@@ -1,3 +1,5 @@
+import type { AcademicTermOption } from "~/composables/useReferenceData";
+
 export type MembershipTermStatus = "Open" | "Closed";
 
 export interface MembershipTermSummary {
@@ -12,7 +14,8 @@ export interface MembershipTermSummary {
 export interface MembershipTerm {
   version: number;
   academicYear: string;
-  semester: "First Semester" | "Second Semester" | "Summer";
+  semester: string;
+  academicTerm: AcademicTermOption | null;
   status: MembershipTermStatus;
   registrationOpen: boolean;
   validFrom: string;
@@ -24,8 +27,9 @@ export interface MembershipTerm {
 }
 
 export interface UpdateMembershipTermInput {
+  academicTermCode: string;
   academicYear: string;
-  semester: MembershipTerm["semester"];
+  semester: string;
   status: MembershipTermStatus;
   registrationOpen: boolean;
   validFrom: string;
@@ -37,12 +41,11 @@ function fallbackTerm(): MembershipTerm {
   const today = new Date().toISOString().slice(0, 10);
   const expiry = new Date();
   expiry.setMonth(expiry.getMonth() + 5);
-  const year = new Date().getFullYear();
-
   return {
     version: 1,
-    academicYear: `${year}-${year + 1}`,
-    semester: "First Semester",
+    academicYear: "",
+    semester: "",
+    academicTerm: null,
     status: "Open",
     registrationOpen: true,
     validFrom: today,

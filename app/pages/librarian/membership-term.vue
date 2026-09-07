@@ -11,6 +11,8 @@ definePageMeta({
 
 const termManager = useMembershipTerm();
 const settings = useLibrarySettings();
+const referenceData = useReferenceData();
+const academicTerms = referenceData.academicTerms;
 const auth = useAuth();
 const toast = useToast();
 
@@ -19,8 +21,9 @@ const saving = ref(false);
 const lastResult = ref<MembershipTerm | null>(null);
 
 const form = reactive<UpdateMembershipTermInput>({
+  academicTermCode: "",
   academicYear: "",
-  semester: "First Semester",
+  semester: "",
   status: "Open",
   registrationOpen: true,
   validFrom: "",
@@ -28,11 +31,12 @@ const form = reactive<UpdateMembershipTermInput>({
   applyToAll: true,
 });
 
-const semesterItems = [
-  "First Semester",
-  "Second Semester",
-  "Summer",
-];
+const academicTermItems = computed(() =>
+  academicTerms.value.map(term => ({
+    value: term.code,
+    label: `${term.academicYear} · ${term.semesterName}`,
+  })),
+);
 const statusItems = ["Open", "Closed"];
 
 const durationDays = computed(() => {
@@ -46,6 +50,7 @@ const durationDays = computed(() => {
 });
 
 const canSave = computed(() => {
+  if (!form.academicTermCode) return false;
   if (!/^\d{4}-\d{4}$/.test(form.academicYear)) return false;
   if (!form.validFrom || !form.validUntil) return false;
   if (form.validUntil <= form.validFrom) return false;
@@ -54,15 +59,34 @@ const canSave = computed(() => {
 });
 
 function applyTerm(term: MembershipTerm) {
+  const selectedTerm = term.academicTerm
+    ?? academicTerms.value.find(item =>
+      item.academicYear === term.academicYear
+      && item.semesterName === term.semester
+    )
+    ?? null;
+
   Object.assign(form, {
-    academicYear: term.academicYear,
-    semester: term.semester,
+    academicTermCode: selectedTerm?.code ?? "",
+    academicYear: selectedTerm?.academicYear ?? term.academicYear,
+    semester: selectedTerm?.semesterName ?? term.semester,
     status: term.status,
     registrationOpen: term.registrationOpen,
     validFrom: term.validFrom,
     validUntil: term.validUntil,
   });
 }
+
+
+watch(
+  () => form.academicTermCode,
+  code => {
+    const selected = academicTerms.value.find(term => term.code === code);
+    if (!selected) return;
+    form.academicYear = selected.academicYear;
+    form.semester = selected.semesterName;
+  },
+);
 
 watch(
   () => form.status,
@@ -73,6 +97,7 @@ watch(
 
 async function loadTerm() {
   try {
+    await referenceData.loadOperational(true);
     const term = await termManager.load(true);
     applyTerm(term);
   } catch (error) {
@@ -179,12 +204,24 @@ onMounted(loadTerm);
         </template>
 
         <div class="grid gap-5 md:grid-cols-2">
-          <UFormField label="Academic Year" required description="Use YYYY-YYYY, for example 2026-2027.">
-            <UInput v-model="form.academicYear" placeholder="2026-2027" class="w-full" />
+          <UFormField label="Academic Term" required description="Choose the term already configured for the Library.">
+            <USelect
+              v-model="form.academicTermCode"
+              :items="academicTermItems"
+              value-key="value"
+              label-key="label"
+              placeholder="Select academic term"
+              class="w-full"
+            />
           </UFormField>
-          <UFormField label="Semester" required>
-            <USelect v-model="form.semester" :items="semesterItems" class="w-full" />
-          </UFormField>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <UFormField label="Academic Year">
+              <UInput v-model="form.academicYear" disabled class="w-full" />
+            </UFormField>
+            <UFormField label="Semester">
+              <UInput v-model="form.semester" disabled class="w-full" />
+            </UFormField>
+          </div>
           <UFormField label="Membership Starts On" required>
             <UInput v-model="form.validFrom" type="date" class="w-full" />
           </UFormField>

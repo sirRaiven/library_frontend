@@ -20,7 +20,7 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
 const categoryItems = computed(() => [
   { label: "All Categories", value: ALL_CATEGORIES },
-  ...portal.categories.value.map(value => ({ label: value, value })),
+  ...portal.categoryOptions.value.map(item => ({ label: item.name, value: item.code })),
 ]);
 const availabilityItems = [
   { label: "All Books", value: "all" },

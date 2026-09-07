@@ -1,3 +1,4 @@
+import type { AcademicTermOption } from "~/composables/useReferenceData";
 import type {
   BorrowingLibrarySettings,
   FineLibrarySettings,
@@ -10,10 +11,8 @@ export interface OperationalLibrarySettings {
   general: {
     timeZone: "Asia/Manila";
     currentAcademicYear: string;
-    currentSemester:
-      | "First Semester"
-      | "Second Semester"
-      | "Summer";
+    currentSemester: string;
+    currentAcademicTerm: AcademicTermOption | null;
   };
   borrowing: BorrowingLibrarySettings;
   membership: MembershipLibrarySettings & {
@@ -36,7 +35,8 @@ function fallbackSettings(): OperationalLibrarySettings {
     general: {
       timeZone: "Asia/Manila",
       currentAcademicYear: "",
-      currentSemester: "First Semester",
+      currentSemester: "",
+      currentAcademicTerm: null,
     },
     borrowing: {
       studentBorrowLimit: 5,

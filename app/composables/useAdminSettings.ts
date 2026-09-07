@@ -13,10 +13,7 @@ export interface GeneralLibrarySettings {
   contactNumber: string;
   timeZone: "Asia/Manila";
   currentAcademicYear: string;
-  currentSemester:
-    | "First Semester"
-    | "Second Semester"
-    | "Summer";
+  currentSemester: string;
 }
 
 export interface BorrowingLibrarySettings {

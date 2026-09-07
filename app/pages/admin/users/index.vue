@@ -13,6 +13,7 @@ definePageMeta({
 
 const usersApi = useAdminUsers();
 const rolesApi = useAdminRoles();
+const referenceData = useReferenceData();
 const auth = useAuth();
 const toast = useToast();
 
@@ -52,15 +53,10 @@ const createForm = reactive({
     middleName: "",
     lastName: "",
     suffix: "",
-    department: "",
+    departmentCode: "",
     designation: "",
     contactNo: "",
-    employmentType: "Full-Time" as
-      | "Full-Time"
-      | "Part-Time"
-      | "Guest Lecturer"
-      | "Administrative Personnel"
-      | "Other",
+    employmentTypeCode: "",
   },
 });
 
@@ -110,13 +106,17 @@ const creatingFacultyAccount = computed(() => {
     .replace(/[_\s]+/g, "-") === "faculty";
 });
 
-const facultyEmploymentOptions = [
-  "Full-Time",
-  "Part-Time",
-  "Guest Lecturer",
-  "Administrative Personnel",
-  "Other",
-].map(value => ({ label: value, value }));
+const facultyDepartmentOptions = computed(() =>
+  referenceData.facultyDepartments.value
+    .filter((item) => item.active !== false)
+    .map((item) => ({ label: item.name, value: item.code })),
+);
+
+const facultyEmploymentOptions = computed(() =>
+  referenceData.facultyEmploymentTypes.value
+    .filter((item) => item.active !== false)
+    .map((item) => ({ label: item.name, value: item.code })),
+);
 
 const statusOptions = [
   { label: "All account statuses", value: "all" },
@@ -163,10 +163,10 @@ function resetCreateForm() {
     middleName: "",
     lastName: "",
     suffix: "",
-    department: "",
+    departmentCode: facultyDepartmentOptions.value[0]?.value ?? "",
     designation: "",
     contactNo: "",
-    employmentType: "Full-Time",
+    employmentTypeCode: facultyEmploymentOptions.value[0]?.value ?? "",
   });
 }
 
@@ -250,11 +250,12 @@ async function createAccount() {
       details.employeeNo.trim().length < 2 ||
       details.firstName.trim().length < 1 ||
       details.lastName.trim().length < 1 ||
-      details.department.trim().length < 2
+      !details.departmentCode ||
+      !details.employmentTypeCode
     ) {
       toast.add({
         title: "Complete the Faculty details",
-        description: "Employee number, first name, last name, and department are required when Faculty details are included.",
+        description: "Employee number, first name, last name, department, and employment type are required when Faculty details are included.",
         color: "warning",
         icon: "i-lucide-triangle-alert",
       });
@@ -401,6 +402,18 @@ watch(search, () => {
 });
 
 onMounted(async () => {
+  try {
+    await referenceData.loadOperational();
+    createForm.facultyDetails.departmentCode ||= facultyDepartmentOptions.value[0]?.value ?? "";
+    createForm.facultyDetails.employmentTypeCode ||= facultyEmploymentOptions.value[0]?.value ?? "";
+  } catch (error) {
+    toast.add({
+      title: "Unable to load Faculty choices",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  }
   await loadRoles();
   await loadUsers();
 });
@@ -599,13 +612,13 @@ onMounted(async () => {
                 <UInput v-model="createForm.facultyDetails.lastName" class="w-full" />
               </UFormField>
               <UFormField label="Department" required>
-                <UInput v-model="createForm.facultyDetails.department" class="w-full" placeholder="Example: College of Computer Studies" />
+                <USelect v-model="createForm.facultyDetails.departmentCode" :items="facultyDepartmentOptions" class="w-full" />
               </UFormField>
               <UFormField label="Designation">
                 <UInput v-model="createForm.facultyDetails.designation" class="w-full" placeholder="Example: Instructor" />
               </UFormField>
-              <UFormField label="Employment Type">
-                <USelect v-model="createForm.facultyDetails.employmentType" :items="facultyEmploymentOptions" class="w-full" />
+              <UFormField label="Employment Type" required>
+                <USelect v-model="createForm.facultyDetails.employmentTypeCode" :items="facultyEmploymentOptions" class="w-full" />
               </UFormField>
               <UFormField label="Contact Number">
                 <UInput v-model="createForm.facultyDetails.contactNo" class="w-full" />

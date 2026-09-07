@@ -84,15 +84,10 @@ export interface CreateFacultyAccountDetailsInput {
   middleName?: string;
   lastName?: string;
   suffix?: string;
-  department?: string;
+  departmentCode?: string;
   designation?: string;
   contactNo?: string;
-  employmentType?:
-    | "Full-Time"
-    | "Part-Time"
-    | "Guest Lecturer"
-    | "Administrative Personnel"
-    | "Other";
+  employmentTypeCode?: string;
 }
 
 export interface CreateAdminUserInput {

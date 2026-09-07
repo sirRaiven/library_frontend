@@ -13,7 +13,8 @@ export interface AdminLibrarianRecord {
   fullName: string;
   email: string;
   contactNo?: string | null;
-  position: "Head Librarian" | "Assistant Librarian" | "Staff";
+  position: string;
+  positionReference?: { code: string; name: string; active?: boolean } | null;
   status: "Active" | "Inactive";
   createdAt: string;
   updatedAt: string;
@@ -27,7 +28,7 @@ export interface CreateAdminLibrarianInput {
   lastName: string;
   email: string;
   contactNo?: string;
-  position: AdminLibrarianRecord["position"];
+  positionCode: string;
   username: string;
   password: string;
 }

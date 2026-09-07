@@ -1,8 +1,5 @@
 import { registrationErrorMessage } from "~/utils/user-facing-error";
-import type {
-  LibraryCardStatus,
-  StudentEducationalLevel,
-} from "~/constants/studentPrograms";
+import type { LibraryCardStatus } from "~/constants/studentPrograms";
 
 export type StudentAccessRequestType =
   | "Registration"
@@ -55,9 +52,9 @@ export interface PublicStudentRegistrationInput {
     lastName: string;
     suffix?: string;
     sex?: "Male" | "Female";
-    educationalLevel: StudentEducationalLevel;
-    course: string;
-    yearLevel: number;
+    educationalLevelCode: string;
+    programCode: string;
+    yearLevelCode: string;
     section?: string;
     email: string;
     contactNo?: string;

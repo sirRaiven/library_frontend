@@ -35,7 +35,7 @@ const page = ref(Math.max(1, Number(route.query.page) || 1));
 
 const categoryItems = computed(() => [
   { label: "All categories", value: ALL_CATEGORIES },
-  ...collection.categories.value.map(value => ({ label: value, value })),
+  ...collection.categoryOptions.value.map(item => ({ label: item.name, value: item.code })),
 ]);
 
 const availabilityItems = [
@@ -92,6 +92,7 @@ async function load(activity?: "view" | "search") {
   try {
     await collection.loadBooks(currentFilters(), activity);
     page.value = collection.pagination.value.page;
+    category.value = collection.filters.value.category || ALL_CATEGORIES;
   } catch (error) {
     toast.add({
       title: "Unable to load the book collection",

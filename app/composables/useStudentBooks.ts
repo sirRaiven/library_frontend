@@ -34,6 +34,11 @@ export interface StudentBookRecord {
   availability: StudentBookAvailability;
 }
 
+export interface StudentBookCategoryOption {
+  code: string;
+  name: string;
+}
+
 export interface StudentBookFilters {
   search: string;
   category: string;
@@ -53,6 +58,7 @@ interface StudentBookListResponse {
       total: number;
     };
     categories: string[];
+    categoryOptions: StudentBookCategoryOption[];
     filters: {
       search: string;
       category: string | null;
@@ -109,6 +115,10 @@ export function useStudentBooks() {
   );
   const categories = useState<string[]>(
     "student-book-categories",
+    () => [],
+  );
+  const categoryOptions = useState<StudentBookCategoryOption[]>(
+    "student-book-category-options",
     () => [],
   );
   const filters = useState<StudentBookFilters>(
@@ -211,6 +221,7 @@ export function useStudentBooks() {
 
       books.value = response.data.map(normalizeBook);
       categories.value = response.meta.categories;
+      categoryOptions.value = response.meta.categoryOptions ?? [];
       pagination.value = response.meta.pagination;
       filters.value = {
         ...filters.value,
@@ -273,6 +284,7 @@ export function useStudentBooks() {
     books,
     selectedBook,
     categories,
+    categoryOptions,
     filters,
     pagination,
     loading,

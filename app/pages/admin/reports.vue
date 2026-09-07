@@ -27,6 +27,9 @@ interface ReportOption {
 const libraryReports = useLibraryReports();
 const adminReports = useAdminReports();
 const reportExport = useLibraryReportExport();
+const referenceData = useReferenceData();
+const academicSemesters = referenceData.academicSemesters;
+const academicTerms = referenceData.academicTerms;
 const toast = useToast();
 const auth = useAuth();
 const route = useRoute();
@@ -49,7 +52,6 @@ const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   .toISOString()
   .slice(0, 10);
 const today = now.toISOString().slice(0, 10);
-const defaultAcademicYear = `${now.getMonth() >= 5 ? now.getFullYear() : now.getFullYear() - 1}-${now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear()}`;
 
 const reportOptions: ReportOption[] = [
   { value: "executive-summary", label: "Executive Library Summary", source: "library", description: "Overall Library activity, membership, collection, circulation, attendance, reservations, and fines.", icon: "i-lucide-layout-dashboard" },
@@ -77,8 +79,8 @@ const selectedType = ref(reportOptions[0]!.value);
 const filters = reactive<LibraryReportFilter>({
   from: monthStart,
   to: today,
-  academicYear: defaultAcademicYear,
-  semester: "First Semester",
+  academicYear: "",
+  semester: "",
 });
 const auditCategory = ref("All");
 const auditSeverity = ref("All");
@@ -98,14 +100,25 @@ const branding = reactive<LibraryReportBranding>({
   signatoryTitle: "Authorized Administrator",
 });
 
-const semesterItems = ["First Semester", "Second Semester", "Summer"];
-const academicYearItems = computed(() => {
-  const year = new Date().getFullYear();
-  return Array.from({ length: 9 }, (_, index) => {
-    const start = year - 4 + index;
-    return `${start}-${start + 1}`;
-  });
-});
+const semesterItems = computed(() =>
+  academicSemesters.value
+    .filter(item => item.active !== false)
+    .map(item => item.name),
+);
+const academicYearItems = computed(() =>
+  [...new Set(
+    academicTerms.value
+      .filter(item => item.active !== false)
+      .map(item => item.academicYear),
+  )].sort().reverse(),
+);
+
+function applyCurrentAcademicTerm() {
+  const term = referenceData.currentAcademicTerm.value;
+  if (!term) return;
+  if (!filters.academicYear) filters.academicYear = term.academicYear;
+  if (!filters.semester) filters.semester = term.semesterName;
+}
 const auditCategories = ["All", "Administrative", "Security", "Configuration", "Transaction", "Privacy", "System"];
 const auditSeverities = ["All", "Info", "Notice", "Warning", "Critical"];
 const auditOutcomes = ["All", "Success", "Failure", "Denied"];
@@ -237,6 +250,16 @@ watch(
   },
   { immediate: true },
 );
+
+onMounted(async () => {
+  try {
+    await referenceData.loadOperational();
+    applyCurrentAcademicTerm();
+  } catch {
+    // Report generation remains available; the user can retry reference data by reloading the page.
+  }
+});
+
 </script>
 
 <template>

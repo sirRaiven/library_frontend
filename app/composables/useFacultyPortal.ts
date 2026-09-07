@@ -28,6 +28,11 @@ export interface FacultyProfile {
   photoUrl: string | null;
 }
 
+export interface FacultyBookCategoryOption {
+  code: string;
+  name: string;
+}
+
 export interface FacultyBook {
   documentId: string;
   title: string;
@@ -204,6 +209,7 @@ export function useFacultyPortal() {
   );
   const reports = useState<FacultyBookReport[]>("faculty-reports", () => []);
   const categories = useState<string[]>("faculty-book-categories", () => []);
+  const categoryOptions = useState<FacultyBookCategoryOption[]>("faculty-book-category-options", () => []);
   const loading = useState<boolean>("faculty-portal-loading", () => false);
   const detailLoading = useState<boolean>(
     "faculty-book-detail-loading",
@@ -337,6 +343,7 @@ export function useFacultyPortal() {
         meta: {
           pagination: typeof pagination.value;
           categories: string[];
+          categoryOptions: FacultyBookCategoryOption[];
         };
       }>("/api/faculty-portal/books", {
         query: {
@@ -350,6 +357,7 @@ export function useFacultyPortal() {
       });
       books.value = response.data.map(normalizeBook);
       categories.value = response.meta.categories ?? [];
+      categoryOptions.value = response.meta.categoryOptions ?? [];
       pagination.value = response.meta.pagination;
       return books.value;
     } catch (caught) {
@@ -489,6 +497,7 @@ export function useFacultyPortal() {
     borrowings,
     reports,
     categories,
+    categoryOptions,
     loading,
     detailLoading,
     error,

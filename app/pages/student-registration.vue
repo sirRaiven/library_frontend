@@ -2,12 +2,6 @@
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
 import type { CroppedStudentPhoto } from "~/types/studentPhoto";
-import {
-  STUDENT_EDUCATIONAL_LEVELS,
-  programsForLevel,
-  yearLevelsFor,
-  type StudentEducationalLevel,
-} from "~/constants/studentPrograms";
 import type {
   CredentialHelpInput,
   CredentialHelpResult,
@@ -31,6 +25,7 @@ useHead({
 
 const colorMode = useColorMode();
 const selfRegistration = useStudentSelfRegistration();
+const referenceData = useReferenceData();
 const toast = useToast();
 
 const access = ref<RegistrationAccessDetails | null>(null);
@@ -54,9 +49,9 @@ const registration = reactive<PublicStudentRegistrationInput>({
     lastName: "",
     suffix: "",
     sex: undefined,
-    educationalLevel: "College",
-    course: "",
-    yearLevel: 1,
+    educationalLevelCode: "",
+    programCode: "",
+    yearLevelCode: "",
     section: "",
     email: "",
     contactNo: "",
@@ -87,21 +82,32 @@ const credentialHelp = reactive<CredentialHelpInput>({
   privacyNoticeAccepted: false,
 });
 
-const educationalLevelOptions = STUDENT_EDUCATIONAL_LEVELS.map(value => ({
-  label: value,
-  value,
-}));
+const educationalLevelOptions = computed(() =>
+  referenceData.educationalLevels.value.map((item) => ({
+    label: item.name,
+    value: item.code,
+  })),
+);
 const programOptions = computed(() =>
-  programsForLevel(registration.student.educationalLevel).map(program => ({
-    label: program.label,
-    value: program.value,
+  referenceData.programsForLevel(registration.student.educationalLevelCode).map((item) => ({
+    label: item.name,
+    value: item.code,
   })),
 );
 const yearOptions = computed(() =>
-  yearLevelsFor(registration.student.educationalLevel).map(year => ({
-    label: year.label,
-    value: year.value,
+  referenceData.yearLevelsForProgram(registration.student.programCode).map((item) => ({
+    label: item.label,
+    value: item.code,
   })),
+);
+const registrationChoicesAvailable = computed(() =>
+  referenceData.publicLoaded.value &&
+  educationalLevelOptions.value.length > 0 &&
+  programOptions.value.length > 0 &&
+  yearOptions.value.length > 0,
+);
+const registrationChoicesError = computed(() =>
+  referenceData.publicError.value ? "Registration choices could not be loaded. Try again." : "",
 );
 const sexOptions = [
   { label: "Male", value: "Male" },
@@ -126,19 +132,31 @@ const portalUsername = computed(() =>
     .replace(/[^a-z0-9._-]/g, "") || "Student number",
 );
 
+function syncRegistrationChoices() {
+  const levels = referenceData.educationalLevels.value;
+  if (!levels.some((item) => item.code === registration.student.educationalLevelCode)) {
+    registration.student.educationalLevelCode = levels[0]?.code ?? "";
+  }
+
+  const programs = referenceData.programsForLevel(registration.student.educationalLevelCode);
+  if (!programs.some((item) => item.code === registration.student.programCode)) {
+    registration.student.programCode = programs[0]?.code ?? "";
+  }
+
+  const years = referenceData.yearLevelsForProgram(registration.student.programCode);
+  if (!years.some((item) => item.code === registration.student.yearLevelCode)) {
+    registration.student.yearLevelCode = years[0]?.code ?? "";
+  }
+}
+
 watch(
-  () => registration.student.educationalLevel,
-  (level: StudentEducationalLevel) => {
-    const programs = programsForLevel(level);
-    if (!programs.some(program => program.value === registration.student.course)) {
-      registration.student.course = programs[0]?.value ?? "";
-    }
-    const years = yearLevelsFor(level);
-    if (!years.some(year => year.value === registration.student.yearLevel)) {
-      registration.student.yearLevel = years[0]?.value ?? 1;
-    }
-  },
-  { immediate: true },
+  [
+    () => referenceData.educationalLevels.value,
+    () => registration.student.educationalLevelCode,
+    () => registration.student.programCode,
+  ],
+  syncRegistrationChoices,
+  { deep: true },
 );
 
 function registrationErrors(state: PublicStudentRegistrationInput): FormError[] {
@@ -153,7 +171,9 @@ function registrationErrors(state: PublicStudentRegistrationInput): FormError[] 
     ["student.studentNo", "Student number is required.", state.student.studentNo],
     ["student.firstName", "First name is required.", state.student.firstName],
     ["student.lastName", "Last name is required.", state.student.lastName],
-    ["student.course", "Course or program is required.", state.student.course],
+    ["student.programCode", "Course or program is required.", state.student.programCode],
+    ["student.educationalLevelCode", "Educational level is required.", state.student.educationalLevelCode],
+    ["student.yearLevelCode", "Year or grade level is required.", state.student.yearLevelCode],
     ["student.email", "Email address is required.", state.student.email],
     ["account.password", "Password is required.", state.account.password],
   ];
@@ -218,6 +238,15 @@ async function loadAccess() {
   }
 }
 
+async function loadRegistrationChoices(force = false) {
+  try {
+    await referenceData.loadPublicStudentRegistration(force);
+    syncRegistrationChoices();
+  } catch {
+    // The composable exposes a safe retryable state; keep the rest of the page usable.
+  }
+}
+
 function resetRegistrationForm() {
   const previewUrl = registrationPhoto.value?.previewUrl;
   if (previewUrl?.startsWith("blob:")) {
@@ -231,9 +260,9 @@ function resetRegistrationForm() {
     lastName: "",
     suffix: "",
     sex: undefined,
-    educationalLevel: "College",
-    course: "",
-    yearLevel: 1,
+    educationalLevelCode: "",
+    programCode: "",
+    yearLevelCode: "",
     section: "",
     email: "",
     contactNo: "",
@@ -245,6 +274,7 @@ function resetRegistrationForm() {
   registration.privacyNoticeAccepted = false;
   registration.termsAccepted = false;
   registrationPhoto.value = null;
+  syncRegistrationChoices();
   showPassword.value = false;
   showConfirmPassword.value = false;
 }
@@ -279,7 +309,8 @@ async function submitRegistration(
     submitting.value ||
     !access.value ||
     !registrationPhoto.value ||
-    !registrationAvailable.value
+    !registrationAvailable.value ||
+    !registrationChoicesAvailable.value
   ) {
     if (!registrationAvailable.value) {
       toast.add({
@@ -287,6 +318,13 @@ async function submitRegistration(
         description: "Please wait for the Library to open the next academic term.",
         color: "warning",
         icon: "i-lucide-calendar-x-2",
+      });
+    } else if (!registrationChoicesAvailable.value) {
+      toast.add({
+        title: "Registration choices are unavailable",
+        description: "Try loading the registration choices again before submitting.",
+        color: "warning",
+        icon: "i-lucide-refresh-cw",
       });
     }
     return;
@@ -337,7 +375,10 @@ async function submitCredentialHelp(
   }
 }
 
-onMounted(loadAccess);
+onMounted(() => {
+  void loadAccess();
+  void loadRegistrationChoices();
+});
 </script>
 
 <template>
@@ -449,6 +490,24 @@ onMounted(loadAccess);
             </UFormField>
           </section>
 
+          <div v-if="registrationChoicesError" class="space-y-2">
+            <UAlert
+              color="warning"
+              variant="soft"
+              icon="i-lucide-refresh-cw"
+              title="Registration choices are unavailable"
+              description="Registration choices could not be loaded. Try again."
+            />
+            <UButton
+              label="Try again"
+              icon="i-lucide-refresh-cw"
+              color="warning"
+              variant="soft"
+              :loading="referenceData.publicLoading.value"
+              @click="loadRegistrationChoices(true)"
+            />
+          </div>
+
           <section class="sncbt-form-section">
             <h3 class="text-xl font-bold text-highlighted">Student Information</h3>
             <p class="mt-1 text-sm text-muted">Enter information that matches your school records.</p>
@@ -463,9 +522,9 @@ onMounted(loadAccess);
               <UFormField name="student.middleName" label="Middle Name"><UInput v-model="registration.student.middleName" class="w-full" /></UFormField>
               <UFormField name="student.lastName" label="Last Name" required><UInput v-model="registration.student.lastName" class="w-full" /></UFormField>
               <UFormField name="student.suffix" label="Suffix"><UInput v-model="registration.student.suffix" class="w-full" placeholder="Jr., III" /></UFormField>
-              <UFormField name="student.educationalLevel" label="Educational Level" required><USelect v-model="registration.student.educationalLevel" :items="educationalLevelOptions" class="w-full" /></UFormField>
-              <UFormField name="student.course" label="Course / Program" required><USelect v-model="registration.student.course" :items="programOptions" class="w-full" /></UFormField>
-              <UFormField name="student.yearLevel" label="Year / Grade Level" required><USelect v-model="registration.student.yearLevel" :items="yearOptions" class="w-full" /></UFormField>
+              <UFormField name="student.educationalLevelCode" label="Educational Level" required><USelect v-model="registration.student.educationalLevelCode" :items="educationalLevelOptions" :disabled="referenceData.publicLoading.value" class="w-full" /></UFormField>
+              <UFormField name="student.programCode" label="Course / Program" required><USelect v-model="registration.student.programCode" :items="programOptions" :disabled="referenceData.publicLoading.value || !registration.student.educationalLevelCode" class="w-full" /></UFormField>
+              <UFormField name="student.yearLevelCode" label="Year / Grade Level" required><USelect v-model="registration.student.yearLevelCode" :items="yearOptions" :disabled="referenceData.publicLoading.value || !registration.student.programCode" class="w-full" /></UFormField>
               <UFormField name="student.section" label="Section"><UInput v-model="registration.student.section" class="w-full" /></UFormField>
               <UFormField name="student.email" label="Email Address" required><UInput v-model="registration.student.email" type="email" class="w-full" /></UFormField>
               <UFormField name="student.contactNo" label="Contact Number"><UInput v-model="registration.student.contactNo" class="w-full" /></UFormField>
@@ -522,7 +581,7 @@ onMounted(loadAccess);
               color="primary"
               size="lg"
               :loading="submitting"
-              :disabled="!registrationAvailable"
+              :disabled="!registrationAvailable || !registrationChoicesAvailable"
             />
           </div>
         </UForm>

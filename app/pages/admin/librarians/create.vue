@@ -9,6 +9,7 @@ definePageMeta({
 });
 
 const api = useAdminLibrarians();
+const referenceData = useReferenceData();
 const auth = useAuth();
 const toast = useToast();
 const saving = ref(false);
@@ -21,16 +22,16 @@ const form = reactive<CreateAdminLibrarianInput>({
   lastName: "",
   email: "",
   contactNo: "",
-  position: "Staff",
+  positionCode: "",
   username: "",
   password: "",
 });
 
-const positionItems = [
-  "Head Librarian",
-  "Assistant Librarian",
-  "Staff",
-];
+const librarianPositionOptions = computed(() =>
+  referenceData.librarianPositions.value
+    .filter((item) => item.active !== false)
+    .map((item) => ({ label: item.name, value: item.code })),
+);
 
 const passwordChecks = computed(() => [
   { label: "At least 12 characters", passed: form.password.length >= 12 },
@@ -47,6 +48,7 @@ function validate(state: Partial<CreateAdminLibrarianInput>): FormError[] {
     "firstName",
     "lastName",
     "email",
+    "positionCode",
     "username",
     "password",
   ];
@@ -69,6 +71,24 @@ function validate(state: Partial<CreateAdminLibrarianInput>): FormError[] {
 
   return errors;
 }
+
+async function loadReferenceData() {
+  try {
+    await referenceData.loadOperational();
+    form.positionCode ||= librarianPositionOptions.value[0]?.value ?? "";
+  } catch (error) {
+    toast.add({
+      title: "Unable to load Librarian positions",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  }
+}
+
+onMounted(() => {
+  void loadReferenceData();
+});
 
 async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
   if (saving.value) return;
@@ -122,8 +142,8 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
             <UFormField name="employeeNo" label="Employee Number" required>
               <UInput v-model="form.employeeNo" placeholder="e.g., EMP-2026-001" class="w-full" />
             </UFormField>
-            <UFormField name="position" label="Position" required>
-              <USelect v-model="form.position" :items="positionItems" class="w-full" />
+            <UFormField name="positionCode" label="Position" required>
+              <USelect v-model="form.positionCode" :items="librarianPositionOptions" class="w-full" />
             </UFormField>
             <UFormField name="firstName" label="First Name" required>
               <UInput v-model="form.firstName" class="w-full" />

@@ -1,14 +1,5 @@
 import type { Cell, Row } from "exceljs";
-
-export const INVENTORY_SHELF_LOCATIONS = [
-  "Filipiniana",
-  "Reference",
-  "Computer Program",
-  "Health Care",
-  "Business Administration",
-  "Hospitality & Tourism Management",
-  "Criminal Justice Education",
-] as const;
+import type { ReferenceOption } from "~/composables/useReferenceData";
 
 export const INVENTORY_HEADERS = [
   "Inventory Date",
@@ -22,13 +13,11 @@ export const INVENTORY_HEADERS = [
   "Copyright Date",
   "Publisher",
   "Edition",
+  "Book Category",
   "Shelf Location",
   "Subject",
   "Price",
 ] as const;
-
-export type InventoryShelfLocation =
-  (typeof INVENTORY_SHELF_LOCATIONS)[number];
 
 export interface InventoryImportRow {
   row_number: number;
@@ -43,7 +32,10 @@ export interface InventoryImportRow {
   copyright_date: number;
   publisher: string;
   edition: string;
-  shelf_location: InventoryShelfLocation;
+  category_code?: string;
+  category?: string;
+  shelf_location_code: string;
+  shelf_location: string;
   subject: string;
   price: number;
 }
@@ -71,6 +63,7 @@ export interface InventoryExportRow {
   copyright_date: number | null;
   publisher: string;
   edition: string;
+  category: string;
   shelf_location: string;
   subject: string;
   price: number;
@@ -234,25 +227,32 @@ function normalizeAuthorNumber(value: unknown): string {
   return normalized;
 }
 
-function requireShelfLocation(
+function requireReferenceOption(
+  options: ReferenceOption[],
   value: unknown,
-): InventoryShelfLocation {
-  const normalized = requireText(
-    value,
-    "Shelf Location",
+  fieldName: string,
+): ReferenceOption {
+  const requested = requireText(value, fieldName);
+  const normalized = requested
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("en");
+  const matches = options.filter(
+    (item) =>
+      item.active !== false &&
+      item.name
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLocaleLowerCase("en") === normalized,
   );
 
-  if (
-    !INVENTORY_SHELF_LOCATIONS.includes(
-      normalized as InventoryShelfLocation,
-    )
-  ) {
+  if (matches.length !== 1) {
     throw new Error(
-      `Shelf Location must be one of: ${INVENTORY_SHELF_LOCATIONS.join(", ")}.`,
+      `${fieldName} must match an available Library option.`,
     );
   }
 
-  return normalized as InventoryShelfLocation;
+  return matches[0]!;
 }
 
 function buildCallNumber(
@@ -299,6 +299,29 @@ async function loadExcelJs() {
 }
 
 export function useLibraryInventoryExcel() {
+  const referenceData = useReferenceData();
+
+  async function ensureInventoryReferences(): Promise<{
+    categories: ReferenceOption[];
+    shelves: ReferenceOption[];
+  }> {
+    await referenceData.loadOperational();
+    const categories = referenceData.bookCategories.value.filter(
+      (item) => item.active !== false,
+    );
+    const shelves = referenceData.shelfLocations.value.filter(
+      (item) => item.active !== false,
+    );
+
+    if (categories.length === 0 || shelves.length === 0) {
+      throw new Error(
+        "Book Categories and Shelf Locations must be configured before using inventory Excel files.",
+      );
+    }
+
+    return { categories, shelves };
+  }
+
   async function parseInventoryFile(
     file: File,
   ): Promise<ParsedInventoryFile> {
@@ -314,6 +337,7 @@ export function useLibraryInventoryExcel() {
       );
     }
 
+    const { categories, shelves } = await ensureInventoryReferences();
     const ExcelJS = await loadExcelJs();
     const workbook = new ExcelJS.Workbook();
     const arrayBuffer = await file.arrayBuffer();
@@ -368,6 +392,11 @@ export function useLibraryInventoryExcel() {
       );
     }
 
+    // Book Category was not present in the previous template. Its absence is
+    // accepted only as an old-template signal; the backend applies the gated
+    // exact same-name category/shelf compatibility rule.
+    const hasBookCategoryColumn = headerColumns.has("book category");
+
     const rows: InventoryImportRow[] = [];
     const issues: InventoryRowIssue[] = [];
     const reservedAccessions = new Map<string, number>();
@@ -388,9 +417,10 @@ export function useLibraryInventoryExcel() {
       // the template. ExcelJS therefore considers those formula-only rows to
       // be used rows even when the Librarian has not entered any book data.
       // Ignore the generated column when deciding whether a row is empty.
-      const userInputHeaders = requiredHeaders.filter(
-        (header) => header !== "call number",
-      );
+      const userInputHeaders = [
+        ...requiredHeaders.filter((header) => header !== "call number"),
+        ...(hasBookCategoryColumn ? ["book category"] : []),
+      ];
       const hasUserInput = userInputHeaders.some(
         (header) => String(getValue(header) ?? "").trim() !== "",
       );
@@ -422,9 +452,18 @@ export function useLibraryInventoryExcel() {
           "Copyright date",
           true,
         );
-        const shelfLocation = requireShelfLocation(
+        const shelfLocation = requireReferenceOption(
+          shelves,
           getValue("shelf location"),
+          "Shelf Location",
         );
+        const bookCategory = hasBookCategoryColumn
+          ? requireReferenceOption(
+              categories,
+              getValue("book category"),
+              "Book Category",
+            )
+          : null;
 
         if (accessionNumber) {
           const startingSequence = Number.parseInt(
@@ -469,7 +508,14 @@ export function useLibraryInventoryExcel() {
           copyright_date: copyrightDate!,
           publisher: String(getValue("publisher") ?? "").trim(),
           edition: String(getValue("edition") ?? "").trim(),
-          shelf_location: shelfLocation,
+          ...(bookCategory
+            ? {
+                category_code: bookCategory.code,
+                category: bookCategory.name,
+              }
+            : {}),
+          shelf_location_code: shelfLocation.code,
+          shelf_location: shelfLocation.name,
           subject: String(getValue("subject") ?? "").trim(),
           price: parsePrice(getValue("price")),
         });
@@ -502,6 +548,7 @@ export function useLibraryInventoryExcel() {
       return;
     }
 
+    const { categories, shelves } = await ensureInventoryReferences();
     const ExcelJS = await loadExcelJs();
     const workbook = new ExcelJS.Workbook();
 
@@ -521,7 +568,7 @@ export function useLibraryInventoryExcel() {
     );
 
     const widths = [
-      16, 20, 18, 24, 18, 30, 42, 30, 18, 30, 20, 38, 34, 16,
+      16, 20, 18, 24, 18, 30, 42, 30, 18, 30, 20, 30, 38, 34, 16,
     ];
 
     worksheet.columns = INVENTORY_HEADERS.map((header, index) => ({
@@ -544,7 +591,8 @@ export function useLibraryInventoryExcel() {
       copyright_date: currentYear,
       publisher: "Sample Publisher",
       edition: "1st Edition",
-      shelf_location: "Computer Program",
+      book_category: categories[0]?.name ?? "",
+      shelf_location: shelves[0]?.name ?? "",
       subject: "Information Technology",
       price: 0,
     });
@@ -552,6 +600,17 @@ export function useLibraryInventoryExcel() {
       formula: `D${sample.number}&" "&E${sample.number}&" "&I${sample.number}`,
       result: `002 13E3 ${currentYear}`,
     };
+
+    const referenceSheet = workbook.addWorksheet("Reference Data");
+    referenceSheet.getCell("A1").value = "Book Categories";
+    referenceSheet.getCell("B1").value = "Shelf Locations";
+    categories.forEach((item, index) => {
+      referenceSheet.getCell(index + 2, 1).value = item.name;
+    });
+    shelves.forEach((item, index) => {
+      referenceSheet.getCell(index + 2, 2).value = item.name;
+    });
+    referenceSheet.state = "veryHidden";
 
     const headerRow = worksheet.getRow(1);
     headerRow.height = 26;
@@ -571,7 +630,7 @@ export function useLibraryInventoryExcel() {
 
     worksheet.autoFilter = {
       from: "A1",
-      to: "N1",
+      to: "O1",
     };
 
     for (let row = 2; row <= 5000; row += 1) {
@@ -583,11 +642,21 @@ export function useLibraryInventoryExcel() {
         type: "list",
         allowBlank: false,
         formulae: [
-          `"${INVENTORY_SHELF_LOCATIONS.join(",")}"`,
+          `'Reference Data'!$A$2:$A$${categories.length + 1}`,
+        ],
+        showErrorMessage: true,
+        errorTitle: "Invalid book category",
+        error: "Select an available Book Category.",
+      };
+      worksheet.getCell(`M${row}`).dataValidation = {
+        type: "list",
+        allowBlank: false,
+        formulae: [
+          `'Reference Data'!$B$2:$B$${shelves.length + 1}`,
         ],
         showErrorMessage: true,
         errorTitle: "Invalid shelf location",
-        error: "Select one of the approved shelf locations.",
+        error: "Select an available Shelf Location.",
       };
       worksheet.getCell(`C${row}`).dataValidation = {
         type: "whole",
@@ -598,7 +667,7 @@ export function useLibraryInventoryExcel() {
         error: "Enter a whole number from 1 to 100.",
       };
       worksheet.getCell(`B${row}`).numFmt = "@";
-      worksheet.getCell(`N${row}`).numFmt = "₱#,##0.00";
+      worksheet.getCell(`O${row}`).numFmt = "₱#,##0.00";
     }
 
     const instructions = workbook.addWorksheet("Instructions");
@@ -626,8 +695,12 @@ export function useLibraryInventoryExcel() {
         "Generated automatically from Classification Number + Author Number + Copyright Date. Example: 002 13E3 2025. Do not edit this column.",
       ],
       [
+        "Book Category",
+        "Select the catalog category for the book title. Category and Shelf Location are independent values.",
+      ],
+      [
         "Shelf Location",
-        "Select the physical shelf where every copy from the row will be stored. This replaces the previous Category field.",
+        "Select the physical shelf where every copy from the row will be stored.",
       ],
       [
         "Subject",
@@ -670,7 +743,7 @@ export function useLibraryInventoryExcel() {
       new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }),
-      "SNCBT-Library-Inventory-Import-Template-v3.xlsx",
+      "SNCBT-Library-Inventory-Import-Template-v4.xlsx",
     );
   }
 
@@ -700,7 +773,7 @@ export function useLibraryInventoryExcel() {
     );
 
     const widths = [
-      16, 20, 18, 24, 18, 30, 42, 30, 18, 30, 20, 38, 34, 16,
+      16, 20, 18, 24, 18, 30, 42, 30, 18, 30, 20, 30, 38, 34, 16,
     ];
 
     worksheet.columns = INVENTORY_HEADERS.map((header, index) => ({
@@ -724,6 +797,7 @@ export function useLibraryInventoryExcel() {
         copyright_date: row.copyright_date ?? "",
         publisher: row.publisher,
         edition: row.edition,
+        book_category: row.category,
         shelf_location: row.shelf_location,
         subject: row.subject,
         price: row.price,
@@ -748,12 +822,12 @@ export function useLibraryInventoryExcel() {
 
     worksheet.autoFilter = {
       from: "A1",
-      to: "N1",
+      to: "O1",
     };
 
     for (let row = 2; row <= worksheet.rowCount; row += 1) {
       worksheet.getCell(`B${row}`).numFmt = "@";
-      worksheet.getCell(`N${row}`).numFmt = "₱#,##0.00";
+      worksheet.getCell(`O${row}`).numFmt = "₱#,##0.00";
     }
 
     const buffer = await workbook.xlsx.writeBuffer();

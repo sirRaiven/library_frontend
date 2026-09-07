@@ -17,7 +17,8 @@ interface BookRegistrationForm {
   classificationNumber: string;
   authorNumber: string;
   copyrightYear?: number;
-  shelfLocation: string;
+  categoryCode: string;
+  shelfLocationCode: string;
   subject: string;
   isbn: string;
   publisher: string;
@@ -56,18 +57,21 @@ interface RegistrationResponse {
 }
 
 const auth = useAuth();
+const referenceData = useReferenceData();
 const toast = useToast();
 const currentYear = new Date().getFullYear();
 
-const shelfLocations = [
-  "Filipiniana",
-  "Reference",
-  "Computer Program",
-  "Health Care",
-  "Business Administration",
-  "Hospitality & Tourism Management",
-  "Criminal Justice Education",
-];
+const bookCategoryOptions = computed(() =>
+  referenceData.bookCategories.value
+    .filter((item) => item.active !== false)
+    .map((item) => ({ label: item.name, value: item.code })),
+);
+
+const shelfLocationOptions = computed(() =>
+  referenceData.shelfLocations.value
+    .filter((item) => item.active !== false)
+    .map((item) => ({ label: item.name, value: item.code })),
+);
 
 const conditions: CopyCondition[] = [
   "New",
@@ -83,7 +87,8 @@ const form = reactive<BookRegistrationForm>({
   classificationNumber: "",
   authorNumber: "",
   copyrightYear: undefined,
-  shelfLocation: "",
+  categoryCode: "",
+  shelfLocationCode: "",
   subject: "",
   isbn: "",
   publisher: "",
@@ -135,7 +140,8 @@ const isReadyToRegister = computed(
         ) &&
         /^[A-Z0-9]{1,12}$/.test(normalizedAuthorNumber.value) &&
         form.copyrightYear &&
-        form.shelfLocation,
+        form.categoryCode &&
+        form.shelfLocationCode,
     ) &&
     Number.isInteger(Number(form.inventoryDate)) &&
     Number.isInteger(Number(form.quantity)) &&
@@ -143,11 +149,19 @@ const isReadyToRegister = computed(
     Number(form.price) >= 0,
 );
 
+function referenceName(
+  options: Array<{ label: string; value: string }>,
+  code: string,
+): string {
+  return options.find((item) => item.value === code)?.label ?? "Not selected";
+}
+
 const registrationSummary = computed(() => ({
   title: form.title.trim() || "Untitled book",
   author: form.author.trim() || "Author not entered",
   callNumber: callNumber.value,
-  shelfLocation: form.shelfLocation || "Not selected",
+  category: referenceName(bookCategoryOptions.value, form.categoryCode),
+  shelfLocation: referenceName(shelfLocationOptions.value, form.shelfLocationCode),
   subject: form.subject.trim() || "Not provided",
   quantity: Number(form.quantity) || 0,
   condition: form.condition,
@@ -231,9 +245,16 @@ function validate(state: Partial<BookRegistrationForm>): FormError[] {
     });
   }
 
-  if (!state.shelfLocation) {
+  if (!state.categoryCode) {
     errors.push({
-      name: "shelfLocation",
+      name: "categoryCode",
+      message: "Select a Book Category.",
+    });
+  }
+
+  if (!state.shelfLocationCode) {
+    errors.push({
+      name: "shelfLocationCode",
       message: "Select the physical shelf location.",
     });
   }
@@ -259,6 +280,23 @@ function validate(state: Partial<BookRegistrationForm>): FormError[] {
   return errors;
 }
 
+async function loadReferenceData() {
+  try {
+    await referenceData.loadOperational();
+  } catch (error) {
+    toast.add({
+      title: "Unable to load Book choices",
+      description: auth.getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  }
+}
+
+onMounted(() => {
+  void loadReferenceData();
+});
+
 async function submitRegistration(
   _event: FormSubmitEvent<BookRegistrationForm>,
 ) {
@@ -283,6 +321,7 @@ async function submitRegistration(
               author_number: normalizedAuthorNumber.value,
               copyright_year: Number(form.copyrightYear),
               subject: form.subject.trim() || null,
+              category_code: form.categoryCode,
               isbn: form.isbn.trim() || null,
               publisher: form.publisher.trim() || null,
               edition: form.edition.trim() || null,
@@ -293,7 +332,7 @@ async function submitRegistration(
               quantity: Number(form.quantity),
               inventory_date: Number(form.inventoryDate),
               price: Number(form.price),
-              shelf_location: form.shelfLocation,
+              shelf_location_code: form.shelfLocationCode,
               condition: form.condition,
               remarks: form.remarks.trim() || null,
             },
@@ -491,16 +530,32 @@ async function submitRegistration(
               </UFormField>
 
               <UFormField
-                name="shelfLocation"
-                label="Shelf location"
+                name="categoryCode"
+                label="Book Category"
+                description="Subject or collection category used for catalog browsing and reports."
+                required
+              >
+                <USelect
+                  v-model="form.categoryCode"
+                  :items="bookCategoryOptions"
+                  icon="i-lucide-tags"
+                  placeholder="Select Book Category"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                name="shelfLocationCode"
+                label="Shelf Location"
                 description="Physical shelf where the copies will be stored."
                 required
               >
                 <USelect
-                  v-model="form.shelfLocation"
-                  :items="shelfLocations"
+                  v-model="form.shelfLocationCode"
+                  :items="shelfLocationOptions"
                   icon="i-lucide-map-pin"
-                  placeholder="Select shelf location"
+                  placeholder="Select Shelf Location"
                   size="lg"
                   class="w-full"
                 />
@@ -652,7 +707,13 @@ async function submitRegistration(
                   </dd>
                 </div>
                 <div class="flex items-center justify-between gap-4">
-                  <dt class="text-muted">Shelf location</dt>
+                  <dt class="text-muted">Book Category</dt>
+                  <dd class="max-w-48 text-right font-semibold text-highlighted">
+                    {{ registrationSummary.category }}
+                  </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <dt class="text-muted">Shelf Location</dt>
                   <dd class="max-w-48 text-right font-semibold text-highlighted">
                     {{ registrationSummary.shelfLocation }}
                   </dd>

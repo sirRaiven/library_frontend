@@ -84,9 +84,10 @@ const auth = useAuth();
 const toast = useToast();
 const printQueue = useBarcodePrintQueue();
 const inventoryExcel = useLibraryInventoryExcel();
+const referenceData = useReferenceData();
 
 const search = ref("");
-const selectedShelfLocation = ref("All Shelf Locations");
+const selectedShelfLocation = ref("");
 const page = ref(1);
 const pageSize = 12;
 
@@ -100,16 +101,19 @@ const books = ref<CatalogBook[]>([]);
 const totalBooks = ref(0);
 const pageCount = ref(1);
 
-const shelfLocationItems = [
-  "All Shelf Locations",
-  "Filipiniana",
-  "Reference",
-  "Computer Program",
-  "Health Care",
-  "Business Administration",
-  "Hospitality & Tourism Management",
-  "Criminal Justice Education",
-];
+const shelfLocationItems = computed(() => [
+  { label: "All Shelf Locations", value: "" },
+  ...referenceData.shelfLocations.value.map((item) => ({
+    label: item.name,
+    value: item.code,
+  })),
+]);
+
+const selectedShelfLocationName = computed(() =>
+  referenceData.shelfLocations.value.find(
+    (item) => item.code === selectedShelfLocation.value,
+  )?.name ?? "",
+);
 
 const copiesOnPage = computed(() =>
   books.value.reduce(
@@ -309,12 +313,10 @@ function buildQuery(
     query["filters[$or][9][author_number][$containsi]"] = keyword;
   }
 
-  if (
-    selectedShelfLocation.value !==
-    "All Shelf Locations"
-  ) {
+  if (selectedShelfLocationName.value) {
+    // Keep legacy string-filter semantics during the observation window.
     query["filters[book_copies][shelf_location][$eq]"] =
-      selectedShelfLocation.value;
+      selectedShelfLocationName.value;
   }
 
   return query;
@@ -606,7 +608,7 @@ async function handlePhysicalBookBarcodeDetected(
   isApplyingBarcodeSearch.value = true;
   lastScannedBarcode.value = barcode;
   search.value = barcode;
-  selectedShelfLocation.value = "All Shelf Locations";
+  selectedShelfLocation.value = "";
   page.value = 1;
 
   try {
@@ -651,8 +653,7 @@ async function handlePhysicalBookBarcodeDetected(
 function clearFilters() {
   search.value = "";
   lastScannedBarcode.value = "";
-  selectedShelfLocation.value =
-    "All Shelf Locations";
+  selectedShelfLocation.value = "";
   page.value = 1;
 }
 
@@ -695,7 +696,10 @@ watch(page, () => {
 });
 
 onMounted(() => {
-  void loadBooks();
+  void Promise.all([
+    referenceData.loadOperational(),
+    loadBooks(),
+  ]).catch(() => undefined);
 });
 
 onBeforeUnmount(() => {
@@ -780,6 +784,7 @@ onBeforeUnmount(() => {
           <USelect
             v-model="selectedShelfLocation"
             :items="shelfLocationItems"
+            value-key="value"
             icon="i-lucide-map-pin"
             size="lg"
             class="w-full"
@@ -1236,8 +1241,7 @@ onBeforeUnmount(() => {
             <UButton
               v-if="
                 search ||
-                selectedShelfLocation !==
-                  'All Shelf Locations'
+                selectedShelfLocation
               "
               label="Clear Filters"
               color="neutral"

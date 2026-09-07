@@ -1,7 +1,4 @@
-import type {
-  LibraryCardStatus,
-  StudentEducationalLevel,
-} from "~/constants/studentPrograms";
+import type { LibraryCardStatus } from "~/constants/studentPrograms";
 
 export type StudentStatus =
   | "Active"
@@ -28,7 +25,7 @@ export interface MembershipRecord {
   documentId: string;
   membershipNo: string;
   academicYear: string;
-  semester: "First Semester" | "Second Semester" | "Summer";
+  semester: string;
   issuedDate: string;
   expiryDate: string;
   status: MembershipStatus;
@@ -39,6 +36,13 @@ export interface MembershipRecord {
   verifiedBy?: string | null;
   verifiedAt?: string | null;
   remarks?: string | null;
+}
+
+
+export interface StudentEducationReference {
+  level: { code: string; name: string; active?: boolean } | null;
+  program: { code: string; name: string; shortName?: string | null; active?: boolean } | null;
+  yearLevel: { code: string; label: string; value: number; active?: boolean } | null;
 }
 
 export interface StudentMember {
@@ -52,10 +56,10 @@ export interface StudentMember {
   suffix: string;
   fullName: string;
   sex?: "Male" | "Female" | null;
-  educationalLevel:
-    StudentEducationalLevel;
+  educationalLevel: string;
   course: string;
   yearLevel?: number | null;
+  education?: StudentEducationReference | null;
   section: string;
   email: string;
   contactNo: string;
@@ -74,12 +78,13 @@ export type FacultySex =
   | "Female"
   | "Prefer not to say";
 
-export type FacultyEmploymentType =
-  | "Full-Time"
-  | "Part-Time"
-  | "Guest Lecturer"
-  | "Administrative Personnel"
-  | "Other";
+export type FacultyEmploymentType = string;
+
+export interface FacultyReferenceValue {
+  code: string;
+  name: string;
+  active?: boolean;
+}
 
 export interface FacultyMember {
   documentId: string;
@@ -92,9 +97,10 @@ export interface FacultyMember {
   fullName: string;
   sex?: FacultySex | null;
   department: string;
+  departmentReference?: FacultyReferenceValue | null;
   designation: string;
-  employmentType:
-    FacultyEmploymentType;
+  employmentType: FacultyEmploymentType;
+  employmentTypeReference?: FacultyReferenceValue | null;
   email: string;
   contactNo: string;
   address: string;
@@ -206,10 +212,9 @@ export interface StudentRegistrationInput {
     lastName: string;
     suffix?: string;
     sex?: string;
-    educationalLevel:
-      StudentEducationalLevel;
-    course: string;
-    yearLevel?: number;
+    educationalLevelCode: string;
+    programCode: string;
+    yearLevelCode: string;
     section?: string;
     email?: string;
     contactNo?: string;
@@ -221,6 +226,7 @@ export interface StudentRegistrationInput {
     photoId?: number;
   };
   membership: {
+    academicTermCode?: string;
     academicYear: string;
     semester: string;
     issuedDate: string;
@@ -255,17 +261,18 @@ export interface FacultyRegistrationInput {
   lastName: string;
   suffix?: string;
   sex?: FacultySex;
-  department: string;
+  departmentCode: string;
   designation?: string;
-  employmentType:
-    FacultyEmploymentType;
+  employmentTypeCode: string;
   email?: string;
   contactNo?: string;
   address?: string;
 }
 
 export interface FacultyUpdateInput
-  extends FacultyRegistrationInput {
+  extends Omit<FacultyRegistrationInput, "departmentCode" | "employmentTypeCode"> {
+  departmentCode?: string;
+  employmentTypeCode?: string;
   status: FacultyStatus;
 }
 
@@ -715,6 +722,7 @@ export function useLibraryMembers() {
       barcode: string;
       academicYear: string;
       semester: string;
+      academicTermCode?: string;
       issuedDate: string;
       expiryDate: string;
       enrollmentVerified: boolean;

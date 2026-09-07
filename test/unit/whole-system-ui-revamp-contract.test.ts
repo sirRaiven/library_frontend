@@ -29,14 +29,17 @@ describe("whole-system UI revamp contract", () => {
     }
   });
 
-  it("keeps the redesigned sign-in experience and approved root wrapper", () => {
+  it("keeps the redesigned sign-in experience with light/dark support", () => {
     const signIn = read("app/pages/index.vue");
-    expect(signIn).toContain(
-      "min-h-screen flex flex-col justify-center items-center bg-[#f4fbf8] dark:bg-neutral-950 p-4 transition-colors relative overflow-hidden",
-    );
+    expect(signIn).toContain("relative min-h-screen overflow-hidden");
+    expect(signIn).toContain("bg-[#eef6f2]");
+    expect(signIn).toContain("dark:bg-[#020c12]");
     expect(signIn).toContain("Library Management System");
     expect(signIn).not.toContain("Open Student Registration");
-    expect(signIn).toContain("Sign in to continue");
+    expect(signIn).toContain('id="signin-heading"');
+    expect(signIn).toContain("Sign in");
+    expect(signIn).toContain("Switch to light mode");
+    expect(signIn).toContain("Switch to dark mode");
   });
 
   it("normalizes core Librarian workflows onto the shared page shell and header", () => {

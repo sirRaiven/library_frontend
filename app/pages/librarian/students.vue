@@ -14,17 +14,14 @@ import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
 import type { CroppedStudentPhoto } from "~/types/studentPhoto";
 import {
   LIBRARY_CARD_STATUSES,
-  STUDENT_EDUCATIONAL_LEVELS,
-  programsForLevel,
   yearGradeLabel,
-  yearLevelsFor,
   type LibraryCardStatus,
-  type StudentEducationalLevel,
 } from "~/constants/studentPrograms";
 
 definePageMeta({ layout: "librarian", title: "Students" });
 
 const members = useLibraryMembers();
+const referenceData = useReferenceData();
 const termManager = useMembershipTerm();
 const auth = useAuth();
 const toast = useToast();
@@ -87,27 +84,6 @@ const summary = reactive({
 
 const today = new Date().toISOString().slice(0, 10);
 
-function defaultAcademicYear() {
-  const date = new Date();
-  const year = date.getFullYear();
-  return date.getMonth() + 1 >= 6
-    ? `${year}-${year + 1}`
-    : `${year - 1}-${year}`;
-}
-
-function defaultSemester() {
-  const month = new Date().getMonth() + 1;
-  if (month >= 6) return "First Semester";
-  if (month <= 4) return "Second Semester";
-  return "Summer";
-}
-
-function defaultExpiryDate() {
-  const date = new Date();
-  date.setMonth(date.getMonth() + 5);
-  return date.toISOString().slice(0, 10);
-}
-
 const registrationForm = reactive<StudentRegistrationInput>({
   student: {
     studentNo: "",
@@ -116,10 +92,9 @@ const registrationForm = reactive<StudentRegistrationInput>({
     lastName: "",
     suffix: "",
     sex: "",
-    educationalLevel:
-      "College",
-    course: "",
-    yearLevel: 1,
+    educationalLevelCode: "",
+    programCode: "",
+    yearLevelCode: "",
     section: "",
     email: "",
     contactNo: "",
@@ -130,10 +105,11 @@ const registrationForm = reactive<StudentRegistrationInput>({
       "",
   },
   membership: {
-    academicYear: defaultAcademicYear(),
-    semester: defaultSemester(),
+    academicTermCode: "",
+    academicYear: "",
+    semester: "",
     issuedDate: today,
-    expiryDate: defaultExpiryDate(),
+    expiryDate: "",
     enrollmentVerified: false,
     enrollmentReference: "",
     remarks: "",
@@ -151,6 +127,9 @@ const activeMembershipTerm = computed(() => termManager.term.value);
 function syncRegistrationMembership() {
   const term = activeMembershipTerm.value;
   Object.assign(registrationForm.membership, {
+    academicTermCode: term.academicTerm?.code
+      ?? referenceData.currentAcademicTerm.value?.code
+      ?? "",
     academicYear: term.academicYear,
     semester: term.semester,
     issuedDate: term.validFrom,
@@ -356,10 +335,9 @@ const editForm = reactive({
   lastName: "",
   suffix: "",
   sex: "",
-  educationalLevel:
-    "College" as StudentEducationalLevel,
-  course: "",
-  yearLevel: 1,
+  educationalLevelCode: "",
+  programCode: "",
+  yearLevelCode: "",
   section: "",
   email: "",
   contactNo: "",
@@ -371,6 +349,33 @@ const editForm = reactive({
   status: "Active" as StudentStatus,
 });
 
+const editOriginalEducationCodes = ref({
+  educationalLevelCode: "",
+  programCode: "",
+  yearLevelCode: "",
+});
+
+const selectedRegistrationLevel = computed(() =>
+  referenceData.educationalLevels.value.find(
+    (item) => item.code === registrationForm.student.educationalLevelCode,
+  ) ?? null,
+);
+const selectedRegistrationProgram = computed(() =>
+  referenceData.academicPrograms.value.find(
+    (item) => item.code === registrationForm.student.programCode,
+  ) ?? null,
+);
+const selectedRegistrationYearLevel = computed(() =>
+  referenceData.programYearLevels.value.find(
+    (item) => item.code === registrationForm.student.yearLevelCode,
+  ) ?? null,
+);
+
+const selectedEditLevel = computed(() =>
+  referenceData.educationalLevels.value.find(
+    (item) => item.code === editForm.educationalLevelCode,
+  ) ?? null,
+);
 
 const registrationPreviewStudent =
   computed<StudentMember>(() => ({
@@ -414,13 +419,13 @@ const registrationPreviewStudent =
         | null) ||
       null,
     educationalLevel:
-      registrationForm.student
-        .educationalLevel,
+      selectedRegistrationLevel.value?.name ??
+      "EDUCATIONAL LEVEL",
     course:
-      registrationForm.student.course ||
+      selectedRegistrationProgram.value?.name ??
       "COURSE / PROGRAM",
     yearLevel:
-      registrationForm.student.yearLevel ||
+      selectedRegistrationYearLevel.value?.value ??
       null,
     section:
       registrationForm.student.section ||
@@ -534,45 +539,51 @@ const statusItems = ["All", "Active", "Inactive", "Suspended", "Graduated", "Dro
 const memberStatusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
 const sexItems = ["Male", "Female"];
 
-const educationalLevelItems = [
+const educationalLevelItems = computed(() => [
   "All",
-  ...STUDENT_EDUCATIONAL_LEVELS,
-];
+  ...referenceData.educationalLevels.value.map((item) => item.name),
+]);
 
 const cardStatusItems = [
   "All",
   ...LIBRARY_CARD_STATUSES,
 ];
 
-const registrationProgramItems =
-  computed(() =>
-    programsForLevel(
-      registrationForm.student
-        .educationalLevel,
-    ),
-  );
+const registrationEducationalLevelItems = computed(() =>
+  referenceData.educationalLevels.value.map((item) => ({
+    label: item.name,
+    value: item.code,
+  })),
+);
 
-const editProgramItems =
-  computed(() =>
-    programsForLevel(
-      editForm.educationalLevel,
-    ),
-  );
+const registrationProgramItems = computed(() =>
+  referenceData.programsForLevel(
+    registrationForm.student.educationalLevelCode,
+  ).map((item) => ({ label: item.name, value: item.code })),
+);
 
-const registrationYearItems =
-  computed(() =>
-    yearLevelsFor(
-      registrationForm.student
-        .educationalLevel,
-    ),
-  );
+const editProgramItems = computed(() =>
+  referenceData.programsForLevel(
+    editForm.educationalLevelCode,
+  ).map((item) => ({ label: item.name, value: item.code })),
+);
 
-const editYearItems =
-  computed(() =>
-    yearLevelsFor(
-      editForm.educationalLevel,
-    ),
-  );
+const registrationYearItems = computed(() =>
+  referenceData.yearLevelsForProgram(
+    registrationForm.student.programCode,
+  ).map((item) => ({ label: item.label, value: item.code })),
+);
+
+const editYearItems = computed(() =>
+  referenceData.yearLevelsForProgram(
+    editForm.programCode,
+  ).map((item) => ({ label: item.label, value: item.code })),
+);
+
+const referenceChoicesReady = computed(() =>
+  referenceData.operationalLoaded.value &&
+  registrationEducationalLevelItems.value.length > 0,
+);
 
 const cards = computed(() => [
   { label: "Registered Students", value: summary.totalStudents, icon: "i-lucide-users" },
@@ -617,9 +628,9 @@ function validate(state: StudentRegistrationInput): FormError[] {
   if (!state.student.studentNo.trim()) errors.push({ name: "student.studentNo", message: "Student number is required." });
   if (!state.student.firstName.trim()) errors.push({ name: "student.firstName", message: "First name is required." });
   if (!state.student.lastName.trim()) errors.push({ name: "student.lastName", message: "Last name is required." });
-  if (!state.student.educationalLevel) errors.push({ name: "student.educationalLevel", message: "Select the Student educational level." });
-  if (!state.student.course.trim()) errors.push({ name: "student.course", message: "Select a program for the chosen educational level." });
-  if (!state.student.yearLevel) errors.push({ name: "student.yearLevel", message: "Select the Student year or grade level." });
+  if (!state.student.educationalLevelCode) errors.push({ name: "student.educationalLevelCode", message: "Select the Student educational level." });
+  if (!state.student.programCode.trim()) errors.push({ name: "student.programCode", message: "Select a program for the chosen educational level." });
+  if (!state.student.yearLevelCode) errors.push({ name: "student.yearLevelCode", message: "Select the Student year or grade level." });
   if (!state.student.libraryCardStatus) errors.push({ name: "student.libraryCardStatus", message: "Select the Library Card processing status." });
   if (!registrationPhoto.value) errors.push({ name: "student.photo", message: "Upload and crop the Student photo for the Library Card." });
   if (activeMembershipTerm.value.status !== "Open" || !activeMembershipTerm.value.registrationOpen) {
@@ -770,10 +781,9 @@ function resetRegistration() {
     lastName: "",
     suffix: "",
     sex: "",
-    educationalLevel:
-      "College",
-    course: "",
-    yearLevel: 1,
+    educationalLevelCode: "",
+    programCode: "",
+    yearLevelCode: "",
     section: "",
     email: "",
     contactNo: "",
@@ -784,6 +794,9 @@ function resetRegistration() {
       "",
   });
   Object.assign(registrationForm.membership, {
+    academicTermCode: activeMembershipTerm.value.academicTerm?.code
+      ?? referenceData.currentAcademicTerm.value?.code
+      ?? "",
     academicYear: activeMembershipTerm.value.academicYear,
     semester: activeMembershipTerm.value.semester,
     issuedDate: activeMembershipTerm.value.validFrom,
@@ -863,6 +876,16 @@ async function registerStudent(_event: FormSubmitEvent<StudentRegistrationInput>
       description: "Open an academic membership term before registering a Student.",
       color: "warning",
       icon: "i-lucide-calendar-x-2",
+    });
+    return;
+  }
+
+  if (!referenceChoicesReady.value) {
+    toast.add({
+      title: "Student choices are unavailable",
+      description: "Load the Student program and year choices before registering.",
+      color: "warning",
+      icon: "i-lucide-refresh-cw",
     });
     return;
   }
@@ -948,23 +971,35 @@ function openCard(student: StudentMember) {
 
 function openEdit(student: StudentMember) {
   selectedStudent.value = student;
+
+  const educationalLevelCode =
+    student.education?.level?.code ??
+    referenceData.educationalLevels.value.find(
+      (item) => item.name === student.educationalLevel,
+    )?.code ??
+    "";
+  const programCode =
+    student.education?.program?.code ??
+    referenceData.programsForLevel(educationalLevelCode).find(
+      (item) => item.name === student.course,
+    )?.code ??
+    "";
+  const yearLevelCode =
+    student.education?.yearLevel?.code ??
+    referenceData.yearLevelsForProgram(programCode).find(
+      (item) => item.value === student.yearLevel,
+    )?.code ??
+    "";
+
   Object.assign(editForm, {
     firstName: student.firstName,
     middleName: student.middleName,
     lastName: student.lastName,
     suffix: student.suffix,
     sex: student.sex ?? "",
-    educationalLevel:
-      student.educationalLevel,
-    course: student.course,
-    yearLevel:
-      student.yearLevel ??
-      (
-        student.educationalLevel ===
-          "Senior High School"
-          ? 11
-          : 1
-      ),
+    educationalLevelCode,
+    programCode,
+    yearLevelCode,
     section: student.section,
     email: student.email,
     contactNo: student.contactNo,
@@ -976,6 +1011,13 @@ function openEdit(student: StudentMember) {
       "",
     status: student.status,
   });
+
+
+  editOriginalEducationCodes.value = {
+    educationalLevelCode: editForm.educationalLevelCode,
+    programCode: editForm.programCode,
+    yearLevelCode: editForm.yearLevelCode,
+  };
 
   releasePhotoSelection(
     editPhoto.value,
@@ -1012,11 +1054,39 @@ async function saveStudent() {
       removeExistingPhoto.value &&
       !photoId;
 
+    const educationChanged =
+      editForm.educationalLevelCode !== editOriginalEducationCodes.value.educationalLevelCode ||
+      editForm.programCode !== editOriginalEducationCodes.value.programCode ||
+      editForm.yearLevelCode !== editOriginalEducationCodes.value.yearLevelCode;
+
+    if (
+      educationChanged &&
+      (!editForm.educationalLevelCode || !editForm.programCode || !editForm.yearLevelCode)
+    ) {
+      toast.add({
+        title: "Complete the Student education details",
+        description: "Select the educational level, program, and year or grade before saving.",
+        color: "warning",
+        icon: "i-lucide-triangle-alert",
+      });
+      return;
+    }
+
+    const {
+      educationalLevelCode,
+      programCode,
+      yearLevelCode,
+      ...profileFields
+    } = editForm;
+
     const response =
       await members.updateStudent(
         selectedStudent.value.documentId,
         {
-          ...editForm,
+          ...profileFields,
+          ...(educationChanged
+            ? { educationalLevelCode, programCode, yearLevelCode }
+            : {}),
           ...(photoId
             ? {
                 photoId,
@@ -1215,6 +1285,19 @@ async function openRegistrationModal() {
     await termManager.load(true);
     syncRegistrationMembership();
 
+    try {
+      await referenceData.loadOperational();
+      syncRegistrationEducationSelection();
+    } catch {
+      toast.add({
+        title: "Student choices are unavailable",
+        description: "The program and year choices could not be loaded. Try again before registering a Student.",
+        color: "warning",
+        icon: "i-lucide-refresh-cw",
+      });
+      return;
+    }
+
     if (
       activeMembershipTerm.value.status !== "Open" ||
       !activeMembershipTerm.value.registrationOpen
@@ -1330,72 +1413,52 @@ watch(
   },
 );
 
+function syncRegistrationEducationSelection() {
+  const levels = referenceData.educationalLevels.value;
+  if (!levels.some((item) => item.code === registrationForm.student.educationalLevelCode)) {
+    registrationForm.student.educationalLevelCode = levels[0]?.code ?? "";
+  }
+
+  const programs = referenceData.programsForLevel(registrationForm.student.educationalLevelCode);
+  if (!programs.some((item) => item.code === registrationForm.student.programCode)) {
+    registrationForm.student.programCode = programs[0]?.code ?? "";
+  }
+
+  const years = referenceData.yearLevelsForProgram(registrationForm.student.programCode);
+  if (!years.some((item) => item.code === registrationForm.student.yearLevelCode)) {
+    registrationForm.student.yearLevelCode = years[0]?.code ?? "";
+  }
+}
+
 watch(
-  () =>
-    registrationForm.student
-      .educationalLevel,
-  (level) => {
-    const programs =
-      programsForLevel(level);
+  [
+    () => referenceData.educationalLevels.value,
+    () => registrationForm.student.educationalLevelCode,
+    () => registrationForm.student.programCode,
+  ],
+  syncRegistrationEducationSelection,
+  { deep: true },
+);
 
-    if (
-      !programs.some(
-        (item) =>
-          item.value ===
-          registrationForm.student
-            .course,
-      )
-    ) {
-      registrationForm.student.course =
-        "";
-    }
-
-    const years =
-      yearLevelsFor(level);
-
-    if (
-      !years.some(
-        (item) =>
-          item.value ===
-          registrationForm.student
-            .yearLevel,
-      )
-    ) {
-      registrationForm.student.yearLevel =
-        years[0]?.value ?? 1;
+watch(
+  () => editForm.educationalLevelCode,
+  (levelCode) => {
+    if (!referenceData.operationalLoaded.value) return;
+    const programs = referenceData.programsForLevel(levelCode);
+    if (!programs.some((item) => item.code === editForm.programCode)) {
+      editForm.programCode = "";
+      editForm.yearLevelCode = "";
     }
   },
 );
 
 watch(
-  () =>
-    editForm.educationalLevel,
-  (level) => {
-    const programs =
-      programsForLevel(level);
-
-    if (
-      !programs.some(
-        (item) =>
-          item.value ===
-          editForm.course,
-      )
-    ) {
-      editForm.course = "";
-    }
-
-    const years =
-      yearLevelsFor(level);
-
-    if (
-      !years.some(
-        (item) =>
-          item.value ===
-          editForm.yearLevel,
-      )
-    ) {
-      editForm.yearLevel =
-        years[0]?.value ?? 1;
+  () => editForm.programCode,
+  (programCode) => {
+    if (!referenceData.operationalLoaded.value) return;
+    const years = referenceData.yearLevelsForProgram(programCode);
+    if (!years.some((item) => item.code === editForm.yearLevelCode)) {
+      editForm.yearLevelCode = "";
     }
   },
 );
@@ -1439,6 +1502,14 @@ onMounted(async () => {
   } catch (error) {
     appLogger.warn("Academic membership term could not be loaded.", error);
   }
+
+  try {
+    await referenceData.loadOperational();
+    syncRegistrationEducationSelection();
+  } catch (error) {
+    appLogger.warn("Student registration choices could not be loaded.", error);
+  }
+
   await loadStudents();
 });
 
@@ -1730,6 +1801,14 @@ onBeforeUnmount(() => {
           <p class="mt-1 text-sm text-muted">Create the profile, permanent card, barcode, and initial semester membership in one step.</p>
 
           <UForm :state="registrationForm" :validate="validate" class="mt-6 space-y-6" @submit="registerStudent">
+            <UAlert
+              v-if="referenceData.operationalError.value"
+              color="warning"
+              variant="soft"
+              icon="i-lucide-refresh-cw"
+              title="Student choices are unavailable"
+              description="The program and year choices could not be loaded. Close this window and try Register Student again."
+            />
             <div class="grid items-start gap-5 lg:grid-cols-[minmax(20rem,23rem)_minmax(0,1fr)]">
               <UFormField
                 name="student.photo"
@@ -1773,47 +1852,42 @@ onBeforeUnmount(() => {
               <UFormField name="student.lastName" label="Last Name" required><UInput v-model="registrationForm.student.lastName" class="w-full" /></UFormField>
               <UFormField name="student.suffix" label="Suffix"><UInput v-model="registrationForm.student.suffix" class="w-full" /></UFormField>
               <UFormField
-                name="student.educationalLevel"
+                name="student.educationalLevelCode"
                 label="Educational Level"
-                description="Select College, Diploma, or Senior High School."
+                description="Select the Student's educational level."
                 required
               >
                 <USelect
-                  v-model="
-                    registrationForm.student
-                      .educationalLevel
-                  "
-                  :items="
-                    STUDENT_EDUCATIONAL_LEVELS
-                  "
+                  v-model="registrationForm.student.educationalLevelCode"
+                  :items="registrationEducationalLevelItems"
+                  value-key="value"
+                  :disabled="!referenceChoicesReady"
                   class="w-full"
                 />
               </UFormField>
 
               <UFormField
-                name="student.course"
+                name="student.programCode"
                 label="Program"
                 description="The choices are filtered by the selected educational level."
                 required
               >
                 <USelect
-                  v-model="
-                    registrationForm.student.course
-                  "
+                  v-model="registrationForm.student.programCode"
                   :items="
                     registrationProgramItems
                   "
                   value-key="value"
-                  placeholder="Select an approved program"
+                  placeholder="Select a program"
+                  :disabled="!referenceChoicesReady || !registrationForm.student.educationalLevelCode"
                   class="w-full"
                 />
               </UFormField>
 
               <UFormField
-                name="student.yearLevel"
+                name="student.yearLevelCode"
                 :label="
-                  registrationForm.student
-                    .educationalLevel ===
+                  selectedRegistrationLevel?.name ===
                   'Senior High School'
                     ? 'Grade Level'
                     : 'Year Level'
@@ -1821,14 +1895,12 @@ onBeforeUnmount(() => {
                 required
               >
                 <USelect
-                  v-model="
-                    registrationForm.student
-                      .yearLevel
-                  "
+                  v-model="registrationForm.student.yearLevelCode"
                   :items="
                     registrationYearItems
                   "
                   value-key="value"
+                  :disabled="!referenceChoicesReady || !registrationForm.student.programCode"
                   class="w-full"
                 />
               </UFormField>
@@ -2260,7 +2332,7 @@ onBeforeUnmount(() => {
 
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <UButton label="Cancel" color="neutral" variant="outline" :disabled="submitting" @click="cancelRegistration" />
-              <UButton type="submit" label="Register & Generate Card" icon="i-lucide-id-card" color="primary" :loading="submitting" />
+              <UButton type="submit" label="Register & Generate Card" icon="i-lucide-id-card" color="primary" :loading="submitting" :disabled="!referenceChoicesReady" />
             </div>
           </UForm>
         </div>
@@ -2434,12 +2506,10 @@ onBeforeUnmount(() => {
               label="Educational Level"
             >
               <USelect
-                v-model="
-                  editForm.educationalLevel
-                "
-                :items="
-                  STUDENT_EDUCATIONAL_LEVELS
-                "
+                v-model="editForm.educationalLevelCode"
+                :items="registrationEducationalLevelItems"
+                value-key="value"
+                :disabled="!referenceChoicesReady"
                 class="w-full"
               />
             </UFormField>
@@ -2448,32 +2518,32 @@ onBeforeUnmount(() => {
               label="Program"
             >
               <USelect
-                v-model="editForm.course"
+                v-model="editForm.programCode"
                 :items="
                   editProgramItems
                 "
                 value-key="value"
-                placeholder="Select an approved program"
+                placeholder="Select a program"
+                :disabled="!referenceChoicesReady || !editForm.educationalLevelCode"
                 class="w-full"
               />
             </UFormField>
 
             <UFormField
               :label="
-                editForm.educationalLevel ===
+                selectedEditLevel?.name ===
                 'Senior High School'
                   ? 'Grade Level'
                   : 'Year Level'
               "
             >
               <USelect
-                v-model="
-                  editForm.yearLevel
-                "
+                v-model="editForm.yearLevelCode"
                 :items="
                   editYearItems
                 "
                 value-key="value"
+                :disabled="!referenceChoicesReady || !editForm.programCode"
                 class="w-full"
               />
             </UFormField>

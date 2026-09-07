@@ -29,8 +29,11 @@ describe("SNCBT UI design system", () => {
     }
   });
 
-  it("preserves the required sign-in root wrapper", () => {
+  it("preserves the approved responsive light/dark sign-in canvas", () => {
     const page = read("app/pages/index.vue");
-    expect(page).toContain('min-h-screen flex flex-col justify-center items-center bg-[#f4fbf8] dark:bg-neutral-950 p-4 transition-colors relative overflow-hidden');
+    expect(page).toContain('relative min-h-screen overflow-hidden');
+    expect(page).toContain('bg-[#eef6f2]');
+    expect(page).toContain('dark:bg-[#020c12]');
+    expect(page).toContain('colorMode.preference');
   });
 });

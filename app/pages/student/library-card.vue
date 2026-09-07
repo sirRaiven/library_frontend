@@ -24,6 +24,7 @@ definePageMeta({
 
 const libraryCard =
   useStudentLibraryCard();
+const librarySettings = useLibrarySettings();
 const toast = useToast();
 const displaySide =
   ref<Exclude<CardSide, "both">>(
@@ -156,12 +157,10 @@ const membershipRecord = computed<
   const status =
     membershipStatus(source.status);
 
-  const semester =
-    source.semester ===
-      "Second Semester" ||
-    source.semester === "Summer"
-      ? source.semester
-      : "First Semester";
+  const storedSemester = source.semester?.trim() || null;
+  const operationalSemester =
+    librarySettings.settings.value.general.currentSemester?.trim() || null;
+  const semester = storedSemester ?? operationalSemester ?? "Not recorded";
 
   return {
     documentId: source.documentId,
@@ -240,7 +239,10 @@ const activeDesign = computed<
 
 async function load() {
   try {
-    await libraryCard.load();
+    await Promise.all([
+      libraryCard.load(),
+      librarySettings.load().catch(() => undefined),
+    ]);
   } catch {
     toast.add({
       title:
