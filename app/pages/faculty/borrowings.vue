@@ -328,14 +328,6 @@ onBeforeUnmount(() => {
       <UPagination v-model:page="page" :total="portal.pagination.value.total" :items-per-page="portal.pagination.value.pageSize" />
     </div>
 
-    <UAlert
-      title="No monetary fines for Faculty loans"
-      description="Books that are late, lost, or damaged do not generate a Faculty fine. Lost books remain the responsibility of the department and must be replaced with a new acceptable copy."
-      icon="i-lucide-shield-check"
-      color="success"
-      variant="soft"
-    />
-
     <UModal v-model:open="reportOpen" :dismissible="!submitting" :ui="{ content: 'sm:max-w-2xl' }">
       <template #content>
         <div class="bg-default">

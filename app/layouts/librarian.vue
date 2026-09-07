@@ -723,7 +723,7 @@ watch(
           'data-[dragging=true]:transition-none',
         ].join(' '),
         header: [
-          'bg-transparent',
+          'border-b border-default/70 bg-transparent px-3 py-3',
           'px-3 py-3',
         ].join(' '),
         body: [
@@ -731,7 +731,7 @@ watch(
           'overflow-y-auto overflow-x-hidden overscroll-contain',
         ].join(' '),
         footer: [
-          'bg-transparent',
+          'border-t border-default/70 bg-transparent px-2 py-3',
           'px-2.5 py-3',
         ].join(' '),
         content: [

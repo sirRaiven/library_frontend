@@ -142,7 +142,7 @@ onBeforeUnmount(() => {
       <p class="mt-2 text-sm text-muted">Try a different search, category, or availability filter.</p>
     </UCard>
 
-    <div v-if="portal.pagination.value.pageCount > 1" class="flex justify-center">
+    <div v-if="portal.pagination.value.pageCount > 1" class="flex justify-center mb-14">
       <UPagination v-model:page="page" :total="portal.pagination.value.total" :items-per-page="portal.pagination.value.pageSize" />
     </div>
   </div>

@@ -132,7 +132,7 @@ onMounted(load);
       </UCard>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+    <section class="grid gap-6 xl:grid-cols-[1.4fr_1fr] mb-14">
       <UCard :ui="{ root: 'ring-1 ring-default', header: 'border-b border-default p-5', body: 'p-0' }">
         <template #header>
           <div class="flex items-center justify-between gap-3">
