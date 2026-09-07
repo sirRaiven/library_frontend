@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
                     ? 'solid'
                     : 'ghost'
                 "
-                @click="displaySide = 'front'"
+                @click="() => { displaySide = 'front'; }"
               />
               <UButton
                 label="Back"
@@ -418,7 +418,7 @@ onBeforeUnmount(() => {
                     ? 'solid'
                     : 'ghost'
                 "
-                @click="displaySide = 'back'"
+                @click="() => { displaySide = 'back'; }"
               />
             </div>
           </div>

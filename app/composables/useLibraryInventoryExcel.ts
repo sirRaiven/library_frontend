@@ -599,7 +599,7 @@ export function useLibraryInventoryExcel() {
     sample.getCell(6).value = {
       formula: `D${sample.number}&" "&E${sample.number}&" "&I${sample.number}`,
       result: `002 13E3 ${currentYear}`,
-    };
+    } as Cell["value"];
 
     const referenceSheet = workbook.addWorksheet("Reference Data");
     referenceSheet.getCell("A1").value = "Book Categories";
@@ -636,7 +636,7 @@ export function useLibraryInventoryExcel() {
     for (let row = 2; row <= 5000; row += 1) {
       worksheet.getCell(`F${row}`).value = {
         formula: `IF(OR(D${row}="",E${row}="",I${row}=""),"",D${row}&" "&E${row}&" "&I${row})`,
-      };
+      } as Cell["value"];
       worksheet.getCell(`F${row}`).protection = { locked: true };
       worksheet.getCell(`L${row}`).dataValidation = {
         type: "list",

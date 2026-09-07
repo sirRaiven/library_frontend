@@ -734,7 +734,7 @@ onMounted(async () => {
               color="neutral"
               variant="outline"
               :disabled="statusUpdating"
-              @click="statusDialogOpen = false"
+              @click="() => { statusDialogOpen = false; }"
             />
             <UButton
               :label="statusTarget === 'Released' ? 'Confirm Release' : 'Confirm Printed'"

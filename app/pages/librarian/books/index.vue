@@ -205,7 +205,7 @@ function normalizeClassificationBoundary(value: string): string | null {
     return null;
   }
 
-  const [wholePart, decimalPart = ""] = normalized.split(".");
+  const [wholePart = "", decimalPart = ""] = normalized.split(".");
   const wholeNumber = Number.parseInt(wholePart, 10);
 
   if (!Number.isFinite(wholeNumber) || wholeNumber < 0 || wholeNumber > 999) {

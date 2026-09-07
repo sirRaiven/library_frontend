@@ -39,9 +39,7 @@ const markingAll =
 const lastUpdatedAt =
   ref<string | null>(null);
 
-let refreshTimer:
-  ReturnType<typeof setInterval> |
-  null = null;
+let refreshTimer: number | null = null;
 
 const views = [
   {
@@ -404,10 +402,7 @@ onBeforeUnmount(() => {
                 : 'outline'
             "
             size="sm"
-            @click="
-              filters.view =
-                item.value
-            "
+            @click="() => { filters.view = item.value; }"
           />
         </div>
 

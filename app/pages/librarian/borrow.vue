@@ -910,7 +910,7 @@ onMounted(() => {
                   color="primary"
                   :loading="isConfirming"
                   :disabled="!canConfirm"
-                  @click="confirmBorrowing"
+                  @click="async () => { await confirmBorrowing(); }"
                 />
               </div>
             </template>

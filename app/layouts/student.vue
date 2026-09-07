@@ -501,7 +501,7 @@ onBeforeUnmount(() => {
             
             block
             :disabled="loggingOut"
-            @click="logoutOpen = false"
+            @click="() => { logoutOpen = false; }"
           />
         </div>
       </div>

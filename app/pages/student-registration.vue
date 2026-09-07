@@ -402,7 +402,7 @@ onMounted(() => {
             variant="ghost"
             square
             aria-label="Change color mode"
-            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+            @click="() => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'; }"
           />
         </div>
       </div>
@@ -463,8 +463,8 @@ onMounted(() => {
         />
 
         <div class="mb-6 flex flex-wrap gap-2">
-          <UButton label="New Membership Registration" icon="i-lucide-user-plus" :variant="activeView === 'registration' ? 'solid' : 'outline'" color="primary" @click="activeView = 'registration'" />
-          <UButton label="Forgotten Credentials" icon="i-lucide-key-round" :variant="activeView === 'help' ? 'solid' : 'outline'" color="neutral" @click="activeView = 'help'" />
+          <UButton label="New Membership Registration" icon="i-lucide-user-plus" :variant="activeView === 'registration' ? 'solid' : 'outline'" color="primary" @click="() => { activeView = 'registration'; }" />
+          <UButton label="Forgotten Credentials" icon="i-lucide-key-round" :variant="activeView === 'help' ? 'solid' : 'outline'" color="neutral" @click="() => { activeView = 'help'; }" />
         </div>
 
         <UForm
@@ -546,12 +546,12 @@ onMounted(() => {
               </div>
               <UFormField name="account.password" label="Password" required>
                 <UInput v-model="registration.account.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" class="w-full" :ui="{ trailing: 'pe-1' }">
-                  <template #trailing><UButton :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" :aria-label="showPassword ? 'Hide password' : 'Show password'" color="neutral" variant="ghost" size="sm" square @click="showPassword = !showPassword" /></template>
+                  <template #trailing><UButton :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" :aria-label="showPassword ? 'Hide password' : 'Show password'" color="neutral" variant="ghost" size="sm" square @click="() => { showPassword = !showPassword; }" /></template>
                 </UInput>
               </UFormField>
               <UFormField name="account.confirmPassword" label="Confirm Password" required>
                 <UInput v-model="registration.account.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" class="w-full" :ui="{ trailing: 'pe-1' }">
-                  <template #trailing><UButton :icon="showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" :aria-label="showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'" color="neutral" variant="ghost" size="sm" square @click="showConfirmPassword = !showConfirmPassword" /></template>
+                  <template #trailing><UButton :icon="showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" :aria-label="showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'" color="neutral" variant="ghost" size="sm" square @click="() => { showConfirmPassword = !showConfirmPassword; }" /></template>
                 </UInput>
               </UFormField>
             </div>

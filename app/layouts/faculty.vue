@@ -361,7 +361,7 @@ watch(
             </div>
           </div>
           <div class="flex justify-end gap-2">
-            <UButton label="Stay Signed In" color="neutral" variant="outline" :disabled="loggingOut" @click="logoutOpen = false" />
+            <UButton label="Stay Signed In" color="neutral" variant="outline" :disabled="loggingOut" @click="() => { logoutOpen = false; }" />
             <UButton label="Sign Out" icon="i-lucide-log-out" color="error" :loading="loggingOut" @click="signOut" />
           </div>
         </div>

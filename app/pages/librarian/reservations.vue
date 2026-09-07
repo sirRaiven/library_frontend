@@ -1347,7 +1347,7 @@ onMounted(() => {
             color="neutral"
             variant="outline"
             :disabled="isCheckingOut"
-            @click="isCheckoutOpen = false"
+            @click="() => { isCheckoutOpen = false; }"
           />
           <UButton
             label="Confirm Checkout"
@@ -1395,7 +1395,7 @@ onMounted(() => {
             color="neutral"
             variant="ghost"
             :disabled="Boolean(updatingReservationId)"
-            @click="isStatusConfirmOpen = false"
+            @click="() => { isStatusConfirmOpen = false; }"
           />
           <UButton
             :label="pendingStatusAction?.nextStatus === 'Cancelled'

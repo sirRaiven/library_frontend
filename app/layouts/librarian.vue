@@ -407,6 +407,12 @@ const contentNavigationItems = computed(() => {
   ];
 });
 
+// UContentNavigation accepts group nodes without paths at runtime, while its public type
+// currently requires a path on every node. Keep the existing group-only navigation behavior.
+const contentNavigationLinks = computed<any[]>(() =>
+  contentNavigationItems.value,
+);
+
 const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   {
     label: "Dashboard",
@@ -792,7 +798,7 @@ watch(
           <UContentNavigation
             v-if="!collapsed"
             :key="`librarian-content-navigation:${route.path}`"
-            :navigation="contentNavigationItems"
+            :navigation="contentNavigationLinks"
             :default-open="true"
             type="multiple"
             :collapsible="true"

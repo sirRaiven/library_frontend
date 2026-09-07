@@ -72,9 +72,7 @@ const emptySummary =
     announcements: 0,
   });
 
-let pollingTimer:
-  ReturnType<typeof setInterval> |
-  null = null;
+let pollingTimer: number | null = null;
 
 let visibilityHandler:
   (() => void) |

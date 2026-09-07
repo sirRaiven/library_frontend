@@ -627,7 +627,7 @@ onMounted(async () => {
           </div>
         </div>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="createOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { createOpen = false; }" />
           <UButton type="submit" label="Create Account" icon="i-lucide-user-plus" :loading="saving" />
         </div>
       </form>
@@ -651,7 +651,7 @@ onMounted(async () => {
           <USelect v-model="editForm.roleId" :items="createRoleOptions" class="w-full" />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="editOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { editOpen = false; }" />
           <UButton type="submit" label="Save Changes" icon="i-lucide-save" :loading="saving" />
         </div>
       </form>
@@ -683,7 +683,7 @@ onMounted(async () => {
           />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row">
-          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="statusOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="() => { statusOpen = false; }" />
           <UButton
             :label="pendingBlockedState ? 'Block Account' : 'Restore Account'"
             :color="pendingBlockedState ? 'error' : 'success'"

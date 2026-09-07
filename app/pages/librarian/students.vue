@@ -1310,7 +1310,9 @@ async function openRegistrationModal() {
         actions: [
           {
             label: "Manage Term",
-            onClick: () => navigateTo("/librarian/membership-term"),
+            onClick: async () => {
+              await navigateTo("/librarian/membership-term");
+            },
           },
         ],
       });
@@ -2105,7 +2107,7 @@ onBeforeUnmount(() => {
                               ? 'Hide temporary password'
                               : 'Show temporary password'
                           "
-                          @click="showRegistrationPassword = !showRegistrationPassword"
+                          @click="() => { showRegistrationPassword = !showRegistrationPassword; }"
                         />
                       </template>
                     </UInput>
@@ -2140,7 +2142,7 @@ onBeforeUnmount(() => {
                               ? 'Hide password confirmation'
                               : 'Show password confirmation'
                           "
-                          @click="showRegistrationPasswordConfirmation = !showRegistrationPasswordConfirmation"
+                          @click="() => { showRegistrationPasswordConfirmation = !showRegistrationPasswordConfirmation; }"
                         />
                       </template>
                     </UInput>
@@ -2442,7 +2444,7 @@ onBeforeUnmount(() => {
                           ? 'Hide temporary password'
                           : 'Show temporary password'
                       "
-                      @click="showTemporaryPassword = !showTemporaryPassword"
+                      @click="() => { showTemporaryPassword = !showTemporaryPassword; }"
                     />
                   </template>
                 </UInput>

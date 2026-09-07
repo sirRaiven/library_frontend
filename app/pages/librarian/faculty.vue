@@ -26,7 +26,7 @@ interface FacultyFormState {
   middleName: string;
   lastName: string;
   suffix: string;
-  sex: FacultySex | null;
+  sex: FacultySex | undefined;
   departmentCode: string;
   designation: string;
   employmentTypeCode: string;
@@ -134,7 +134,7 @@ const form =
     middleName: "",
     lastName: "",
     suffix: "",
-    sex: null,
+    sex: undefined,
     departmentCode: "",
     designation: "",
     employmentTypeCode: "",
@@ -151,7 +151,7 @@ const editForm =
     middleName: "",
     lastName: "",
     suffix: "",
-    sex: null,
+    sex: undefined,
     departmentCode: "",
     designation: "",
     employmentTypeCode: "",
@@ -573,7 +573,7 @@ function resetForm() {
     middleName: "",
     lastName: "",
     suffix: "",
-    sex: null,
+    sex: undefined,
     departmentCode: departmentOptions.value[0]?.value ?? "",
     designation: "",
     employmentTypeCode: employmentTypeOptions.value[0]?.value ?? "",
@@ -742,7 +742,11 @@ function activeReferenceCode(
   reference: { code: string; name: string; active?: boolean } | null | undefined,
   legacyName: string,
 ): string {
-  if (reference?.active !== false && options.some((item) => item.code === reference?.code)) {
+  if (
+    reference &&
+    reference.active !== false &&
+    options.some((item) => item.code === reference.code)
+  ) {
     return reference.code;
   }
 
@@ -788,7 +792,7 @@ function openEdit(
       suffix:
         record.suffix,
       sex:
-        record.sex ?? null,
+        record.sex ?? undefined,
       departmentCode,
       designation:
         record.designation,
@@ -2101,9 +2105,7 @@ onMounted(() => {
                   :loading="
                     editCredentialChecking
                   "
-                  @click="
-                    verifyEditCredential
-                  "
+                  @click="async () => { await verifyEditCredential(); }"
                 />
               </div>
 
@@ -2396,9 +2398,7 @@ onMounted(() => {
                 :disabled="
                   submitting
                 "
-                @click="
-                  editOpen = false
-                "
+                @click="() => { editOpen = false; }"
               />
 
               <UButton

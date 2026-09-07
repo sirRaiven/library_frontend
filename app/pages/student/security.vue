@@ -249,7 +249,7 @@ onMounted(refresh);
           :icon="item.icon"
           :color="activeSection === item.value ? 'primary' : 'neutral'"
           :variant="activeSection === item.value ? 'solid' : 'ghost'"
-          @click="activeSection = item.value"
+          @click="() => { activeSection = item.value; }"
         />
       </div>
     </UCard>
@@ -370,7 +370,7 @@ onMounted(refresh);
                     variant="ghost"
                     size="xs"
                     square
-                    @click="showCurrentPassword = !showCurrentPassword"
+                    @click="() => { showCurrentPassword = !showCurrentPassword; }"
                   />
                 </template>
               </UInput>
@@ -389,7 +389,7 @@ onMounted(refresh);
                     variant="ghost"
                     size="xs"
                     square
-                    @click="showNewPassword = !showNewPassword"
+                    @click="() => { showNewPassword = !showNewPassword; }"
                   />
                 </template>
               </UInput>
@@ -408,7 +408,7 @@ onMounted(refresh);
                     variant="ghost"
                     size="xs"
                     square
-                    @click="showConfirmation = !showConfirmation"
+                    @click="() => { showConfirmation = !showConfirmation; }"
                   />
                 </template>
               </UInput>
@@ -464,7 +464,7 @@ onMounted(refresh);
               icon="i-lucide-log-out"
               color="error"
               variant="outline"
-              @click="confirmOtherSessions = true"
+              @click="() => { confirmOtherSessions = true; }"
             />
           </div>
 
@@ -595,7 +595,7 @@ onMounted(refresh);
           </p>
         </div>
         <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
-          <UButton label="Cancel" color="neutral" variant="outline" block @click="confirmOtherSessions = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" block @click="() => { confirmOtherSessions = false; }" />
           <UButton
             label="Sign Out Others"
             icon="i-lucide-log-out"

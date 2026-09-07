@@ -332,7 +332,7 @@ onMounted(loadTerm);
           />
 
           <div class="flex justify-end gap-2">
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="confirmOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { confirmOpen = false; }" />
             <UButton label="Confirm and Save" icon="i-lucide-check" color="primary" :loading="saving" @click="saveTerm" />
           </div>
         </div>

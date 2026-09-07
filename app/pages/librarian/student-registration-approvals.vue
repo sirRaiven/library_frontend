@@ -770,7 +770,7 @@ onMounted(loadRequests);
               variant="ghost"
               square
               aria-label="Close Student details"
-              @click="detailsOpen = false"
+              @click="() => { detailsOpen = false; }"
             />
           </header>
 
@@ -1066,7 +1066,7 @@ onMounted(loadRequests);
                 label="Close"
                 color="neutral"
                 variant="outline"
-                @click="detailsOpen = false"
+                @click="() => { detailsOpen = false; }"
               />
               <template v-if="selectedRequest.status === 'Pending Verification'">
                 <UButton
@@ -1121,7 +1121,7 @@ onMounted(loadRequests);
             <h2 class="text-xl font-bold text-highlighted">Approve Student Registration</h2>
             <p class="mt-2 text-sm text-muted">Confirm the Student identity and current enrollment information before activating full Library privileges.</p>
           </div>
-          <div v-if="requestPhotoUrl(selectedRequest)" class="flex items-center gap-4 rounded-2xl border border-default bg-elevated p-4">
+          <div v-if="selectedRequest && requestPhotoUrl(selectedRequest)" class="flex items-center gap-4 rounded-2xl border border-default bg-elevated p-4">
             <img :src="requestPhotoUrl(selectedRequest) || ''" :alt="selectedRequest?.fullName" class="size-24 rounded-xl object-cover">
             <div>
               <p class="font-semibold text-highlighted">{{ selectedRequest.fullName }}</p>
@@ -1134,7 +1134,7 @@ onMounted(loadRequests);
           </UFormField>
           <UAlert color="info" variant="soft" icon="i-lucide-shield-check" title="Approval effect" description="Approval activates the Student profile, membership, Portal account, and saves the submitted photo for the Library Card." />
           <div class="flex justify-end gap-2">
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="verifyOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { verifyOpen = false; }" />
             <UButton type="submit" label="Approve Student" icon="i-lucide-badge-check" color="primary" :loading="actionLoading" />
           </div>
         </UForm>
@@ -1195,7 +1195,7 @@ onMounted(loadRequests);
               color="neutral"
               variant="outline"
               :disabled="cardStatusLoading"
-              @click="cardStatusOpen = false"
+              @click="() => { cardStatusOpen = false; }"
             />
             <UButton
               label="Start Preparation"
@@ -1220,7 +1220,7 @@ onMounted(loadRequests);
             <UTextarea v-model="rejectReason" :rows="4" class="w-full" />
           </UFormField>
           <div class="flex justify-end gap-2">
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="rejectOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { rejectOpen = false; }" />
             <UButton label="Reject Request" icon="i-lucide-x" color="error" :loading="actionLoading" @click="submitRejection" />
           </div>
         </div>
@@ -1244,14 +1244,14 @@ onMounted(loadRequests);
             />
           </UFormField>
           <div class="grid grid-cols-2 gap-2 rounded-xl bg-elevated p-1">
-            <UButton label="Generate Password" :color="resetForm.passwordMode === 'Generated' ? 'warning' : 'neutral'" :variant="resetForm.passwordMode === 'Generated' ? 'solid' : 'ghost'" @click="resetForm.passwordMode = 'Generated'" />
-            <UButton label="Enter Password" :color="resetForm.passwordMode === 'Manual' ? 'warning' : 'neutral'" :variant="resetForm.passwordMode === 'Manual' ? 'solid' : 'ghost'" @click="resetForm.passwordMode = 'Manual'" />
+            <UButton label="Generate Password" :color="resetForm.passwordMode === 'Generated' ? 'warning' : 'neutral'" :variant="resetForm.passwordMode === 'Generated' ? 'solid' : 'ghost'" @click="() => { resetForm.passwordMode = 'Generated'; }" />
+            <UButton label="Enter Password" :color="resetForm.passwordMode === 'Manual' ? 'warning' : 'neutral'" :variant="resetForm.passwordMode === 'Manual' ? 'solid' : 'ghost'" @click="() => { resetForm.passwordMode = 'Manual'; }" />
           </div>
           <template v-if="resetForm.passwordMode === 'Manual'">
             <UFormField name="temporaryPassword" label="Temporary Password" required>
               <UInput v-model="resetForm.temporaryPassword" :type="showResetPassword ? 'text' : 'password'" class="w-full">
                 <template #trailing>
-                  <UButton type="button" :icon="showResetPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" square @click="showResetPassword = !showResetPassword" />
+                  <UButton type="button" :icon="showResetPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" square @click="() => { showResetPassword = !showResetPassword; }" />
                 </template>
               </UInput>
             </UFormField>
@@ -1261,7 +1261,7 @@ onMounted(loadRequests);
           </template>
           <UAlert color="warning" variant="soft" icon="i-lucide-log-out" title="All existing sessions will be invalidated" description="The Student must sign in again using the newly issued credentials." />
           <div class="flex justify-end gap-2">
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="resetOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { resetOpen = false; }" />
             <UButton type="submit" label="Reset Credentials" icon="i-lucide-key-round" color="warning" :loading="actionLoading" />
           </div>
         </UForm>
@@ -1282,7 +1282,7 @@ onMounted(loadRequests);
           </div>
           <div class="flex justify-end gap-2">
             <UButton label="Copy Credentials" icon="i-lucide-copy" color="neutral" variant="outline" @click="copyCredentials" />
-            <UButton label="I Have Provided Them Securely" color="primary" @click="credentialsOpen = false; credentials = null" />
+            <UButton label="I Have Provided Them Securely" color="primary" @click="() => { credentialsOpen = false; credentials = null; }" />
           </div>
         </div>
       </template>

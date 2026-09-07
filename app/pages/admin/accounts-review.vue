@@ -304,7 +304,7 @@ onMounted(loadReview);
               :color="section === 'accounts' ? 'primary' : 'neutral'"
               :variant="section === 'accounts' ? 'solid' : 'ghost'"
               class="flex-1 sm:flex-none"
-              @click="section = 'accounts'"
+              @click="() => { section = 'accounts'; }"
             />
             <UButton
               label="Profiles Without Accounts"
@@ -312,7 +312,7 @@ onMounted(loadReview);
               :color="section === 'profiles' ? 'primary' : 'neutral'"
               :variant="section === 'profiles' ? 'solid' : 'ghost'"
               class="flex-1 sm:flex-none"
-              @click="section = 'profiles'"
+              @click="() => { section = 'profiles'; }"
             />
           </div>
         </div>
@@ -454,7 +454,7 @@ onMounted(loadReview);
         />
 
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="createOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { createOpen = false; }" />
           <UButton type="submit" label="Create and Connect Account" icon="i-lucide-user-check" :loading="saving" />
         </div>
       </form>

@@ -418,7 +418,7 @@ watch(monitoringChildActive, (isChild) => {
         />
         <AdminMetricCard
           label="Account Created"
-          :value="formatDate(record.createdAt).split(',')[0]"
+          :value="formatDate(record.createdAt).split(',')[0] ?? 'No record'"
           :description="`${record.provider || 'local'} authentication provider`"
           icon="i-lucide-calendar-days"
           tone="neutral"
@@ -556,7 +556,7 @@ watch(monitoringChildActive, (isChild) => {
                 icon="i-lucide-link-2-off"
                 color="error"
                 variant="outline"
-                @click="unlinkOpen = true"
+                @click="() => { unlinkOpen = true; }"
               />
               <UButton
                 label="Open Account Review"
@@ -635,7 +635,7 @@ watch(monitoringChildActive, (isChild) => {
         </UFormField>
 
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="linkOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { linkOpen = false; }" />
           <UButton label="Save Profile Connection" icon="i-lucide-link-2" :loading="saving" @click="saveProfileLink" />
         </div>
       </div>
@@ -657,7 +657,7 @@ watch(monitoringChildActive, (isChild) => {
           <UTextarea v-model="unlinkReason" :rows="3" class="w-full" />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="unlinkOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { unlinkOpen = false; }" />
           <UButton label="Remove Connection" icon="i-lucide-link-2-off" color="error" :loading="saving" @click="removeProfileLink" />
         </div>
       </div>
@@ -681,7 +681,7 @@ watch(monitoringChildActive, (isChild) => {
           <USelect v-model="editForm.roleId" :items="manageableRoles" class="w-full" />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="editOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { editOpen = false; }" />
           <UButton type="submit" label="Save Changes" icon="i-lucide-save" :loading="saving" />
         </div>
       </form>
@@ -707,7 +707,7 @@ watch(monitoringChildActive, (isChild) => {
           />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row">
-          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="statusOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="() => { statusOpen = false; }" />
           <UButton :label="pendingBlockedState ? 'Block Account' : 'Restore Account'" :color="pendingBlockedState ? 'error' : 'success'" block :loading="saving" @click="confirmStatusChange" />
         </div>
       </div>

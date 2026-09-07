@@ -1260,9 +1260,7 @@ defineExpose({
         :disabled="
           downloading !== null
         "
-        @click="
-          downloadCard('front')
-        "
+        @click="async () => { await downloadCard('front'); }"
       />
 
       <UButton
@@ -1277,9 +1275,7 @@ defineExpose({
         :disabled="
           downloading !== null
         "
-        @click="
-          downloadCard('back')
-        "
+        @click="async () => { await downloadCard('back'); }"
       />
 
       <UButton
@@ -1293,9 +1289,7 @@ defineExpose({
         :disabled="
           downloading !== null
         "
-        @click="
-          downloadCard('both')
-        "
+        @click="async () => { await downloadCard('both'); }"
       />
     </div>
   </div>

@@ -190,7 +190,7 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
                     square
                     size="sm"
                     :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                    @click="showPassword = !showPassword"
+                    @click="() => { showPassword = !showPassword; }"
                   />
                 </template>
               </UInput>

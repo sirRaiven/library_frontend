@@ -40,9 +40,7 @@ const actingDocumentId =
 const lastLiveRefreshAt =
   ref<string | null>(null);
 
-let liveRefreshTimer:
-  ReturnType<typeof setInterval> |
-  null = null;
+let liveRefreshTimer: number | null = null;
 
 const viewOptions = [
   {

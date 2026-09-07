@@ -65,7 +65,7 @@ interface AuthFetchOptions {
     | "CONNECT"
     | "OPTIONS"
     | "TRACE";
-  body?: Record<string, unknown> | null;
+  body?: BodyInit | Record<string, unknown> | null;
   query?: Record<string, unknown>;
   params?: Record<string, unknown>;
   headers?: HeadersInit;

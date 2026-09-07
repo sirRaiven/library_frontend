@@ -284,7 +284,7 @@ onMounted(loadSecurity);
         />
         <AdminMetricCard
           label="Last Successful Login" 
-          :value="security.summary.lastSuccessfulLoginAt ? formatDate(security.summary.lastSuccessfulLoginAt).split(',')[0] : 'No record'"
+          :value="security.summary.lastSuccessfulLoginAt ? (formatDate(security.summary.lastSuccessfulLoginAt).split(',')[0] ?? 'No record') : 'No record'"
           :description="formatDate(security.summary.lastSuccessfulLoginAt)"
           icon="i-lucide-log-in"
           tone="success"
@@ -444,7 +444,7 @@ onMounted(loadSecurity);
           <UTextarea v-model="reason" :rows="3" class="w-full" placeholder="Example: Unrecognized sign-in reported by the account owner" />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="Boolean(action)" @click="revokeSessionOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="Boolean(action)" @click="() => { revokeSessionOpen = false; }" />
           <UButton label="Revoke Session" icon="i-lucide-log-out" color="error" :loading="Boolean(action)" @click="confirmSessionRevoke" />
         </div>
       </div>
@@ -464,7 +464,7 @@ onMounted(loadSecurity);
           <UTextarea v-model="reason" :rows="3" class="w-full" placeholder="Example: Account recovery after a suspected compromise" />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="Boolean(action)" @click="revokeAllOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="Boolean(action)" @click="() => { revokeAllOpen = false; }" />
           <UButton label="Revoke All Sessions" icon="i-lucide-log-out" color="error" :loading="action === 'sessions:all'" @click="confirmRevokeAll" />
         </div>
       </div>
@@ -495,7 +495,7 @@ onMounted(loadSecurity);
                 size="xs"
                 square
                 type="button"
-                @click="revealPassword = !revealPassword"
+                @click="() => { revealPassword = !revealPassword; }"
               />
             </template>
           </UInput>
@@ -512,7 +512,7 @@ onMounted(loadSecurity);
           <UTextarea v-model="reason" :rows="3" class="w-full" placeholder="Example: Identity verified after the user forgot the password" />
         </UFormField>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton label="Cancel" color="neutral" variant="outline" :disabled="Boolean(action)" @click="resetPasswordOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="Boolean(action)" @click="() => { resetPasswordOpen = false; }" />
           <UButton type="submit" label="Apply Temporary Password" icon="i-lucide-key-round" color="warning" :loading="action === 'password'" />
         </div>
       </form>

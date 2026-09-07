@@ -345,7 +345,7 @@ onMounted(refresh);
           <div><dt class="text-xs font-semibold uppercase text-muted">Portal Sessions</dt><dd class="mt-1 text-highlighted">{{ selected.activeSessionCount }} active</dd></div>
         </dl>
         <div class="flex flex-wrap justify-end gap-2">
-          <UButton label="Close" color="neutral" variant="outline" @click="detailOpen = false" />
+          <UButton label="Close" color="neutral" variant="outline" @click="() => { detailOpen = false; }" />
           <UButton
             :label="selected.trusted ? 'Remove Trust' : 'Mark Trusted'"
             :icon="selected.trusted ? 'i-lucide-shield-off' : 'i-lucide-shield-check'"
@@ -404,7 +404,7 @@ onMounted(refresh);
           description="For safety, this action may sign the account out from other active sessions as well."
         />
         <div class="flex justify-end gap-2">
-          <UButton label="Cancel" color="neutral" variant="outline" @click="actionOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" @click="() => { actionOpen = false; }" />
           <UButton
             :label="actionLabel"
             :color="action === 'block' ? 'error' : 'primary'"

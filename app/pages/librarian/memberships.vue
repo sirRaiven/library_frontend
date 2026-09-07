@@ -648,7 +648,7 @@ onMounted(async () => {
             <UTextarea v-model="replacementReason" :rows="3" placeholder="Example: Lost Library Card" />
           </UFormField>
           <div class="flex justify-end gap-2">
-            <UButton label="Cancel" color="neutral" variant="ghost" @click="replacementOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="ghost" @click="() => { replacementOpen = false; }" />
             <UButton label="Create Replacement Charge" icon="i-lucide-receipt-text" color="warning" :loading="replacementSaving" :disabled="!replacementReason.trim()" @click="createReplacementCharge" />
           </div>
         </div>

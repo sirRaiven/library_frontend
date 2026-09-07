@@ -321,7 +321,7 @@ onMounted(refresh);
           </div>
         </dl>
         <div class="flex justify-end">
-          <UButton label="Close" color="neutral" variant="outline" @click="detailOpen = false" />
+          <UButton label="Close" color="neutral" variant="outline" @click="() => { detailOpen = false; }" />
         </div>
       </div>
     </template>

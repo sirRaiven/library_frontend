@@ -335,7 +335,7 @@ onMounted(refresh);
           <div v-if="selected.logoutReason" class="sm:col-span-2"><dt class="text-xs font-semibold uppercase text-muted">Logout or Revocation Reason</dt><dd class="mt-1 text-highlighted">{{ selected.logoutReason }}</dd></div>
         </dl>
         <div class="flex justify-end gap-2">
-          <UButton label="Close" color="neutral" variant="outline" @click="detailOpen = false" />
+          <UButton label="Close" color="neutral" variant="outline" @click="() => { detailOpen = false; }" />
           <UButton
             v-if="selected.status === 'Active'"
             label="Revoke Session"
@@ -365,7 +365,7 @@ onMounted(refresh);
           />
         </UFormField>
         <div class="flex justify-end gap-2">
-          <UButton label="Cancel" color="neutral" variant="outline" @click="revokeOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" @click="() => { revokeOpen = false; }" />
           <UButton
             label="Revoke Session"
             icon="i-lucide-log-out"

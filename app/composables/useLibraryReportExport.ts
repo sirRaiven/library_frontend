@@ -938,10 +938,7 @@ function previewAndPrint(
   return new Promise(
     (resolve, reject) => {
       let settled = false;
-      let fallbackTimer:
-        ReturnType<
-          typeof window.setTimeout
-        > | undefined;
+      let fallbackTimer: number | undefined;
 
       const cleanup = () => {
         if (fallbackTimer) {
@@ -1306,6 +1303,8 @@ async function exportPdf(
   ) {
     const table =
       report.tables[tableIndex];
+
+    if (!table) continue;
 
     if (y > pageHeight - 45) {
       doc.addPage();

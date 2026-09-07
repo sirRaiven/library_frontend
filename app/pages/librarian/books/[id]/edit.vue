@@ -152,8 +152,10 @@ function unwrapReference(
   relation: ReferenceValue | { data?: ReferenceValue | null } | null | undefined,
 ): ReferenceValue | null {
   if (!relation) return null;
-  if ("data" in relation) return relation.data ?? null;
-  return relation;
+  if ("data" in relation) {
+    return (relation as { data?: ReferenceValue | null }).data ?? null;
+  }
+  return relation as ReferenceValue;
 }
 
 function referenceCode(

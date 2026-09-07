@@ -787,7 +787,7 @@ onMounted(async () => {
       icon="i-lucide-file-chart-column-increasing"
     >
       <template #actions>
-        <UButton label="Report Header" icon="i-lucide-panel-top" color="neutral" variant="outline" @click="brandingOpen = true" />
+        <UButton label="Report Header" icon="i-lucide-panel-top" color="neutral" variant="outline" @click="() => { brandingOpen = true; }" />
       </template>
     </LibrarianPageHeader>
 
@@ -1139,7 +1139,7 @@ onMounted(async () => {
               variant="ghost"
               square
               aria-label="Close"
-              @click="reportCustomizationOpen = false"
+              @click="() => { reportCustomizationOpen = false; }"
             />
           </div>
 
@@ -1231,12 +1231,12 @@ onMounted(async () => {
               @click="restoreReportDefaults"
             />
             <div class="flex justify-end gap-3">
-              <UButton label="Cancel" color="neutral" variant="outline" @click="reportCustomizationOpen = false" />
+              <UButton label="Cancel" color="neutral" variant="outline" @click="() => { reportCustomizationOpen = false; }" />
               <UButton
                 label="Apply Changes"
                 icon="i-lucide-check"
                 :disabled="includedSectionCount === 0"
-                @click="reportCustomizationOpen = false"
+                @click="() => { reportCustomizationOpen = false; }"
               />
             </div>
           </div>
@@ -1254,7 +1254,7 @@ onMounted(async () => {
                 The logos are positioned close to the institution text based on the Library's sample document.
               </p>
             </div>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square aria-label="Close" @click="brandingOpen = false" />
+            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square aria-label="Close" @click="() => { brandingOpen = false; }" />
           </div>
 
           <div class="mt-6 grid gap-4 sm:grid-cols-2">
@@ -1288,7 +1288,7 @@ onMounted(async () => {
           />
 
           <div class="mt-6 flex justify-end gap-3">
-            <UButton label="Cancel" color="neutral" variant="outline" @click="brandingOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" @click="() => { brandingOpen = false; }" />
             <UButton label="Save Header" icon="i-lucide-save" @click="saveBranding" />
           </div>
         </div>

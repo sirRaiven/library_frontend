@@ -35,6 +35,7 @@ interface BookCopyRecord {
   id?: number;
   documentId?: string;
   control_number: string;
+  accession_number?: string | null;
   shelf_location?: string | null;
   copy_status: CopyStatus;
   condition?: CopyCondition | null;

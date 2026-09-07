@@ -232,7 +232,7 @@ onMounted(load);
           </p>
         </div>
         <div class="flex flex-col-reverse gap-2 sm:flex-row">
-          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="statusOpen = false" />
+          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="() => { statusOpen = false; }" />
           <UButton
             :label="selected?.status === 'Active' ? 'Deactivate' : 'Activate'"
             :color="selected?.status === 'Active' ? 'error' : 'success'"

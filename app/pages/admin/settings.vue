@@ -129,7 +129,7 @@ const cardStatusItems = [
 
 const currentSection = computed(() =>
   sectionItems.find(item => item.value === activeSection.value)
-  ?? sectionItems[0],
+  ?? sectionItems[0]!,
 );
 
 const pendingChanges = computed(() => {
@@ -647,7 +647,7 @@ onMounted(() => {
               color="neutral"
               variant="outline"
               :disabled="Boolean(savingSection)"
-              @click="confirmOpen = false"
+              @click="() => { confirmOpen = false; }"
             />
             <UButton
               label="Save Policy Changes"
