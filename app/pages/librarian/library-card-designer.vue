@@ -1098,7 +1098,7 @@ onBeforeUnmount(() => {
 <template>
   <UContainer class="sncbt-page-shell">
     <div
-      class="mx-auto max-w-[1750px] space-y-6"
+      class="mx-auto max-w-[1750px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Membership & Cards"
@@ -2158,7 +2158,7 @@ onBeforeUnmount(() => {
 
 .sticky-save-bar {
   position: sticky;
-  bottom: 1rem;
+  bottom: 4.5rem;
   z-index: 40;
   display: flex;
   flex-direction: column;

@@ -760,7 +760,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell space-y-6">
+  <UContainer class="sncbt-page-shell space-y-6 mb-12">
     <LibrarianPageHeader
       eyebrow="Reports & Notices"
       title="Reports"
@@ -938,7 +938,7 @@ onMounted(async () => {
       </aside>
     </div>
 
-    <section id="report-preview" class="scroll-mt-6">
+    <section id="report-preview" class="scroll-mt-6 mb-12">
       <UCard v-if="activeReport && customizedReport">
         <template #header>
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

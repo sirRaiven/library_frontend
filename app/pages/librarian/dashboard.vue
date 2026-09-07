@@ -748,7 +748,7 @@ async function refreshDashboard() {
       </UCard>
     </section>
 
-    <UCard class="overflow-hidden rounded-2xl shadow-sm shadow-emerald-100">
+    <UCard class="overflow-hidden rounded-2xl shadow-sm shadow-emerald-100 mb-12">
       <template #header>
         <div
           class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"

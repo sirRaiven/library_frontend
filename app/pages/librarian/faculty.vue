@@ -1107,7 +1107,7 @@ onMounted(() => {
 <template>
   <UContainer class="sncbt-page-shell">
     <div
-      class="mx-auto max-w-[1500px] space-y-6"
+      class="mx-auto max-w-[1500px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Library Users"

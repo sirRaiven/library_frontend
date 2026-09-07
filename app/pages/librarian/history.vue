@@ -310,7 +310,7 @@ onMounted(load);
 
     <div
       v-if="history.pagination.value.pageCount > 1"
-      class="flex flex-col gap-3 border-t border-default pt-5 sm:flex-row sm:items-center sm:justify-between"
+      class="flex flex-col gap-3 border-t border-default pt-5 sm:flex-row sm:items-center sm:justify-between mb-12 pb-6"
     >
       <p class="text-sm text-muted">
         {{ history.pagination.value.total }} record{{ history.pagination.value.total === 1 ? '' : 's' }}
@@ -322,13 +322,5 @@ onMounted(load);
         :disabled="history.loading.value"
       />
     </div>
-
-    <UAlert
-      color="neutral"
-      variant="soft"
-      icon="i-lucide-lock-keyhole"
-      title="Read-only history"
-      description="History records cannot be edited from this page. Corrections must be completed in the related Library service page and remain subject to the system audit trail."
-    />
   </div>
 </template>

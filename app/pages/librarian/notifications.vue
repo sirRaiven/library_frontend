@@ -768,7 +768,7 @@ onBeforeUnmount(() => {
 <template>
   <UContainer class="sncbt-page-shell">
     <div
-      class="mx-auto max-w-[1600px] space-y-6"
+      class="mx-auto max-w-[1600px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Reports & Notices"
@@ -1313,13 +1313,6 @@ onBeforeUnmount(() => {
         </template>
       </UCard>
 
-      <UAlert
-        color="info"
-        variant="soft"
-        icon="i-lucide-shield-check"
-        title="Automatic operational alerts"
-        description="The Notification Center checks current Library records. Alerts resolve automatically after the related loan, reservation, membership, card, or inventory concern is corrected."
-      />
     </div>
   </UContainer>
 

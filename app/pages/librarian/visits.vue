@@ -448,13 +448,13 @@ onMounted(() => {
 <template>
   <UContainer class="sncbt-page-shell">
     <div
-      class="mx-auto max-w-[1500px] space-y-6"
+      class="mx-auto max-w-[1500px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Library Services"
         title="Library Visits"
         description="Record Library entry by scanning a Student Library Card or Faculty institutional ID. Each accepted scan creates one visit record."
-        icon="i-lucide-scan-line"
+        icon="i-lucide-scan-line"s
       >
         <template #actions>
           <UBadge color="primary" variant="soft" class="self-center">Time-in only</UBadge>

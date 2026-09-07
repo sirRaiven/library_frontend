@@ -353,7 +353,7 @@ async function submitRegistration(
 
 <template>
   <UContainer class="sncbt-page-shell">
-    <div class="mx-auto w-full max-w-[1600px] space-y-6">
+    <div class="mx-auto w-full max-w-[1600px] space-y-6 mb-12">
       <LibrarianPageHeader
         eyebrow="Books & Collection"
         title="Register a Book"
