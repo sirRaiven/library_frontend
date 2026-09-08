@@ -27,7 +27,8 @@ export interface MembershipTerm {
 }
 
 export interface UpdateMembershipTermInput {
-  academicTermCode: string;
+  academicTermCode?: string;
+  academicSemesterCode: string;
   academicYear: string;
   semester: string;
   status: MembershipTermStatus;

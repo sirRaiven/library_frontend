@@ -150,10 +150,10 @@ test("Academic Term screens use reference data instead of hardcoded semester cho
   expect(libraryMembers).toMatch(/interface MembershipRecord[\s\S]*?semester:\s*string;/);
 
   expect(adminPage.includes("const semesterItems = [")).toBe(false);
-  expect(adminPage.includes("academicTerms")).toBe(true);
+  expect(adminPage.includes("academicSemesters")).toBe(true);
   expect(termPage.includes("const semesterItems = [")).toBe(false);
-  expect(termPage.includes("academicTerms")).toBe(true);
-  expect(termPage.includes("academicTermCode")).toBe(true);
+  expect(termPage.includes("academicSemesters")).toBe(true);
+  expect(termPage.includes("academicSemesterCode")).toBe(true);
   expect(membershipsPage.includes("function currentSemester()")).toBe(false);
   expect(membershipsPage.includes("function currentAcademicYear()")).toBe(false);
   expect(membershipsPage.includes("const semesterItems = [")).toBe(false);
@@ -163,4 +163,19 @@ test("Academic Term screens use reference data instead of hardcoded semester cho
   expect(libraryCard.includes('source.semester === "Summer"')).toBe(false);
   expect(libraryCard.includes("librarySettings.settings.value.general.currentSemester")).toBe(true);
   expect(libraryCard.includes('?? "Not recorded"')).toBe(true);
+});
+
+
+test("Academic semester dropdowns preserve the former choices through database reference data", () => {
+  const settings = source("app/pages/admin/settings.vue");
+  const term = source("app/pages/librarian/membership-term.vue");
+  const termApi = source("app/composables/useMembershipTerm.ts");
+
+  expect(settings).toContain("referenceData.academicSemesters");
+  expect(settings).toContain("academicSemesterCode");
+  expect(settings).not.toContain("const academicTermItems = computed");
+  expect(term).toContain("referenceData.academicSemesters");
+  expect(term).toContain("academicSemesterCode");
+  expect(term).not.toContain("const academicTermItems = computed");
+  expect(termApi).toContain("academicSemesterCode: string");
 });

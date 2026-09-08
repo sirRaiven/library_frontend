@@ -12,7 +12,7 @@ definePageMeta({
 const termManager = useMembershipTerm();
 const settings = useLibrarySettings();
 const referenceData = useReferenceData();
-const academicTerms = referenceData.academicTerms;
+const academicSemesters = referenceData.academicSemesters;
 const auth = useAuth();
 const toast = useToast();
 
@@ -22,6 +22,7 @@ const lastResult = ref<MembershipTerm | null>(null);
 
 const form = reactive<UpdateMembershipTermInput>({
   academicTermCode: "",
+  academicSemesterCode: "",
   academicYear: "",
   semester: "",
   status: "Open",
@@ -31,10 +32,10 @@ const form = reactive<UpdateMembershipTermInput>({
   applyToAll: true,
 });
 
-const academicTermItems = computed(() =>
-  academicTerms.value.map(term => ({
-    value: term.code,
-    label: `${term.academicYear} · ${term.semesterName}`,
+const academicSemesterItems = computed(() =>
+  academicSemesters.value.map(semester => ({
+    value: semester.code,
+    label: semester.name,
   })),
 );
 const statusItems = ["Open", "Closed"];
@@ -50,7 +51,7 @@ const durationDays = computed(() => {
 });
 
 const canSave = computed(() => {
-  if (!form.academicTermCode) return false;
+  if (!form.academicSemesterCode) return false;
   if (!/^\d{4}-\d{4}$/.test(form.academicYear)) return false;
   if (!form.validFrom || !form.validUntil) return false;
   if (form.validUntil <= form.validFrom) return false;
@@ -59,17 +60,16 @@ const canSave = computed(() => {
 });
 
 function applyTerm(term: MembershipTerm) {
-  const selectedTerm = term.academicTerm
-    ?? academicTerms.value.find(item =>
-      item.academicYear === term.academicYear
-      && item.semesterName === term.semester
-    )
-    ?? null;
+  const selectedSemester = academicSemesters.value.find(item =>
+    item.code === term.academicTerm?.semesterCode
+    || item.name === term.semester
+  ) ?? null;
 
   Object.assign(form, {
-    academicTermCode: selectedTerm?.code ?? "",
-    academicYear: selectedTerm?.academicYear ?? term.academicYear,
-    semester: selectedTerm?.semesterName ?? term.semester,
+    academicTermCode: "",
+    academicSemesterCode: selectedSemester?.code ?? "",
+    academicYear: term.academicYear,
+    semester: selectedSemester?.name ?? term.semester,
     status: term.status,
     registrationOpen: term.registrationOpen,
     validFrom: term.validFrom,
@@ -79,12 +79,12 @@ function applyTerm(term: MembershipTerm) {
 
 
 watch(
-  () => form.academicTermCode,
+  () => form.academicSemesterCode,
   code => {
-    const selected = academicTerms.value.find(term => term.code === code);
+    const selected = academicSemesters.value.find(semester => semester.code === code);
     if (!selected) return;
-    form.academicYear = selected.academicYear;
-    form.semester = selected.semesterName;
+    form.semester = selected.name;
+    form.academicTermCode = "";
   },
 );
 
@@ -204,24 +204,23 @@ onMounted(loadTerm);
         </template>
 
         <div class="grid gap-5 md:grid-cols-2">
-          <UFormField label="Academic Term" required description="Choose the term already configured for the Library.">
-            <USelect
-              v-model="form.academicTermCode"
-              :items="academicTermItems"
-              value-key="value"
-              label-key="label"
-              placeholder="Select academic term"
+          <UFormField label="Academic Year" required>
+            <UInput
+              v-model="form.academicYear"
+              placeholder="2026-2027"
               class="w-full"
             />
           </UFormField>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <UFormField label="Academic Year">
-              <UInput v-model="form.academicYear" disabled class="w-full" />
-            </UFormField>
-            <UFormField label="Semester">
-              <UInput v-model="form.semester" disabled class="w-full" />
-            </UFormField>
-          </div>
+          <UFormField label="Semester" required description="Choices are loaded from the Academic Semester reference table.">
+            <USelect
+              v-model="form.academicSemesterCode"
+              :items="academicSemesterItems"
+              value-key="value"
+              label-key="label"
+              placeholder="Select semester"
+              class="w-full"
+            />
+          </UFormField>
           <UFormField label="Membership Starts On" required>
             <UInput v-model="form.validFrom" type="date" class="w-full" />
           </UFormField>

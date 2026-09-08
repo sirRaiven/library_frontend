@@ -12,7 +12,7 @@ definePageMeta({
 
 const api = useAdminSettings();
 const referenceData = useReferenceData();
-const academicTerms = referenceData.academicTerms;
+const academicSemesters = referenceData.academicSemesters;
 const auth = useAuth();
 const toast = useToast();
 
@@ -31,7 +31,7 @@ const forms = reactive({
     contactEmail: "",
     contactNumber: "",
     timeZone: "Asia/Manila" as const,
-    academicTermCode: "",
+    academicSemesterCode: "",
     currentAcademicYear: "",
     currentSemester: "",
   },
@@ -113,10 +113,10 @@ const sectionItems = [
   },
 ];
 
-const academicTermItems = computed(() =>
-  academicTerms.value.map(term => ({
-    value: term.code,
-    label: `${term.academicYear} · ${term.semesterName}`,
+const academicSemesterItems = computed(() =>
+  academicSemesters.value.map(semester => ({
+    value: semester.code,
+    label: semester.name,
   })),
 );
 
@@ -162,25 +162,23 @@ function copyIntoForms(value: AdminLibrarySettings) {
   ] as AdminSettingsSection[]) {
     Object.assign(forms[section], value[section]);
     if (section === "general") {
-      const selected = referenceData.currentAcademicTerm.value
-        ?? academicTerms.value.find(term =>
-          term.academicYear === value.general.currentAcademicYear
-          && term.semesterName === value.general.currentSemester
-        )
-        ?? null;
-      forms.general.academicTermCode = selected?.code ?? "";
+      const currentTerm = referenceData.currentAcademicTerm.value;
+      const selectedSemester = academicSemesters.value.find(semester =>
+        semester.code === currentTerm?.semesterCode
+        || semester.name === value.general.currentSemester
+      ) ?? null;
+      forms.general.academicSemesterCode = selectedSemester?.code ?? "";
     }
     snapshots[section] = serialize(section);
   }
 }
 
 watch(
-  () => forms.general.academicTermCode,
+  () => forms.general.academicSemesterCode,
   code => {
-    const selected = academicTerms.value.find(term => term.code === code);
+    const selected = academicSemesters.value.find(semester => semester.code === code);
     if (!selected) return;
-    forms.general.currentAcademicYear = selected.academicYear;
-    forms.general.currentSemester = selected.semesterName;
+    forms.general.currentSemester = selected.name;
   },
 );
 
@@ -424,19 +422,21 @@ onMounted(() => {
             <UFormField label="Contact Number">
               <UInput v-model="forms.general.contactNumber" class="w-full" />
             </UFormField>
-            <UFormField label="Current Academic Term" required class="md:col-span-2">
-              <USelect
-                v-model="forms.general.academicTermCode"
-                :items="academicTermItems"
-                placeholder="Select the current academic term"
+            <UFormField label="Current Academic Year" required>
+              <UInput
+                v-model="forms.general.currentAcademicYear"
+                placeholder="2026-2027"
                 class="w-full"
               />
             </UFormField>
-            <UFormField label="Current Academic Year">
-              <UInput v-model="forms.general.currentAcademicYear" disabled class="w-full" />
-            </UFormField>
-            <UFormField label="Current Semester">
-              <UInput v-model="forms.general.currentSemester" disabled class="w-full" />
+            <UFormField label="Current Semester" required>
+              <USelect
+                v-model="forms.general.academicSemesterCode"
+                :items="academicSemesterItems"
+                value-key="value"
+                placeholder="Select the current semester"
+                class="w-full"
+              />
             </UFormField>
             <UFormField label="System Time Zone">
               <UInput v-model="forms.general.timeZone" disabled class="w-full" />
