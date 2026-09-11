@@ -87,7 +87,8 @@ const inventoryExcel = useLibraryInventoryExcel();
 const referenceData = useReferenceData();
 
 const search = ref("");
-const selectedShelfLocation = ref("");
+const ALL_SHELF_LOCATIONS = "__all__";
+const selectedShelfLocation = ref(ALL_SHELF_LOCATIONS);
 const page = ref(1);
 const pageSize = 12;
 
@@ -102,7 +103,7 @@ const totalBooks = ref(0);
 const pageCount = ref(1);
 
 const shelfLocationItems = computed(() => [
-  { label: "All Shelf Locations", value: "" },
+  { label: "All Shelf Locations", value: ALL_SHELF_LOCATIONS },
   ...referenceData.shelfLocations.value.map((item) => ({
     label: item.name,
     value: item.code,
@@ -608,7 +609,7 @@ async function handlePhysicalBookBarcodeDetected(
   isApplyingBarcodeSearch.value = true;
   lastScannedBarcode.value = barcode;
   search.value = barcode;
-  selectedShelfLocation.value = "";
+  selectedShelfLocation.value = ALL_SHELF_LOCATIONS;
   page.value = 1;
 
   try {
@@ -653,7 +654,7 @@ async function handlePhysicalBookBarcodeDetected(
 function clearFilters() {
   search.value = "";
   lastScannedBarcode.value = "";
-  selectedShelfLocation.value = "";
+  selectedShelfLocation.value = ALL_SHELF_LOCATIONS;
   page.value = 1;
 }
 
@@ -1241,7 +1242,7 @@ onBeforeUnmount(() => {
             <UButton
               v-if="
                 search ||
-                selectedShelfLocation
+                selectedShelfLocation !== ALL_SHELF_LOCATIONS
               "
               label="Clear Filters"
               color="neutral"

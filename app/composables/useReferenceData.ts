@@ -44,6 +44,25 @@ type ReferenceDataResponse = {
   data: Partial<ReferenceDataPayload> | null;
 };
 
+
+export function sanitizeReferenceOptions<T extends ReferenceOption>(
+  items: T[] | undefined | null,
+): T[] {
+  return (items ?? [])
+    .filter(
+      (item) =>
+        typeof item?.code === "string" &&
+        typeof item?.name === "string" &&
+        item.code.trim().length > 0 &&
+        item.name.trim().length > 0,
+    )
+    .map((item) => ({
+      ...item,
+      code: item.code.trim(),
+      name: item.name.trim(),
+    }));
+}
+
 export function emptyReferenceDataPayload(): ReferenceDataPayload {
   return {
     educationalLevels: [],
@@ -66,16 +85,16 @@ export function normalizeReferenceDataPayload(
   return {
     ...emptyReferenceDataPayload(),
     ...(value ?? {}),
-    educationalLevels: value?.educationalLevels ?? [],
-    academicPrograms: value?.academicPrograms ?? [],
-    programYearLevels: value?.programYearLevels ?? [],
-    facultyDepartments: value?.facultyDepartments ?? [],
-    facultyEmploymentTypes: value?.facultyEmploymentTypes ?? [],
-    librarianPositions: value?.librarianPositions ?? [],
-    bookCategories: value?.bookCategories ?? [],
-    shelfLocations: value?.shelfLocations ?? [],
-    academicSemesters: value?.academicSemesters ?? [],
-    academicTerms: value?.academicTerms ?? [],
+    educationalLevels: sanitizeReferenceOptions(value?.educationalLevels),
+    academicPrograms: sanitizeReferenceOptions(value?.academicPrograms),
+    programYearLevels: sanitizeReferenceOptions(value?.programYearLevels),
+    facultyDepartments: sanitizeReferenceOptions(value?.facultyDepartments),
+    facultyEmploymentTypes: sanitizeReferenceOptions(value?.facultyEmploymentTypes),
+    librarianPositions: sanitizeReferenceOptions(value?.librarianPositions),
+    bookCategories: sanitizeReferenceOptions(value?.bookCategories),
+    shelfLocations: sanitizeReferenceOptions(value?.shelfLocations),
+    academicSemesters: sanitizeReferenceOptions(value?.academicSemesters),
+    academicTerms: sanitizeReferenceOptions(value?.academicTerms),
     currentAcademicTerm: value?.currentAcademicTerm ?? null,
   };
 }

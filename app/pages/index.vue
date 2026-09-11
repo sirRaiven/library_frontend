@@ -166,7 +166,7 @@ onMounted(() => {
             </div>
 
             <div class="mt-14 max-w-md">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300/80">Welcome</p>
+              <p class="text-s font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300/80">Welcome</p>
               <h1 class="mt-3 text-[2.7rem] font-semibold leading-[1.08] tracking-tight text-slate-950 dark:text-white">
                 Your Library, all in one place.
               </h1>
