@@ -1,4 +1,4 @@
-import type { AcademicTermOption } from "~/composables/useReferenceData";
+import type { AcademicTermOption } from "~/composables/useLibraryOptions";
 
 export type MembershipTermStatus = "Open" | "Closed";
 
@@ -28,7 +28,6 @@ export interface MembershipTerm {
 
 export interface UpdateMembershipTermInput {
   academicTermCode?: string;
-  academicSemesterCode: string;
   academicYear: string;
   semester: string;
   status: MembershipTermStatus;

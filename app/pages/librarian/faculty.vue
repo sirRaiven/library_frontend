@@ -42,7 +42,7 @@ interface FacultyEditState
 
 const members =
   useLibraryMembers();
-const referenceData = useReferenceData();
+const libraryOptions = useLibraryOptions();
 const auth = useAuth();
 const toast = useToast();
 
@@ -97,17 +97,9 @@ const summary = reactive({
   facultyWithActiveLoans: 0,
 });
 
-const departmentOptions = computed(() =>
-  referenceData.facultyDepartments.value
-    .filter((item) => item.active !== false)
-    .map((item) => ({ label: item.name, value: item.code })),
-);
+const departmentOptions = computed(() => libraryOptions.facultyDepartments.value);
 
-const employmentTypeOptions = computed(() =>
-  referenceData.facultyEmploymentTypes.value
-    .filter((item) => item.active !== false)
-    .map((item) => ({ label: item.name, value: item.code })),
-);
+const employmentTypeOptions = computed(() => libraryOptions.facultyEmploymentTypes.value);
 
 const sexItems:
   FacultySex[] = [
@@ -160,6 +152,20 @@ const editForm =
     address: "",
     status: "Active",
   });
+
+const editDepartmentOptions = computed(() =>
+  libraryOptions.withHistoricalValue(
+    departmentOptions.value,
+    editForm.departmentCode,
+  ),
+);
+
+const editEmploymentTypeOptions = computed(() =>
+  libraryOptions.withHistoricalValue(
+    employmentTypeOptions.value,
+    editForm.employmentTypeCode,
+  ),
+);
 
 const columns:
   TableColumn<FacultyMember>[] = [
@@ -504,7 +510,7 @@ function validateEdit(
 
 async function loadReferenceData() {
   try {
-    await referenceData.loadOperational();
+    await libraryOptions.loadOperational();
     if (!form.departmentCode) {
       form.departmentCode = departmentOptions.value[0]?.value ?? "";
     }
@@ -737,20 +743,8 @@ async function registerFaculty(
   }
 }
 
-function activeReferenceCode(
-  options: Array<{ code: string; name: string; active: boolean }>,
-  reference: { code: string; name: string; active?: boolean } | null | undefined,
-  legacyName: string,
-): string {
-  if (
-    reference &&
-    reference.active !== false &&
-    options.some((item) => item.code === reference.code)
-  ) {
-    return reference.code;
-  }
-
-  return options.find((item) => item.name === legacyName)?.code ?? "";
+function storedOptionValue(currentValue: string): string {
+  return String(currentValue ?? "").trim();
 }
 
 function openProfile(
@@ -765,16 +759,8 @@ function openEdit(
 ) {
   selected.value = record;
 
-  const departmentCode = activeReferenceCode(
-    referenceData.facultyDepartments.value,
-    record.departmentReference,
-    record.department,
-  );
-  const employmentTypeCode = activeReferenceCode(
-    referenceData.facultyEmploymentTypes.value,
-    record.employmentTypeReference,
-    record.employmentType,
-  );
+  const departmentCode = storedOptionValue(record.department);
+  const employmentTypeCode = storedOptionValue(record.employmentType);
 
   Object.assign(
     editForm,
@@ -2298,7 +2284,7 @@ onMounted(() => {
                       editForm.departmentCode
                     "
                     :items="
-                      departmentOptions
+                      editDepartmentOptions
                     "
                     class="w-full"
                   />
@@ -2314,7 +2300,7 @@ onMounted(() => {
                       editForm.employmentTypeCode
                     "
                     :items="
-                      employmentTypeOptions
+                      editEmploymentTypeOptions
                     "
                     class="w-full"
                   />

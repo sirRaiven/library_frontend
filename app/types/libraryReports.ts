@@ -60,6 +60,7 @@ export interface LibraryReportFilter {
   to?: string;
   academicYear?: string;
   semester?: string;
+  category?: string;
 }
 
 export interface LibraryReportMetric {

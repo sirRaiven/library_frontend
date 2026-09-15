@@ -10,9 +10,8 @@ definePageMeta({
 });
 
 const termManager = useMembershipTerm();
+const libraryOptions = useLibraryOptions();
 const settings = useLibrarySettings();
-const referenceData = useReferenceData();
-const academicSemesters = referenceData.academicSemesters;
 const auth = useAuth();
 const toast = useToast();
 
@@ -21,8 +20,6 @@ const saving = ref(false);
 const lastResult = ref<MembershipTerm | null>(null);
 
 const form = reactive<UpdateMembershipTermInput>({
-  academicTermCode: "",
-  academicSemesterCode: "",
   academicYear: "",
   semester: "",
   status: "Open",
@@ -32,12 +29,6 @@ const form = reactive<UpdateMembershipTermInput>({
   applyToAll: true,
 });
 
-const academicSemesterItems = computed(() =>
-  academicSemesters.value.map(semester => ({
-    value: semester.code,
-    label: semester.name,
-  })),
-);
 const statusItems = ["Open", "Closed"];
 
 const durationDays = computed(() => {
@@ -51,7 +42,6 @@ const durationDays = computed(() => {
 });
 
 const canSave = computed(() => {
-  if (!form.academicSemesterCode) return false;
   if (!/^\d{4}-\d{4}$/.test(form.academicYear)) return false;
   if (!form.validFrom || !form.validUntil) return false;
   if (form.validUntil <= form.validFrom) return false;
@@ -60,16 +50,9 @@ const canSave = computed(() => {
 });
 
 function applyTerm(term: MembershipTerm) {
-  const selectedSemester = academicSemesters.value.find(item =>
-    item.code === term.academicTerm?.semesterCode
-    || item.name === term.semester
-  ) ?? null;
-
   Object.assign(form, {
-    academicTermCode: "",
-    academicSemesterCode: selectedSemester?.code ?? "",
     academicYear: term.academicYear,
-    semester: selectedSemester?.name ?? term.semester,
+    semester: term.semester,
     status: term.status,
     registrationOpen: term.registrationOpen,
     validFrom: term.validFrom,
@@ -78,15 +61,6 @@ function applyTerm(term: MembershipTerm) {
 }
 
 
-watch(
-  () => form.academicSemesterCode,
-  code => {
-    const selected = academicSemesters.value.find(semester => semester.code === code);
-    if (!selected) return;
-    form.semester = selected.name;
-    form.academicTermCode = "";
-  },
-);
 
 watch(
   () => form.status,
@@ -97,7 +71,6 @@ watch(
 
 async function loadTerm() {
   try {
-    await referenceData.loadOperational(true);
     const term = await termManager.load(true);
     applyTerm(term);
   } catch (error) {
@@ -149,7 +122,12 @@ async function saveTerm() {
   }
 }
 
-onMounted(loadTerm);
+onMounted(async () => {
+  await Promise.allSettled([
+    libraryOptions.loadOperational(),
+    loadTerm(),
+  ]);
+});
 </script>
 
 <template>
@@ -166,6 +144,16 @@ onMounted(loadTerm);
           <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="termManager.loading.value" @click="loadTerm" />
         </template>
       </LibrarianPageHeader>
+
+      <UAlert
+        v-if="libraryOptions.error.value"
+        color="warning"
+        variant="soft"
+        icon="i-lucide-triangle-alert"
+        title="Semester options could not be refreshed"
+        :description="libraryOptions.error.value"
+        :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
+      />
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <UCard class="sncbt-metric-card block">
@@ -211,12 +199,13 @@ onMounted(loadTerm);
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Semester" required description="Choices are loaded from the Academic Semester reference table.">
+          <UFormField label="Semester" required description="Semester choices are fixed by the Library academic-term schema.">
             <USelect
-              v-model="form.academicSemesterCode"
-              :items="academicSemesterItems"
+              v-model="form.semester"
+              :items="libraryOptions.semesters.value"
               value-key="value"
               label-key="label"
+              :disabled="libraryOptions.loading.value"
               placeholder="Select semester"
               class="w-full"
             />

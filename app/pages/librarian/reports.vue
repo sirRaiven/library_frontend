@@ -51,10 +51,8 @@ interface ReportSectionCustomization {
 }
 
 const reportApi = useLibraryReports();
+const libraryOptions = useLibraryOptions();
 const reportExport = useLibraryReportExport();
-const referenceData = useReferenceData();
-const academicSemesters = referenceData.academicSemesters;
-const academicTerms = referenceData.academicTerms;
 const auth = useAuth();
 const toast = useToast();
 
@@ -251,8 +249,9 @@ const REPORTS: ReportDefinition[] = [
 const filters = reactive<LibraryReportFilter>({
   from: monthStart(),
   to: today(),
-  academicYear: "",
-  semester: "",
+  academicYear: defaultAcademicYear(),
+  semester: "First Semester",
+  category: "",
 });
 
 const branding = reactive<LibraryReportBranding>({
@@ -274,6 +273,18 @@ const isPrinting = ref(false);
 const brandingOpen = ref(false);
 const reportCustomizationOpen = ref(false);
 
+function openBrandingSettings(): void {
+  brandingOpen.value = true;
+}
+
+function closeBrandingSettings(): void {
+  brandingOpen.value = false;
+}
+
+function closeReportCustomization(): void {
+  reportCustomizationOpen.value = false;
+}
+
 const reportCustomization = reactive({
   title: "",
   description: "",
@@ -294,25 +305,20 @@ const combinedSelections = ref<StandardReportKey[]>([
   "return-summary",
 ]);
 
-const semesterItems = computed(() =>
-  academicSemesters.value
-    .filter(item => item.active !== false)
-    .map(item => item.name),
-);
-const academicYearItems = computed(() =>
-  [...new Set(
-    academicTerms.value
-      .filter(item => item.active !== false)
-      .map(item => item.academicYear),
-  )].sort().reverse(),
-);
+const ALL_BOOK_CATEGORIES = "__all_categories__";
+const bookCategoryFilter = ref(ALL_BOOK_CATEGORIES);
 
-function applyCurrentAcademicTerm() {
-  const term = referenceData.currentAcademicTerm.value;
-  if (!term) return;
-  if (!filters.academicYear) filters.academicYear = term.academicYear;
-  if (!filters.semester) filters.semester = term.semesterName;
-}
+watch(bookCategoryFilter, value => {
+  filters.category = value === ALL_BOOK_CATEGORIES ? "" : value;
+});
+const academicYearItems = computed(() => {
+  const current = new Date().getFullYear();
+
+  return Array.from({ length: 9 }, (_, index) => {
+    const start = current - 4 + index;
+    return `${start}-${start + 1}`;
+  });
+});
 
 const groupedReports = computed(() =>
   REPORT_GROUPS.map((group) => ({
@@ -767,29 +773,38 @@ function metricTone(tone?: LibraryReportMetric["tone"]) {
 }
 
 onMounted(async () => {
-  loadBranding();
   try {
-    await referenceData.loadOperational();
-    applyCurrentAcademicTerm();
+    await libraryOptions.loadOperational();
   } catch {
-    // Preserve report access even if reference data cannot be refreshed.
+    // Reports remain available without narrowing by registry options.
   }
+});
+
+onMounted(async () => {
+  loadBranding();
   await generateReport("executive-summary", { scrollToPreview: false });
 });
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell space-y-6 mb-12">
-    <LibrarianPageHeader
-      eyebrow="Reports & Notices"
-      title="Reports"
-      description="Choose a report, set the reporting period, review the result, and export it in the format you need."
-      icon="i-lucide-file-chart-column-increasing"
-    >
-      <template #actions>
-        <UButton label="Report Header" icon="i-lucide-panel-top" color="neutral" variant="outline" @click="() => { brandingOpen = true; }" />
-      </template>
-    </LibrarianPageHeader>
+  <UContainer class="sncbt-page-shell">
+    <div class="space-y-6">
+      <LibrarianPageHeader
+        eyebrow="Library Records and Statistics"
+        title="Library Reports"
+        description="Choose an understandable report, select the reporting period, review the result, and export it to PDF, Word, or Excel."
+        icon="i-lucide-file-chart-column-increasing"
+      >
+        <template #actions>
+          <UButton
+            label="Report Header"
+            icon="i-lucide-panel-top"
+            color="neutral"
+            variant="outline"
+            @click="openBrandingSettings"
+          />
+        </template>
+      </LibrarianPageHeader>
 
     <UAlert
       color="info"
@@ -797,6 +812,16 @@ onMounted(async () => {
       icon="i-lucide-circle-help"
       title="Simple reporting process"
       description="1. Select the date and academic term. 2. Choose one report below. 3. Review, print, or download the result."
+    />
+
+    <UAlert
+      v-if="libraryOptions.error.value"
+      color="warning"
+      variant="soft"
+      icon="i-lucide-triangle-alert"
+      title="Report filter options could not be refreshed"
+      :description="libraryOptions.error.value"
+      :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
     />
 
     <UCard>
@@ -824,7 +849,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <UFormField label="Start Date">
             <UInput v-model="filters.from" type="date" class="w-full" />
           </UFormField>
@@ -835,7 +860,24 @@ onMounted(async () => {
             <USelect v-model="filters.academicYear" :items="academicYearItems" class="w-full" />
           </UFormField>
           <UFormField label="Semester">
-            <USelect v-model="filters.semester" :items="semesterItems" class="w-full" />
+            <USelect
+              v-model="filters.semester"
+              :items="libraryOptions.semesters.value"
+              value-key="value"
+              label-key="label"
+              class="w-full"
+              :disabled="libraryOptions.loading.value"
+            />
+          </UFormField>
+          <UFormField label="Book Category">
+            <USelect
+              v-model="bookCategoryFilter"
+              :items="[{ label: 'All Categories', value: ALL_BOOK_CATEGORIES }, ...libraryOptions.bookCategories.value]"
+              value-key="value"
+              label-key="label"
+              class="w-full"
+              :disabled="libraryOptions.loading.value"
+            />
           </UFormField>
         </div>
       </div>
@@ -957,7 +999,7 @@ onMounted(async () => {
       </aside>
     </div>
 
-    <section id="report-preview" class="scroll-mt-6 mb-12">
+    <section id="report-preview" class="scroll-mt-6">
       <UCard v-if="activeReport && customizedReport">
         <template #header>
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -1006,7 +1048,7 @@ onMounted(async () => {
               <UButton
                 label="Excel"
                 icon="i-lucide-sheet"
-                color="primary"
+                color="success"
                 variant="soft"
                 :loading="exportingFormat === 'xlsx'"
                 @click="exportActive('xlsx')"
@@ -1139,7 +1181,7 @@ onMounted(async () => {
               variant="ghost"
               square
               aria-label="Close"
-              @click="() => { reportCustomizationOpen = false; }"
+              @click="closeReportCustomization"
             />
           </div>
 
@@ -1231,12 +1273,12 @@ onMounted(async () => {
               @click="restoreReportDefaults"
             />
             <div class="flex justify-end gap-3">
-              <UButton label="Cancel" color="neutral" variant="outline" @click="() => { reportCustomizationOpen = false; }" />
+              <UButton label="Cancel" color="neutral" variant="outline" @click="closeReportCustomization" />
               <UButton
                 label="Apply Changes"
                 icon="i-lucide-check"
                 :disabled="includedSectionCount === 0"
-                @click="() => { reportCustomizationOpen = false; }"
+                @click="closeReportCustomization"
               />
             </div>
           </div>
@@ -1254,7 +1296,7 @@ onMounted(async () => {
                 The logos are positioned close to the institution text based on the Library's sample document.
               </p>
             </div>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square aria-label="Close" @click="() => { brandingOpen = false; }" />
+            <UButton icon="i-lucide-x" color="neutral" variant="ghost" square aria-label="Close" @click="closeBrandingSettings" />
           </div>
 
           <div class="mt-6 grid gap-4 sm:grid-cols-2">
@@ -1288,11 +1330,12 @@ onMounted(async () => {
           />
 
           <div class="mt-6 flex justify-end gap-3">
-            <UButton label="Cancel" color="neutral" variant="outline" @click="() => { brandingOpen = false; }" />
+            <UButton label="Cancel" color="neutral" variant="outline" @click="closeBrandingSettings" />
             <UButton label="Save Header" icon="i-lucide-save" @click="saveBranding" />
           </div>
         </div>
       </template>
     </UModal>
+    </div>
   </UContainer>
 </template>

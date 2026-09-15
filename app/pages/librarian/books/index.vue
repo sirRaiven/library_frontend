@@ -84,7 +84,7 @@ const auth = useAuth();
 const toast = useToast();
 const printQueue = useBarcodePrintQueue();
 const inventoryExcel = useLibraryInventoryExcel();
-const referenceData = useReferenceData();
+const libraryOptions = useLibraryOptions();
 
 const search = ref("");
 const ALL_SHELF_LOCATIONS = "__all__";
@@ -104,17 +104,8 @@ const pageCount = ref(1);
 
 const shelfLocationItems = computed(() => [
   { label: "All Shelf Locations", value: ALL_SHELF_LOCATIONS },
-  ...referenceData.shelfLocations.value.map((item) => ({
-    label: item.name,
-    value: item.code,
-  })),
+  ...libraryOptions.shelfLocations.value,
 ]);
-
-const selectedShelfLocationName = computed(() =>
-  referenceData.shelfLocations.value.find(
-    (item) => item.code === selectedShelfLocation.value,
-  )?.name ?? "",
-);
 
 const copiesOnPage = computed(() =>
   books.value.reduce(
@@ -314,10 +305,9 @@ function buildQuery(
     query["filters[$or][9][author_number][$containsi]"] = keyword;
   }
 
-  if (selectedShelfLocationName.value) {
-    // Keep legacy string-filter semantics during the observation window.
+  if (selectedShelfLocation.value !== ALL_SHELF_LOCATIONS) {
     query["filters[book_copies][shelf_location][$eq]"] =
-      selectedShelfLocationName.value;
+      selectedShelfLocation.value;
   }
 
   return query;
@@ -696,11 +686,13 @@ watch(page, () => {
   void loadBooks();
 });
 
-onMounted(() => {
-  void Promise.all([
-    referenceData.loadOperational(),
-    loadBooks(),
-  ]).catch(() => undefined);
+onMounted(async () => {
+  try {
+    await libraryOptions.loadOperational();
+  } catch {
+    // The catalog still loads; the filter shows a retryable option error.
+  }
+  await loadBooks();
 });
 
 onBeforeUnmount(() => {
@@ -730,7 +722,17 @@ onBeforeUnmount(() => {
         </template>
       </LibrarianPageHeader>
 
-      <UCard>
+      <UAlert
+      v-if="libraryOptions.error.value"
+      color="warning"
+      variant="soft"
+      icon="i-lucide-triangle-alert"
+      title="Shelf locations could not be refreshed"
+      :description="libraryOptions.error.value"
+      :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
+    />
+
+    <UCard>
         <div
           class="grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem_auto]"
         >

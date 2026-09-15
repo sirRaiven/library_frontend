@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "vitest";
 
@@ -6,176 +6,110 @@ function source(path: string): string {
   return readFileSync(resolve(process.cwd(), path), "utf8");
 }
 
-test("Student registration no longer imports hardcoded education master data", () => {
-  const page = source("app/pages/student-registration.vue");
-  expect(page.includes("STUDENT_EDUCATIONAL_LEVELS")).toBe(false);
-  expect(page.includes("  programsForLevel,")).toBe(false);
-  expect(page.includes("  yearLevelsFor,")).toBe(false);
+const DIRECT_OPTION_PAGES = [
+  "app/pages/student-registration.vue",
+  "app/pages/librarian/students.vue",
+  "app/pages/librarian/faculty.vue",
+  "app/pages/admin/users/index.vue",
+  "app/pages/admin/librarians/create.vue",
+  "app/pages/librarian/books/index.vue",
+  "app/pages/librarian/books/register.vue",
+  "app/pages/librarian/books/[id]/edit.vue",
+  "app/pages/student/books/index.vue",
+  "app/pages/faculty/books/index.vue",
+  "app/pages/admin/settings.vue",
+  "app/pages/librarian/membership-term.vue",
+  "app/pages/librarian/memberships.vue",
+  "app/pages/librarian/reports.vue",
+  "app/pages/admin/reports.vue",
+];
+
+test("final frontend has one option-registry composable and no legacy reference-data composable", () => {
+  expect(existsSync(resolve(process.cwd(), "app/composables/useReferenceData.ts"))).toBe(false);
+  const options = source("app/composables/useLibraryOptions.ts");
+  expect(options).toContain("studentPrograms");
+  expect(options).toContain("facultyDepartments");
+  expect(options).toContain("facultyEmploymentTypes");
+  expect(options).toContain("librarianPositions");
+  expect(options).toContain("bookCategories");
+  expect(options).toContain("shelfLocations");
+  expect(options).toContain("semesters");
+  expect(options).toContain("academicTerms");
+  expect(options).toContain("currentAcademicTerm");
+  expect(options).toContain("programsForEducationalLevel");
+  expect(options).toContain("yearLevelsForEducationalLevel");
+  expect(options).toContain("withHistoricalValue");
 });
 
-test("Librarian Student management no longer imports hardcoded education master data", () => {
-  const page = source("app/pages/librarian/students.vue");
-  expect(page.includes("STUDENT_EDUCATIONAL_LEVELS")).toBe(false);
-  expect(page.includes("  programsForLevel,")).toBe(false);
-  expect(page.includes("  yearLevelsFor,")).toBe(false);
+test("all direct dropdown consumers use the final library option registry", () => {
+  for (const file of DIRECT_OPTION_PAGES) {
+    const page = source(file);
+    expect(page, file).toContain("useLibraryOptions()");
+    expect(page, file).not.toContain("useReferenceData()");
+  }
 });
 
-test("studentPrograms keeps display helpers but not institution-maintained option arrays", () => {
-  const constants = source("app/constants/studentPrograms.ts");
-  expect(constants.includes("STUDENT_PROGRAM_OPTIONS")).toBe(false);
-  expect(constants.includes("STUDENT_EDUCATIONAL_LEVELS")).toBe(false);
-  expect(constants.includes("export function yearGradeLabel")).toBe(true);
+test("student education choices use structural level/year logic and registry programs", () => {
+  for (const file of [
+    "app/pages/student-registration.vue",
+    "app/pages/librarian/students.vue",
+  ]) {
+    const page = source(file);
+    expect(page).toContain("programsForEducationalLevel");
+    expect(page).toContain("yearLevelsForEducationalLevel");
+    expect(page).not.toContain("yearLevelsForProgram");
+  }
 });
 
-test("reference-data helpers filter programs and year levels by stable codes", async () => {
-  const module = await import("../../app/composables/useReferenceData.ts");
-  const payload = module.normalizeReferenceDataPayload({
-    academicPrograms: [
-      { documentId: "1", code: "BSIT", name: "BS Information Technology", shortName: "BSIT", educationalLevelCode: "COLLEGE", active: true, sortOrder: 1 },
-      { documentId: "2", code: "STEM", name: "STEM", shortName: null, educationalLevelCode: "SHS", active: true, sortOrder: 2 },
-      { documentId: "3", code: "OLD", name: "Old Program", shortName: null, educationalLevelCode: "COLLEGE", active: false, sortOrder: 3 },
-    ],
-    programYearLevels: [
-      { documentId: "4", code: "BSIT_Y1", name: "1st Year", label: "1st Year", value: 1, programCode: "BSIT", active: true, sortOrder: 1 },
-      { documentId: "5", code: "STEM_G11", name: "Grade 11", label: "Grade 11", value: 11, programCode: "STEM", active: true, sortOrder: 1 },
-    ],
-  });
-
-  expect(
-    module.programsForEducationalLevel(payload, "COLLEGE").map((item) => item.code),
-  ).toEqual(["BSIT"]);
-  expect(
-    module.yearLevelsForAcademicProgram(payload, "BSIT").map((item) => item.code),
-  ).toEqual(["BSIT_Y1"]);
+test("staff and librarian forms use final extensible registry values", () => {
+  const faculty = source("app/pages/librarian/faculty.vue");
+  const users = source("app/pages/admin/users/index.vue");
+  const librarians = source("app/pages/admin/librarians/create.vue");
+  expect(faculty).toContain("libraryOptions.facultyDepartments.value");
+  expect(faculty).toContain("libraryOptions.facultyEmploymentTypes.value");
+  expect(faculty).toContain("withHistoricalValue");
+  expect(users).toContain("libraryOptions.facultyDepartments.value");
+  expect(users).toContain("libraryOptions.facultyEmploymentTypes.value");
+  expect(librarians).toContain("libraryOptions.librarianPositions.value");
 });
 
-test("staff forms use operational reference data instead of hardcoded institution lists", () => {
-  const facultyPage = source("app/pages/librarian/faculty.vue");
-  const librarianCreate = source("app/pages/admin/librarians/create.vue");
-  const adminUsers = source("app/pages/admin/users/index.vue");
-  const members = source("app/composables/useLibraryMembers.ts");
-  const librarians = source("app/composables/useAdminLibrarians.ts");
-  const users = source("app/composables/useAdminUsers.ts");
-
-  expect(facultyPage.includes("const departmentItems = [")).toBe(false);
-  expect(facultyPage.includes("const employmentTypeItems")).toBe(false);
-  expect(facultyPage.includes("otherDepartment")).toBe(false);
-  expect(facultyPage.includes("facultyDepartments")).toBe(true);
-  expect(facultyPage.includes("facultyEmploymentTypes")).toBe(true);
-  expect(members.includes("departmentCode: string")).toBe(true);
-  expect(members.includes("employmentTypeCode: string")).toBe(true);
-
-  expect(librarianCreate.includes("const positionItems = [")).toBe(false);
-  expect(librarianCreate.includes("librarianPositions")).toBe(true);
-  expect(librarians.includes("positionCode: string")).toBe(true);
-
-  expect(adminUsers.includes("const facultyEmploymentOptions = [")).toBe(false);
-  expect(adminUsers.includes("facultyDepartments")).toBe(true);
-  expect(adminUsers.includes("facultyEmploymentTypes")).toBe(true);
-  expect(users.includes("departmentCode?: string")).toBe(true);
-  expect(users.includes("employmentTypeCode?: string")).toBe(true);
+test("admin reports consume final semesters and academic-term metadata", () => {
+  const reports = source("app/pages/admin/reports.vue");
+  expect(reports).toContain("libraryOptions.semesters.value");
+  expect(reports).toContain("libraryOptions.academicTerms");
+  expect(reports).toContain("libraryOptions.currentAcademicTerm.value");
+  expect(reports).not.toContain("academicSemesters");
 });
 
-test("Book forms separate dynamic Book Category and Shelf Location selections", () => {
-  const register = source("app/pages/librarian/books/register.vue");
-  const edit = source("app/pages/librarian/books/[id]/edit.vue");
-  const index = source("app/pages/librarian/books/index.vue");
-
-  expect(register.includes("const shelfLocations = [")).toBe(false);
-  expect(register.includes("bookCategories")).toBe(true);
-  expect(register.includes("shelfLocations")).toBe(true);
-  expect(register.includes("categoryCode")).toBe(true);
-  expect(register.includes("shelfLocationCode")).toBe(true);
-  expect(register.includes("category_code")).toBe(true);
-  expect(register.includes("shelf_location_code")).toBe(true);
-
-  expect(edit.includes("const shelfLocations = [")).toBe(false);
-  expect(edit.includes("bookCategories")).toBe(true);
-  expect(edit.includes("shelfLocations")).toBe(true);
-  expect(edit.includes("categoryCode")).toBe(true);
-  expect(edit.includes("shelfLocationCode")).toBe(true);
-
-  expect(index.includes("const shelfLocationItems = [")).toBe(false);
-  expect(index.includes("shelfLocations")).toBe(true);
-});
-
-
-test("Excel inventory template and parser use dynamic Book Category and Shelf Location reference data", () => {
+test("book Excel workflow uses final independent category and shelf registries", () => {
   const excel = source("app/composables/useLibraryInventoryExcel.ts");
-  expect(excel.includes("export const INVENTORY_SHELF_LOCATIONS = [")).toBe(false);
-  expect(excel.includes('"Book Category"')).toBe(true);
-  expect(excel.includes('"Shelf Location"')).toBe(true);
-  expect(excel.includes("useReferenceData()")).toBe(true);
-  expect(excel.includes("category_code")).toBe(true);
-  expect(excel.includes("shelf_location_code")).toBe(true);
-  expect(excel.includes("category: string")).toBe(true);
+  expect(excel).toContain("useLibraryOptions()");
+  expect(excel).toContain("libraryOptions.bookCategories.value");
+  expect(excel).toContain("libraryOptions.shelfLocations.value");
+  expect(excel).toContain('"Book Category"');
+  expect(excel).toContain('"Shelf Location"');
 });
 
-test("Inventory import preview shows Book Category separately from Shelf Location", () => {
-  const page = source("app/pages/librarian/books/import.vue");
-  expect(page.includes(">Book Category</th>")).toBe(true);
-  expect(page.includes("{{ row.category }}")).toBe(true);
-});
-
-test("Student and Faculty catalog filters submit stable Book Category codes", () => {
-  const studentBooks = source("app/composables/useStudentBooks.ts");
-  const studentPage = source("app/pages/student/books/index.vue");
-  const facultyPortal = source("app/composables/useFacultyPortal.ts");
-  const facultyPage = source("app/pages/faculty/books/index.vue");
-
-  expect(studentBooks.includes("categoryOptions")).toBe(true);
-  expect(studentPage.includes("collection.categoryOptions.value")).toBe(true);
-  expect(studentPage.includes("value: item.code")).toBe(true);
-
-  expect(facultyPortal.includes("categoryOptions")).toBe(true);
-  expect(facultyPage.includes("portal.categoryOptions.value")).toBe(true);
-  expect(facultyPage.includes("value: item.code")).toBe(true);
-});
-
-test("Academic Term screens use reference data instead of hardcoded semester choices", () => {
-  const librarySettings = source("app/composables/useLibrarySettings.ts");
-  const adminSettings = source("app/composables/useAdminSettings.ts");
-  const membershipTerm = source("app/composables/useMembershipTerm.ts");
-  const libraryMembers = source("app/composables/useLibraryMembers.ts");
-  const adminPage = source("app/pages/admin/settings.vue");
-  const termPage = source("app/pages/librarian/membership-term.vue");
-  const membershipsPage = source("app/pages/librarian/memberships.vue");
-  const libraryCard = source("app/pages/student/library-card.vue");
-
-  expect(librarySettings.includes("currentSemester: string")).toBe(true);
-  expect(librarySettings.includes("currentAcademicTerm")).toBe(true);
-  expect(adminSettings.includes("currentSemester: string")).toBe(true);
-  expect(membershipTerm.includes("semester: string")).toBe(true);
-  expect(membershipTerm.includes("academicTermCode")).toBe(true);
-  expect(libraryMembers).toMatch(/interface MembershipRecord[\s\S]*?semester:\s*string;/);
-
-  expect(adminPage.includes("const semesterItems = [")).toBe(false);
-  expect(adminPage.includes("academicSemesters")).toBe(true);
-  expect(termPage.includes("const semesterItems = [")).toBe(false);
-  expect(termPage.includes("academicSemesters")).toBe(true);
-  expect(termPage.includes("academicSemesterCode")).toBe(true);
-  expect(membershipsPage.includes("function currentSemester()")).toBe(false);
-  expect(membershipsPage.includes("function currentAcademicYear()")).toBe(false);
-  expect(membershipsPage.includes("const semesterItems = [")).toBe(false);
-  expect(membershipsPage.includes("academicSemesters")).toBe(true);
-  expect(membershipsPage.includes("academicTermCode")).toBe(true);
-  expect(libraryCard.includes('source.semester ===\n      "Second Semester"')).toBe(false);
-  expect(libraryCard.includes('source.semester === "Summer"')).toBe(false);
-  expect(libraryCard.includes("librarySettings.settings.value.general.currentSemester")).toBe(true);
-  expect(libraryCard.includes('?? "Not recorded"')).toBe(true);
-});
-
-
-test("Academic semester dropdowns preserve the former choices through database reference data", () => {
-  const settings = source("app/pages/admin/settings.vue");
-  const term = source("app/pages/librarian/membership-term.vue");
-  const termApi = source("app/composables/useMembershipTerm.ts");
-
-  expect(settings).toContain("referenceData.academicSemesters");
-  expect(settings).toContain("academicSemesterCode");
-  expect(settings).not.toContain("const academicTermItems = computed");
-  expect(term).toContain("referenceData.academicSemesters");
-  expect(term).toContain("academicSemesterCode");
-  expect(term).not.toContain("const academicTermItems = computed");
-  expect(termApi).toContain("academicSemesterCode: string");
+test("final frontend contains no retired relation identifiers", () => {
+  const files = DIRECT_OPTION_PAGES.concat([
+    "app/composables/useLibraryOptions.ts",
+    "app/composables/useMembershipTerm.ts",
+    "app/composables/useLibraryInventoryExcel.ts",
+  ]);
+  const retired = [
+    "academicSemesterCode",
+    "educational_level_ref",
+    "academic_program",
+    "program_year_level",
+    "department_ref",
+    "employment_type_ref",
+    "position_ref",
+    "category_ref",
+    "shelf_location_ref",
+    "academic_semester",
+  ];
+  for (const file of files) {
+    const content = source(file);
+    for (const marker of retired) expect(content, `${file}: ${marker}`).not.toContain(marker);
+  }
 });

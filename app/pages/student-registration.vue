@@ -25,7 +25,7 @@ useHead({
 
 const colorMode = useColorMode();
 const selfRegistration = useStudentSelfRegistration();
-const referenceData = useReferenceData();
+const libraryOptions = useLibraryOptions();
 const toast = useToast();
 
 const access = ref<RegistrationAccessDetails | null>(null);
@@ -82,33 +82,20 @@ const credentialHelp = reactive<CredentialHelpInput>({
   privacyNoticeAccepted: false,
 });
 
-const educationalLevelOptions = computed(() =>
-  referenceData.educationalLevels.value.map((item) => ({
-    label: item.name,
-    value: item.code,
-  })),
-);
+const educationalLevelOptions = computed(() => libraryOptions.educationalLevels.value);
 const programOptions = computed(() =>
-  referenceData.programsForLevel(registration.student.educationalLevelCode).map((item) => ({
-    label: item.name,
-    value: item.code,
-  })),
+  libraryOptions.programsForEducationalLevel(registration.student.educationalLevelCode),
 );
 const yearOptions = computed(() =>
-  referenceData.yearLevelsForProgram(registration.student.programCode).map((item) => ({
-    label: item.label,
-    value: item.code,
-  })),
+  libraryOptions.yearLevelsForEducationalLevel(registration.student.educationalLevelCode),
 );
 const registrationChoicesAvailable = computed(() =>
-  referenceData.publicLoaded.value &&
+  libraryOptions.publicLoaded.value &&
   educationalLevelOptions.value.length > 0 &&
   programOptions.value.length > 0 &&
   yearOptions.value.length > 0,
 );
-const registrationChoicesError = computed(() =>
-  referenceData.publicError.value ? "Registration choices could not be loaded. Try again." : "",
-);
+const registrationChoicesError = computed(() => libraryOptions.error.value);
 const sexOptions = [
   { label: "Male", value: "Male" },
   { label: "Female", value: "Female" },
@@ -133,25 +120,25 @@ const portalUsername = computed(() =>
 );
 
 function syncRegistrationChoices() {
-  const levels = referenceData.educationalLevels.value;
-  if (!levels.some((item) => item.code === registration.student.educationalLevelCode)) {
-    registration.student.educationalLevelCode = levels[0]?.code ?? "";
+  const levels = libraryOptions.educationalLevels.value;
+  if (!levels.some((item) => item.value === registration.student.educationalLevelCode)) {
+    registration.student.educationalLevelCode = levels[0]?.value ?? "";
   }
 
-  const programs = referenceData.programsForLevel(registration.student.educationalLevelCode);
-  if (!programs.some((item) => item.code === registration.student.programCode)) {
-    registration.student.programCode = programs[0]?.code ?? "";
+  const programs = libraryOptions.programsForEducationalLevel(registration.student.educationalLevelCode);
+  if (!programs.some((item) => item.value === registration.student.programCode)) {
+    registration.student.programCode = programs[0]?.value ?? "";
   }
 
-  const years = referenceData.yearLevelsForProgram(registration.student.programCode);
-  if (!years.some((item) => item.code === registration.student.yearLevelCode)) {
-    registration.student.yearLevelCode = years[0]?.code ?? "";
+  const years = libraryOptions.yearLevelsForEducationalLevel(registration.student.educationalLevelCode);
+  if (!years.some((item) => item.value === registration.student.yearLevelCode)) {
+    registration.student.yearLevelCode = years[0]?.value ?? "";
   }
 }
 
 watch(
   [
-    () => referenceData.educationalLevels.value,
+    () => libraryOptions.educationalLevels.value,
     () => registration.student.educationalLevelCode,
     () => registration.student.programCode,
   ],
@@ -240,7 +227,7 @@ async function loadAccess() {
 
 async function loadRegistrationChoices(force = false) {
   try {
-    await referenceData.loadPublicStudentRegistration(force);
+    await libraryOptions.loadPublicRegistration(force);
     syncRegistrationChoices();
   } catch {
     // The composable exposes a safe retryable state; keep the rest of the page usable.
@@ -503,7 +490,7 @@ onMounted(() => {
               icon="i-lucide-refresh-cw"
               color="warning"
               variant="soft"
-              :loading="referenceData.publicLoading.value"
+              :loading="libraryOptions.loading.value"
               @click="loadRegistrationChoices(true)"
             />
           </div>
@@ -522,9 +509,9 @@ onMounted(() => {
               <UFormField name="student.middleName" label="Middle Name"><UInput v-model="registration.student.middleName" class="w-full" /></UFormField>
               <UFormField name="student.lastName" label="Last Name" required><UInput v-model="registration.student.lastName" class="w-full" /></UFormField>
               <UFormField name="student.suffix" label="Suffix"><UInput v-model="registration.student.suffix" class="w-full" placeholder="Jr., III" /></UFormField>
-              <UFormField name="student.educationalLevelCode" label="Educational Level" required><USelect v-model="registration.student.educationalLevelCode" :items="educationalLevelOptions" :disabled="referenceData.publicLoading.value" class="w-full" /></UFormField>
-              <UFormField name="student.programCode" label="Course / Program" required><USelect v-model="registration.student.programCode" :items="programOptions" :disabled="referenceData.publicLoading.value || !registration.student.educationalLevelCode" class="w-full" /></UFormField>
-              <UFormField name="student.yearLevelCode" label="Year / Grade Level" required><USelect v-model="registration.student.yearLevelCode" :items="yearOptions" :disabled="referenceData.publicLoading.value || !registration.student.programCode" class="w-full" /></UFormField>
+              <UFormField name="student.educationalLevelCode" label="Educational Level" required><USelect v-model="registration.student.educationalLevelCode" :items="educationalLevelOptions" :disabled="libraryOptions.loading.value" class="w-full" /></UFormField>
+              <UFormField name="student.programCode" label="Course / Program" required><USelect v-model="registration.student.programCode" :items="programOptions" :disabled="libraryOptions.loading.value || !registration.student.educationalLevelCode" class="w-full" /></UFormField>
+              <UFormField name="student.yearLevelCode" label="Year / Grade Level" required><USelect v-model="registration.student.yearLevelCode" :items="yearOptions" :disabled="libraryOptions.loading.value || !registration.student.programCode" class="w-full" /></UFormField>
               <UFormField name="student.section" label="Section"><UInput v-model="registration.student.section" class="w-full" /></UFormField>
               <UFormField name="student.email" label="Email Address" required><UInput v-model="registration.student.email" type="email" class="w-full" /></UFormField>
               <UFormField name="student.contactNo" label="Contact Number"><UInput v-model="registration.student.contactNo" class="w-full" /></UFormField>

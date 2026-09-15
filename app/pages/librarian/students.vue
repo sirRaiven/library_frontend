@@ -21,7 +21,7 @@ import {
 definePageMeta({ layout: "librarian", title: "Students" });
 
 const members = useLibraryMembers();
-const referenceData = useReferenceData();
+const libraryOptions = useLibraryOptions();
 const termManager = useMembershipTerm();
 const auth = useAuth();
 const toast = useToast();
@@ -128,7 +128,7 @@ function syncRegistrationMembership() {
   const term = activeMembershipTerm.value;
   Object.assign(registrationForm.membership, {
     academicTermCode: term.academicTerm?.code
-      ?? referenceData.currentAcademicTerm.value?.code
+      ?? libraryOptions.currentAcademicTerm.value?.code
       ?? "",
     academicYear: term.academicYear,
     semester: term.semester,
@@ -356,24 +356,24 @@ const editOriginalEducationCodes = ref({
 });
 
 const selectedRegistrationLevel = computed(() =>
-  referenceData.educationalLevels.value.find(
-    (item) => item.code === registrationForm.student.educationalLevelCode,
+  libraryOptions.educationalLevels.value.find(
+    (item) => item.value === registrationForm.student.educationalLevelCode,
   ) ?? null,
 );
 const selectedRegistrationProgram = computed(() =>
-  referenceData.academicPrograms.value.find(
-    (item) => item.code === registrationForm.student.programCode,
+  libraryOptions.studentPrograms.value.find(
+    (item) => item.value === registrationForm.student.programCode,
   ) ?? null,
 );
 const selectedRegistrationYearLevel = computed(() =>
-  referenceData.programYearLevels.value.find(
-    (item) => item.code === registrationForm.student.yearLevelCode,
-  ) ?? null,
+  libraryOptions.yearLevelsForEducationalLevel(
+    registrationForm.student.educationalLevelCode,
+  ).find((item) => item.value === registrationForm.student.yearLevelCode) ?? null,
 );
 
 const selectedEditLevel = computed(() =>
-  referenceData.educationalLevels.value.find(
-    (item) => item.code === editForm.educationalLevelCode,
+  libraryOptions.educationalLevels.value.find(
+    (item) => item.value === editForm.educationalLevelCode,
   ) ?? null,
 );
 
@@ -419,14 +419,15 @@ const registrationPreviewStudent =
         | null) ||
       null,
     educationalLevel:
-      selectedRegistrationLevel.value?.name ??
+      selectedRegistrationLevel.value?.label ??
       "EDUCATIONAL LEVEL",
     course:
-      selectedRegistrationProgram.value?.name ??
+      selectedRegistrationProgram.value?.label ??
       "COURSE / PROGRAM",
     yearLevel:
-      selectedRegistrationYearLevel.value?.value ??
-      null,
+      (selectedRegistrationYearLevel.value
+        ? Number(selectedRegistrationYearLevel.value.value)
+        : null),
     section:
       registrationForm.student.section ||
       "",
@@ -541,7 +542,7 @@ const sexItems = ["Male", "Female"];
 
 const educationalLevelItems = computed(() => [
   "All",
-  ...referenceData.educationalLevels.value.map((item) => item.name),
+  ...libraryOptions.educationalLevels.value.map((item) => item.label),
 ]);
 
 const cardStatusItems = [
@@ -550,38 +551,44 @@ const cardStatusItems = [
 ];
 
 const registrationEducationalLevelItems = computed(() =>
-  referenceData.educationalLevels.value.map((item) => ({
-    label: item.name,
-    value: item.code,
-  })),
+  libraryOptions.educationalLevels.value,
 );
 
 const registrationProgramItems = computed(() =>
-  referenceData.programsForLevel(
+  libraryOptions.programsForEducationalLevel(
     registrationForm.student.educationalLevelCode,
-  ).map((item) => ({ label: item.name, value: item.code })),
+  ),
 );
 
-const editProgramItems = computed(() =>
-  referenceData.programsForLevel(
-    editForm.educationalLevelCode,
-  ).map((item) => ({ label: item.name, value: item.code })),
-);
+const editProgramItems = computed(() => {
+  const active = libraryOptions.programsForEducationalLevel(editForm.educationalLevelCode);
+  const preserveHistorical =
+    editForm.educationalLevelCode === editOriginalEducationCodes.value.educationalLevelCode &&
+    editForm.programCode === editOriginalEducationCodes.value.programCode;
+  return preserveHistorical
+    ? libraryOptions.withHistoricalValue(active, editForm.programCode)
+    : active;
+});
 
 const registrationYearItems = computed(() =>
-  referenceData.yearLevelsForProgram(
-    registrationForm.student.programCode,
-  ).map((item) => ({ label: item.label, value: item.code })),
+  libraryOptions.yearLevelsForEducationalLevel(
+    registrationForm.student.educationalLevelCode,
+  ),
 );
 
-const editYearItems = computed(() =>
-  referenceData.yearLevelsForProgram(
-    editForm.programCode,
-  ).map((item) => ({ label: item.label, value: item.code })),
-);
+const editYearItems = computed(() => {
+  const active = libraryOptions.yearLevelsForEducationalLevel(editForm.educationalLevelCode);
+  const preserveHistorical =
+    editForm.educationalLevelCode === editOriginalEducationCodes.value.educationalLevelCode &&
+    editForm.programCode === editOriginalEducationCodes.value.programCode &&
+    editForm.yearLevelCode === editOriginalEducationCodes.value.yearLevelCode;
+  return preserveHistorical
+    ? libraryOptions.withHistoricalValue(active, editForm.yearLevelCode)
+    : active;
+});
 
 const referenceChoicesReady = computed(() =>
-  referenceData.operationalLoaded.value &&
+  libraryOptions.operationalLoaded.value &&
   registrationEducationalLevelItems.value.length > 0,
 );
 
@@ -795,7 +802,7 @@ function resetRegistration() {
   });
   Object.assign(registrationForm.membership, {
     academicTermCode: activeMembershipTerm.value.academicTerm?.code
-      ?? referenceData.currentAcademicTerm.value?.code
+      ?? libraryOptions.currentAcademicTerm.value?.code
       ?? "",
     academicYear: activeMembershipTerm.value.academicYear,
     semester: activeMembershipTerm.value.semester,
@@ -973,23 +980,13 @@ function openEdit(student: StudentMember) {
   selectedStudent.value = student;
 
   const educationalLevelCode =
-    student.education?.level?.code ??
-    referenceData.educationalLevels.value.find(
-      (item) => item.name === student.educationalLevel,
-    )?.code ??
-    "";
+    student.educationalLevel || student.education?.level?.name || student.education?.level?.code || "";
   const programCode =
-    student.education?.program?.code ??
-    referenceData.programsForLevel(educationalLevelCode).find(
-      (item) => item.name === student.course,
-    )?.code ??
-    "";
+    student.course || student.education?.program?.name || student.education?.program?.code || "";
   const yearLevelCode =
-    student.education?.yearLevel?.code ??
-    referenceData.yearLevelsForProgram(programCode).find(
-      (item) => item.value === student.yearLevel,
-    )?.code ??
-    "";
+    student.yearLevel === null || student.yearLevel === undefined
+      ? (student.education?.yearLevel?.code ?? "")
+      : String(student.yearLevel);
 
   Object.assign(editForm, {
     firstName: student.firstName,
@@ -1282,11 +1279,11 @@ function removeEditPhoto() {
 
 async function openRegistrationModal() {
   try {
-    await termManager.load(true);
+    await termManager.load();
     syncRegistrationMembership();
 
     try {
-      await referenceData.loadOperational();
+      await libraryOptions.loadOperational();
       syncRegistrationEducationSelection();
     } catch {
       toast.add({
@@ -1416,25 +1413,25 @@ watch(
 );
 
 function syncRegistrationEducationSelection() {
-  const levels = referenceData.educationalLevels.value;
-  if (!levels.some((item) => item.code === registrationForm.student.educationalLevelCode)) {
-    registrationForm.student.educationalLevelCode = levels[0]?.code ?? "";
+  const levels = libraryOptions.educationalLevels.value;
+  if (!levels.some((item) => item.value === registrationForm.student.educationalLevelCode)) {
+    registrationForm.student.educationalLevelCode = levels[0]?.value ?? "";
   }
 
-  const programs = referenceData.programsForLevel(registrationForm.student.educationalLevelCode);
-  if (!programs.some((item) => item.code === registrationForm.student.programCode)) {
-    registrationForm.student.programCode = programs[0]?.code ?? "";
+  const programs = libraryOptions.programsForEducationalLevel(registrationForm.student.educationalLevelCode);
+  if (!programs.some((item) => item.value === registrationForm.student.programCode)) {
+    registrationForm.student.programCode = programs[0]?.value ?? "";
   }
 
-  const years = referenceData.yearLevelsForProgram(registrationForm.student.programCode);
-  if (!years.some((item) => item.code === registrationForm.student.yearLevelCode)) {
-    registrationForm.student.yearLevelCode = years[0]?.code ?? "";
+  const years = libraryOptions.yearLevelsForEducationalLevel(registrationForm.student.educationalLevelCode);
+  if (!years.some((item) => item.value === registrationForm.student.yearLevelCode)) {
+    registrationForm.student.yearLevelCode = years[0]?.value ?? "";
   }
 }
 
 watch(
   [
-    () => referenceData.educationalLevels.value,
+    () => libraryOptions.educationalLevels.value,
     () => registrationForm.student.educationalLevelCode,
     () => registrationForm.student.programCode,
   ],
@@ -1445,9 +1442,12 @@ watch(
 watch(
   () => editForm.educationalLevelCode,
   (levelCode) => {
-    if (!referenceData.operationalLoaded.value) return;
-    const programs = referenceData.programsForLevel(levelCode);
-    if (!programs.some((item) => item.code === editForm.programCode)) {
+    if (!libraryOptions.operationalLoaded.value) return;
+    const programs = libraryOptions.programsForEducationalLevel(levelCode);
+    const currentIsHistorical = Boolean(editForm.programCode) &&
+      levelCode === editOriginalEducationCodes.value.educationalLevelCode &&
+      editForm.programCode === editOriginalEducationCodes.value.programCode;
+    if (!currentIsHistorical && !programs.some((item) => item.value === editForm.programCode)) {
       editForm.programCode = "";
       editForm.yearLevelCode = "";
     }
@@ -1456,10 +1456,14 @@ watch(
 
 watch(
   () => editForm.programCode,
-  (programCode) => {
-    if (!referenceData.operationalLoaded.value) return;
-    const years = referenceData.yearLevelsForProgram(programCode);
-    if (!years.some((item) => item.code === editForm.yearLevelCode)) {
+  () => {
+    if (!libraryOptions.operationalLoaded.value) return;
+    const years = libraryOptions.yearLevelsForEducationalLevel(editForm.educationalLevelCode);
+    const currentIsHistorical = Boolean(editForm.yearLevelCode) &&
+      editForm.educationalLevelCode === editOriginalEducationCodes.value.educationalLevelCode &&
+      editForm.programCode === editOriginalEducationCodes.value.programCode &&
+      editForm.yearLevelCode === editOriginalEducationCodes.value.yearLevelCode;
+    if (!currentIsHistorical && !years.some((item) => item.value === editForm.yearLevelCode)) {
       editForm.yearLevelCode = "";
     }
   },
@@ -1506,7 +1510,7 @@ onMounted(async () => {
   }
 
   try {
-    await referenceData.loadOperational();
+    await libraryOptions.loadOperational();
     syncRegistrationEducationSelection();
   } catch (error) {
     appLogger.warn("Student registration choices could not be loaded.", error);
@@ -1804,7 +1808,7 @@ onBeforeUnmount(() => {
 
           <UForm :state="registrationForm" :validate="validate" class="mt-6 space-y-6" @submit="registerStudent">
             <UAlert
-              v-if="referenceData.operationalError.value"
+              v-if="libraryOptions.error.value"
               color="warning"
               variant="soft"
               icon="i-lucide-refresh-cw"
@@ -1889,7 +1893,7 @@ onBeforeUnmount(() => {
               <UFormField
                 name="student.yearLevelCode"
                 :label="
-                  selectedRegistrationLevel?.name ===
+                  selectedRegistrationLevel?.label ===
                   'Senior High School'
                     ? 'Grade Level'
                     : 'Year Level'
@@ -2533,7 +2537,7 @@ onBeforeUnmount(() => {
 
             <UFormField
               :label="
-                selectedEditLevel?.name ===
+                selectedEditLevel?.label ===
                 'Senior High School'
                   ? 'Grade Level'
                   : 'Year Level'

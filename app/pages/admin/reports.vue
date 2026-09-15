@@ -27,9 +27,8 @@ interface ReportOption {
 const libraryReports = useLibraryReports();
 const adminReports = useAdminReports();
 const reportExport = useLibraryReportExport();
-const referenceData = useReferenceData();
-const academicSemesters = referenceData.academicSemesters;
-const academicTerms = referenceData.academicTerms;
+const libraryOptions = useLibraryOptions();
+const academicTerms = libraryOptions.academicTerms;
 const toast = useToast();
 const auth = useAuth();
 const route = useRoute();
@@ -101,9 +100,7 @@ const branding = reactive<LibraryReportBranding>({
 });
 
 const semesterItems = computed(() =>
-  academicSemesters.value
-    .filter(item => item.active !== false)
-    .map(item => item.name),
+  libraryOptions.semesters.value.map(item => item.value),
 );
 const academicYearItems = computed(() =>
   [...new Set(
@@ -114,7 +111,7 @@ const academicYearItems = computed(() =>
 );
 
 function applyCurrentAcademicTerm() {
-  const term = referenceData.currentAcademicTerm.value;
+  const term = libraryOptions.currentAcademicTerm.value;
   if (!term) return;
   if (!filters.academicYear) filters.academicYear = term.academicYear;
   if (!filters.semester) filters.semester = term.semesterName;
@@ -253,7 +250,7 @@ watch(
 
 onMounted(async () => {
   try {
-    await referenceData.loadOperational();
+    await libraryOptions.loadOperational();
     applyCurrentAcademicTerm();
   } catch {
     // Report generation remains available; the user can retry reference data by reloading the page.

@@ -9,7 +9,7 @@ definePageMeta({
 });
 
 const api = useAdminLibrarians();
-const referenceData = useReferenceData();
+const libraryOptions = useLibraryOptions();
 const auth = useAuth();
 const toast = useToast();
 const saving = ref(false);
@@ -27,11 +27,7 @@ const form = reactive<CreateAdminLibrarianInput>({
   password: "",
 });
 
-const librarianPositionOptions = computed(() =>
-  referenceData.librarianPositions.value
-    .filter((item) => item.active !== false)
-    .map((item) => ({ label: item.name, value: item.code })),
-);
+const librarianPositionOptions = computed(() => libraryOptions.librarianPositions.value);
 
 const passwordChecks = computed(() => [
   { label: "At least 12 characters", passed: form.password.length >= 12 },
@@ -74,7 +70,7 @@ function validate(state: Partial<CreateAdminLibrarianInput>): FormError[] {
 
 async function loadReferenceData() {
   try {
-    await referenceData.loadOperational();
+    await libraryOptions.loadOperational();
     form.positionCode ||= librarianPositionOptions.value[0]?.value ?? "";
   } catch (error) {
     toast.add({

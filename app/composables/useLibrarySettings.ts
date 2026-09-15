@@ -1,4 +1,4 @@
-import type { AcademicTermOption } from "~/composables/useReferenceData";
+import type { AcademicTermOption } from "~/composables/useLibraryOptions";
 import type {
   BorrowingLibrarySettings,
   FineLibrarySettings,

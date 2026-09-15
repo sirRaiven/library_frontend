@@ -23,7 +23,6 @@ test("frontend runtime does not define institution-maintained master-data choice
 
   for (const file of filesUnder(join(ROOT, "app"))) {
     const path = relative(ROOT, file).replaceAll("\\", "/");
-    if (path === "app/composables/useReferenceData.ts") continue;
     if (allowedPreviewOnly.has(path)) continue;
     const content = readFileSync(file, "utf8");
 

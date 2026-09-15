@@ -13,7 +13,7 @@ definePageMeta({
 
 const usersApi = useAdminUsers();
 const rolesApi = useAdminRoles();
-const referenceData = useReferenceData();
+const libraryOptions = useLibraryOptions();
 const auth = useAuth();
 const toast = useToast();
 
@@ -106,17 +106,9 @@ const creatingFacultyAccount = computed(() => {
     .replace(/[_\s]+/g, "-") === "faculty";
 });
 
-const facultyDepartmentOptions = computed(() =>
-  referenceData.facultyDepartments.value
-    .filter((item) => item.active !== false)
-    .map((item) => ({ label: item.name, value: item.code })),
-);
+const facultyDepartmentOptions = computed(() => libraryOptions.facultyDepartments.value);
 
-const facultyEmploymentOptions = computed(() =>
-  referenceData.facultyEmploymentTypes.value
-    .filter((item) => item.active !== false)
-    .map((item) => ({ label: item.name, value: item.code })),
-);
+const facultyEmploymentOptions = computed(() => libraryOptions.facultyEmploymentTypes.value);
 
 const statusOptions = [
   { label: "All account statuses", value: "all" },
@@ -403,7 +395,7 @@ watch(search, () => {
 
 onMounted(async () => {
   try {
-    await referenceData.loadOperational();
+    await libraryOptions.loadOperational();
     createForm.facultyDetails.departmentCode ||= facultyDepartmentOptions.value[0]?.value ?? "";
     createForm.facultyDetails.employmentTypeCode ||= facultyEmploymentOptions.value[0]?.value ?? "";
   } catch (error) {

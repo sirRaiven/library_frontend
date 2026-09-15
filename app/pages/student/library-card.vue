@@ -144,6 +144,18 @@ function membershipStatus(
   return null;
 }
 
+const membershipSemester = computed(() => {
+  const stored = String(libraryCard.card.value?.membership.semester ?? "").trim();
+  if (stored) return stored;
+
+  const currentTermSemester = String(
+    librarySettings.settings.value.general.currentAcademicTerm?.semesterName ?? "",
+  ).trim();
+  if (currentTermSemester) return currentTermSemester;
+
+  return "Not recorded";
+});
+
 const membershipRecord = computed<
   MembershipRecord | null
 >(() => {
@@ -157,10 +169,7 @@ const membershipRecord = computed<
   const status =
     membershipStatus(source.status);
 
-  const storedSemester = source.semester?.trim() || null;
-  const operationalSemester =
-    librarySettings.settings.value.general.currentSemester?.trim() || null;
-  const semester = storedSemester ?? operationalSemester ?? "Not recorded";
+  const semester = membershipSemester.value;
 
   return {
     documentId: source.documentId,
@@ -529,7 +538,7 @@ onBeforeUnmount(() => {
             <div>
               <dt class="text-xs font-bold uppercase tracking-wide text-muted">Semester</dt>
               <dd class="mt-1 font-semibold text-highlighted">
-                {{ libraryCard.card.value.membership.semester || 'Not available' }}
+                {{ membershipSemester }}
               </dd>
             </div>
             <div>

@@ -11,8 +11,7 @@ definePageMeta({
 });
 
 const api = useAdminSettings();
-const referenceData = useReferenceData();
-const academicSemesters = referenceData.academicSemesters;
+const libraryOptions = useLibraryOptions();
 const auth = useAuth();
 const toast = useToast();
 
@@ -31,7 +30,6 @@ const forms = reactive({
     contactEmail: "",
     contactNumber: "",
     timeZone: "Asia/Manila" as const,
-    academicSemesterCode: "",
     currentAcademicYear: "",
     currentSemester: "",
   },
@@ -113,13 +111,6 @@ const sectionItems = [
   },
 ];
 
-const academicSemesterItems = computed(() =>
-  academicSemesters.value.map(semester => ({
-    value: semester.code,
-    label: semester.name,
-  })),
-);
-
 const cardStatusItems = [
   "None",
   "On Process",
@@ -161,26 +152,9 @@ function copyIntoForms(value: AdminLibrarySettings) {
     "fines",
   ] as AdminSettingsSection[]) {
     Object.assign(forms[section], value[section]);
-    if (section === "general") {
-      const currentTerm = referenceData.currentAcademicTerm.value;
-      const selectedSemester = academicSemesters.value.find(semester =>
-        semester.code === currentTerm?.semesterCode
-        || semester.name === value.general.currentSemester
-      ) ?? null;
-      forms.general.academicSemesterCode = selectedSemester?.code ?? "";
-    }
     snapshots[section] = serialize(section);
   }
 }
-
-watch(
-  () => forms.general.academicSemesterCode,
-  code => {
-    const selected = academicSemesters.value.find(semester => semester.code === code);
-    if (!selected) return;
-    forms.general.currentSemester = selected.name;
-  },
-);
 
 function formatDateTime(value: string | null) {
   if (!value) return "Not updated yet";
@@ -197,7 +171,6 @@ async function load(force = false) {
   loading.value = true;
 
   try {
-    await referenceData.loadOperational(force);
     settings.value = await api.get();
     copyIntoForms(settings.value);
 
@@ -283,8 +256,11 @@ function humanizeField(field: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-onMounted(() => {
-  void load();
+onMounted(async () => {
+  await Promise.allSettled([
+    load(),
+    libraryOptions.loadOperational(),
+  ]);
 });
 </script>
 
@@ -314,6 +290,16 @@ onMounted(() => {
         />
       </template>
     </AdminPageHeader>
+
+    <UAlert
+      v-if="libraryOptions.error.value"
+      color="warning"
+      variant="soft"
+      icon="i-lucide-triangle-alert"
+      title="Semester options could not be refreshed"
+      :description="libraryOptions.error.value"
+      :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
+    />
 
     <UAlert
       color="warning"
@@ -431,11 +417,13 @@ onMounted(() => {
             </UFormField>
             <UFormField label="Current Semester" required>
               <USelect
-                v-model="forms.general.academicSemesterCode"
-                :items="academicSemesterItems"
+                v-model="forms.general.currentSemester"
+                :items="libraryOptions.semesters.value"
                 value-key="value"
+                label-key="label"
                 placeholder="Select the current semester"
                 class="w-full"
+                :disabled="libraryOptions.loading.value"
               />
             </UFormField>
             <UFormField label="System Time Zone">

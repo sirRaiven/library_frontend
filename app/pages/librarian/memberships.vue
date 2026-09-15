@@ -13,8 +13,7 @@ const route = useRoute();
 const members = useLibraryMembers();
 const librarySettings = useLibrarySettings();
 const termManager = useMembershipTerm();
-const referenceData = useReferenceData();
-const academicSemesters = referenceData.academicSemesters;
+const libraryOptions = useLibraryOptions();
 const fines = useLibraryFines();
 const auth = useAuth();
 const toast = useToast();
@@ -33,7 +32,8 @@ const previewSide = ref<"front" | "back">("front");
 const memberships = ref<MembershipListItem[]>([]);
 const search = ref("");
 const statusFilter = ref("All");
-const semesterFilter = ref("All");
+const ALL_SEMESTERS = "__all__";
+const semesterFilter = ref(ALL_SEMESTERS);
 const academicYearFilter = ref("");
 const page = ref(1);
 const pageSize = 10;
@@ -64,7 +64,7 @@ const termIsOpen = computed(() => activeTerm.value.status === "Open");
 
 function syncRenewalTerm() {
   const selectedTerm = activeTerm.value.academicTerm
-    ?? referenceData.currentAcademicTerm.value
+    ?? librarySettings.settings.value.general.currentAcademicTerm
     ?? null;
 
   Object.assign(renewal, {
@@ -78,10 +78,8 @@ function syncRenewalTerm() {
 
 const statusItems = ["All", "Active", "Expired", "Suspended", "Cancelled"];
 const semesterItems = computed(() => [
-  { label: "All Semesters", value: "All" },
-  ...academicSemesters.value
-    .filter(item => item.active !== false)
-    .map(item => ({ label: item.name, value: item.name })),
+  { label: "All Semesters", value: ALL_SEMESTERS },
+  ...libraryOptions.semesters.value,
 ]);
 
 const columns: TableColumn<MembershipListItem>[] = [
@@ -237,7 +235,7 @@ async function loadMemberships() {
     const response = await members.listMemberships({
       search: search.value.trim(),
       status: statusFilter.value,
-      semester: semesterFilter.value,
+      semester: semesterFilter.value === ALL_SEMESTERS ? "" : semesterFilter.value,
       academicYear: academicYearFilter.value.trim(),
       page: page.value,
       pageSize,
@@ -283,18 +281,22 @@ watch(
 );
 
 onMounted(async () => {
-  try {
-    await Promise.all([
-      librarySettings.load(true),
-      referenceData.loadOperational(true),
-      termManager.load(true),
-    ]);
-    syncRenewalTerm();
-    renewal.enrollmentVerified =
-      !librarySettings.settings.value.membership.requireEnrollmentVerification;
-  } catch (error) {
-    appLogger.warn("Operational Library settings could not be loaded.", error);
+  const [settingsResult, termResult] = await Promise.allSettled([
+    librarySettings.load(true),
+    termManager.load(true),
+    libraryOptions.loadOperational(),
+  ]);
+
+  if (settingsResult.status === "rejected" || termResult.status === "rejected") {
+    appLogger.warn("Operational Library settings could not be loaded.", {
+      settings: settingsResult.status === "rejected" ? settingsResult.reason : null,
+      term: termResult.status === "rejected" ? termResult.reason : null,
+    });
   }
+
+  syncRenewalTerm();
+  renewal.enrollmentVerified =
+    !librarySettings.settings.value.membership.requireEnrollmentVerification;
 
   await loadMemberships();
 
@@ -318,6 +320,16 @@ onMounted(async () => {
           <UButton to="/librarian/membership-term" label="Membership Term" icon="i-lucide-calendar-range" color="neutral" variant="outline" />
         </template>
       </LibrarianPageHeader>
+
+      <UAlert
+        v-if="libraryOptions.error.value"
+        color="warning"
+        variant="soft"
+        icon="i-lucide-triangle-alert"
+        title="Semester options could not be refreshed"
+        :description="libraryOptions.error.value"
+        :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
+      />
 
       <section class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4" aria-label="Membership summary">
         <LibrarianMetricCard
@@ -584,6 +596,7 @@ onMounted(async () => {
                 :items="semesterItems"
                 value-key="value"
                 label-key="label"
+                :disabled="libraryOptions.loading.value"
               />
               <USelect v-model="statusFilter" :items="statusItems" />
             </div>

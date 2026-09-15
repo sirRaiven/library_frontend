@@ -15,8 +15,8 @@ interface EditBookForm {
   classificationNumber: string;
   authorNumber: string;
   copyrightYear?: number;
-  categoryCode: string;
-  shelfLocationCode: string;
+  category: string;
+  shelfLocation: string;
   subject: string;
   isbn: string;
   publisher: string;
@@ -25,16 +25,9 @@ interface EditBookForm {
   recordStatus: RecordStatus;
 }
 
-interface ReferenceValue {
-  documentId?: string;
-  code?: string;
-  name?: string;
-}
-
 interface BookCopy {
   documentId?: string;
   shelf_location?: string | null;
-  shelf_location_ref?: ReferenceValue | { data?: ReferenceValue | null } | null;
 }
 
 interface BookRecord {
@@ -47,11 +40,10 @@ interface BookRecord {
   author_number?: string | null;
   call_number?: string | null;
   subject?: string | null;
-  category?: string | null;
-  category_ref?: ReferenceValue | { data?: ReferenceValue | null } | null;
   publisher?: string | null;
   edition?: string | null;
   copyright_year?: number | null;
+  category?: string | null;
   description?: string | null;
   record_status?: RecordStatus;
   book_copies?: BookCopy[] | { data?: BookCopy[] };
@@ -71,21 +63,22 @@ interface UpdateResponse {
 const route = useRoute();
 const auth = useAuth();
 const toast = useToast();
-const referenceData = useReferenceData();
 const currentYear = new Date().getFullYear();
 
-const bookCategoryOptions = computed(() =>
-  referenceData.bookCategories.value.map((item) => ({
-    label: item.name,
-    value: item.code,
-  })),
+const libraryOptions = useLibraryOptions();
+const storedCategory = ref("");
+const storedShelfLocation = ref("");
+const bookCategories = computed(() =>
+  libraryOptions.withHistoricalValue(
+    libraryOptions.bookCategories.value,
+    storedCategory.value,
+  ),
 );
-
-const shelfLocationOptions = computed(() =>
-  referenceData.shelfLocations.value.map((item) => ({
-    label: item.name,
-    value: item.code,
-  })),
+const shelfLocations = computed(() =>
+  libraryOptions.withHistoricalValue(
+    libraryOptions.shelfLocations.value,
+    storedShelfLocation.value,
+  ),
 );
 
 const form = reactive<EditBookForm>({
@@ -94,8 +87,8 @@ const form = reactive<EditBookForm>({
   classificationNumber: "",
   authorNumber: "",
   copyrightYear: undefined,
-  categoryCode: "",
-  shelfLocationCode: "",
+  category: "",
+  shelfLocation: "",
   subject: "",
   isbn: "",
   publisher: "",
@@ -148,37 +141,6 @@ function normalizeCopies(
     : [];
 }
 
-function unwrapReference(
-  relation: ReferenceValue | { data?: ReferenceValue | null } | null | undefined,
-): ReferenceValue | null {
-  if (!relation) return null;
-  if ("data" in relation) {
-    return (relation as { data?: ReferenceValue | null }).data ?? null;
-  }
-  return relation as ReferenceValue;
-}
-
-function referenceCode(
-  options: Array<{ code: string; name: string }>,
-  relation: ReferenceValue | { data?: ReferenceValue | null } | null | undefined,
-  legacyName?: string | null,
-): string {
-  const reference = unwrapReference(relation);
-  if (reference?.code && options.some((item) => item.code === reference.code)) {
-    return reference.code;
-  }
-
-  const name = reference?.name ?? legacyName ?? "";
-  return options.find((item) => item.name === name)?.code ?? "";
-}
-
-function referenceName(
-  options: Array<{ label: string; value: string }>,
-  code: string,
-): string {
-  return options.find((item) => item.value === code)?.label ?? "selected";
-}
-
 function validate(state: Partial<EditBookForm>): FormError[] {
   const errors: FormError[] = [];
 
@@ -226,16 +188,16 @@ function validate(state: Partial<EditBookForm>): FormError[] {
     });
   }
 
-  if (!state.categoryCode) {
+  if (!state.category) {
     errors.push({
-      name: "categoryCode",
+      name: "category",
       message: "Select a book category.",
     });
   }
 
-  if (!state.shelfLocationCode) {
+  if (!state.shelfLocation) {
     errors.push({
-      name: "shelfLocationCode",
+      name: "shelfLocation",
       message: "Select a shelf location.",
     });
   }
@@ -254,21 +216,13 @@ async function loadBook(): Promise<void> {
   loadError.value = "";
 
   try {
-    await referenceData.loadOperational();
-
     const response = await auth.authFetch<BookResponse>(
       `/api/books/${bookIdentifier.value}`,
       {
         method: "GET",
         query: {
-          "populate[category_ref][fields][0]": "documentId",
-          "populate[category_ref][fields][1]": "code",
-          "populate[category_ref][fields][2]": "name",
           "populate[book_copies][fields][0]": "documentId",
           "populate[book_copies][fields][1]": "shelf_location",
-          "populate[book_copies][populate][shelf_location_ref][fields][0]": "documentId",
-          "populate[book_copies][populate][shelf_location_ref][fields][1]": "code",
-          "populate[book_copies][populate][shelf_location_ref][fields][2]": "name",
         },
       },
     );
@@ -281,16 +235,10 @@ async function loadBook(): Promise<void> {
     form.classificationNumber = book.classification_number ?? "";
     form.authorNumber = book.author_number ?? "";
     form.copyrightYear = book.copyright_year ?? undefined;
-    form.categoryCode = referenceCode(
-      referenceData.bookCategories.value,
-      book.category_ref,
-      book.category,
-    );
-    form.shelfLocationCode = referenceCode(
-      referenceData.shelfLocations.value,
-      copies[0]?.shelf_location_ref,
-      copies[0]?.shelf_location,
-    );
+    storedCategory.value = book.category ?? "";
+    storedShelfLocation.value = copies[0]?.shelf_location ?? "";
+    form.category = storedCategory.value;
+    form.shelfLocation = storedShelfLocation.value;
     form.subject = book.subject ?? "";
     form.isbn = book.isbn ?? "";
     form.publisher = book.publisher ?? "";
@@ -331,8 +279,8 @@ async function saveBook(
               .replace(/\s+/g, "")
               .toUpperCase(),
             copyright_year: Number(form.copyrightYear),
-            category_code: form.categoryCode,
-            shelf_location_code: form.shelfLocationCode,
+            category: form.category,
+            shelf_location: form.shelfLocation,
             subject: form.subject.trim() || null,
             isbn: form.isbn.trim() || null,
             publisher: form.publisher.trim() || null,
@@ -348,7 +296,7 @@ async function saveBook(
       title: "Book information updated",
       description: `${response.data.synchronizedCopies} physical ${
         response.data.synchronizedCopies === 1 ? "copy was" : "copies were"
-      } moved to the ${referenceName(shelfLocationOptions.value, form.shelfLocationCode)} shelf.`,
+      } moved to the ${form.shelfLocation} shelf.`,
       color: "success",
       icon: "i-lucide-save",
     });
@@ -369,8 +317,13 @@ async function saveBook(
   }
 }
 
-onMounted(() => {
-  void loadBook();
+onMounted(async () => {
+  try {
+    await libraryOptions.loadOperational();
+  } catch {
+    // Existing stored values are injected as historical options after the book loads.
+  }
+  await loadBook();
 });
 </script>
 
@@ -380,7 +333,7 @@ onMounted(() => {
       <LibrarianPageHeader
         eyebrow="Books & Collection"
         title="Edit Book Information"
-        description="Update catalog details, classification, generated call number, and the shelf location used by this title's physical copies."
+        description="Update the classification, generated call number, subject, and physical shelf location."
         icon="i-lucide-book-open-text"
       >
         <template #actions>
@@ -401,6 +354,16 @@ onMounted(() => {
         icon="i-lucide-refresh-cw"
         title="Shelf synchronization"
         :description="`${copyCount} physical ${copyCount === 1 ? 'copy' : 'copies'} will use the selected shelf location.`"
+      />
+
+      <UAlert
+        v-if="libraryOptions.error.value"
+        color="warning"
+        variant="soft"
+        icon="i-lucide-triangle-alert"
+        title="Book categories and shelf locations could not be refreshed"
+        :description="libraryOptions.error.value"
+        :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
       />
 
       <UAlert
@@ -468,23 +431,27 @@ onMounted(() => {
               />
             </UFormField>
 
-            <UFormField name="categoryCode" label="Book category" required>
+            <UFormField name="category" label="Book category" required>
               <USelect
-                v-model="form.categoryCode"
-                :items="bookCategoryOptions"
+                v-model="form.category"
+                :items="bookCategories"
                 value-key="value"
+                label-key="label"
                 size="lg"
                 class="w-full"
+                :disabled="libraryOptions.loading.value"
               />
             </UFormField>
 
-            <UFormField name="shelfLocationCode" label="Shelf location" required>
+            <UFormField name="shelfLocation" label="Shelf location" required>
               <USelect
-                v-model="form.shelfLocationCode"
-                :items="shelfLocationOptions"
+                v-model="form.shelfLocation"
+                :items="shelfLocations"
                 value-key="value"
+                label-key="label"
                 size="lg"
                 class="w-full"
+                :disabled="libraryOptions.loading.value"
               />
             </UFormField>
 
@@ -535,7 +502,7 @@ onMounted(() => {
                 type="submit"
                 label="Save Changes"
                 icon="i-lucide-save"
-                color="primary"
+                color="success"
                 :loading="isSaving"
               />
             </div>

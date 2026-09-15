@@ -14,6 +14,7 @@ definePageMeta({
 const route = useRoute();
 const router = useRouter();
 const collection = useStudentBooks();
+const libraryOptions = useLibraryOptions();
 const toast = useToast();
 
 const search = ref(String(route.query.search ?? "").trim().slice(0, 120));
@@ -35,7 +36,7 @@ const page = ref(Math.max(1, Number(route.query.page) || 1));
 
 const categoryItems = computed(() => [
   { label: "All categories", value: ALL_CATEGORIES },
-  ...collection.categoryOptions.value.map(item => ({ label: item.name, value: item.code })),
+  ...libraryOptions.bookCategories.value,
 ]);
 
 const availabilityItems = [
@@ -92,7 +93,6 @@ async function load(activity?: "view" | "search") {
   try {
     await collection.loadBooks(currentFilters(), activity);
     page.value = collection.pagination.value.page;
-    category.value = collection.filters.value.category || ALL_CATEGORIES;
   } catch (error) {
     toast.add({
       title: "Unable to load the book collection",
@@ -131,12 +131,17 @@ watch(page, async (value, previous) => {
 });
 
 onMounted(async () => {
-  await load("view");
+  try {
+    await libraryOptions.loadOperational();
+  } catch {
+    // Collection remains usable; category filter can be retried separately.
+  }
+  await load();
 });
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
     <StudentPageHeader
       eyebrow="Library Services"
       title="Book Collection"
@@ -154,6 +159,24 @@ onMounted(async () => {
         />
       </template>
     </StudentPageHeader>
+
+    <UAlert
+      v-if="libraryOptions.error.value"
+      color="warning"
+      variant="soft"
+      icon="i-lucide-triangle-alert"
+      title="Book categories could not be refreshed"
+      :description="libraryOptions.error.value"
+      :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
+    />
+
+    <UAlert
+      color="primary"
+      variant="soft"
+      icon="i-lucide-shield-check"
+      title="Student-safe collection view"
+      description="Only catalog details, availability totals, and shelf locations are shown. Physical-copy barcodes, accession numbers, prices, and internal inventory remarks remain protected."
+    />
 
     <UCard :ui="{ body: 'p-4 sm:p-5' }">
       <form class="space-y-4" @submit.prevent="submitSearch">
@@ -180,6 +203,7 @@ onMounted(async () => {
             icon="i-lucide-tags"
             size="lg"
             class="w-full"
+            :disabled="libraryOptions.loading.value"
           />
 
           <USelect
@@ -248,21 +272,19 @@ onMounted(async () => {
 
     <div
       v-if="collection.loading.value && !collection.books.value.length"
-      class="grid gap-4 lg:grid-cols-2"
+      class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
     >
       <UCard
         v-for="index in PAGE_SIZE"
         :key="index"
-        :ui="{ body: 'p-0 sm:p-0' }"
+        :ui="{ body: 'space-y-4 p-0 sm:p-0' }"
       >
-        <div class="flex min-h-56 flex-col sm:flex-row">
-          <USkeleton class="h-48 w-full rounded-none sm:h-auto sm:w-40" />
-          <div class="flex-1 space-y-4 p-5">
-            <USkeleton class="h-5 w-4/5" />
-            <USkeleton class="h-4 w-1/2" />
-            <USkeleton class="h-14 w-full" />
-            <USkeleton class="mt-auto h-10 w-full" />
-          </div>
+        <USkeleton class="aspect-[4/3] w-full" />
+        <div class="space-y-3 p-5">
+          <USkeleton class="h-5 w-4/5" />
+          <USkeleton class="h-4 w-1/2" />
+          <USkeleton class="h-16 w-full" />
+          <USkeleton class="h-9 w-full" />
         </div>
       </UCard>
     </div>
@@ -287,7 +309,7 @@ onMounted(async () => {
 
     <div
       v-else-if="collection.books.value.length"
-      class="grid gap-4 lg:grid-cols-2"
+      class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
       :class="collection.loading.value ? 'pointer-events-none opacity-60' : ''"
     >
       <StudentBookCard
@@ -320,7 +342,7 @@ onMounted(async () => {
 
     <div
       v-if="collection.pagination.value.total > PAGE_SIZE"
-      class="flex justify-center border-t border-default pt-6 mb-12"
+      class="flex justify-center border-t border-default pt-6"
     >
       <UPagination
         v-model:page="page"

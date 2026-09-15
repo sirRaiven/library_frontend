@@ -41,6 +41,10 @@ export default defineConfig({
           name: "nuxt",
           include: ["test/nuxt/**/*.{test,spec}.ts"],
           environment: "nuxt",
+          testTimeout: WINDOWS ? 60_000 : 30_000,
+          hookTimeout: WINDOWS ? 60_000 : 30_000,
+          fileParallelism: false,
+          maxWorkers: 1,
           environmentOptions: {
             nuxt: {
               domEnvironment: "happy-dom",
