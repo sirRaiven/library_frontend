@@ -432,7 +432,7 @@ export function useLibraryNotifications() {
   function startPolling(
     intervalMilliseconds = 120_000,
   ) {
-    if (!import.meta.client) {
+    if (!import.meta.client || !auth.isLibrarian.value) {
       return;
     }
 

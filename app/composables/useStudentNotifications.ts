@@ -402,7 +402,7 @@ export function useStudentNotifications() {
     intervalMilliseconds =
       120_000,
   ) {
-    if (!import.meta.client) {
+    if (!import.meta.client || !auth.isStudent.value) {
       return;
     }
 

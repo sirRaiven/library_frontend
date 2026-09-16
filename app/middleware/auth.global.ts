@@ -1,12 +1,27 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  if (import.meta.server) {
-    return;
-  }
-
   const isPublicRoute =
     to.meta.public === true ||
     to.path === "/" ||
     to.path === "/student-registration";
+
+  if (import.meta.server) {
+    if (to.path === "/faculty-access") {
+      return navigateTo("/faculty/dashboard", { replace: true });
+    }
+
+    if (isPublicRoute) return;
+
+    const sessionHint = useCookie<string | null>("auth-session-hint");
+
+    if (!sessionHint.value) {
+      return navigateTo({
+        path: "/",
+        query: { redirect: to.fullPath },
+      });
+    }
+
+    return;
+  }
 
   const nuxtApp = useNuxtApp();
 

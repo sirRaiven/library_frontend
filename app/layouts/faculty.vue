@@ -146,6 +146,7 @@ async function signOut() {
 
 onMounted(async () => {
   await maintenance.refresh().catch(() => undefined);
+  await auth.initialize();
   // The dashboard page loads its own data. Avoid issuing the same request twice
   // when the Faculty first signs in. Other Faculty pages still load the small
   // dashboard summary once so the sidebar can display the account details.

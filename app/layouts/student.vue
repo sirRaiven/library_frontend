@@ -222,6 +222,7 @@ async function signOut() {
 
 onMounted(async () => {
   await maintenance.refresh().catch(() => undefined);
+  await auth.initialize();
   await initializeMonitoring();
   notificationCenter.startPolling(120_000);
 });

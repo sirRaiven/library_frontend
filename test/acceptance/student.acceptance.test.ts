@@ -1,0 +1,71 @@
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createAcceptanceHarness } from "./helpers/harness";
+import { getAcceptanceEnv } from "./helpers/env";
+
+const env = getAcceptanceEnv();
+const harness = createAcceptanceHarness(env);
+
+describe.skipIf(!env.credentials.student)("Phase 28 Student Portal functional acceptance", () => {
+  beforeAll(() => harness.start());
+  afterAll(() => harness.stop());
+
+  it("searches the Book Collection without persisting data", async () => {
+    const testPage = await harness.newPage();
+    try {
+      const { page, guard } = testPage;
+      await harness.login(page, "student");
+      await harness.goto(page, "/student/books");
+      const search = page.getByPlaceholder(/search/i).first();
+      await search.fill("information");
+      await page.waitForTimeout(500);
+      await search.fill("");
+      guard.assertClean();
+    } finally {
+      await testPage.close();
+    }
+  });
+
+  it("opens and closes New Reservation without creating a record", async () => {
+    const testPage = await harness.newPage();
+    try {
+      const { page, guard } = testPage;
+      let postCount = 0;
+      page.on("request", (request) => {
+        if (request.method() === "POST" && /reservation/i.test(request.url())) postCount += 1;
+      });
+      await harness.login(page, "student");
+      await harness.goto(page, "/student/reservations");
+      const open = page.getByRole("button", { name: /New Reservation|Create a Reservation/ }).first();
+      if (await open.isDisabled()) {
+        expect(await page.getByText("New reservations are currently unavailable", { exact: false }).isVisible()).toBe(true);
+      } else {
+        await open.click();
+        await page.getByRole("heading", { name: "Create New Reservation" }).waitFor();
+        await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      }
+      expect(postCount).toBe(0);
+      guard.assertClean();
+    } finally {
+      await testPage.close();
+    }
+  });
+
+  it("does not submit an empty password change", async () => {
+    const testPage = await harness.newPage();
+    try {
+      const { page, guard } = testPage;
+      let passwordWrites = 0;
+      page.on("request", (request) => {
+        if (request.method() !== "GET" && /password/i.test(request.url())) passwordWrites += 1;
+      });
+      await harness.login(page, "student");
+      await harness.goto(page, "/student/security");
+      const changePassword = page.getByRole("button", { name: "Change Password and Sign Out" });
+      expect(await changePassword.isDisabled()).toBe(true);
+      expect(passwordWrites).toBe(0);
+      guard.assertClean();
+    } finally {
+      await testPage.close();
+    }
+  });
+});

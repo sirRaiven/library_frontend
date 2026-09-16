@@ -188,6 +188,7 @@ async function signOut() {
 
 onMounted(async () => {
   await maintenance.refresh().catch(() => undefined);
+  await auth.initialize();
   try {
     await monitoring.start();
     await monitoring.recordPageView(route.path, pageTitle.value);

@@ -652,6 +652,7 @@ async function handleLogout() {
 
 onMounted(async () => {
   await maintenance.refresh().catch(() => undefined);
+  await auth.initialize();
   notificationCenter
     .startPolling(120_000);
 

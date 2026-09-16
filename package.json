@@ -26,7 +26,20 @@
     "test:regression": "npm run test:unit && npm run test:nuxt && npm run test:e2e:chromium",
     "test:full": "npm run test:unit && npm run test:nuxt && npm run test:e2e",
     "test:browsers:install": "playwright-core install chromium firefox webkit",
-    "verify:test-dependencies": "node scripts/verify-test-dependencies.mjs"
+    "verify:test-dependencies": "node scripts/verify-test-dependencies.mjs",
+    "setup:acceptance:authenticated": "node scripts/setup-library-acceptance-auth.mjs --target=localhost",
+    "setup:acceptance:authenticated:staging": "node scripts/setup-library-acceptance-auth.mjs --target=staging",
+    "verify:acceptance:setup-helper": "node --test test/node/setup-library-acceptance-auth.test.mjs",
+    "test:acceptance": "npm run test:acceptance:local",
+    "test:acceptance:authenticated": "npm run test:acceptance:authenticated:local",
+    "test:acceptance:authenticated:local": "node scripts/run-library-acceptance.mjs --target=localhost --browser=chromium --scope=authenticated-readonly",
+    "test:acceptance:authenticated:cross-browser": "node scripts/run-library-acceptance.mjs --target=localhost --browser=all --scope=authenticated-readonly",
+    "test:acceptance:local": "node scripts/run-library-acceptance.mjs --target=localhost --browser=chromium --scope=readonly",
+    "test:acceptance:local:write": "node scripts/run-library-acceptance.mjs --target=localhost --browser=chromium --scope=write",
+    "test:acceptance:cross-browser": "node scripts/run-library-acceptance.mjs --target=localhost --browser=all --scope=readonly",
+    "test:acceptance:release:local": "node scripts/run-library-acceptance.mjs --target=localhost --browser=all --scope=release",
+    "test:acceptance:staging": "node scripts/run-library-acceptance.mjs --target=staging --browser=all --scope=release",
+    "verify:acceptance:coverage": "node scripts/verify-acceptance-test-coverage.mjs"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

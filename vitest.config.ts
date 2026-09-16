@@ -79,6 +79,20 @@ export default defineConfig({
           fileParallelism: false,
         },
       },
+      {
+        test: {
+          name: "acceptance",
+          include: ["test/acceptance/**/*.acceptance.test.ts"],
+          environment: "node",
+          testTimeout: WINDOWS ? 180_000 : 120_000,
+          hookTimeout: WINDOWS ? 180_000 : 120_000,
+          fileParallelism: false,
+          maxWorkers: 1,
+          sequence: {
+            groupOrder: 40,
+          },
+        },
+      },
     ],
   },
 });
