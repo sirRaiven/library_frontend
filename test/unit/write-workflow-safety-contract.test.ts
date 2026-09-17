@@ -29,3 +29,12 @@ describe("Phase 34 transactional safety contract", () => {
     expect(source).not.toContain("Run the return workflow manually");
   });
 });
+
+it("waits for reservation policy readiness and makes circulation cleanup idempotent", () => {
+  const source = read("test/acceptance/write-workflows.acceptance.test.ts");
+
+  expect(source).toContain("waitForReservationPolicy");
+  expect(source).toContain("No active borrowed books");
+  expect(source).toContain('[data-slot="title"]');
+  expect(source).not.toContain('getByText(/Returns completed|Some returns were completed/');
+});
