@@ -478,7 +478,7 @@ onMounted(async () => {
               v-if="printMode === 'both'"
               class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/60"
             >
-              <UCheckbox v-model="mirrorBack" class="mt-0.5" />
+              <UCheckbox v-model="mirrorBack" aria-label="Mirror backs for duplex" class="mt-0.5" />
               <span>
                 <span class="block font-semibold text-slate-800 dark:text-slate-100">Mirror backs for duplex</span>
                 <span class="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">
@@ -539,6 +539,7 @@ onMounted(async () => {
           >
             <UCheckbox
               :model-value="isSelected(student)"
+              :aria-label="`Select ${student.fullName} for status update`"
               :disabled="student.libraryCardStatus === 'Released'"
               @update:model-value="setSelected(student, Boolean($event))"
             />

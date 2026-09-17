@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
                 <h2 class="mt-3 text-xl font-bold text-highlighted">Update Book Status</h2>
                 <p v-if="selected" class="mt-1 text-sm text-muted">{{ selected.book.title }} · {{ selected.copy.controlNumber || selected.copy.accessionNumber }}</p>
               </div>
-              <UButton icon="i-lucide-x" color="neutral" variant="ghost" square :disabled="submitting" @click="() => { reportOpen = false; }" />
+              <UButton icon="i-lucide-x" color="neutral" variant="ghost" square aria-label="Close book status dialog" :disabled="submitting" @click="() => { reportOpen = false; }" />
             </div>
           </div>
 

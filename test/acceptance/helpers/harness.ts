@@ -11,6 +11,10 @@ const HOME: Record<AcceptanceRole, string> = {
   faculty: "/faculty/dashboard",
 };
 
+
+const roleCookieCache = new Map<AcceptanceRole, Awaited<ReturnType<BrowserContext["cookies"]>>>();
+const pageRoleCache = new WeakMap<Page, AcceptanceRole>();
+
 export interface GuardedPage {
   context: BrowserContext;
   page: Page;
@@ -82,20 +86,77 @@ export function createAcceptanceHarness(env: AcceptanceEnv): AcceptanceHarness {
     );
   }
 
+  async function syncRoleCookieCache(page: Page): Promise<void> {
+    const role = pageRoleCache.get(page);
+    if (!role) return;
+
+    const cookies = await page.context().cookies();
+    const hasSessionHint = cookies.some(
+      (cookie) => cookie.name === "auth-session-hint" && Boolean(cookie.value),
+    );
+
+    // A protected hard navigation can rotate the refresh cookie. Persist the
+    // latest cookie set only while the client still considers the session
+    // authenticated. This prevents the deliberate expired-session test from
+    // poisoning the shared role cache.
+    if (hasSessionHint) {
+      roleCookieCache.set(role, cookies);
+    }
+  }
+
   async function goto(page: Page, path: string): Promise<void> {
     const target = new URL(path, `${env.frontendUrl}/`).toString();
     await page.goto(target);
     await waitForNuxtHydration(page);
+    await syncRoleCookieCache(page);
   }
 
   async function login(page: Page, role: AcceptanceRole): Promise<void> {
+    const cachedCookies = roleCookieCache.get(role);
+
+    if (cachedCookies?.length) {
+      pageRoleCache.set(page, role);
+      await page.context().addCookies(cachedCookies);
+      await goto(page, HOME[role]);
+
+      if (new URL(page.url()).pathname === HOME[role]) {
+        await syncRoleCookieCache(page);
+        return;
+      }
+
+      // The cached refresh cookie may have been rotated by a previous hard
+      // navigation. Fall back to one fresh credential login instead of waiting
+      // for the dashboard URL until the test timeout expires.
+      roleCookieCache.delete(role);
+      pageRoleCache.delete(page);
+    }
+
     const account = requireRoleCredentials(env, role);
     await goto(page, "/");
     await page.getByPlaceholder("Enter email or username").fill(account.username);
     await page.getByPlaceholder("Enter password").fill(account.password);
+    const authResponsePromise = page.waitForResponse((response) =>
+      /\/api\/auth\/local(?:\?|$)/.test(response.url()) && response.request().method() === "POST",
+    );
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
+    const authResponse = await authResponsePromise;
+    if (authResponse.status() >= 400) {
+      let detail = "";
+      try {
+        const body = await authResponse.json() as { error?: { message?: string }; message?: string };
+        detail = String(body?.error?.message ?? body?.message ?? "").trim();
+      } catch {
+        // The HTTP status is still enough to make the acceptance failure actionable.
+      }
+      const throttleHint = authResponse.status() === 429
+        ? " The suite reuses role sessions, so a 429 here usually means the backend was already rate-limited before this run. Restart the local backend or wait for the configured auth-rate-limit window to reset."
+        : "";
+      throw new Error(`${role} sign-in failed during acceptance (HTTP ${authResponse.status()})${detail ? `: ${detail}` : ""}.${throttleHint}`);
+    }
     await page.waitForURL((url) => url.pathname === HOME[role], { timeout: env.timeoutMs });
     expect(new URL(page.url()).pathname).toBe(HOME[role]);
+    pageRoleCache.set(page, role);
+    await syncRoleCookieCache(page);
   }
 
   return { start, stop, newPage, goto, login };

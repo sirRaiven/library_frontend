@@ -217,7 +217,7 @@ onMounted(refresh);
               <p class="text-sm font-medium text-highlighted">Enable maintenance read-only mode</p>
               <p class="mt-1 text-xs leading-5 text-muted">Librarians, Students, and Faculty can continue viewing information, but they cannot create, edit, or delete records.</p>
             </div>
-            <USwitch v-model="form.enabled" />
+            <USwitch v-model="form.enabled" aria-label="Enable maintenance read-only mode" />
           </div>
 
           <UFormField label="Portal message" required>

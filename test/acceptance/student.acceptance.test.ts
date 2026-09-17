@@ -1,9 +1,23 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { Locator, Page } from "playwright-core";
 import { createAcceptanceHarness } from "./helpers/harness";
 import { getAcceptanceEnv } from "./helpers/env";
 
 const env = getAcceptanceEnv();
 const harness = createAcceptanceHarness(env);
+
+async function waitForReservationPolicy(page: Page, open: Locator): Promise<"enabled" | "blocked"> {
+  const warning = page.getByText("New reservations are currently unavailable", { exact: false });
+  const deadline = Date.now() + env.timeoutMs;
+
+  while (Date.now() < deadline) {
+    if (!(await open.isDisabled())) return "enabled";
+    if (await warning.isVisible().catch(() => false)) return "blocked";
+    await page.waitForTimeout(100);
+  }
+
+  throw new Error("Reservation policy did not become ready before the acceptance timeout.");
+}
 
 describe.skipIf(!env.credentials.student)("Phase 28 Student Portal functional acceptance", () => {
   beforeAll(() => harness.start());
@@ -36,7 +50,8 @@ describe.skipIf(!env.credentials.student)("Phase 28 Student Portal functional ac
       await harness.login(page, "student");
       await harness.goto(page, "/student/reservations");
       const open = page.getByRole("button", { name: /New Reservation|Create a Reservation/ }).first();
-      if (await open.isDisabled()) {
+      const reservationState = await waitForReservationPolicy(page, open);
+      if (reservationState === "blocked") {
         expect(await page.getByText("New reservations are currently unavailable", { exact: false }).isVisible()).toBe(true);
       } else {
         await open.click();
@@ -60,7 +75,9 @@ describe.skipIf(!env.credentials.student)("Phase 28 Student Portal functional ac
       });
       await harness.login(page, "student");
       await harness.goto(page, "/student/security");
+      await page.getByRole("button", { name: "Change Password", exact: true }).click();
       const changePassword = page.getByRole("button", { name: "Change Password and Sign Out" });
+      await changePassword.waitFor();
       expect(await changePassword.isDisabled()).toBe(true);
       expect(passwordWrites).toBe(0);
       guard.assertClean();

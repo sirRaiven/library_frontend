@@ -225,6 +225,7 @@ onMounted(async () => {
               :disabled="form.status === 'Closed'"
               label="Allow new Student registrations"
               description="Controls both Librarian registration and the public QR registration page."
+              aria-label="Allow new Student registrations"
             />
           </div>
         </div>

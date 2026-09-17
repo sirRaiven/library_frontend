@@ -105,8 +105,10 @@ describe("Playwright acceptance phases 26-34 contract", () => {
 
   it("uses state-based keyboard reachability checks instead of brittle forced-focus identity", () => {
     const audit = read("test/acceptance/helpers/ui-audit.ts");
-    expect(audit).toContain("keyboardIssues");
+    expect(audit).toContain("hiddenKeyboardLeaks");
     expect(audit).toContain("element.tabIndex");
+    expect(audit).toContain("aria-labelledby");
+    expect(audit).toContain("outerHTML");
     expect(audit).not.toContain("document.activeElement === element");
   });
 

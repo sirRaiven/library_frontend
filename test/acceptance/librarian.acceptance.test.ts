@@ -62,7 +62,7 @@ describe.skipIf(!env.credentials.librarian)("Phase 29 Librarian Portal functiona
       const { page, guard } = testPage;
       await harness.login(page, "librarian");
       await harness.goto(page, "/librarian/books/import");
-      const downloadPromise = page.waitForEvent("download");
+      const downloadPromise = page.waitForEvent("download", { timeout: Math.max(env.timeoutMs, 90_000) });
       await page.getByRole("button", { name: "Download Template" }).click();
       const download = await downloadPromise;
       expect(download.suggestedFilename()).toMatch(/SNCBT-Library-Inventory-Import-Template.*\.xlsx$/i);

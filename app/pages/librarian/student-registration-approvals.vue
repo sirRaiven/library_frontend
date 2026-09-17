@@ -1251,7 +1251,7 @@ onMounted(loadRequests);
             <UFormField name="temporaryPassword" label="Temporary Password" required>
               <UInput v-model="resetForm.temporaryPassword" :type="showResetPassword ? 'text' : 'password'" class="w-full">
                 <template #trailing>
-                  <UButton type="button" :icon="showResetPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" square @click="() => { showResetPassword = !showResetPassword; }" />
+                  <UButton type="button" :icon="showResetPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" square :aria-label="showResetPassword ? 'Hide temporary password' : 'Show temporary password'" @click="() => { showResetPassword = !showResetPassword; }" />
                 </template>
               </UInput>
             </UFormField>

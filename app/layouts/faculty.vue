@@ -272,6 +272,7 @@ watch(
             variant="ghost"
             :block="!collapsed"
             :square="collapsed"
+            aria-label="Open faculty account menu"
             class="w-full rounded-xl"
             :ui="{ base: collapsed ? 'justify-center' : 'justify-start' }"
           >
@@ -329,7 +330,7 @@ watch(
               <UColorModeButton color="neutral" variant="ghost" />
             </UTooltip>
             <UDropdownMenu :items="accountItems" :content="{ align: 'end' }">
-              <UButton color="neutral" variant="ghost" square>
+              <UButton color="neutral" variant="ghost" square aria-label="Open faculty account menu">
                 <UAvatar :text="initials" :alt="userName" size="xs" />
               </UButton>
             </UDropdownMenu>

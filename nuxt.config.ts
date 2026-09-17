@@ -139,6 +139,19 @@ export default defineNuxtConfig({
     "/**": {
       headers: securityHeaders,
     },
+
+    // Authenticated portal pages depend on client-restored JWT/user state.
+    // Rendering them on the server from only the privacy-safe session hint can
+    // produce different markup than the hydrated client. Keep public entry
+    // pages SSR-capable, but render all private portal shells on the client.
+    "/admin": { ssr: false, headers: securityHeaders },
+    "/admin/**": { ssr: false, headers: securityHeaders },
+    "/librarian": { ssr: false, headers: securityHeaders },
+    "/librarian/**": { ssr: false, headers: securityHeaders },
+    "/student": { ssr: false, headers: securityHeaders },
+    "/student/**": { ssr: false, headers: securityHeaders },
+    "/faculty": { ssr: false, headers: securityHeaders },
+    "/faculty/**": { ssr: false, headers: securityHeaders },
   },
 
   app: {

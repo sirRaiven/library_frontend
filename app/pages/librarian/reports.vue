@@ -1202,7 +1202,7 @@ onMounted(async () => {
                   <p class="text-sm font-semibold text-highlighted">Report Notes</p>
                   <p class="mt-1 text-xs text-muted">Optional. Turn this off when the official report does not need notes.</p>
                 </div>
-                <USwitch v-model="reportCustomization.includeNotes" />
+                <USwitch v-model="reportCustomization.includeNotes" aria-label="Include report notes" />
               </div>
 
               <UTextarea
@@ -1234,7 +1234,7 @@ onMounted(async () => {
                   :class="section.included ? 'bg-default' : 'bg-elevated/40 opacity-75'"
                 >
                   <div class="flex items-start gap-3">
-                    <USwitch v-model="section.included" class="mt-1 shrink-0" />
+                    <USwitch v-model="section.included" :aria-label="`Include table ${index + 1}`" class="mt-1 shrink-0" />
                     <div class="min-w-0 flex-1 space-y-3">
                       <div class="flex items-center justify-between gap-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted">Table {{ index + 1 }}</p>

@@ -9,10 +9,12 @@ describe("Phase 26-34 interactive-control audit correction", () => {
   it("checks keyboard reachability without forcing framework controls to own document.activeElement", () => {
     const audit = read("test/acceptance/helpers/ui-audit.ts");
 
-    expect(audit).toContain("keyboardIssues");
+    expect(audit).toContain("hiddenKeyboardLeaks");
     expect(audit).toContain("element.tabIndex");
     expect(audit).toContain('element.closest("[inert]")');
     expect(audit).toContain("hiddenFromAssistiveTechnology");
+    expect(audit).toContain("aria-labelledby");
+    expect(audit).toContain("outerHTML");
     expect(audit).not.toContain("await control.focus()");
     expect(audit).not.toContain("document.activeElement === element");
   });

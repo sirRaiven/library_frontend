@@ -370,6 +370,7 @@ onMounted(refresh);
                     variant="ghost"
                     size="xs"
                     square
+                    :aria-label="showCurrentPassword ? 'Hide current password' : 'Show current password'"
                     @click="() => { showCurrentPassword = !showCurrentPassword; }"
                   />
                 </template>
@@ -389,6 +390,7 @@ onMounted(refresh);
                     variant="ghost"
                     size="xs"
                     square
+                    :aria-label="showNewPassword ? 'Hide new password' : 'Show new password'"
                     @click="() => { showNewPassword = !showNewPassword; }"
                   />
                 </template>
@@ -408,6 +410,7 @@ onMounted(refresh);
                     variant="ghost"
                     size="xs"
                     square
+                    :aria-label="showConfirmation ? 'Hide password confirmation' : 'Show password confirmation'"
                     @click="() => { showConfirmation = !showConfirmation; }"
                   />
                 </template>

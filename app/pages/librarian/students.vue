@@ -1988,6 +1988,7 @@ onBeforeUnmount(() => {
                   v-model="registrationForm.portalAccount.create"
                   :disabled="submitting"
                   label="Create account"
+                  aria-label="Create Student portal account"
                 />
               </div>
 

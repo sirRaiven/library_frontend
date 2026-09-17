@@ -494,6 +494,7 @@ onMounted(loadSecurity);
                 variant="ghost"
                 size="xs"
                 square
+                :aria-label="revealPassword ? 'Hide temporary password' : 'Show temporary password'"
                 type="button"
                 @click="() => { revealPassword = !revealPassword; }"
               />

@@ -512,6 +512,7 @@ onMounted(async () => {
                 color="primary"
                 variant="ghost"
                 square
+                aria-label="Open account details"
                 :to="`/admin/users/${row.original.id}`"
               />
             </UTooltip>
@@ -521,6 +522,7 @@ onMounted(async () => {
                 color="neutral"
                 variant="ghost"
                 square
+                aria-label="Edit account and role"
                 @click="openEdit(row.original)"
               />
             </UTooltip>
@@ -530,6 +532,7 @@ onMounted(async () => {
                 :color="row.original.blocked ? 'success' : 'error'"
                 variant="ghost"
                 square
+                :aria-label="row.original.blocked ? 'Restore account' : 'Block account'"
                 @click="openStatus(row.original, !row.original.blocked)"
               />
             </UTooltip>
@@ -586,6 +589,7 @@ onMounted(async () => {
               <USwitch
                 v-model="createForm.includeFacultyDetails"
                 label="Add details now"
+                aria-label="Add Faculty Library details now"
                 class="shrink-0"
               />
             </div>

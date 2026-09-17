@@ -301,7 +301,7 @@ onBeforeUnmount(() => {
                 <h2 class="mt-3 text-xl font-bold text-highlighted">Review {{ selected.reportNo }}</h2>
                 <p class="mt-1 text-sm text-muted">{{ selected.faculty?.fullName }} · {{ selected.book?.title }}</p>
               </div>
-              <UButton icon="i-lucide-x" color="neutral" variant="ghost" square :disabled="reviewing" @click="() => { reviewOpen = false; }" />
+              <UButton icon="i-lucide-x" color="neutral" variant="ghost" square aria-label="Close Faculty report review" :disabled="reviewing" @click="() => { reviewOpen = false; }" />
             </div>
           </div>
 

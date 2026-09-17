@@ -1367,6 +1367,7 @@ onBeforeUnmount(() => {
                     v-model="
                       draft.showLogo
                     "
+                    aria-label="Show front institution logo"
                   />
                 </div>
 
@@ -1423,6 +1424,7 @@ onBeforeUnmount(() => {
                     v-model="
                       draft.showBackLogo
                     "
+                    aria-label="Show back library logo"
                   />
                 </div>
 
@@ -1875,6 +1877,7 @@ onBeforeUnmount(() => {
                       field.key,
                     )
                   "
+                  :aria-label="`Show ${field.label}`"
                   @update:model-value="
                     setVisibilityValue(
                       field.key,

@@ -86,6 +86,13 @@ test('runSetup verifies four roles and writes only read-only dynamic fixtures', 
 
   const fakeFetch = async (url, options = {}) => {
     const target = String(url);
+    const deviceId = options.headers?.['X-Device-ID'];
+    if ((target.endsWith('/api/auth/local') || target.includes('/api/users/me') || target.includes('/api/books')) && !deviceId) {
+      return new Response(JSON.stringify({ error: { message: 'Device identifier required' } }), {
+        status: 428,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     if (target.endsWith('/api/auth/local')) {
       const body = JSON.parse(options.body);
       return new Response(JSON.stringify({ jwt: `token-${body.identifier}` }), {

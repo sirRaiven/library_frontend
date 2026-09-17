@@ -1001,6 +1001,7 @@ watch(
                 "
                 square
                 :aria-expanded="dashboardSidebarOpen"
+                :aria-label="dashboardSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'"
                 aria-controls="sncbt-librarian-dashboard-sidebar-main-navigation"
               />
             </UTooltip>
@@ -1029,6 +1030,7 @@ watch(
                 :aria-expanded="
                   !dashboardSidebarCollapsed
                 "
+                :aria-label="dashboardSidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
                 aria-controls="sncbt-librarian-dashboard-sidebar-main-navigation"
               />
             </UTooltip>
@@ -1105,6 +1107,7 @@ watch(
               }"
             >
               <UColorModeButton
+                aria-label="Change color mode"
                 color="neutral"
                 variant="ghost"
                 class="hidden sm:inline-flex"

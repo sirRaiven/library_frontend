@@ -458,14 +458,14 @@ onMounted(async () => {
                   <p class="text-sm font-semibold text-highlighted">Allow borrowing with an overdue book</p>
                   <p class="mt-1 text-xs leading-5 text-muted">Normally disabled so overdue items must be resolved before a new loan.</p>
                 </div>
-                <USwitch v-model="forms.borrowing.allowBorrowWithOverdue" />
+                <USwitch v-model="forms.borrowing.allowBorrowWithOverdue" aria-label="Allow borrowing with an overdue book" />
               </div>
               <div class="flex items-start justify-between gap-4 p-4">
                 <div>
                   <p class="text-sm font-semibold text-highlighted">Allow borrowing with an unpaid fine</p>
                   <p class="mt-1 text-xs leading-5 text-muted">Stored as policy for fine-account integration. Keep disabled unless approved.</p>
                 </div>
-                <USwitch v-model="forms.borrowing.allowBorrowWithUnpaidFine" />
+                <USwitch v-model="forms.borrowing.allowBorrowWithUnpaidFine" aria-label="Allow borrowing with an unpaid fine" />
               </div>
             </div>
           </div>
@@ -497,14 +497,14 @@ onMounted(async () => {
                   <p class="text-sm font-semibold text-highlighted">Require active Student membership</p>
                   <p class="mt-1 text-xs leading-5 text-muted">Students without an active membership cannot borrow books or record Library entry.</p>
                 </div>
-                <USwitch v-model="forms.membership.requireActiveStudentMembership" />
+                <USwitch v-model="forms.membership.requireActiveStudentMembership" aria-label="Require active Student membership" />
               </div>
               <div class="flex items-start justify-between gap-4 p-4">
                 <div>
                   <p class="text-sm font-semibold text-highlighted">Require enrollment verification</p>
                   <p class="mt-1 text-xs leading-5 text-muted">Membership renewal requires confirmation of current enrollment.</p>
                 </div>
-                <USwitch v-model="forms.membership.requireEnrollmentVerification" />
+                <USwitch v-model="forms.membership.requireEnrollmentVerification" aria-label="Require enrollment verification" />
               </div>
             </div>
           </div>
@@ -529,7 +529,7 @@ onMounted(async () => {
                 <p class="text-sm font-semibold text-highlighted">Allow reservation when copies are available</p>
                 <p class="mt-1 text-xs leading-5 text-muted">When disabled, a title can only be reserved when no physical copy is currently available.</p>
               </div>
-              <USwitch v-model="forms.reservations.allowReserveAvailableBooks" />
+              <USwitch v-model="forms.reservations.allowReserveAvailableBooks" aria-label="Allow reservation when copies are available" />
             </div>
           </div>
 

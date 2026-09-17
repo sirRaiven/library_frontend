@@ -992,6 +992,7 @@ onBeforeUnmount(() => {
                       variant="soft"
                       size="sm"
                       square
+                      :aria-label="torchEnabled ? 'Turn off flashlight' : 'Turn on flashlight'"
                       :aria-pressed="torchEnabled"
                       @click="toggleTorch"
                     />

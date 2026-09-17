@@ -88,6 +88,7 @@ export default defineConfig({
           hookTimeout: WINDOWS ? 180_000 : 120_000,
           fileParallelism: false,
           maxWorkers: 1,
+          isolate: false,
           sequence: {
             groupOrder: 40,
           },
