@@ -95,12 +95,40 @@ export function requireRoleCredentials(env: AcceptanceEnv, role: AcceptanceRole)
   return value;
 }
 
+export function assertTransactionalFixtures(env: AcceptanceEnv): void {
+  requireRoleCredentials(env, "student");
+  requireRoleCredentials(env, "librarian");
+
+  const required = {
+    E2E_STUDENT_BARCODE: env.fixtures.studentBarcode,
+    E2E_AVAILABLE_BOOK_BARCODE: env.fixtures.availableBookBarcode,
+    E2E_RESERVATION_BOOK_QUERY: env.fixtures.reservationBookQuery,
+  };
+  const missing = Object.entries(required).filter(([, value]) => !value).map(([key]) => key);
+  if (missing.length) {
+    throw new Error(`Write acceptance requires dedicated transactional fixture values: ${missing.join(", ")}`);
+  }
+
+  if (env.fixtures.studentBarcode === env.fixtures.availableBookBarcode) {
+    throw new Error("E2E_STUDENT_BARCODE and E2E_AVAILABLE_BOOK_BARCODE must identify different records.");
+  }
+}
+
 export function assertWriteSafety(env: AcceptanceEnv): void {
   if (!env.allowWrites) return;
 
+  assertTransactionalFixtures(env);
+
   const localFrontend = isLocalUrl(env.frontendUrl);
   const localBackend = isLocalUrl(env.backendUrl);
-  if (localFrontend && localBackend) return;
+  if (localFrontend && localBackend) {
+    if (process.env.E2E_LOCAL_WRITE_CONFIRMATION !== "I_UNDERSTAND_THIS_MUTATES_LOCAL_TEST_DATA") {
+      throw new Error(
+        "Local E2E writes require E2E_LOCAL_WRITE_CONFIRMATION=I_UNDERSTAND_THIS_MUTATES_LOCAL_TEST_DATA.",
+      );
+    }
+    return;
+  }
 
   if (!env.allowRemoteWrites) {
     throw new Error(
