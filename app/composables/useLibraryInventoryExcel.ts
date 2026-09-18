@@ -266,11 +266,18 @@ function downloadBlob(
 
   anchor.href = url;
   anchor.download = filename;
+  anchor.style.display = "none";
   document.body.appendChild(anchor);
   anchor.click();
-  anchor.remove();
 
-  URL.revokeObjectURL(url);
+  // Keep the object URL alive long enough for Chromium/Firefox to consume it
+  // when the app is running from the optimized production bundle. Immediate
+  // revocation can race the browser's download hand-off in headless/release
+  // validation even though the same action appears reliable in Vite dev mode.
+  window.setTimeout(() => {
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 async function loadExcelJs() {

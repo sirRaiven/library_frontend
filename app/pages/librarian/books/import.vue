@@ -60,6 +60,7 @@ const parsingIssues = ref<InventoryRowIssue[]>([]);
 const worksheetName = ref("");
 const isParsing = ref(false);
 const isImporting = ref(false);
+const isDownloadingTemplate = ref(false);
 const processedRows = ref(0);
 const importedCopies = ref<ImportedCopy[]>([]);
 const importSkipped = ref<InventoryRowIssue[]>([]);
@@ -123,6 +124,27 @@ function getHttpStatus(error: unknown): number | undefined {
 
 function openFilePicker(): void {
   fileInput.value?.click();
+}
+
+async function downloadImportTemplate(): Promise<void> {
+  if (isDownloadingTemplate.value) return;
+
+  isDownloadingTemplate.value = true;
+  try {
+    await excel.downloadImportTemplate();
+  } catch (error) {
+    toast.add({
+      title: "Template download failed",
+      description: userFacingErrorMessage(
+        error,
+        "The Excel template could not be created. Please try again.",
+      ),
+      color: "error",
+      icon: "i-lucide-circle-x",
+    });
+  } finally {
+    isDownloadingTemplate.value = false;
+  }
 }
 
 function clearParsedFile(): void {
@@ -314,7 +336,15 @@ async function printImportedBarcodes(): Promise<void> {
       >
         <template #actions>
           <UButton to="/librarian/books" label="Back to Collection" icon="i-lucide-arrow-left" color="neutral" variant="ghost" />
-          <UButton label="Download Template" icon="i-lucide-file-down" color="neutral" variant="outline" @click="excel.downloadImportTemplate" />
+          <UButton
+            label="Download Template"
+            icon="i-lucide-file-down"
+            color="neutral"
+            variant="outline"
+            :loading="isDownloadingTemplate"
+            :disabled="isDownloadingTemplate"
+            @click="downloadImportTemplate"
+          />
           <UButton to="/librarian/books/register" label="Manual Registration" icon="i-lucide-book-plus" color="primary" />
         </template>
       </LibrarianPageHeader>

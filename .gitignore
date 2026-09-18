@@ -23,6 +23,8 @@ logs
 .env.*
 !.env.example
 !.env.e2e.example
+!.env.e2e.staging.example
+!.env.e2e.production.example
 .zip
 # Generated from the installed vue-qrcode-reader/zxing-wasm dependency by postinstall.
 /public/barcode/zxing_reader.wasm

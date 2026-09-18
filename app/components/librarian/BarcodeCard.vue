@@ -51,8 +51,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 
-const barcodeSvg =
-  ref<SVGSVGElement | null>(null);
+const barcodeDataUrl = ref("");
 
 const labelElement =
   ref<HTMLElement | null>(null);
@@ -96,17 +95,14 @@ const safeFilename = computed(() =>
 );
 
 async function renderBarcode() {
-  if (
-    !import.meta.client ||
-    !barcodeSvg.value
-  ) {
+  if (!import.meta.client) {
     return;
   }
 
   barcodeError.value = "";
+  barcodeDataUrl.value = "";
 
   if (!normalizedControlNumber.value) {
-    barcodeSvg.value.innerHTML = "";
     barcodeError.value =
       "An accession number is required.";
     return;
@@ -121,8 +117,15 @@ async function renderBarcode() {
     const JsBarcode =
       barcodeModule.default;
 
+    // Render to a browser-created canvas instead of passing a Vue-held SVG
+    // element into JsBarcode. JsBarcode identifies render targets with DOM
+    // instanceof checks; using a fresh canvas from the active browser realm
+    // avoids cross-browser/proxy mismatches seen during Firefox/WebKit release
+    // validation while preserving the same CODE128 output.
+    const canvas = document.createElement("canvas");
+
     JsBarcode(
-      barcodeSvg.value,
+      canvas,
       normalizedControlNumber.value,
       {
         format: "CODE128",
@@ -144,12 +147,19 @@ async function renderBarcode() {
         },
       },
     );
+
+    if (!barcodeError.value) {
+      barcodeDataUrl.value =
+        canvas.toDataURL("image/png");
+      await nextTick();
+    }
   } catch (error) {
     appLogger.error(
       "Unable to render barcode:",
       error,
     );
 
+    barcodeDataUrl.value = "";
     barcodeError.value =
       "Unable to generate the barcode.";
 
@@ -292,17 +302,13 @@ defineExpose({
             Generating barcode
           </div>
 
-          <svg
-            ref="barcodeSvg"
+          <img
+            v-if="barcodeDataUrl && !isRendering && !barcodeError"
+            :src="barcodeDataUrl"
+            :alt="`Barcode for ${normalizedControlNumber}`"
             class="h-auto max-w-full"
-            :class="{
-              hidden:
-                isRendering ||
-                barcodeError,
-            }"
-            role="img"
-            :aria-label="`Barcode for ${normalizedControlNumber}`"
-          />
+            decoding="async"
+          >
 
           <div
             v-if="barcodeError"

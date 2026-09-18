@@ -200,8 +200,22 @@ function resetCreateForm() {
   remarks.value = "";
 }
 
-async function loadReservations() {
-  isLoading.value = true;
+interface LoadReservationsOptions {
+  notifyOnError?: boolean;
+  showLoading?: boolean;
+}
+
+async function loadReservations(
+  options: LoadReservationsOptions = {},
+): Promise<boolean> {
+  const {
+    notifyOnError = true,
+    showLoading = true,
+  } = options;
+
+  if (showLoading) {
+    isLoading.value = true;
+  }
 
   try {
     const result =
@@ -228,16 +242,24 @@ async function loadReservations() {
       readyCount: result.data.filter((item) => item.status === "Ready for Pickup").length,
       expiringCount: 0,
     };
+
+    return true;
   } catch (error) {
-    toast.add({
-      title: "Reservations unavailable",
-      description:
-        auth.getErrorMessage(error),
-      color: "error",
-      icon: "i-lucide-circle-alert",
-    });
+    if (notifyOnError) {
+      toast.add({
+        title: "Reservations unavailable",
+        description:
+          auth.getErrorMessage(error),
+        color: "error",
+        icon: "i-lucide-circle-alert",
+      });
+    }
+
+    return false;
   } finally {
-    isLoading.value = false;
+    if (showLoading) {
+      isLoading.value = false;
+    }
   }
 }
 
@@ -716,7 +738,10 @@ async function confirmReservedCheckout() {
     isCheckoutOpen.value = false;
     selectedCheckoutReservation.value = null;
     checkoutCopyBarcode.value = "";
-    await loadReservations();
+    await loadReservations({
+      notifyOnError: false,
+      showLoading: false,
+    });
   } catch (error) {
     toast.add({
       title: "Checkout failed",
@@ -831,7 +856,10 @@ async function confirmStatusUpdate() {
       icon: "i-lucide-circle-check",
     });
 
-    await loadReservations();
+    await loadReservations({
+      notifyOnError: false,
+      showLoading: false,
+    });
   } catch (error) {
     toast.add({
       title: "Update failed",

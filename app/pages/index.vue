@@ -287,6 +287,7 @@ onMounted(() => {
                   :ui="{ label: 'text-sm font-semibold text-slate-800 dark:text-slate-100' }"
                 >
                   <UInput
+                    :key="showPassword ? 'password-visible' : 'password-hidden'"
                     v-model="form.password"
                     :type="showPassword ? 'text' : 'password'"
                     icon="i-lucide-lock"

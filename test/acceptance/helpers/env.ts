@@ -7,7 +7,7 @@ export interface AcceptanceCredentials {
 }
 
 export interface AcceptanceEnv {
-  target: "localhost" | "staging";
+  target: "localhost" | "staging" | "production";
   browser: AcceptanceBrowser;
   frontendUrl: string;
   backendUrl: string;
@@ -15,6 +15,10 @@ export interface AcceptanceEnv {
   allowRemoteWrites: boolean;
   strict: boolean;
   headless: boolean;
+  webkitChannel: "" | "webkit-wsl";
+  browserWsEndpoint: string;
+  browserExposeNetwork: string;
+  browserRemoteLabel: string;
   timeoutMs: number;
   credentials: Record<AcceptanceRole, AcceptanceCredentials | null>;
   fixtures: {
@@ -52,7 +56,11 @@ export function isLocalUrl(value: string): boolean {
 }
 
 export function getAcceptanceEnv(): AcceptanceEnv {
-  const target = process.env.E2E_TARGET === "staging" ? "staging" : "localhost";
+  const target = process.env.E2E_TARGET === "production"
+    ? "production"
+    : process.env.E2E_TARGET === "staging"
+      ? "staging"
+      : "localhost";
   const browser = (["firefox", "webkit"] as const).includes(process.env.E2E_BROWSER as "firefox" | "webkit")
     ? (process.env.E2E_BROWSER as AcceptanceBrowser)
     : "chromium";
@@ -66,6 +74,10 @@ export function getAcceptanceEnv(): AcceptanceEnv {
     allowRemoteWrites: envFlag("E2E_ALLOW_REMOTE_WRITES"),
     strict: envFlag("E2E_STRICT"),
     headless: !envFlag("E2E_HEADED"),
+    webkitChannel: process.env.E2E_WEBKIT_CHANNEL === "webkit-wsl" ? "webkit-wsl" : "",
+    browserWsEndpoint: process.env.E2E_BROWSER_WS_ENDPOINT?.trim() ?? "",
+    browserExposeNetwork: process.env.E2E_BROWSER_EXPOSE_NETWORK?.trim() || "<loopback>",
+    browserRemoteLabel: process.env.E2E_BROWSER_REMOTE_LABEL?.trim() ?? "",
     timeoutMs: Number.parseInt(process.env.E2E_TIMEOUT_MS ?? "30000", 10) || 30_000,
     credentials: {
       administrator: credentials("ADMIN"),
@@ -130,17 +142,9 @@ export function assertWriteSafety(env: AcceptanceEnv): void {
     return;
   }
 
-  if (!env.allowRemoteWrites) {
-    throw new Error(
-      "Remote E2E writes are blocked. Set E2E_ALLOW_REMOTE_WRITES=true only for a dedicated non-production staging environment.",
-    );
-  }
-
-  if (process.env.E2E_REMOTE_WRITE_CONFIRMATION !== "I_UNDERSTAND_THIS_MUTATES_TEST_DATA") {
-    throw new Error(
-      "Remote E2E writes require E2E_REMOTE_WRITE_CONFIRMATION=I_UNDERSTAND_THIS_MUTATES_TEST_DATA.",
-    );
-  }
+  throw new Error(
+    "Remote E2E writes are disabled by design. Use the localhost write command with dedicated local test fixtures.",
+  );
 }
 
 export function assertStrictFixtures(env: AcceptanceEnv): void {
@@ -150,13 +154,20 @@ export function assertStrictFixtures(env: AcceptanceEnv): void {
     requireRoleCredentials(env, role);
   }
 
-  const missing = Object.entries(env.fixtures)
+  const dynamicFixtureValues = {
+    bookDocumentId: env.fixtures.bookDocumentId,
+    bookId: env.fixtures.bookId,
+    adminUserId: env.fixtures.adminUserId,
+    adminRoleId: env.fixtures.adminRoleId,
+  };
+  const missing = Object.entries(dynamicFixtureValues)
     .filter(([, value]) => !value)
     .map(([key]) => key);
 
   if (missing.length) {
-    throw new Error(`Strict acceptance requires fixture values: ${missing.join(", ")}`);
+    throw new Error(`Strict acceptance requires read-only dynamic fixture values: ${missing.join(", ")}`);
   }
 
+  if (env.allowWrites) assertTransactionalFixtures(env);
   assertWriteSafety(env);
 }

@@ -17,10 +17,11 @@ describe("Phase 27 authentication and entry workflows", () => {
       await harness.goto(page, "/");
       await page.getByRole("heading", { name: "Sign in", exact: true }).waitFor();
       const password = page.getByPlaceholder("Enter password");
-      expect(await password.getAttribute("type")).toBe("password");
+      const passwordType = () => password.evaluate((element) => (element as HTMLInputElement).type);
+      expect(await passwordType()).toBe("password");
       await page.getByRole("button", { name: "Show password" }).click();
       await expect.poll(
-        () => password.getAttribute("type"),
+        passwordType,
         { timeout: Math.min(env.timeoutMs, 5_000), interval: 100 },
       ).toBe("text");
       await auditInteractiveControls(page);

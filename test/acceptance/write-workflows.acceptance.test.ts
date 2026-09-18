@@ -6,6 +6,57 @@ import { createAcceptanceHarness } from "./helpers/harness";
 const env = getAcceptanceEnv();
 const harness = createAcceptanceHarness(env);
 
+interface ReservationSearchCandidate {
+  documentId: string;
+  title: string;
+  author?: string;
+  canSelect: boolean;
+  selectionReason?: string | null;
+  availability?: {
+    availableCopies?: number;
+    totalCopies?: number;
+  };
+}
+
+interface ReservationSearchResponse {
+  data?: ReservationSearchCandidate[];
+}
+
+function reservationSearchDiagnostic(
+  query: string,
+  candidates: ReservationSearchCandidate[],
+): string {
+  if (!candidates.length) {
+    return `No selectable reservation title was returned for query "${query}" because the search returned no book titles.`;
+  }
+
+  const duplicateReservation = candidates.find((book) =>
+    !book.canSelect && /already have an active reservation/i.test(book.selectionReason ?? ""),
+  );
+  if (duplicateReservation) {
+    return [
+      `The configured Phase 34 Student already has an active reservation for "${duplicateReservation.title}".`,
+      "This is fixture state, not a reservation-creation failure.",
+      "Clean that test reservation in the Librarian Reservations page (including Ready for Pickup records), or use another dedicated Student/title fixture before rerunning write acceptance.",
+      "Do not repeatedly rerun the write suite while this active reservation remains.",
+    ].join("\n");
+  }
+
+  const details = candidates.slice(0, 5).map((book) => {
+    const availability = book.availability
+      ? `${book.availability.availableCopies ?? 0}/${book.availability.totalCopies ?? 0} copies available`
+      : "availability not reported";
+    const reason = book.selectionReason?.trim() || (book.canSelect ? "selectable" : "no selection reason reported");
+    return `${book.title} [${availability}; ${reason}]`;
+  });
+
+  return [
+    `No selectable reservation title was returned for query "${query}".`,
+    "Search results:",
+    ...details.map(detail => `- ${detail}`),
+  ].join("\n");
+}
+
 async function waitForReservationPolicy(page: Page, open: Locator): Promise<"enabled" | "blocked"> {
   const warning = page.getByText("New reservations are currently unavailable", { exact: false });
   const deadline = Date.now() + env.timeoutMs;
@@ -102,11 +153,39 @@ describe.skipIf(!env.allowWrites)("Phase 34 write-gated transactional acceptance
       await open.click();
       const dialog = page.getByRole("dialog");
       await dialog.getByPlaceholder("Search title, author, ISBN, category, or call number").fill(env.fixtures.reservationBookQuery);
+      const searchResponsePromise = page.waitForResponse((response) =>
+        /\/api\/student-portal\/reservation-books(?:\?|$)/.test(response.url()) && response.request().method() === "GET",
+      );
       await dialog.getByRole("button", { name: "Search Books" }).click();
-      const selectable = dialog.locator("button").filter({ hasText: "Select" }).filter({ hasNotText: "Unavailable" }).first();
+      const searchResponse = await searchResponsePromise;
+      expect(
+        searchResponse.status(),
+        `Reservation-book search returned HTTP ${searchResponse.status()} for query "${env.fixtures.reservationBookQuery}".`,
+      ).toBe(200);
+
+      let searchPayload: ReservationSearchResponse = {};
+      try {
+        searchPayload = await searchResponse.json() as ReservationSearchResponse;
+      } catch {
+        throw new Error("Reservation-book search returned HTTP 200 but the response body was not valid JSON.");
+      }
+
+      const candidates = Array.isArray(searchPayload.data) ? searchPayload.data : [];
+      const query = env.fixtures.reservationBookQuery.trim().toLowerCase();
+      const candidate = candidates.find(
+        book => book.canSelect && book.title.trim().toLowerCase() === query,
+      ) ?? candidates.find(book => book.canSelect);
+
+      if (!candidate) {
+        throw new Error(reservationSearchDiagnostic(env.fixtures.reservationBookQuery, candidates));
+      }
+
+      const selectable = dialog.locator("button").filter({ hasText: candidate.title }).first();
       await selectable.waitFor();
       await selectable.click();
       const create = dialog.getByRole("button", { name: /Create 1 Reservation/ });
+      await create.waitFor();
+      expect(await create.isDisabled(), `Selectable reservation title "${candidate.title}" did not enable creation.`).toBe(false);
       reservationMayExist = true;
       await create.click();
 

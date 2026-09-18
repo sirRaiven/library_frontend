@@ -35,7 +35,18 @@ export function createAcceptanceHarness(env: AcceptanceEnv): AcceptanceHarness {
 
   async function start() {
     const launcher = env.browser === "firefox" ? firefox : env.browser === "webkit" ? webkit : chromium;
-    browser = await launcher.launch({ headless: env.headless });
+    if (env.browserWsEndpoint) {
+      browser = await launcher.connect(env.browserWsEndpoint, {
+        exposeNetwork: env.browserExposeNetwork || "<loopback>",
+        timeout: env.timeoutMs,
+      });
+      return;
+    }
+
+    const launchOptions = env.browser === "webkit" && env.webkitChannel === "webkit-wsl"
+      ? { headless: env.headless, channel: "webkit-wsl" }
+      : { headless: env.headless };
+    browser = await launcher.launch(launchOptions);
   }
 
   async function stop() {

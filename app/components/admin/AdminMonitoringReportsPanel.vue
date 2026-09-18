@@ -179,10 +179,13 @@ function downloadCsv() {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = `SNCBT-${safeFilename(report.value.title)}-${dateFrom.value}-to-${dateTo.value}.csv`;
+  anchor.style.display = "none";
   document.body.appendChild(anchor);
   anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => {
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 watch([reportType, profileType, selectedUserId, dateFrom, dateTo, limit], () => {

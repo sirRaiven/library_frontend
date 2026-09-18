@@ -123,6 +123,16 @@ export default defineNuxtConfig({
 
   modules: ["@nuxt/ui", "@nuxt/content"],
 
+  // Nuxt UI integrates @nuxt/fonts automatically. Keep Inter as an optional
+  // locally-installed face instead of proxying/downloading it through /_fonts.
+  // This avoids Firefox dev-server font transport failures while retaining the
+  // existing system-ui fallback stack on machines without Inter installed.
+  fonts: {
+    families: [
+      { name: "Inter", provider: "none" },
+    ],
+  },
+
   content: {
     experimental: {
       sqliteConnector: "native",

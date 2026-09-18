@@ -843,10 +843,13 @@ function exportDesign() {
   link.download =
     "sncbt-library-card-design.json";
 
+  link.style.display = "none";
   document.body.appendChild(link);
   link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 async function importDesign(
