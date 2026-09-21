@@ -24,7 +24,8 @@ describe("UI regression contract", () => {
   it("keeps accessible sign-in labels and password visibility control", () => {
     expect(signIn).toContain('label="Email or Username"');
     expect(signIn).toContain('label="Password"');
-    expect(signIn).toContain('aria-label="showPassword ? \'Hide password\' : \'Show password\'"');
+    expect(signIn).toContain('aria-label="Hide password"');
+    expect(signIn).toContain('aria-label="Show password"');
   });
 
   it("keeps light/dark color-scheme support", () => {

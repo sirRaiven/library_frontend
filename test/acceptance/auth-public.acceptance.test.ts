@@ -16,17 +16,25 @@ describe("Phase 27 authentication and entry workflows", () => {
       const { page, guard } = testPage;
       await harness.goto(page, "/");
       await page.getByRole("heading", { name: "Sign in", exact: true }).waitFor();
-      const password = page.getByPlaceholder("Enter password");
-      const passwordType = () => password.evaluate((element) => (element as HTMLInputElement).type);
+      const passwordType = () =>
+        page
+          .getByPlaceholder("Enter password")
+          .evaluate((element) => (element as HTMLInputElement).type);
       expect(await passwordType()).toBe("password");
-      await page.getByRole("button", { name: "Show password" }).click();
+
+      await page
+        .getByRole("button", { name: "Show password" })
+        .click();
+      await page
+        .getByRole("button", { name: "Hide password" })
+        .waitFor();
       await expect.poll(
         passwordType,
         { timeout: Math.min(env.timeoutMs, 5_000), interval: 100 },
       ).toBe("text");
       await auditInteractiveControls(page);
       await assertNoHorizontalOverflow(page);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -50,7 +58,7 @@ describe("Phase 27 authentication and entry workflows", () => {
       expect([400, 401]).toContain(authResponse.status());
       await page.getByText("Unable to sign in", { exact: true }).waitFor();
       expect(new URL(page.url()).pathname).toBe("/");
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -65,7 +73,7 @@ describe("Phase 27 authentication and entry workflows", () => {
         await page.waitForURL((url) => url.pathname === "/", { timeout: env.timeoutMs });
         expect(new URL(page.url()).searchParams.get("redirect")).toBe(path);
       }
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -89,7 +97,7 @@ describe("Phase 27 authentication and entry workflows", () => {
       }
       expect(submitted).toBe(false);
       expect(new URL(page.url()).pathname).toBe("/student-registration");
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -102,7 +110,7 @@ describe("Phase 27 authentication and entry workflows", () => {
       await harness.goto(page, "/faculty-access");
       await page.waitForURL((url) => url.pathname === "/", { timeout: env.timeoutMs });
       expect(new URL(page.url()).searchParams.get("redirect")).toBe("/faculty/dashboard");
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }

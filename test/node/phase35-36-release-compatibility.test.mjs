@@ -55,6 +55,7 @@ test("local and production phase36 commands are separated and an ordered validat
   assert.ok(pkg.scripts["phase36:local"]);
   assert.ok(pkg.scripts["test:order"]);
   assert.equal(existsSync(resolve(root, "docs/TEST_COMMAND_ORDER.md")), true);
+  assert.match(read("docs/TEST_COMMAND_ORDER.md"), /one\s+frontend\s+test\s+command\s+at\s+a\s+time/i);
 });
 
 test("release-source verification resolves Windows paths with fileURLToPath", () => {
@@ -96,9 +97,29 @@ test("webkit integrity failures are diagnosed and WSL WebKit is available withou
   assert.ok(pkg.scripts["test:acceptance:production:wsl-webkit"]);
 });
 
-test("firefox password visibility forces a stable input remount", () => {
+test("firefox password visibility uses explicit remount branches and native toggle controls", () => {
   const page = read("app/pages/index.vue");
-  assert.match(page, /:key=["']showPassword \? ["']password-visible["'] : ["']password-hidden["']["']/);
+  assert.match(page, /v-if=["']showPassword["']/);
+  assert.match(page, /key=["']password-visible["']/);
+  assert.match(page, /type=["']text["']/);
+  assert.match(page, /v-else/);
+  assert.match(page, /key=["']password-hidden["']/);
+  assert.match(page, /type=["']password["']/);
+  assert.match(page, /<button[\s\S]*aria-label=["']Show password["'][\s\S]*@click=["']revealPassword["']/);
+  assert.match(page, /<button[\s\S]*aria-label=["']Hide password["'][\s\S]*@click=["']hidePassword["']/);
+});
+
+test("authenticated portal handoff uses a safe full-page navigation and the harness waits for route prefetches", () => {
+  const page = read("app/pages/index.vue");
+  const harness = read("test/acceptance/helpers/harness.ts");
+  const guard = read("test/acceptance/helpers/runtime-guard.ts");
+
+  assert.match(page, /function safeInternalRedirect\(value: unknown\)/);
+  assert.match(page, /target\.origin !== baseOrigin/);
+  assert.match(page, /navigateTo\(destination, \{ external: true \}\)/);
+  assert.match(harness, /waitForPageSettle/);
+  assert.match(harness, /waitForLoadState\(["']networkidle["']/);
+  assert.match(guard, /parsedUrl\.pathname\.startsWith\(["']\/_nuxt\/["']\)/);
 });
 
 test("reservation write acceptance diagnoses the search response before selecting a title", () => {
@@ -206,4 +227,30 @@ test("phase35 preparation launches npm portably on Windows Node 24", () => {
   assert.match(prepare, /process\.execPath/);
   assert.match(prepare, /ComSpec|COMSPEC/);
   assert.doesNotMatch(prepare, /spawn\(["']npm\.cmd["']/);
+});
+
+test("inventory template generation stays server-side under the strict production CSP", () => {
+  const inventory = read("app/composables/useLibraryInventoryExcel.ts");
+  const route = read("server/routes/__sncbt/excel/inventory-template.post.ts");
+  const config = read("nuxt.config.ts");
+  const start = inventory.indexOf("async function downloadImportTemplate");
+  const end = inventory.indexOf("async function downloadInventoryExport", start);
+  const templateFunction = inventory.slice(start, end);
+
+  assert.match(templateFunction, /__sncbt\/excel\/inventory-template/);
+  assert.doesNotMatch(templateFunction, /loadExcelJs\(\)/);
+  assert.doesNotMatch(templateFunction, /workbook\.xlsx\.writeBuffer/);
+  assert.match(route, /await import\(["']exceljs["']\)/);
+  assert.match(route, /workbook\.xlsx\.writeBuffer\(\)/);
+  assert.match(route, /Content-Disposition/);
+  assert.match(route, /Cache-Control/);
+  assert.match(config, /\? \"'self' 'unsafe-inline' 'wasm-unsafe-eval'\"/);
+  assert.doesNotMatch(config, /\? \"'self' 'unsafe-inline' 'unsafe-eval'/);
+});
+
+test("inventory template server route bounds registry option payloads", () => {
+  const route = read("server/routes/__sncbt/excel/inventory-template.post.ts");
+  assert.match(route, /normalizeRegistryOptions/);
+  assert.match(route, /unique\.length > 250/);
+  assert.match(route, /item\.length > 120/);
 });

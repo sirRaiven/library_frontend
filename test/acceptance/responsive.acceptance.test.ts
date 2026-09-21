@@ -25,7 +25,7 @@ describe(`Phase 33 ${env.browser} responsive acceptance`, () => {
         await harness.goto(page, "/");
         await page.getByRole("heading", { name: "Sign in", exact: true }).waitFor();
         await assertNoHorizontalOverflow(page);
-        guard.assertClean();
+        await guard.assertClean();
       } finally {
         await testPage.close();
       }
@@ -39,7 +39,7 @@ describe(`Phase 33 ${env.browser} responsive acceptance`, () => {
       await page.setViewportSize({ width: 390, height: 844 });
       await harness.login(page, "librarian");
       await assertNoHorizontalOverflow(page);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }

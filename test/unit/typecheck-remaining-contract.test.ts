@@ -11,7 +11,12 @@ describe("remaining typecheck compatibility contract", () => {
     expect(read("app/composables/useLibraryReportExport.ts")).toContain("if (!table) continue;");
     expect(read("app/pages/admin/settings.vue")).toContain("sectionItems[0]!");
     expect(read("app/layouts/librarian.vue")).toContain("contentNavigationLinks");
-    expect(read("app/composables/useLibraryInventoryExcel.ts")).toContain('as Cell["value"]');
+
+    const inventoryExcel = read("app/composables/useLibraryInventoryExcel.ts");
+    expect(inventoryExcel).toContain('import type { Cell, Row } from "exceljs";');
+    expect(inventoryExcel).toMatch(/function cellText\(cell:\s*\{\s*value:\s*unknown;\s*text:\s*string;\s*\}\):\s*string/);
+    expect(inventoryExcel).toContain("(cell: Cell, columnNumber: number) =>");
+    expect(inventoryExcel).toContain("normalizeHeader(cellText(cell))");
 
     for (const file of [
       "app/composables/useLibraryNotifications.ts",

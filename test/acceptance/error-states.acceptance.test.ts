@@ -38,7 +38,7 @@ describe.skipIf(!env.credentials.student)("Phase 32 validation and error-state a
         expect(body).not.toContain("postgres");
         expect(body).not.toContain("stack trace");
         expect(body).not.toContain("node_modules");
-        guard.assertClean();
+        await guard.assertClean();
       } finally {
         await testPage.close();
       }
@@ -65,7 +65,7 @@ describe.skipIf(!env.credentials.student)("Phase 32 validation and error-state a
       await harness.goto(page, "/student/books");
       await page.waitForTimeout(500);
       expect(["/", "/student/books"]).toContain(new URL(page.url()).pathname);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }

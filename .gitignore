@@ -1,35 +1,41 @@
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
-dist
+# Nuxt generated files
+.output/
+.data/
+.nuxt/
+.nitro/
+.cache/
+dist/
 
-# Node dependencies
-node_modules
+# Dependencies
+node_modules/
 
 # Logs
-logs
+logs/
 *.log
 
-# Misc
-.DS_Store
-.fleet
-.idea
-
-# Local env files
+# Environment
 .env
 .env.*
 !.env.example
+!.env.test.example
 !.env.e2e.example
 !.env.e2e.staging.example
 !.env.e2e.production.example
-.zip
-# Generated from the installed vue-qrcode-reader/zxing-wasm dependency by postinstall.
+
+# Testing artifacts
+test-results/
+coverage/
+
+# Generated barcode WASM
 /public/barcode/zxing_reader.wasm
 
+# Release/archive files
+*.zip
+*.tar
+*.tar.gz
 
-
-# Playwright/Vitest acceptance artifacts
-test-results/
+# IDE / OS
+.DS_Store
+.fleet/
+.idea/
+.vscode/

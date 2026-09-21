@@ -281,7 +281,11 @@ function downloadBlob(
 }
 
 async function loadExcelJs() {
-  const module = await import("exceljs");
+  // ExcelJS publishes a browser-only "bare" bundle specifically for clients
+  // that already provide modern platform primitives. Using it avoids pulling
+  // the package's broader browserify/polyfill bundle into Nuxt production,
+  // which has historically caused writeBuffer() to fail only after bundling.
+  const module = await import("exceljs/dist/exceljs.bare.min.js");
 
   return (
     module.default ?? module
@@ -513,196 +517,46 @@ export function useLibraryInventoryExcel() {
     }
 
     await ensureRegistryOptions();
-    const ExcelJS = await loadExcelJs();
-    const workbook = new ExcelJS.Workbook();
 
-    workbook.creator = "SNCBT Library Management System";
-    workbook.created = new Date();
-
-    const worksheet = workbook.addWorksheet(
-      "Library Inventory",
+    // Generate the workbook on the Nuxt server instead of loading ExcelJS in
+    // the browser. Production intentionally keeps a strict CSP without
+    // unsafe-eval, while the legacy ExcelJS browser bundle uses dynamic code
+    // construction internally. The server route preserves that security
+    // boundary and still builds the template from the current registry values.
+    const response = await fetch(
+      "/__sncbt/excel/inventory-template",
       {
-        views: [
-          {
-            state: "frozen",
-            ySplit: 1,
-          },
-        ],
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookCategories: bookCategoryOptions.value.map(
+            (option) => option.value,
+          ),
+          shelfLocations: shelfLocationOptions.value.map(
+            (option) => option.value,
+          ),
+        }),
       },
     );
 
-    const widths = [
-      16, 20, 18, 24, 18, 30, 42, 30, 18, 30, 20, 30, 38, 34, 16,
-    ];
-
-    worksheet.columns = INVENTORY_HEADERS.map((header, index) => ({
-      header,
-      key: normalizeHeader(header).replace(/\s+/g, "_"),
-      width: widths[index],
-      ...(header === "Accession Number" ? { style: { numFmt: "@" } } : {}),
-      ...(header === "Price" ? { style: { numFmt: "₱#,##0.00" } } : {}),
-    }));
-
-    const currentYear = new Date().getFullYear();
-    const sample = worksheet.addRow({
-      inventory_date: currentYear,
-      accession_number: "0001",
-      number_of_copies: 2,
-      classification_number: "002",
-      author_number: "13E3",
-      title: "Sample Book Title",
-      author: "Sample Author",
-      copyright_date: currentYear,
-      publisher: "Sample Publisher",
-      edition: "1st Edition",
-      category: bookCategoryOptions.value[0]?.value ?? "",
-      shelf_location: shelfLocationOptions.value[0]?.value ?? "",
-      subject: "Information Technology",
-      price: 0,
-    });
-    sample.getCell(6).value = {
-      formula: `D${sample.number}&" "&E${sample.number}&" "&I${sample.number}`,
-      result: `002 13E3 ${currentYear}`,
-    } as Cell["value"];
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.height = 26;
-    headerRow.font = {
-      bold: true,
-      color: { argb: "FFFFFFFF" },
-    };
-    headerRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FF047857" },
-    };
-    headerRow.alignment = {
-      vertical: "middle",
-      horizontal: "center",
-    };
-
-    worksheet.autoFilter = {
-      from: "A1",
-      to: "O1",
-    };
-
-    const optionSheet = workbook.addWorksheet("Dropdown Options");
-    optionSheet.state = "veryHidden";
-    optionSheet.getCell("A1").value = "Book Category";
-    optionSheet.getCell("B1").value = "Shelf Location";
-    bookCategoryOptions.value.forEach((option, index) => {
-      optionSheet.getCell(index + 2, 1).value = option.value;
-    });
-    shelfLocationOptions.value.forEach((option, index) => {
-      optionSheet.getCell(index + 2, 2).value = option.value;
-    });
-
-    for (let row = 2; row <= 5000; row += 1) {
-      worksheet.getCell(`F${row}`).value = {
-        formula: `IF(OR(D${row}="",E${row}="",I${row}=""),"",D${row}&" "&E${row}&" "&I${row})`,
-      } as Cell["value"];
-      worksheet.getCell(`F${row}`).protection = { locked: true };
-      worksheet.getCell(`L${row}`).dataValidation = {
-        type: "list",
-        allowBlank: false,
-        formulae: [`'Dropdown Options'!$A$2:$A$${bookCategoryOptions.value.length + 1}`],
-        showErrorMessage: true,
-        errorTitle: "Invalid book category",
-        error: "Select an active Book Category.",
-      };
-      worksheet.getCell(`M${row}`).dataValidation = {
-        type: "list",
-        allowBlank: false,
-        formulae: [`'Dropdown Options'!$B$2:$B$${shelfLocationOptions.value.length + 1}`],
-        showErrorMessage: true,
-        errorTitle: "Invalid shelf location",
-        error: "Select an active Shelf Location.",
-      };
-      worksheet.getCell(`C${row}`).dataValidation = {
-        type: "whole",
-        operator: "between",
-        formulae: [1, 100],
-        showErrorMessage: true,
-        errorTitle: "Invalid number of copies",
-        error: "Enter a whole number from 1 to 100.",
-      };
-      worksheet.getCell(`B${row}`).numFmt = "@";
-      worksheet.getCell(`O${row}`).numFmt = "₱#,##0.00";
+    if (!response.ok) {
+      throw new Error(
+        "The Excel template service could not create the workbook.",
+      );
     }
 
-    const instructions = workbook.addWorksheet("Instructions");
-    instructions.columns = [
-      { width: 30 },
-      { width: 96 },
-    ];
+    const blob = await response.blob();
 
-    instructions.addRows([
-      ["Rule", "Description"],
-      [
-        "One row = one book title",
-        "Use Number of Copies to create all physical copies for the title in one import row.",
-      ],
-      [
-        "Classification Number",
-        "Enter the Dewey Decimal Classification number using three digits, with an optional decimal extension. Examples: 002, 005.133, or 650.",
-      ],
-      [
-        "Author Number",
-        "Enter the Library author number/code using letters and numbers only. Example: 13E3.",
-      ],
-      [
-        "Call Number",
-        "Generated automatically from Classification Number + Author Number + Copyright Date. Example: 002 13E3 2025. Do not edit this column.",
-      ],
-      [
-        "Book Category",
-        "Select the catalog category for the book title. Category is independent from the physical shelf location.",
-      ],
-      [
-        "Shelf Location",
-        "Select the physical shelf where every copy from the row will be stored.",
-      ],
-      [
-        "Subject",
-        "Optional subject or topic of the book.",
-      ],
-      [
-        "Accession Number",
-        "This is the first accession number for the row. For 3 copies starting at 0001, the system creates 0001, 0002, and 0003. Leave it blank for automatic numbering.",
-      ],
-      [
-        "Barcode",
-        "The barcode contains the accession number only. Example: accession number 0001 produces barcode value 0001.",
-      ],
-      [
-        "Price",
-        "The price is applied to every physical copy. Use 0.00 for donated books.",
-      ],
-    ]);
-
-    const instructionsHeader = instructions.getRow(1);
-    instructionsHeader.font = {
-      bold: true,
-      color: { argb: "FFFFFFFF" },
-    };
-    instructionsHeader.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FF047857" },
-    };
-    instructions.eachRow((row: Row) => {
-      row.alignment = {
-        vertical: "top",
-        wrapText: true,
-      };
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
+    if (blob.size === 0) {
+      throw new Error(
+        "The Excel template service returned an empty workbook.",
+      );
+    }
 
     downloadBlob(
-      new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }),
+      blob,
       "SNCBT-Library-Inventory-Import-Template-v3.xlsx",
     );
   }

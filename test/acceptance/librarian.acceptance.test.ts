@@ -31,7 +31,7 @@ describe.skipIf(!env.credentials.librarian)("Phase 29 Librarian Portal functiona
       await page.waitForTimeout(350);
       expect(termReads).toBe(beforeOpen);
       await page.getByRole("button", { name: "Cancel", exact: true }).last().click();
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -50,7 +50,7 @@ describe.skipIf(!env.credentials.librarian)("Phase 29 Librarian Portal functiona
       const register = page.getByRole("button", { name: "Register & View Barcodes" });
       expect(await register.isDisabled()).toBe(true);
       expect(writes).toBe(0);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -62,11 +62,29 @@ describe.skipIf(!env.credentials.librarian)("Phase 29 Librarian Portal functiona
       const { page, guard } = testPage;
       await harness.login(page, "librarian");
       await harness.goto(page, "/librarian/books/import");
-      const downloadPromise = page.waitForEvent("download", { timeout: Math.max(env.timeoutMs, 90_000) });
+      const timeout = Math.max(env.timeoutMs, 90_000);
+      const downloadPromise = page
+        .waitForEvent("download", { timeout })
+        .then((download) => ({ kind: "download" as const, download }));
+      const templateFailure = page.getByText("Template download failed", { exact: true });
+      const templateFailurePromise = templateFailure
+        .waitFor({ timeout })
+        .then(async () => ({
+          kind: "error" as const,
+          details: await templateFailure.locator("xpath=../..").innerText().catch(() => "Template download failed"),
+        }));
+
       await page.getByRole("button", { name: "Download Template" }).click();
-      const download = await downloadPromise;
-      expect(download.suggestedFilename()).toMatch(/SNCBT-Library-Inventory-Import-Template.*\.xlsx$/i);
-      guard.assertClean();
+
+      const result = await Promise.race([downloadPromise, templateFailurePromise]);
+      if (result.kind === "error") {
+        throw new Error(
+          `The production Excel template generator reported an application error before a browser download began. UI message: ${result.details}`,
+        );
+      }
+
+      expect(result.download.suggestedFilename()).toMatch(/SNCBT-Library-Inventory-Import-Template.*\.xlsx$/i);
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -82,7 +100,7 @@ describe.skipIf(!env.credentials.librarian)("Phase 29 Librarian Portal functiona
       const refresh = page.getByRole("button", { name: "Refresh", exact: true });
       await refresh.click();
       await page.waitForTimeout(250);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }

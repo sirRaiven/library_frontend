@@ -24,6 +24,7 @@ describe("Phases 28-31 protected route and safe-control sweep", () => {
       try {
         const { page, guard } = testPage;
         await harness.login(page, role);
+        await guard.assertClean();
 
         for (const route of routesForRole(role)) {
           const path = route.resolve(env);
@@ -38,7 +39,7 @@ describe("Phases 28-31 protected route and safe-control sweep", () => {
             expect(new URL(page.url()).pathname, route.label).toBe(expected);
             await auditInteractiveControls(page);
             await exerciseSafeControls(page);
-            guard.assertClean();
+            await guard.assertClean();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`${role} acceptance failed on ${route.label} (${path}):\n${message}`);

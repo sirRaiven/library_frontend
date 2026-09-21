@@ -26,6 +26,34 @@ const form = reactive<LoginForm>({
 });
 
 const showPassword = ref(false);
+
+function revealPassword(): void {
+  showPassword.value = true;
+}
+
+function hidePassword(): void {
+  showPassword.value = false;
+}
+
+function safeInternalRedirect(value: unknown): string | null {
+  if (typeof value !== "string" || !value.startsWith("/")) {
+    return null;
+  }
+
+  try {
+    const baseOrigin = "https://sncbt.local";
+    const target = new URL(value, baseOrigin);
+
+    if (target.origin !== baseOrigin) {
+      return null;
+    }
+
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 const isLoggingIn = ref(false);
 const loginError = ref("");
 
@@ -97,15 +125,16 @@ async function handleLogin(
       return;
     }
 
-    const requestedRedirect =
-      typeof route.query.redirect === "string" &&
-      route.query.redirect.startsWith("/")
-        ? route.query.redirect
-        : null;
-
-    await navigateTo(
-      requestedRedirect ?? auth.homeRoute.value,
+    const requestedRedirect = safeInternalRedirect(
+      route.query.redirect,
     );
+    const destination =
+      requestedRedirect ?? auth.homeRoute.value;
+
+    // Use a document navigation after authentication. Protected portal pages
+    // are client-rendered and code-split; a fresh document avoids Firefox
+    // racing a route-chunk import against the sign-in page's pending prefetches.
+    await navigateTo(destination, { external: true });
   } catch (error) {
     loginError.value = signInErrorMessage(error);
   } finally {
@@ -287,9 +316,10 @@ onMounted(() => {
                   :ui="{ label: 'text-sm font-semibold text-slate-800 dark:text-slate-100' }"
                 >
                   <UInput
-                    :key="showPassword ? 'password-visible' : 'password-hidden'"
+                    v-if="showPassword"
+                    key="password-visible"
                     v-model="form.password"
-                    :type="showPassword ? 'text' : 'password'"
+                    type="text"
                     icon="i-lucide-lock"
                     placeholder="Enter password"
                     autocomplete="current-password"
@@ -303,17 +333,49 @@ onMounted(() => {
                     }"
                   >
                     <template #trailing>
-                      <UButton
+                      <button
                         type="button"
-                        :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                        :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                        color="neutral"
-                        variant="ghost"
-                        size="sm"
-                        square
-                        class="text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
-                        @click="() => { showPassword = !showPassword; }"
-                      />
+                        aria-label="Hide password"
+                        class="inline-flex size-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+                        @click="hidePassword"
+                      >
+                        <UIcon
+                          name="i-lucide-eye-off"
+                          class="size-4"
+                        />
+                      </button>
+                    </template>
+                  </UInput>
+
+                  <UInput
+                    v-else
+                    key="password-hidden"
+                    v-model="form.password"
+                    type="password"
+                    icon="i-lucide-lock"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    size="xl"
+                    color="neutral"
+                    variant="outline"
+                    class="w-full"
+                    :ui="{
+                      base: 'h-12 rounded-xl border-slate-300/90 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-[#08172a]/85 dark:text-white dark:placeholder:text-slate-500',
+                      leadingIcon: 'text-emerald-700 dark:text-emerald-300'
+                    }"
+                  >
+                    <template #trailing>
+                      <button
+                        type="button"
+                        aria-label="Show password"
+                        class="inline-flex size-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+                        @click="revealPassword"
+                      >
+                        <UIcon
+                          name="i-lucide-eye"
+                          class="size-4"
+                        />
+                      </button>
                     </template>
                   </UInput>
                 </UFormField>

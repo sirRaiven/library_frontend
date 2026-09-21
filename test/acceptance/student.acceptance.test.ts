@@ -33,7 +33,7 @@ describe.skipIf(!env.credentials.student)("Phase 28 Student Portal functional ac
       await search.fill("information");
       await page.waitForTimeout(500);
       await search.fill("");
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -59,7 +59,7 @@ describe.skipIf(!env.credentials.student)("Phase 28 Student Portal functional ac
         await page.getByRole("button", { name: "Cancel", exact: true }).click();
       }
       expect(postCount).toBe(0);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -80,7 +80,7 @@ describe.skipIf(!env.credentials.student)("Phase 28 Student Portal functional ac
       await changePassword.waitFor();
       expect(await changePassword.isDisabled()).toBe(true);
       expect(passwordWrites).toBe(0);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }

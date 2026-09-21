@@ -23,7 +23,7 @@ describe.skipIf(!env.credentials.administrator)("Phase 31 Administrator Portal f
       await page.getByText("Temporary Password", { exact: true }).first().waitFor();
       await page.getByRole("button", { name: "Cancel", exact: true }).last().click();
       expect(writes).toBe(0);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -37,7 +37,7 @@ describe.skipIf(!env.credentials.administrator)("Phase 31 Administrator Portal f
       await harness.goto(page, "/admin/settings");
       await page.getByRole("button", { name: "Reload", exact: true }).click();
       await page.getByText("Current Semester", { exact: true }).waitFor();
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -56,7 +56,7 @@ describe.skipIf(!env.credentials.administrator)("Phase 31 Administrator Portal f
       await page.getByRole("button", { name: "Create Librarian Account" }).click();
       await page.waitForTimeout(200);
       expect(writes).toBe(0);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }

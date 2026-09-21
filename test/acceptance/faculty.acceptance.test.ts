@@ -19,7 +19,7 @@ describe.skipIf(!env.credentials.faculty)("Phase 30 Faculty Portal functional ac
       await search.fill("information");
       await page.waitForTimeout(450);
       await search.fill("");
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }
@@ -33,7 +33,7 @@ describe.skipIf(!env.credentials.faculty)("Phase 30 Faculty Portal functional ac
       await harness.goto(page, "/faculty/reports");
       await page.getByRole("button", { name: "Refresh", exact: true }).click();
       await page.waitForTimeout(300);
-      guard.assertClean();
+      await guard.assertClean();
     } finally {
       await testPage.close();
     }

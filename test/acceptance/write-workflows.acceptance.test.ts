@@ -193,7 +193,7 @@ describe.skipIf(!env.allowWrites)("Phase 34 write-gated transactional acceptance
       await cancel.waitFor();
       await cleanupReservation(page);
       reservationClean = true;
-      guard.assertClean();
+      await guard.assertClean();
     } catch (error) {
       primaryError = error;
     } finally {
@@ -237,7 +237,7 @@ describe.skipIf(!env.allowWrites)("Phase 34 write-gated transactional acceptance
 
       await cleanupBorrowing(page);
       borrowingClean = true;
-      guard.assertClean();
+      await guard.assertClean();
     } catch (error) {
       primaryError = error;
     } finally {

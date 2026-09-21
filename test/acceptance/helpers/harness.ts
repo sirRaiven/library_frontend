@@ -115,10 +115,23 @@ export function createAcceptanceHarness(env: AcceptanceEnv): AcceptanceHarness {
     }
   }
 
+  async function waitForPageSettle(page: Page): Promise<void> {
+    await waitForNuxtHydration(page);
+
+    // Portal layouts contain many visible Nuxt links. Firefox can still be
+    // fetching their prefetched route chunks immediately after navigation;
+    // starting another hard navigation at that moment can abort those module
+    // requests and surface a false route-chunk error. Wait for one quiet
+    // network window before the acceptance harness moves to the next route.
+    await page.waitForLoadState("networkidle", {
+      timeout: Math.min(env.timeoutMs, 10_000),
+    });
+  }
+
   async function goto(page: Page, path: string): Promise<void> {
     const target = new URL(path, `${env.frontendUrl}/`).toString();
-    await page.goto(target);
-    await waitForNuxtHydration(page);
+    await page.goto(target, { waitUntil: "load" });
+    await waitForPageSettle(page);
     await syncRoleCookieCache(page);
   }
 
@@ -165,6 +178,7 @@ export function createAcceptanceHarness(env: AcceptanceEnv): AcceptanceHarness {
       throw new Error(`${role} sign-in failed during acceptance (HTTP ${authResponse.status()})${detail ? `: ${detail}` : ""}.${throttleHint}`);
     }
     await page.waitForURL((url) => url.pathname === HOME[role], { timeout: env.timeoutMs });
+    await waitForPageSettle(page);
     expect(new URL(page.url()).pathname).toBe(HOME[role]);
     pageRoleCache.set(page, role);
     await syncRoleCookieCache(page);
