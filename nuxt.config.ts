@@ -114,7 +114,7 @@ if (isProduction) {
 }
 
 export default defineNuxtConfig({
-  compatibilityDate: "2026-08-05",
+  compatibilityDate: "2027-08-05",
   ssr: true,
 
   devtools: {
@@ -128,9 +128,7 @@ export default defineNuxtConfig({
   // This avoids Firefox dev-server font transport failures while retaining the
   // existing system-ui fallback stack on machines without Inter installed.
   fonts: {
-    families: [
-      { name: "Inter", provider: "none" },
-    ],
+    families: [{ name: "Inter", provider: "none" }],
   },
 
   content: {
