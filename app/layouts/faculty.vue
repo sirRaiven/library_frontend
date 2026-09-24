@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
+import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import PortalMobileBottomNav from "~/components/shared/PortalMobileBottomNav.vue";
 import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
@@ -375,24 +376,13 @@ watch(
       @more="openMobileNavigation"
     />
 
-    <UModal v-model:open="logoutOpen" :dismissible="!loggingOut">
-      <template #content>
-        <div class="space-y-5 bg-transparent p-6">
-          <div class="flex items-start gap-3">
-            <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-error/10 text-error">
-              <UIcon name="i-lucide-log-out" class="size-5" />
-            </div>
-            <div>
-              <h2 class="text-lg font-bold text-highlighted">Sign out of the Faculty Portal?</h2>
-              <p class="mt-1 text-sm text-muted">You will need to sign in again to view department Library records.</p>
-            </div>
-          </div>
-          <div class="flex justify-end gap-2">
-            <UButton label="Stay Signed In" color="neutral" variant="outline" :disabled="loggingOut" @click="() => { logoutOpen = false; }" />
-            <UButton label="Sign Out" icon="i-lucide-log-out" color="error" :loading="loggingOut" @click="signOut" />
-          </div>
-        </div>
-      </template>
-    </UModal>
+    <AppSignOutModal
+      v-model:open="logoutOpen"
+      :loading="loggingOut"
+      description="Your Faculty Portal session will be closed. You will need to sign in again to view department Library records."
+      :account-name="userName"
+      :account-detail="employeeNo"
+      @confirm="signOut"
+    />
   </UDashboardGroup>
 </template>

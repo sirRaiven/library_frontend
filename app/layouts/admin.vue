@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
+import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import { appLogger } from "~/utils/app-logger";
 import type {
@@ -408,41 +409,12 @@ watch(
     </UDashboardPanel>
   </UDashboardGroup>
 
-  <UModal
+  <AppSignOutModal
     v-model:open="logoutOpen"
-    :dismissible="!loggingOut"
-    :ui="{ content: 'sm:max-w-md' }"
-  >
-    <template #content>
-      <div class="bg-default p-6 sm:p-8">
-        <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-error/10 text-error">
-          <UIcon name="i-lucide-log-out" class="size-7" />
-        </div>
-        <div class="mt-5 text-center">
-          <h2 class="text-xl font-bold text-highlighted">Sign out of Administration?</h2>
-          <p class="mt-2 text-sm leading-relaxed text-muted">
-            Your administrator session will be closed. Sensitive administrative pages will require authentication again.
-          </p>
-        </div>
-        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
-          <UButton
-            label="Sign Out"
-            icon="i-lucide-log-out"
-            color="neutral"
-            variant="outline"
-            block
-            :loading="loggingOut"
-            @click="signOut"
-          />
-          <UButton
-            label="Cancel"
-            color="error"
-            block
-            :disabled="loggingOut"
-            @click="() => { logoutOpen = false; }"
-          />
-        </div>
-      </div>
-    </template>
-  </UModal>
+    :loading="loggingOut"
+    description="Your Administrator session will be closed. You will need to sign in again before accessing protected administrative pages."
+    :account-name="userName"
+    :account-detail="`${userRole} · ${userEmail}`"
+    @confirm="signOut"
+  />
 </template>

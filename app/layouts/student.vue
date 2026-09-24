@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
+import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import PortalMobileBottomNav from "~/components/shared/PortalMobileBottomNav.vue";
 import type {
@@ -513,42 +514,12 @@ onBeforeUnmount(() => {
     @more="openMobileNavigation"
   />
 
-  <UModal
+  <AppSignOutModal
     v-model:open="logoutOpen"
-    :dismissible="!loggingOut"
-    :ui="{ content: 'sm:max-w-md' }"
-  >
-    <template #content>
-      <div class="bg-default p-6 sm:p-8">
-        <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-error/10 text-error">
-          <UIcon name="i-lucide-log-out" class="size-7" />
-        </div>
-        <div class="mt-5 text-center">
-          <h2 class="text-xl font-bold text-highlighted">Sign out of the Student Portal?</h2>
-          <p class="mt-2 text-sm leading-relaxed text-muted">
-            This Student Portal session will be closed. You will need to authenticate again to access your Library records.
-          </p>
-        </div>
-        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
-          <UButton
-            label="Sign Out"
-            icon="i-lucide-log-out"
-            variant="outline"
-            color="neutral"
-            block
-            :loading="loggingOut"
-            @click="signOut"
-          />
-          <UButton
-            label="Cancel"
-            color="error"
-            
-            block
-            :disabled="loggingOut"
-            @click="() => { logoutOpen = false; }"
-          />
-        </div>
-      </div>
-    </template>
-  </UModal>
+    :loading="loggingOut"
+    description="Your Student Portal session will be closed. You will need to sign in again to access your Library records."
+    :account-name="userName"
+    :account-detail="studentNumber"
+    @confirm="signOut"
+  />
 </template>

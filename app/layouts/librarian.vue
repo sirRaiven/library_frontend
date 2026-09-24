@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
+import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 
 import { appLogger } from "~/utils/app-logger";
@@ -1214,86 +1215,12 @@ watch(
     </UDashboardPanel>
   </UDashboardGroup>
 
-  <UModal
+  <AppSignOutModal
     v-model:open="isLogoutModalOpen"
-    :dismissible="!isLoggingOut"
-    :ui="{
-      content: 'sm:max-w-md',
-    }"
-  >
-    <template #content>
-      <div class="bg-default p-6 sm:p-8">
-        <div
-          class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-error/10 text-error"
-        >
-          <UIcon
-            name="i-lucide-log-out"
-            class="size-7"
-          />
-        </div>
-
-        <div class="mt-5 text-center">
-          <h2
-            class="text-xl font-bold text-highlighted"
-          >
-            Sign out of SNCBT Library?
-          </h2>
-          <p
-            class="mt-2 text-sm leading-relaxed text-muted"
-          >
-            Your current librarian session will be
-            closed. You will need to sign in again to
-            access protected records.
-          </p>
-        </div>
-
-        <div
-          class="mt-6 flex items-center gap-3 rounded-xl border border-default bg-elevated p-4"
-        >
-          <UAvatar
-            :alt="userName"
-            :text="userInitials"
-            size="md"
-          />
-
-          <div class="min-w-0">
-            <p
-              class="truncate text-sm font-semibold text-highlighted"
-            >
-              {{ userName }}
-            </p>
-            <p class="truncate text-xs text-muted">
-              {{ userEmail }}
-            </p>
-          </div>
-        </div>
-
-        <div
-        class="mt-6 flex flex-col-reverse gap-3 sm:flex-row"
-        >
-        <UButton
-            label="Sign Out"
-            icon="i-lucide-log-out"
-            color="neutral"
-            size="lg"
-            variant="outline"
-            block
-            :loading="isLoggingOut"
-            @click="handleLogout"
-          />
-          <UButton
-            label="Cancel"
-            color="error"
-            
-            size="lg"
-            block
-            :disabled="isLoggingOut"
-            @click="() => {
-              isLogoutModalOpen = false
-            }"
-          />
-      </div>
-      </div>
-    </template>
-  </UModal>
+    :loading="isLoggingOut"
+    description="Your Librarian session will be closed. You will need to sign in again before accessing protected Library records."
+    :account-name="userName"
+    :account-detail="userEmail"
+    @confirm="handleLogout"
+  />
 </template>
