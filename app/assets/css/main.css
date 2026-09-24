@@ -13,7 +13,7 @@
 
 :root {
   /* SNCBT Library Design System v2 — Wave DS-1 foundation */
-  --sncbt-ds-version: "2.0-ds4";
+  --sncbt-ds-version: "2.0-ds8.1";
   --ui-container: 96rem;
 
   /* Brand + semantic foundation */
@@ -2285,3 +2285,82 @@ body {
   }
 }
 
+
+
+/* --------------------------------------------------------------------------
+ * Design System v2 — DS-8.1: permanent dark navigation shell
+ * Authenticated sidebars and mobile navigation drawers deliberately stay in
+ * the Sign In page's deep navy/teal family in both light and dark modes.
+ * Main content, navbars and bottom navigation continue to follow color mode.
+ * -------------------------------------------------------------------------- */
+
+.sncbt-sidebar-surface,
+.sncbt-app-sidebar,
+.sncbt-sidebar-mobile-content {
+  color-scheme: dark;
+
+  /* Scope Nuxt UI surface/text tokens so every nested navigation control,
+     section label, account footer and collapsed state remains readable. */
+  --ui-bg: #041725;
+  --ui-bg-muted: #061a29;
+  --ui-bg-elevated: #082036;
+  --ui-bg-accented: #0a2941;
+  --ui-bg-inverted: #f8fafc;
+  --ui-text: #dbe7ee;
+  --ui-text-dimmed: #6f8797;
+  --ui-text-muted: #91a8b7;
+  --ui-text-toned: #b6c7d1;
+  --ui-text-highlighted: #f8fafc;
+  --ui-text-inverted: #031118;
+  --ui-border: rgba(148, 163, 184, 0.16);
+  --ui-border-muted: rgba(148, 163, 184, 0.12);
+  --ui-border-accented: rgba(52, 211, 153, 0.22);
+  --ui-border-inverted: rgba(248, 250, 252, 0.78);
+  --ui-primary: #34d399;
+
+  background:
+    radial-gradient(circle at 104% 4%, rgba(52, 211, 153, 0.10) 0 5.75rem, transparent 5.9rem),
+    radial-gradient(circle at -6% 94%, rgba(56, 189, 248, 0.055) 0 7rem, transparent 7.15rem),
+    linear-gradient(180deg, #041725 0%, #031118 54%, #020b11 100%) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #dbe7ee;
+  box-shadow:
+    1px 0 0 rgba(255, 255, 255, 0.018) inset,
+    12px 0 38px -34px rgba(0, 0, 0, 0.82) !important;
+}
+
+/* Keep the exact same navigation shell when the document color mode changes. */
+.dark .sncbt-sidebar-surface,
+.dark .sncbt-app-sidebar,
+.dark .sncbt-sidebar-mobile-content {
+  background:
+    radial-gradient(circle at 104% 4%, rgba(52, 211, 153, 0.10) 0 5.75rem, transparent 5.9rem),
+    radial-gradient(circle at -6% 94%, rgba(56, 189, 248, 0.055) 0 7rem, transparent 7.15rem),
+    linear-gradient(180deg, #041725 0%, #031118 54%, #020b11 100%) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #dbe7ee;
+}
+
+/* Navigation labels stay restrained; active routes use emerald as an accent
+   rather than turning the full row into a bright green block. */
+.sncbt-sidebar-surface .sncbt-navigation,
+.sncbt-app-sidebar .sncbt-navigation,
+.sncbt-sidebar-mobile-content .sncbt-navigation {
+  --ui-text: #dbe7ee;
+  --ui-text-muted: #91a8b7;
+  --ui-text-highlighted: #f8fafc;
+}
+
+.sncbt-sidebar-surface :where([data-active="true"], [aria-current="page"]),
+.sncbt-app-sidebar :where([data-active="true"], [aria-current="page"]),
+.sncbt-sidebar-mobile-content :where([data-active="true"], [aria-current="page"]) {
+  background-color: rgba(16, 185, 129, 0.115) !important;
+  color: #6ee7b7 !important;
+  box-shadow: inset 3px 0 0 rgba(52, 211, 153, 0.78);
+}
+
+/* The permanent-dark rule belongs only to side navigation. Student/Faculty
+   mobile bottom navigation intentionally continues to track page color mode. */
+.sncbt-mobile-bottom-nav {
+  color-scheme: normal;
+}
