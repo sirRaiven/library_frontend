@@ -15,7 +15,7 @@ export default defineAppConfig({
     card: {
       slots: {
         root: [
-          "rounded-xl border border-default/80 bg-default",
+          "sncbt-themed-card rounded-xl border border-default/80 bg-default",
           "shadow-[var(--sncbt-elevation-1)]",
           "transition-[box-shadow,border-color,background-color] duration-150",
         ].join(" "),
@@ -63,13 +63,13 @@ export default defineAppConfig({
 
     dropdownMenu: {
       slots: {
-        content: "rounded-lg border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
+        content: "sncbt-theme-overlay rounded-lg border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
       },
     },
 
     modal: {
       slots: {
-        content: "rounded-xl border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
+        content: "sncbt-theme-overlay rounded-xl border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
       },
     },
 
