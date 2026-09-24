@@ -10,11 +10,13 @@ export default defineAppConfig({
       neutral: "slate",
     },
 
+    // Design System v2: restrained enterprise surfaces. Product-specific pages
+    // may opt into denser layouts, but the shared defaults stay predictable.
     card: {
       slots: {
         root: [
-          "rounded-2xl border border-default/80 bg-default",
-          "shadow-[var(--sncbt-shadow-card)]",
+          "rounded-xl border border-default/80 bg-default",
+          "shadow-[var(--sncbt-elevation-1)]",
           "transition-[box-shadow,border-color,background-color] duration-150",
         ].join(" "),
         header: "p-4 sm:px-5 sm:py-4",
@@ -26,7 +28,7 @@ export default defineAppConfig({
     button: {
       slots: {
         base: [
-          "min-h-9 rounded-lg font-semibold",
+          "min-h-9 rounded-lg font-medium",
           "transition-[color,background-color,border-color,box-shadow,transform] duration-150",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-default",
         ].join(" "),
@@ -48,32 +50,32 @@ export default defineAppConfig({
     select: {
       slots: {
         base: "rounded-lg shadow-[var(--sncbt-shadow-control)]",
-        content: "rounded-xl shadow-[var(--sncbt-shadow-overlay)]",
+        content: "rounded-lg shadow-[var(--sncbt-shadow-overlay)]",
       },
     },
 
     selectMenu: {
       slots: {
         base: "rounded-lg shadow-[var(--sncbt-shadow-control)]",
-        content: "rounded-xl shadow-[var(--sncbt-shadow-overlay)]",
+        content: "rounded-lg shadow-[var(--sncbt-shadow-overlay)]",
       },
     },
 
     dropdownMenu: {
       slots: {
-        content: "rounded-xl border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
+        content: "rounded-lg border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
       },
     },
 
     modal: {
       slots: {
-        content: "rounded-2xl border border-default/80 shadow-[var(--sncbt-shadow-overlay)] sm:rounded-3xl",
+        content: "rounded-xl border border-default/80 shadow-[var(--sncbt-shadow-overlay)]",
       },
     },
 
     badge: {
       slots: {
-        base: "rounded-full font-medium",
+        base: "rounded-md font-medium",
       },
     },
   },

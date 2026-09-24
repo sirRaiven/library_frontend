@@ -3,47 +3,58 @@ withDefaults(
   defineProps<{
     eyebrow?: string;
     title: string;
-    description: string;
+    description?: string;
     icon?: string;
   }>(),
   {
     eyebrow: "",
+    description: "",
     icon: "i-lucide-library",
   },
 );
 </script>
 
 <template>
-  <header class="sncbt-page-hero p-5 sm:p-6 lg:p-7">
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-      <div class="flex min-w-0 items-start gap-4">
-        <div
-          class="sncbt-page-icon sncbt-icon-tile flex size-11 shrink-0 items-center justify-center rounded-xl sm:size-12"
-          aria-hidden="true"
-        >
-          <UIcon :name="icon" class="size-5" />
+  <header class="sncbt-page-hero sncbt-page-header">
+    <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div class="min-w-0">
+        <div class="flex min-w-0 items-center gap-3">
+          <div
+            v-if="icon"
+            class="sncbt-page-icon hidden size-9 shrink-0 items-center justify-center rounded-lg sm:flex"
+            aria-hidden="true"
+          >
+            <UIcon :name="icon" class="size-4.5" />
+          </div>
+
+          <div class="min-w-0">
+            <p
+              v-if="eyebrow"
+              class="hidden text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-primary lg:block"
+            >
+              {{ eyebrow }}
+            </p>
+            <h1
+              class="sr-only text-balance text-2xl font-semibold tracking-tight text-highlighted sm:not-sr-only"
+              :class="eyebrow ? 'lg:mt-0.5' : ''"
+            >
+              {{ title }}
+            </h1>
+          </div>
         </div>
 
-        <div class="min-w-0">
-          <p
-            v-if="eyebrow"
-            class="text-xs font-semibold uppercase tracking-[0.14em] text-primary"
-          >
-            {{ eyebrow }}
-          </p>
-          <h1
-            class="text-balance text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]"
-            :class="eyebrow ? 'mt-1' : ''"
-          >
-            {{ title }}
-          </h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            {{ description }}
-          </p>
-        </div>
+        <p
+          v-if="description"
+          class="mt-1.5 hidden max-w-3xl text-sm leading-5 text-muted md:block"
+        >
+          {{ description }}
+        </p>
       </div>
 
-      <div v-if="$slots.actions" class="sncbt-action-row sncbt-mobile-stack-actions shrink-0">
+      <div
+        v-if="$slots.actions"
+        class="sncbt-action-row sncbt-mobile-stack-actions shrink-0"
+      >
         <slot name="actions" />
       </div>
     </div>

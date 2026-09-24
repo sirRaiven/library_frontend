@@ -148,7 +148,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-[#eef6f2] text-slate-900 transition-colors dark:bg-[#020c12] dark:text-white">
+  <div class="sncbt-public-entry relative min-h-dvh overflow-hidden bg-[var(--sncbt-canvas)] text-default transition-colors">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(5,150,105,0.10),transparent_25%),radial-gradient(circle_at_90%_85%,rgba(14,165,233,0.06),transparent_24%),linear-gradient(180deg,#f4faf7_0%,#eaf3ef_100%)] dark:bg-[radial-gradient(circle_at_10%_10%,rgba(16,185,129,0.10),transparent_25%),radial-gradient(circle_at_90%_85%,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,#031118_0%,#020b11_100%)]" />
     <div class="pointer-events-none absolute -left-28 top-8 size-72 rounded-full bg-emerald-500/8 blur-3xl dark:bg-emerald-400/8" />
     <div class="pointer-events-none absolute -bottom-32 -right-24 size-96 rounded-full bg-emerald-600/6 blur-3xl dark:bg-emerald-400/6" />

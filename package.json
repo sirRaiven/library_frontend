@@ -43,6 +43,8 @@
     "verify:release-source": "node scripts/verify-release-source.mjs",
     "verify:accessibility": "vitest --run --project unit test/unit/uswitch-accessibility-contract.test.ts test/unit/interactive-accessibility-source-scan.test.ts",
     "verify:compatibility": "node scripts/verify-production-compatibility.mjs",
+    "verify:ui-ux": "node scripts/verify-ui-ux-modernization.mjs",
+    "verify:design-system": "npm run verify:design-system:foundation && npm run verify:design-system:shells && npm run verify:design-system:components",
     "verify:deployment:local": "node scripts/verify-deployment-compatibility.mjs --target=localhost",
     "verify:deployment:staging": "node scripts/verify-deployment-compatibility.mjs --target=staging",
     "verify:deployment:production": "node scripts/verify-deployment-compatibility.mjs --target=production",
@@ -71,7 +73,10 @@
     "phase36:staging:wsl-webkit": "npm run verify:deployment:staging && npm run test:acceptance:staging:wsl-webkit",
     "phase36:production:wsl-webkit": "npm run verify:deployment:production && npm run test:acceptance:production:wsl-webkit",
     "phase35:webkit:docker": "node scripts/run-playwright-docker-webkit.mjs",
-    "phase35:cross-browser:docker-webkit": "npm run phase35:preview:prepare && npm run phase35:chromium && npm run phase35:firefox && npm run phase35:webkit:docker"
+    "phase35:cross-browser:docker-webkit": "npm run phase35:preview:prepare && npm run phase35:chromium && npm run phase35:firefox && npm run phase35:webkit:docker",
+    "verify:design-system:foundation": "node scripts/verify-design-system-foundation.mjs",
+    "verify:design-system:shells": "node scripts/verify-design-system-shells.mjs",
+    "verify:design-system:components": "node scripts/verify-design-system-components.mjs"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

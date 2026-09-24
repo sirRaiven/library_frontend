@@ -43,7 +43,7 @@ const toneClasses = computed(() => {
         <p class="text-xs font-semibold uppercase tracking-[0.11em] text-muted">{{ label }}</p>
         <USkeleton v-if="loading" class="mt-3 h-9 w-24" />
         <p v-else class="mt-2 text-3xl font-bold tracking-tight text-highlighted">{{ value }}</p>
-        <p v-if="description" class="mt-2 text-xs leading-5 text-muted">{{ description }}</p>
+        <p v-if="description" class="mt-2 hidden text-xs leading-5 text-muted sm:block">{{ description }}</p>
       </div>
       <div
         class="sncbt-icon-tile flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"

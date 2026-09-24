@@ -228,51 +228,35 @@ const needsAttention = computed(
 
 const stats = computed(() => [
   {
-    label: "Book Titles",
-    value: dashboard.value.totalTitles,
-    description: "Different book titles in the catalog",
-    icon: "i-lucide-book",
-    color: "info" as BadgeColor,
-    to: "/librarian/books",
-  },
-  {
-    label: "Total Book Copies",
-    value: dashboard.value.totalCopies,
-    description: "All physical book copies in the library",
-    icon: "i-lucide-copy",
-    color: "neutral" as BadgeColor,
-    to: "/librarian/books/copies",
-  },
-  {
-    label: "Available to Borrow",
+    label: "Available",
     value: dashboard.value.availableCopies,
-    description: "Books currently available on the shelf",
+    description: "Ready to borrow",
     icon: "i-lucide-circle-check",
     color: "success" as BadgeColor,
     to: "/librarian/books/copies?status=Available",
   },
   {
-    label: "Currently Borrowed",
+    label: "Borrowed",
     value: dashboard.value.borrowedCopies,
-    description: "Books currently with students or faculty",
+    description: "Currently on loan",
     icon: "i-lucide-book-up",
     color: "warning" as BadgeColor,
     to: "/librarian/borrow",
   },
   {
-    label: "Books Needing Attention",
+    label: "Needs Attention",
     value: needsAttention.value,
-    description: "Overdue, damaged, or reported lost",
+    description: "Overdue, damaged or lost",
     icon: "i-lucide-triangle-alert",
     color: "error" as BadgeColor,
     to: "/librarian/reports",
   },
   {
-    label: "Visitors Today",
+    label: "Visits Today",
     value: dashboard.value.todayVisits,
-    description: "Students and faculty who entered today",
+    description: "Recorded library entries",
     icon: "i-lucide-users-round",
-    color: "success" as BadgeColor,
+    color: "info" as BadgeColor,
     to: "/librarian/visits",
   },
 ]);
@@ -281,8 +265,7 @@ const queueItems = computed(() => [
   {
     label: "Reservations to Review",
     value: dashboard.value.pendingReservations,
-    description:
-      "Book requests waiting for review or preparation",
+    description: "Requests waiting for review or preparation",
     icon: "i-lucide-calendar-clock",
     color: "info" as BadgeColor,
     to: "/librarian/reservations",
@@ -290,59 +273,18 @@ const queueItems = computed(() => [
   {
     label: "Overdue Borrowed Books",
     value: dashboard.value.overdueTransactions,
-    description:
-      "Borrowed books that are already past the due date",
+    description: "Loans already past their due date",
     icon: "i-lucide-clock-alert",
     color: "error" as BadgeColor,
     to: "/librarian/borrow?status=Overdue",
   },
-  {
-    label: "New Notifications",
-    value: dashboard.value.unreadNotifications,
-    description:
-      "Updates and reminders that have not been opened",
-    icon: "i-lucide-bell-ring",
-    color: "warning" as BadgeColor,
-    to: "/librarian/notifications",
-  },
 ]);
 
 const quickActions = [
-  {
-    title: "Record Library Entry",
-    description:
-      "Scan a student library card or faculty ID.",
-    icon: "i-lucide-scan-line",
-    to: "/librarian/visits",
-  },
-  {
-    title: "Borrow a Book",
-    description:
-      "Record a book borrowed by a student or faculty member.",
-    icon: "i-lucide-book-up",
-    to: "/librarian/borrow",
-  },
-  {
-    title: "Return a Book",
-    description:
-      "Scan and record a book returned to the library.",
-    icon: "i-lucide-book-down",
-    to: "/librarian/return",
-  },
-  {
-    title: "Add a New Book",
-    description:
-      "Add a book title, its copies, and barcodes.",
-    icon: "i-lucide-book-plus",
-    to: "/librarian/books/register",
-  },
-  {
-    title: "Upload Book List",
-    description:
-      "Add many existing book records from an Excel file.",
-    icon: "i-lucide-file-spreadsheet",
-    to: "/librarian/books/import",
-  },
+  { title: "Scan Entry", icon: "i-lucide-scan-line", to: "/librarian/visits" },
+  { title: "Borrow", icon: "i-lucide-book-up", to: "/librarian/borrow" },
+  { title: "Return", icon: "i-lucide-book-down", to: "/librarian/return" },
+  { title: "Add Book", icon: "i-lucide-book-plus", to: "/librarian/books/register" },
 ];
 
 function badgeColor(
@@ -385,115 +327,27 @@ async function refreshDashboard() {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
-    <UCard
-      class="sncbt-welcome-card border-primary/15 rounded-3xl shadow-md shadow-primary/15 p-0"
-      :ui="{ body: 'p-0' }"
-    >
-      <div
-        class="relative grid min-h-[14rem] lg:grid-cols-[minmax(0,1fr)_21rem]"
-      >
-        <div class="relative p-6 sm:p-7 lg:p-8">
-          <div
-            class="flex items-start gap-4 sm:gap-5"
-          >
-            <div
-              class="sncbt-icon-tile hidden size-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/15 sm:flex"
-            >
-              <UIcon
-                name="i-lucide-library-big"
-                class="size-7"
-              />
-            </div>
-
-            <div class="min-w-0 max-w-3xl">
-              <UBadge
-                color="primary"
-                variant="soft"
-                icon="i-lucide-sparkles"
-                label="Library overview"
-                class="rounded-full"
-              />
-
-              <h1
-                class="mt-4 text-2xl font-bold tracking-tight text-highlighted sm:text-3xl lg:text-[2rem]"
-              >
-                {{ greeting }}, {{ displayName }}
-              </h1>
-
-              <p
-                class="mt-2 max-w-2xl text-sm leading-6 text-muted sm:text-base"
-              >
-                See today's library activity, available books, borrowed books,
-                reservations, and items that need your attention—all in one place.
-              </p>
-
-              <div
-                class="mt-5 flex flex-wrap gap-2"
-              >
-                <div
-                  class="inline-flex items-center gap-2 rounded-xl border border-default bg-elevated/70 px-3 py-2 text-xs text-muted shadow-[var(--sncbt-shadow-control)]"
-                >
-                  <UIcon
-                    name="i-lucide-calendar-days"
-                    class="size-4 text-primary"
-                  />
-                  <span>{{ currentDate }}</span>
-                </div>
-
-                <div
-                  class="inline-flex items-center gap-2 rounded-xl border border-default bg-elevated/70 px-3 py-2 text-xs text-muted shadow-[var(--sncbt-shadow-control)]"
-                >
-                  <UIcon
-                    name="i-lucide-clock-3"
-                    class="size-4 text-primary"
-                  />
-                  <span>Updated {{ lastUpdated }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <aside
-          class="relative flex flex-col justify-center border-t  border-default bg-elevated/45 sm:p-6 lg:border-l lg:border-t-0 rounded-3xl"
-          aria-label="Dashboard quick actions"
-        >
-          <div class="space-y-2.5 ">
-            <UButton
-              to="/librarian/visits"
-              label="Record Library Entry"
-              icon="i-lucide-scan-line"
-              color="primary"
-              size="lg"
-              block
-            />
-
-            <UButton
-              to="/librarian/borrow"
-              label="Borrow a Book"
-              icon="i-lucide-book-up"
-              color="neutral"
-              variant="outline"
-              size="lg"
-              block
-              class="bg-default/80"
-            />
-
-            <UButton
-              label="Update Dashboard"
-              icon="i-lucide-refresh-cw"
-              color="neutral"
-              variant="ghost"
-              size="md"
-              block
-              :loading="isRefreshing"
-              @click="refreshDashboard"
-            />
-          </div>
-        </aside>
+  <div class="sncbt-page-shell space-y-5">
+    <section class="flex flex-col gap-3 border-b border-default/70 pb-4 sm:flex-row sm:items-end sm:justify-between">
+      <div class="min-w-0">
+        <h1 class="text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]">
+          {{ greeting }}, {{ displayName }}
+        </h1>
+        <p class="mt-1 text-sm text-muted">
+          Here is what needs attention in the library today.
+        </p>
       </div>
-    </UCard>
+
+      <UButton
+        icon="i-lucide-refresh-cw"
+        label="Refresh"
+        color="neutral"
+        variant="ghost"
+        :loading="isRefreshing"
+        class="self-start sm:self-auto"
+        @click="refreshDashboard"
+      />
+    </section>
 
     <UAlert
       v-if="error"
@@ -501,58 +355,32 @@ async function refreshDashboard() {
       variant="soft"
       icon="i-lucide-circle-alert"
       title="The dashboard information could not be loaded"
-      description="Please check your internet connection and select Try Again. If the problem continues, contact the system administrator."
-      :actions="[
-        {
-          label: 'Try Again',
-          color: 'error',
-          variant: 'outline',
-          onClick: refreshDashboard,
-        },
-      ]"
+      description="Please check your connection and try again."
+      :actions="[{ label: 'Try Again', color: 'error', variant: 'outline', onClick: refreshDashboard }]"
     />
 
     <UAlert
-      v-else-if="
-        dashboard.unavailableModules.length > 0
-      "
+      v-else-if="dashboard.unavailableModules.length > 0"
       color="warning"
       variant="soft"
       icon="i-lucide-shield-alert"
       title="Some information is temporarily unavailable"
-      :description="`The dashboard could not load: ${dashboard.unavailableModules.join(', ')}. You can still use the available sections. Please ask the system administrator for help if the problem continues.`"
+      :description="`Unavailable: ${dashboard.unavailableModules.join(', ')}. The available library tools can still be used.`"
     />
 
     <section aria-labelledby="library-summary-heading">
-      <div
-        class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"
-      >
-        <div>
-          <h2
-            id="library-summary-heading"
-            class="text-lg font-semibold text-highlighted"
-          >
-            Today’s Library Summary
-          </h2>
-          <p class="mt-1 text-sm text-muted">
-            Select a card to view the related records.
-          </p>
-        </div>
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <h2 id="library-summary-heading" class="text-base font-semibold text-highlighted sm:text-lg">
+          Today's Library Summary
+        </h2>
+        <NuxtLink to="/librarian/books" class="text-xs font-semibold text-primary hover:underline">
+          {{ formatNumber(dashboard.totalTitles) }} titles · {{ formatNumber(dashboard.totalCopies) }} copies
+        </NuxtLink>
       </div>
 
-      <div
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
-      >
+      <div class="sncbt-compact-metrics">
         <template v-if="status === 'pending'">
-          <UCard
-            v-for="item in 6"
-            :key="item"
-            class="rounded-2xl"
-          >
-            <USkeleton class="h-4 w-28" />
-            <USkeleton class="mt-4 h-9 w-20" />
-            <USkeleton class="mt-3 h-3 w-36" />
-          </UCard>
+          <USkeleton v-for="item in 4" :key="item" class="h-28 rounded-xl" />
         </template>
 
         <NuxtLink
@@ -562,338 +390,142 @@ async function refreshDashboard() {
           :to="stat.to"
           class="sncbt-metric-card sncbt-card-interactive group cursor-pointer"
         >
-          <div
-            class="flex items-start justify-between gap-4"
-          >
-            <div>
-              <p
-                class="text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                {{ stat.label }}
-              </p>
-              <p
-                class="mt-2 text-3xl font-bold tracking-tight text-highlighted"
-              >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-muted">{{ stat.label }}</p>
+              <p class="mt-1.5 text-2xl font-bold tracking-tight text-highlighted">
                 {{ formatNumber(stat.value) }}
               </p>
+              <p class="mt-1 hidden text-xs text-muted sm:block">{{ stat.description }}</p>
             </div>
-
             <div
-              class="flex size-11 shrink-0 items-center justify-center rounded-xl"
+              class="flex size-9 shrink-0 items-center justify-center rounded-lg"
               :class="{
-                'bg-success/10 text-success':
-                  stat.color === 'success',
-                'bg-warning/10 text-warning':
-                  stat.color === 'warning',
-                'bg-error/10 text-error':
-                  stat.color === 'error',
-                'bg-info/10 text-info':
-                  stat.color === 'info',
-                'bg-elevated text-muted':
-                  stat.color === 'neutral',
+                'bg-success/10 text-success': stat.color === 'success',
+                'bg-warning/10 text-warning': stat.color === 'warning',
+                'bg-error/10 text-error': stat.color === 'error',
+                'bg-info/10 text-info': stat.color === 'info',
+                'bg-elevated text-muted': stat.color === 'neutral',
               }"
             >
-              <UIcon
-                :name="stat.icon"
-                class="size-5"
-              />
+              <UIcon :name="stat.icon" class="size-4.5" />
             </div>
-          </div>
-
-          <div
-            class="mt-4 flex items-center justify-between gap-3"
-          >
-            <p class="text-xs text-muted">
-              {{ stat.description }}
-            </p>
-            <UIcon
-              name="i-lucide-arrow-up-right"
-              class="size-4 text-dimmed transition group-hover:text-primary"
-            />
           </div>
         </NuxtLink>
       </div>
     </section>
 
-    <section
-      class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.6fr)]"
-    >
-      <UCard class="rounded-2xl">
-        <template #header>
-          <div
-            class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <h2
-                class="text-lg font-semibold text-highlighted"
-              >
-                Common Tasks
-              </h2>
-              <p class="mt-1 text-sm text-muted">
-                Quickly open the tasks used most often each day.
-              </p>
-            </div>
-
-            <UBadge
-              color="primary"
-              variant="soft"
-            >
-              Frequently used
-            </UBadge>
-          </div>
-        </template>
-
-        <div
-          class="grid grid-cols-1 gap-4 sm:grid-cols-2"
-        >
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
+      <div>
+        <div class="mb-3">
+          <h2 class="text-base font-semibold text-highlighted sm:text-lg">Quick Actions</h2>
+        </div>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <NuxtLink
             v-for="action in quickActions"
             :key="action.title"
             :to="action.to"
-            class="sncbt-quick-action group flex items-start gap-4 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            class="sncbt-quick-action flex min-h-20 flex-col justify-between gap-3 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-24 sm:p-4"
           >
-            <div
-              class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"
-            >
-              <UIcon
-                :name="action.icon"
-                class="size-5"
-              />
+            <div class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <UIcon :name="action.icon" class="size-4.5" />
             </div>
-
-            <div class="min-w-0 flex-1">
-              <p
-                class="font-semibold text-highlighted"
-              >
-                {{ action.title }}
-              </p>
-              <p
-                class="mt-1 text-sm leading-relaxed text-muted"
-              >
-                {{ action.description }}
-              </p>
-            </div>
-
-            <UIcon
-              name="i-lucide-chevron-right"
-              class="mt-1 size-4 shrink-0 text-dimmed transition group-hover:translate-x-0.5 group-hover:text-primary"
-            />
+            <p class="text-sm font-semibold text-highlighted">{{ action.title }}</p>
           </NuxtLink>
         </div>
-      </UCard>
+      </div>
 
-      <UCard class="rounded-2xl">
-        <template #header>
-          <div>
-            <h2
-              class="text-lg font-semibold text-highlighted"
-            >
-              Items to Check
-            </h2>
-            <p class="mt-1 text-sm text-muted">
-              Records that may need your attention today.
-            </p>
-          </div>
-        </template>
-
-        <div class="space-y-3">
+      <div>
+        <div class="mb-3">
+          <h2 class="text-base font-semibold text-highlighted sm:text-lg">Needs Attention</h2>
+        </div>
+        <div class="sncbt-record-list divide-y divide-default">
           <NuxtLink
             v-for="item in queueItems"
             :key="item.label"
             :to="item.to"
-            class="group flex items-center gap-4 rounded-xl border border-default p-4 transition hover:border-success/40 hover:bg-elevated"
+            class="sncbt-record-row flex items-center gap-3 p-3.5"
           >
             <div
-              class="flex size-10 shrink-0 items-center justify-center rounded-xl"
-              :class="{
-                'bg-success/10 text-success':
-                  item.color === 'success',
-                'bg-warning/10 text-warning':
-                  item.color === 'warning',
-                'bg-error/10 text-error':
-                  item.color === 'error',
-                'bg-info/10 text-info':
-                  item.color === 'info',
-              }"
+              class="flex size-9 shrink-0 items-center justify-center rounded-lg"
+              :class="{ 'bg-error/10 text-error': item.color === 'error', 'bg-info/10 text-info': item.color === 'info' }"
             >
-              <UIcon
-                :name="item.icon"
-                class="size-5"
-              />
+              <UIcon :name="item.icon" class="size-4.5" />
             </div>
-
             <div class="min-w-0 flex-1">
-              <div
-                class="flex items-center justify-between gap-3"
-              >
-                <p
-                  class="truncate text-sm font-semibold text-highlighted"
-                >
-                  {{ item.label }}
-                </p>
-                <span
-                  class="text-lg font-bold text-highlighted"
-                >
-                  {{ formatNumber(item.value) }}
-                </span>
-              </div>
-              <p
-                class="mt-1 text-xs leading-relaxed text-muted"
-              >
-                {{ item.description }}
-              </p>
+              <p class="truncate text-sm font-semibold text-highlighted">{{ item.label }}</p>
+              <p class="hidden text-xs text-muted sm:block">{{ item.description }}</p>
             </div>
+            <span class="text-xl font-bold text-highlighted">{{ formatNumber(item.value) }}</span>
           </NuxtLink>
         </div>
-      </UCard>
+      </div>
     </section>
 
-    <UCard class="overflow-hidden rounded-2xl shadow-sm shadow-emerald-100 mb-12">
-      <template #header>
-        <div
-          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div>
-            <h2
-              class="text-lg font-semibold text-highlighted"
-            >
-              Recent Borrowing Records
-            </h2>
-            <p class="mt-1 text-sm text-muted">
-              Latest books borrowed by students and faculty.
-            </p>
-          </div>
-
-          <UButton
-            to="/librarian/borrow"
-            label="See All Borrowing Records"
-            trailing-icon="i-lucide-arrow-right"
-            color="neutral"
-            variant="ghost"
-          />
+    <section aria-labelledby="recent-borrowing-heading">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 id="recent-borrowing-heading" class="text-base font-semibold text-highlighted sm:text-lg">Recent Borrowing</h2>
+          <p class="mt-0.5 hidden text-sm text-muted sm:block">Latest books borrowed by students and faculty.</p>
         </div>
-      </template>
+        <UButton to="/librarian/borrow" label="View all" trailing-icon="i-lucide-arrow-right" color="neutral" variant="ghost" size="sm" />
+      </div>
 
-      <div v-if="status === 'pending'">
-        <div
-          v-for="item in 5"
-          :key="item"
-          class="grid grid-cols-5 gap-4 border-b border-default p-4 last:border-b-0"
-        >
-          <USkeleton class="h-5 w-full" />
-          <USkeleton class="h-5 w-full" />
-          <USkeleton class="h-5 w-full" />
-          <USkeleton class="h-5 w-full" />
-          <USkeleton class="h-5 w-full" />
-        </div>
+      <div v-if="status === 'pending'" class="space-y-2">
+        <USkeleton v-for="item in 4" :key="item" class="h-18 rounded-xl" />
       </div>
 
       <UEmpty
-        v-else-if="
-          dashboard.recentActivity.length === 0
-        "
+        v-else-if="dashboard.recentActivity.length === 0"
         icon="i-lucide-history"
         title="No borrowing records yet"
         description="Recent borrowing records will appear here after a book is borrowed."
-        class="py-12"
+        class="py-10"
       />
 
-      <div v-else class="overflow-x-auto">
-        <table class="w-full min-w-190">
-          <thead>
-            <tr
-              class="border-b border-default bg-elevated/50 text-left"
-            >
-              <th
-                class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                Borrower
-              </th>
-              <th
-                class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                Book
-              </th>
-              <th
-                class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                Book Barcode
-              </th>
-              <th
-                class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                Borrowing Status
-              </th>
-              <th
-                class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                Borrowed On
-              </th>
-            </tr>
-          </thead>
+      <template v-else>
+        <div class="sncbt-mobile-record-list md:hidden">
+          <div v-for="activity in dashboard.recentActivity" :key="activity.id" class="sncbt-mobile-record">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-highlighted">{{ activity.borrower }}</p>
+                <p class="mt-0.5 line-clamp-2 text-sm text-default">{{ activity.title }}</p>
+              </div>
+              <UBadge :color="badgeColor(activity.status)" variant="soft">{{ activity.status }}</UBadge>
+            </div>
+            <div class="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
+              <span class="truncate">{{ activity.memberType }} · {{ activity.barcode }}</span>
+              <span class="shrink-0">{{ activity.date }}</span>
+            </div>
+          </div>
+        </div>
 
-          <tbody>
-            <tr
-              v-for="activity in dashboard.recentActivity"
-              :key="activity.id"
-              class="border-b border-default last:border-b-0 hover:bg-elevated/40"
-            >
-              <td class="px-5 py-4">
-                <div class="flex items-center gap-3">
-                  <UAvatar
-                    :alt="activity.borrower"
-                    icon="i-lucide-user"
-                    size="sm"
-                  />
-                  <div class="min-w-0">
-                    <p
-                      class="truncate text-sm font-medium text-highlighted"
-                    >
-                      {{ activity.borrower }}
-                    </p>
-                    <p class="text-xs text-muted">
-                      {{ activity.memberType }}
-                    </p>
-                  </div>
-                </div>
-              </td>
-
-              <td
-                class="max-w-64 px-5 py-4 text-sm text-default"
-              >
-                <p class="truncate">
-                  {{ activity.title }}
-                </p>
-              </td>
-
-              <td class="px-5 py-4">
-                <code
-                  class="rounded-md bg-elevated px-2 py-1 text-xs text-highlighted"
-                >
-                  {{ activity.barcode }}
-                </code>
-              </td>
-
-              <td class="px-5 py-4">
-                <UBadge
-                  :color="
-                    badgeColor(activity.status)
-                  "
-                  variant="soft"
-                >
-                  {{ activity.status }}
-                </UBadge>
-              </td>
-
-              <td
-                class="whitespace-nowrap px-5 py-4 text-sm text-muted"
-              >
-                {{ activity.date }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </UCard>
+        <div class="sncbt-table-surface hidden overflow-x-auto md:block">
+          <table class="w-full min-w-[46rem]">
+            <thead>
+              <tr class="border-b border-default text-left">
+                <th class="px-4 py-3">Borrower</th>
+                <th class="px-4 py-3">Book</th>
+                <th class="px-4 py-3">Barcode</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Borrowed On</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="activity in dashboard.recentActivity" :key="activity.id" class="border-b border-default last:border-b-0">
+                <td class="px-4 py-3">
+                  <p class="text-sm font-medium text-highlighted">{{ activity.borrower }}</p>
+                  <p class="text-xs text-muted">{{ activity.memberType }}</p>
+                </td>
+                <td class="max-w-72 px-4 py-3 text-sm"><p class="truncate">{{ activity.title }}</p></td>
+                <td class="px-4 py-3"><code class="text-xs">{{ activity.barcode }}</code></td>
+                <td class="px-4 py-3"><UBadge :color="badgeColor(activity.status)" variant="soft">{{ activity.status }}</UBadge></td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-muted">{{ activity.date }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </section>
   </div>
 </template>

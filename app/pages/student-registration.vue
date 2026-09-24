@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
 import type { CroppedStudentPhoto } from "~/types/studentPhoto";
@@ -369,7 +370,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[var(--sncbt-canvas)] text-default">
+  <AppSkipLink />
+  <div class="sncbt-public-registration-shell min-h-dvh bg-[var(--sncbt-canvas)] text-default">
     <header class="sncbt-navbar-surface border-b border-default/70">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <div class="flex min-w-0 items-center gap-3">

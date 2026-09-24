@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
+import PortalMobileBottomNav from "~/components/shared/PortalMobileBottomNav.vue";
 import type {
   DropdownMenuItem,
   NavigationMenuItem,
@@ -18,6 +19,11 @@ const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
 const logoutOpen = ref(false);
 const loggingOut = ref(false);
+
+function openMobileNavigation() {
+  sidebarCollapsed.value = false;
+  sidebarOpen.value = true;
+}
 
 const userName = computed(() =>
   dashboard.student.value?.fullName ||
@@ -147,6 +153,41 @@ const pageTitle = computed(() =>
 );
 const pageIcon = computed(() => pageInformation().icon);
 
+const mobileNavigationItems = computed(() => [
+  {
+    label: "Home",
+    icon: "i-lucide-house",
+    to: "/student/dashboard",
+    active: active("/student/dashboard", true),
+  },
+  {
+    label: "Books",
+    icon: "i-lucide-book-open",
+    to: "/student/books",
+    active: active("/student/books"),
+  },
+  {
+    label: "Borrowed",
+    icon: "i-lucide-book-open-check",
+    to: "/student/borrowings",
+    active: active("/student/borrowings"),
+  },
+  {
+    label: "Reserved",
+    icon: "i-lucide-bookmark-check",
+    to: "/student/reservations",
+    active: active("/student/reservations"),
+  },
+]);
+
+const mobileMoreActive = computed(() =>
+  active("/student/history") ||
+  active("/student/library-card") ||
+  active("/student/notifications") ||
+  active("/student/security"),
+);
+
+
 const accountItems = computed<DropdownMenuItem[][]>(() => [
   [
     {
@@ -239,7 +280,7 @@ onBeforeUnmount(() => {
     storage="local"
     storage-key="sncbt-student-dashboard"
     unit="rem"
-    class="min-h-dvh bg-[var(--sncbt-canvas)] text-default"
+    class="sncbt-density-comfortable min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="student-main-navigation"
@@ -258,12 +299,12 @@ onBeforeUnmount(() => {
         icon: 'i-lucide-x',
       }"
       :ui="{
-        root: 'sncbt-sidebar-surface overflow-hidden border-e transition-[width] duration-300 ease-out',
+        root: 'sncbt-sidebar-surface sncbt-app-sidebar overflow-hidden border-e lg:transition-[width] lg:duration-150 lg:ease-out',
         header: 'border-b border-default/70 bg-transparent px-3 py-3',
         body: 'gap-2 overflow-y-auto overscroll-contain px-2 py-3 ps-4 [scrollbar-gutter:stable]',
         footer: 'border-t border-default/70 bg-transparent px-2 py-3',
-        content: 'sncbt-sidebar-surface w-[min(88vw,21rem)] max-w-none shadow-2xl',
-        overlay: 'bg-black/40 backdrop-blur-[1px]',
+        content: 'sncbt-sidebar-surface sncbt-sidebar-mobile-content w-[min(90vw,21rem)] max-w-none',
+        overlay: 'bg-black/35',
       }"
     >
       <template #header="{ collapsed }">
@@ -363,16 +404,17 @@ onBeforeUnmount(() => {
           :icon="pageIcon"
           :toggle="false"
           :ui="{
-            root: 'sncbt-navbar-surface border-b px-2 sm:px-4 lg:px-6',
+            root: 'sncbt-navbar-surface sncbt-app-navbar border-b px-2 sm:px-4 lg:px-6',
             left: 'min-w-0 gap-1 sm:gap-1.5',
             icon: 'hidden size-5 sm:block',
-            title: 'max-w-[12rem] truncate text-sm font-semibold sm:max-w-none sm:text-base',
+            title: 'max-w-[12rem] truncate text-sm font-semibold sm:hidden',
             right: 'gap-1',
           }"
         >
           <template #toggle="{ sidebarCollapsed: collapsed, sidebarOpen: open }">
             <UTooltip :text="open ? 'Close navigation menu' : 'Open navigation menu'">
               <UDashboardSidebarToggle
+                class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
                 :variant="open ? 'soft' : 'ghost'"
@@ -383,6 +425,7 @@ onBeforeUnmount(() => {
             </UTooltip>
             <UTooltip :text="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
               <UDashboardSidebarCollapse
+                class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
                 :variant="collapsed ? 'soft' : 'ghost'"
@@ -436,14 +479,7 @@ onBeforeUnmount(() => {
               />
             </UTooltip>
 
-            <UBadge
-              label="Student"
-              color="primary"
-              variant="soft"
-              icon="i-lucide-graduation-cap"
-              class="hidden sm:inline-flex"
-            />
-            <UColorModeButton color="neutral" variant="ghost" />
+            <UColorModeButton class="hidden sm:inline-flex" color="neutral" variant="ghost" />
             <UDropdownMenu
               :items="accountItems"
               :content="{ align: 'end', sideOffset: 8 }"
@@ -458,7 +494,7 @@ onBeforeUnmount(() => {
       </template>
 
       <template #body>
-        <main id="main-content" class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+        <main id="main-content" class="sncbt-mobile-bottom-nav-spacer min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
             <div class="sncbt-portal-view">
@@ -469,6 +505,13 @@ onBeforeUnmount(() => {
       </template>
     </UDashboardPanel>
   </UDashboardGroup>
+
+  <PortalMobileBottomNav
+    :items="mobileNavigationItems"
+    :more-active="mobileMoreActive"
+    more-controls="sncbt-student-dashboard-sidebar-student-main-navigation"
+    @more="openMobileNavigation"
+  />
 
   <UModal
     v-model:open="logoutOpen"

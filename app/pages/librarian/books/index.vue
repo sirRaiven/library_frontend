@@ -686,6 +686,21 @@ watch(page, () => {
   void loadBooks();
 });
 
+
+const collectionActionItems = computed(() => [
+  [
+    { label: "Physical Copies", icon: "i-lucide-book-copy", to: "/librarian/books/copies" },
+    { label: "Import Excel", icon: "i-lucide-file-up", to: "/librarian/books/import" },
+    {
+      label: "Export Excel",
+      icon: "i-lucide-file-down",
+      onSelect() {
+        void exportInventory();
+      },
+    },
+  ],
+]);
+
 onMounted(async () => {
   try {
     await libraryOptions.loadOperational();
@@ -712,13 +727,17 @@ onBeforeUnmount(() => {
         icon="i-lucide-library"
       >
         <template #actions>
-          <UBadge color="neutral" variant="soft" class="self-center">
-            {{ totalBooks }} {{ totalBooks === 1 ? "title" : "titles" }}
-          </UBadge>
-          <UButton to="/librarian/books/import" label="Import Excel" icon="i-lucide-file-up" color="neutral" variant="outline" />
-          <UButton label="Export Excel" icon="i-lucide-file-down" color="neutral" variant="outline" :loading="isExporting" @click="exportInventory" />
-          <UButton to="/librarian/books/copies" label="Physical Copies" icon="i-lucide-book-copy" color="neutral" variant="outline" />
           <UButton to="/librarian/books/register" label="Register Book" icon="i-lucide-plus" color="primary" />
+          <UDropdownMenu :items="collectionActionItems" :content="{ align: 'end' }">
+            <UButton
+              icon="i-lucide-ellipsis"
+              color="neutral"
+              variant="outline"
+              square
+              :loading="isExporting"
+              aria-label="More collection actions"
+            />
+          </UDropdownMenu>
         </template>
       </LibrarianPageHeader>
 
@@ -747,11 +766,7 @@ onBeforeUnmount(() => {
                 size="lg"
                 :loading="isLoading"
                 class="min-w-0 flex-1"
-              >
-                <template #trailing>
-                  <UKbd>Enter</UKbd>
-                </template>
-              </UInput>
+              />
 
               <LiveBarcodeScanner
                 :disabled="isLoading || isBarcodeSearching"
@@ -767,7 +782,7 @@ onBeforeUnmount(() => {
               />
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 text-xs">
+            <div class="hidden flex-wrap items-center gap-2 text-xs sm:flex">
               <p class="text-muted">
                 Search by title, author, subject, call number, ISBN, author code, or accession number.
                 For a Dewey range, enter <span class="font-medium text-highlighted">001 - 099</span>.
@@ -794,12 +809,14 @@ onBeforeUnmount(() => {
           />
 
           <UButton
-            label="Refresh"
             icon="i-lucide-refresh-cw"
             color="neutral"
-            variant="outline"
+            variant="ghost"
             size="lg"
+            square
             :loading="isLoading"
+            aria-label="Refresh collection"
+            class="hidden md:inline-flex"
             @click="loadBooks"
           />
         </div>
@@ -959,7 +976,7 @@ onBeforeUnmount(() => {
           >
             <button
               type="button"
-              class="relative flex min-h-52 w-full shrink-0 overflow-hidden rounded-2xl ring-1 ring-inset transition-[transform,box-shadow] duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-[248px] sm:w-40 sm:self-stretch"
+              class="relative hidden min-h-[11rem] w-32 shrink-0 overflow-hidden rounded-xl ring-1 ring-inset transition-[box-shadow] duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:flex sm:self-stretch"
               :class="bookCoverTheme(book)"
               :aria-label="`Open ${book.title}`"
               @click="openBook(book)"
@@ -1023,6 +1040,10 @@ onBeforeUnmount(() => {
               <div
                 class="flex items-start justify-between gap-3"
               >
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary sm:hidden" aria-hidden="true">
+                  <UIcon name="i-lucide-book-open" class="size-5" />
+                </div>
+
                 <button
                   type="button"
                   class="min-w-0 flex-1 text-left focus-visible:outline-none"
@@ -1043,18 +1064,11 @@ onBeforeUnmount(() => {
 
                 <div class="flex shrink-0 items-center gap-1.5">
                   <UBadge
-                    :color="
-                      book.record_status ===
-                      'Archived'
-                        ? 'neutral'
-                        : 'success'
-                    "
+                    v-if="book.record_status === 'Archived'"
+                    color="neutral"
                     variant="soft"
                   >
-                    {{
-                      book.record_status ??
-                      "Active"
-                    }}
+                    Archived
                   </UBadge>
 
                   <UDropdownMenu
@@ -1167,27 +1181,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <div
-                class="mt-5 flex flex-col gap-3 border-t border-default/80 pt-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div class="min-w-0">
-                  <p class="text-xs font-medium text-muted">
-                    Availability
-                  </p>
-                  <p
-                    class="mt-0.5 text-sm font-semibold"
-                    :class="book.availableCopies > 0 ? 'text-success' : 'text-warning'"
-                  >
-                    {{
-                      book.availableCopies > 0
-                        ? `${book.availableCopies} of ${book.totalCopies} copies ready`
-                        : book.totalCopies > 0
-                          ? 'No copies currently available'
-                          : 'No physical copies registered'
-                    }}
-                  </p>
-                </div>
-
+              <div class="mt-4 flex justify-end border-t border-default/80 pt-3">
                 <button
                   type="button"
                   class="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:self-auto"

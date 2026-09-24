@@ -555,6 +555,26 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   },
 ]);
 
+function getCompactChildItems(
+  item: NavigationMenuItem,
+): DropdownMenuItem[][] {
+  const children = Array.isArray(item.children)
+    ? item.children
+    : [];
+
+  return [
+    children.map((child) => ({
+      label: String(child.label || "Open"),
+      icon:
+        typeof child.icon === "string"
+          ? child.icon
+          : undefined,
+      to: child.to,
+    })),
+  ];
+}
+
+
 function handleSidebarNavigationClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
 
@@ -704,7 +724,7 @@ watch(
     storage="local"
     storage-key="sncbt-librarian-dashboard"
     unit="rem"
-    class="min-h-dvh bg-[var(--sncbt-canvas)] text-default"
+    class="sncbt-density-compact min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="main-navigation"
@@ -724,8 +744,8 @@ watch(
       }"
       :ui="{
         root: [
-          'sncbt-sidebar-surface overflow-hidden',
-          'transition-[width] duration-300 ease-out',
+          'sncbt-sidebar-surface sncbt-app-sidebar overflow-hidden',
+          'lg:transition-[width] lg:duration-150 lg:ease-out',
           'motion-reduce:transition-none',
           'data-[dragging=true]:transition-none',
         ].join(' '),
@@ -742,10 +762,10 @@ watch(
           'px-2.5 py-3',
         ].join(' '),
         content: [
-          'w-[min(88vw,20rem)] max-w-none',
-          'sncbt-sidebar-surface shadow-2xl',
+          'w-[min(90vw,21rem)] max-w-none',
+          'sncbt-sidebar-surface sncbt-sidebar-mobile-content',
         ].join(' '),
-        overlay: 'bg-black/40 backdrop-blur-[1px]',
+        overlay: 'bg-black/35',
       }"
     >
       <template #header="{ collapsed }">
@@ -774,7 +794,7 @@ watch(
           </div>
 
           <div
-            class="min-w-0 overflow-hidden transition-[max-width,opacity,transform] duration-200 ease-out motion-reduce:transition-none"
+            class="min-w-0 overflow-hidden transition-[max-width,opacity] duration-150 ease-out motion-reduce:transition-none"
             :class="
               collapsed
                 ? 'pointer-events-none max-w-0 -translate-x-1 opacity-0'
@@ -839,41 +859,75 @@ watch(
             @click="handleSidebarNavigationClick"
           />
 
-          <UNavigationMenu
+          <div
             v-else
-            :items="compactNavigationItems"
-            orientation="vertical"
-            collapsed
-            :tooltip="{
-              delayDuration: 150,
-              content: {
-                side: 'right',
-                align: 'center',
-                sideOffset: 10,
-                collisionPadding: 12,
-              },
-              arrow: true,
-            }"
-            color="primary"
-            variant="pill"
-            highlight
-            class="sncbt-navigation sncbt-librarian-compact-nav w-full min-w-0 overflow-hidden"
-            :ui="{
-              root: 'w-full min-w-0 gap-1.5',
-              list: 'w-full min-w-0 gap-1.5',
-              item: 'w-full min-w-0',
-              link: [
-                'group min-h-10 justify-center rounded-xl px-0 text-primary',
-                'transition-[background-color,color,box-shadow,transform] duration-150',
-                'hover:bg-primary/10 hover:text-primary',
-                'data-[active]:bg-primary/14 data-[active]:text-primary data-[active]:shadow-sm',
-              ].join(' '),
-              linkLeadingIcon: 'size-5 text-primary',
-              linkLabel: 'text-xs font-semibold text-primary',
-            }"
+            class="sncbt-navigation sncbt-librarian-compact-nav flex w-full min-w-0 flex-col items-center gap-1.5"
             aria-label="Compact Librarian portal navigation"
-            @click="handleSidebarNavigationClick"
-          />
+          >
+            <template
+              v-for="item in compactNavigationItems"
+              :key="String(item.label)"
+            >
+              <UTooltip
+                v-if="item.to"
+                :text="String(item.label)"
+                :content="{
+                  side: 'right',
+                  align: 'center',
+                  sideOffset: 10,
+                  collisionPadding: 12,
+                }"
+                :delay-duration="150"
+                arrow
+              >
+                <UButton
+                  :to="item.to"
+                  :icon="item.icon"
+                  color="primary"
+                  :variant="item.active ? 'soft' : 'ghost'"
+                  square
+                  class="size-10 rounded-xl"
+                  :aria-label="String(item.label)"
+                />
+              </UTooltip>
+
+              <UDropdownMenu
+                v-else
+                :items="getCompactChildItems(item)"
+                :content="{
+                  side: 'right',
+                  align: 'start',
+                  sideOffset: 10,
+                  collisionPadding: 12,
+                }"
+                :ui="{
+                  content: 'min-w-56',
+                }"
+              >
+                <UTooltip
+                  :text="String(item.label)"
+                  :content="{
+                    side: 'right',
+                    align: 'center',
+                    sideOffset: 10,
+                    collisionPadding: 12,
+                  }"
+                  :delay-duration="150"
+                  arrow
+                >
+                  <UButton
+                    :icon="item.icon"
+                    color="primary"
+                    :variant="item.active ? 'soft' : 'ghost'"
+                    square
+                    class="size-10 rounded-xl"
+                    :aria-label="`Open ${String(item.label)} navigation`"
+                    aria-haspopup="menu"
+                  />
+                </UTooltip>
+              </UDropdownMenu>
+            </template>
+          </div>
         </div>
       </template>
 
@@ -962,14 +1016,14 @@ watch(
           toggle-side="left"
           :ui="{
             root: [
-              'sncbt-navbar-surface border-b',
+              'sncbt-navbar-surface sncbt-app-navbar border-b',
               'px-2 sm:px-4 lg:px-6',
               'transition-colors duration-200',
             ].join(' '),
             left: 'min-w-0 gap-1 sm:gap-1.5',
             icon: 'hidden size-5 shrink-0 sm:block',
             title:
-              'max-w-[10rem] truncate text-sm font-semibold sm:max-w-none sm:text-base',
+              'max-w-[10rem] truncate text-sm font-semibold sm:hidden',
             right: 'gap-0.5 sm:gap-1.5',
           }"
         >
@@ -1019,6 +1073,7 @@ watch(
               }"
             >
               <UDashboardSidebarCollapse
+                class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
                 :variant="

@@ -217,7 +217,7 @@ watch(
     storage="local"
     storage-key="sncbt-admin-dashboard"
     unit="rem"
-    class="min-h-dvh bg-[var(--sncbt-canvas)] text-default"
+    class="sncbt-density-compact min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="admin-main-navigation"
@@ -236,12 +236,12 @@ watch(
         icon: 'i-lucide-x',
       }"
       :ui="{
-        root: 'sncbt-sidebar-surface overflow-hidden border-e transition-[width] duration-300 ease-out motion-reduce:transition-none data-[dragging=true]:transition-none',
+        root: 'sncbt-sidebar-surface sncbt-app-sidebar overflow-hidden border-e lg:transition-[width] lg:duration-150 lg:ease-out motion-reduce:transition-none data-[dragging=true]:transition-none',
         header: 'border-b border-default/70 bg-transparent px-3 py-3',
         body: 'gap-2 overflow-y-auto overscroll-contain px-2 py-3 ps-4 [scrollbar-gutter:stable]',
         footer: 'border-t border-default/70 bg-transparent px-2 py-3',
-        content: 'sncbt-sidebar-surface w-[min(88vw,21rem)] max-w-none shadow-2xl',
-        overlay: 'bg-black/40 backdrop-blur-[1px]',
+        content: 'sncbt-sidebar-surface sncbt-sidebar-mobile-content w-[min(90vw,21rem)] max-w-none',
+        overlay: 'bg-black/35',
       }"
     >
       <template #header="{ collapsed }">
@@ -349,10 +349,10 @@ watch(
           :icon="pageIcon"
           :toggle="false"
           :ui="{
-            root: 'sncbt-navbar-surface border-b px-2 sm:px-4 lg:px-6',
+            root: 'sncbt-navbar-surface sncbt-app-navbar border-b px-2 sm:px-4 lg:px-6',
             left: 'min-w-0 gap-1 sm:gap-1.5',
             icon: 'hidden size-5 sm:block',
-            title: 'max-w-[12rem] truncate text-sm font-semibold sm:max-w-none sm:text-base',
+            title: 'max-w-[12rem] truncate text-sm font-semibold sm:hidden',
             right: 'gap-1',
           }"
         >
@@ -369,6 +369,7 @@ watch(
             </UTooltip>
             <UTooltip :text="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
               <UDashboardSidebarCollapse
+                class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
                 :variant="collapsed ? 'soft' : 'ghost'"
@@ -380,14 +381,7 @@ watch(
           </template>
 
           <template #right>
-            <UBadge
-              :label="userRole"
-              color="primary"
-              variant="soft"
-              icon="i-lucide-shield-check"
-              class="hidden md:inline-flex"
-            />
-            <UColorModeButton color="neutral" variant="ghost" />
+            <UColorModeButton class="hidden sm:inline-flex" color="neutral" variant="ghost" />
             <UDropdownMenu
               :items="accountItems"
               :content="{ align: 'end', sideOffset: 8 }"

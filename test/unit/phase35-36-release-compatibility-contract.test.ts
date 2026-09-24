@@ -90,7 +90,12 @@ describe("Phase 35-36 release compatibility contract", () => {
     expect(barcode).toContain('document.createElement("canvas")');
     expect(barcode).toContain('canvas.toDataURL("image/png")');
     expect(barcode).not.toContain("ref<SVGSVGElement");
-    expect(login).toContain(":key=\"showPassword ? 'password-visible' : 'password-hidden'\"");
+    expect(login).toContain('v-if="showPassword"');
+    expect(login).toContain('key="password-visible"');
+    expect(login).toContain('type="text"');
+    expect(login).toContain('v-else');
+    expect(login).toContain('key="password-hidden"');
+    expect(login).toContain('type="password"');
     expect(runner).toContain("0xC0E90002");
     expect(runner).toContain("CodeIntegrity");
     expect(runner).toContain("webkit-wsl");
@@ -103,6 +108,49 @@ describe("Phase 35-36 release compatibility contract", () => {
     expect(pkg.scripts["verify:deployment:preview"]).toBeTruthy();
     expect(pkg.scripts["phase36:local"]).toContain("verify:deployment:preview");
     expect(existsSync(resolve(root, "scripts/run-production-preview-check.mjs"))).toBe(true);
+  });
+
+  it("keeps Firefox password visibility and runtime diagnostics deterministic", () => {
+    const login = read("app/pages/index.vue");
+    const runtimeGuard = read("test/acceptance/helpers/runtime-guard.ts");
+    const harness = read("test/acceptance/helpers/harness.ts");
+    const acceptanceFiles = [
+      "admin.acceptance.test.ts",
+      "auth-public.acceptance.test.ts",
+      "error-states.acceptance.test.ts",
+      "faculty.acceptance.test.ts",
+      "librarian.acceptance.test.ts",
+      "responsive.acceptance.test.ts",
+      "role-routes.acceptance.test.ts",
+      "student.acceptance.test.ts",
+      "write-workflows.acceptance.test.ts",
+    ];
+
+    expect(login).toContain('v-if="showPassword"');
+    expect(login).toContain('type="text"');
+    expect(login).toContain('v-else');
+    expect(login).toContain('type="password"');
+    expect(login).toContain("function revealPassword(): void");
+    expect(login).toContain("showPassword.value = true");
+    expect(login).toContain('@click="revealPassword"');
+    expect(login).toContain("function hidePassword(): void");
+    expect(login).toContain("showPassword.value = false");
+    expect(login).toContain('@click="hidePassword"');
+    expect(login).toContain("function safeInternalRedirect(value: unknown)");
+    expect(login).toContain("target.origin !== baseOrigin");
+    expect(login).toContain("external: true");
+    expect(runtimeGuard).toContain("pendingConsoleDiagnostics");
+    expect(runtimeGuard).toContain("argument.jsonValue()");
+    expect(runtimeGuard).toContain('parsedUrl.pathname.startsWith("/_nuxt/")');
+    expect(runtimeGuard).toContain("async assertClean()");
+    expect(harness).toContain("waitForPageSettle");
+    expect(harness).toContain('waitForLoadState("networkidle"');
+
+    for (const file of acceptanceFiles) {
+      const acceptance = read(`test/acceptance/${file}`);
+      expect(acceptance.replaceAll("await guard.assertClean();", "")).not.toContain("guard.assertClean();");
+      expect(acceptance).toContain("await guard.assertClean();");
+    }
   });
 
   it("locks v18 production-preview identity, Docker WebKit, and dirty-fixture diagnostics", () => {
@@ -125,7 +173,7 @@ describe("Phase 35-36 release compatibility contract", () => {
     expect(harness).toContain("browserWsEndpoint");
     expect(writeAcceptance).toContain("fixture state, not a reservation-creation failure");
     expect(writeAcceptance).toContain("Ready for Pickup");
-    expect(order).toContain("one at a time");
+    expect(order).toMatch(/one\s+frontend\s+test\s+command\s+at\s+a\s+time/i);
   });
 
   it("locks v19 preview cleanup and production download hand-off compatibility", () => {
@@ -134,16 +182,20 @@ describe("Phase 35-36 release compatibility contract", () => {
     const monitoring = read("app/components/admin/AdminMonitoringReportsPanel.vue");
     const cardDesigner = read("app/pages/librarian/library-card-designer.vue");
     const inventoryPage = read("app/pages/librarian/books/import.vue");
+    const librarianAcceptance = read("test/acceptance/librarian.acceptance.test.ts");
 
     expect(preview).toContain("waitForPortRelease");
     expect(preview).toContain("taskkill");
     expect(preview).toContain("Production preview stopped and port");
     expect(inventory).toContain("optimized production bundle");
+    expect(inventory).toContain('exceljs/dist/exceljs.bare.min.js');
     expect(inventory).toContain("window.setTimeout");
     expect(monitoring).toContain("window.setTimeout");
     expect(cardDesigner).toContain("window.setTimeout");
     expect(inventoryPage).toContain("isDownloadingTemplate");
     expect(inventoryPage).toContain("Template download failed");
+    expect(librarianAcceptance).toContain("Template download failed");
+    expect(librarianAcceptance).toContain("Promise.race");
   });
 
 });
