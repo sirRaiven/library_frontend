@@ -1186,9 +1186,16 @@ body {
 }
 
 @media (min-width: 1024px) {
-  .sncbt-mobile-bottom-nav,
-  .sncbt-mobile-bottom-nav-spacer {
+  /* Only the fixed phone/tablet navigation disappears on desktop.
+   * The spacer class is attached to the Student/Faculty <main> element, so
+   * hiding it here would hide the entire portal page at desktop widths. */
+  .sncbt-mobile-bottom-nav {
     display: none !important;
+  }
+
+  .sncbt-mobile-bottom-nav-spacer {
+    display: block !important;
+    padding-bottom: 0;
   }
 }
 
@@ -2363,4 +2370,71 @@ body {
    mobile bottom navigation intentionally continues to track page color mode. */
 .sncbt-mobile-bottom-nav {
   color-scheme: normal;
+}
+
+/* --------------------------------------------------------------------------
+ * Design System v2 — DS-8.4: member dashboards + account experience
+ * Modern Student/Faculty dashboards use a shared visual rhythm and the account
+ * pages use a standard settings-shell pattern without changing portal logic.
+ * -------------------------------------------------------------------------- */
+
+.sncbt-member-dashboard-hero,
+.sncbt-account-identity-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--sncbt-color-border) 76%, var(--ui-primary) 24%);
+  background:
+    radial-gradient(circle at 94% 110%, color-mix(in srgb, var(--sncbt-theme-orb) 88%, transparent) 0 7.8rem, transparent 7.95rem),
+    radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--sncbt-theme-aqua) 74%, transparent) 0 4.7rem, transparent 4.85rem),
+    linear-gradient(145deg, var(--sncbt-theme-surface-start), var(--sncbt-theme-surface-end));
+  box-shadow: var(--sncbt-elevation-1);
+}
+
+.sncbt-member-dashboard-hero::before,
+.sncbt-account-identity-card::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto auto 0;
+  width: 5.5rem;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ui-primary), color-mix(in srgb, var(--ui-primary) 34%, var(--ui-info)));
+  pointer-events: none;
+}
+
+.sncbt-member-dashboard-hero > *,
+.sncbt-account-identity-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sncbt-account-settings-nav {
+  border-color: color-mix(in srgb, var(--sncbt-color-border) 82%, var(--ui-primary) 18%);
+  background:
+    radial-gradient(circle at 112% -8%, color-mix(in srgb, var(--sncbt-theme-orb) 62%, transparent) 0 4.25rem, transparent 4.4rem),
+    linear-gradient(145deg, var(--sncbt-theme-surface-start), var(--sncbt-theme-surface-end));
+}
+
+@media (max-width: 639px) {
+  .sncbt-member-dashboard-hero,
+  .sncbt-account-identity-card {
+    background:
+      radial-gradient(circle at 108% 108%, color-mix(in srgb, var(--sncbt-theme-orb) 76%, transparent) 0 5.8rem, transparent 5.95rem),
+      linear-gradient(145deg, var(--sncbt-theme-surface-start), var(--sncbt-theme-surface-end));
+  }
+}
+
+@media print {
+  .sncbt-member-dashboard-hero,
+  .sncbt-account-identity-card,
+  .sncbt-account-settings-nav {
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .sncbt-member-dashboard-hero::before,
+  .sncbt-account-identity-card::before {
+    display: none !important;
+  }
 }

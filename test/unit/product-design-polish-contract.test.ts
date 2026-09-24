@@ -41,7 +41,7 @@ describe("product design and human-friendly messaging contract", () => {
     expect(librarian).toContain('title: "History"');
     expect(librarian).not.toContain('title: "Academic Term & Validity"');
     expect(faculty).toContain('label: "Borrowed Books"');
-    expect(faculty).toContain('label: "Profile"');
+    expect(faculty).toContain('label: "My Account"');
   });
 
   it("keeps technical details secondary in the audit record view", () => {

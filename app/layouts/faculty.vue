@@ -74,7 +74,7 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     { label: "Account", type: "label" },
     {
-      label: "Profile",
+      label: "My Account",
       icon: "i-lucide-user-round-cog",
       to: "/faculty/profile",
       active: active("/faculty/profile"),
@@ -94,7 +94,7 @@ function pageInfo() {
     return { title: "Book Status Reports", icon: "i-lucide-clipboard-check" };
   }
   if (path.startsWith("/faculty/profile")) {
-    return { title: "Profile", icon: "i-lucide-user-round-cog" };
+    return { title: "My Account", icon: "i-lucide-user-round-cog" };
   }
   return { title: "Faculty Dashboard", icon: "i-lucide-layout-dashboard" };
 }
@@ -123,7 +123,7 @@ const accountItems = computed<DropdownMenuItem[][]>(() => [
   ],
   [
     {
-      label: "Profile",
+      label: "My Account",
       icon: "i-lucide-user-round-cog",
       to: "/faculty/profile",
     },

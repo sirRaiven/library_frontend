@@ -113,8 +113,8 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
           : undefined,
     },
     {
-      label: "Profile and Security",
-      icon: "i-lucide-shield-user",
+      label: "My Account",
+      icon: "i-lucide-user-round-cog",
       to: "/student/security",
       active: active("/student/security"),
     },
@@ -143,7 +143,7 @@ function pageInformation() {
     return { title: "Notifications", icon: "i-lucide-bell" };
   }
   if (path.startsWith("/student/security")) {
-    return { title: "Security and Devices", icon: "i-lucide-shield-user" };
+    return { title: "My Account", icon: "i-lucide-user-round-cog" };
   }
 
   return { title: "Student Dashboard", icon: "i-lucide-layout-dashboard" };
@@ -209,8 +209,8 @@ const accountItems = computed<DropdownMenuItem[][]>(() => [
       to: "/student/notifications",
     },
     {
-      label: "Profile and Security",
-      icon: "i-lucide-shield-user",
+      label: "My Account",
+      icon: "i-lucide-user-round-cog",
       to: "/student/security",
     },
     {
