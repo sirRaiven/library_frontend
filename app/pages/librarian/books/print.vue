@@ -176,7 +176,7 @@ watch(
 
 <template>
   <div
-    class="min-h-screen bg-slate-100 text-slate-950"
+    class="sncbt-staff-page sncbt-staff-print-page min-h-screen bg-slate-100 text-slate-950"
   >
     <header
       class="no-print sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur"

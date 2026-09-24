@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type {
   AdminAuditCategory,
@@ -191,7 +193,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       title="Audit Trail"
       description="Review administrative, security, configuration, privacy, system, and Library transaction records."
@@ -323,42 +325,68 @@ onMounted(load);
         <p class="mt-1 text-sm text-muted">Adjust the search, classification, result, severity, or date filters.</p>
       </div>
 
-      <UTable v-else :data="records" :columns="columns">
-        <template #event-cell="{ row }">
-          <p class="font-semibold text-highlighted">{{ row.original.action }}</p>
-          <p class="mt-1 max-w-xl truncate text-xs text-muted">{{ row.original.description }}</p>
-          <p v-if="row.original.eventId" class="mt-1 max-w-52 truncate font-mono text-[10px] text-dimmed">
-            {{ row.original.eventId }}
-          </p>
-        </template>
-        <template #classification-cell="{ row }">
-          <div class="flex flex-wrap gap-1.5">
-            <UBadge :label="row.original.category" :color="categoryColor(row.original.category)" variant="soft" size="sm" />
-            <UBadge :label="row.original.severity" :color="severityColor(row.original.severity)" variant="subtle" size="sm" />
+      <AppResponsiveDataView v-else mobile-label="Audit records" desktop-label="Audit records table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard
+              v-for="record in records"
+              :key="record.id"
+              :title="record.action"
+              :subtitle="record.description"
+            >
+              <template #status>
+                <AdminStatusBadge :label="record.outcome" />
+              </template>
+              <template #meta>
+                <span>{{ record.category }} · {{ record.severity }}</span>
+                <span>{{ record.actor }} · {{ record.actorRole || 'Role unavailable' }}</span>
+                <time>{{ formatDateTime(record.occurredAt || record.createdAt) }}</time>
+              </template>
+              <template #actions>
+                <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View audit record" @click="openDetail(record)" />
+              </template>
+            </AppRecordCard>
           </div>
-          <p class="mt-1 text-xs text-muted">{{ row.original.module }}</p>
         </template>
-        <template #actor-cell="{ row }">
-          <p class="text-sm font-medium text-highlighted">{{ row.original.actor }}</p>
-          <p class="text-xs text-muted">{{ row.original.actorRole || 'Role unavailable' }}</p>
+        <template #desktop>
+          <UTable :data="records" :columns="columns">
+                  <template #event-cell="{ row }">
+                    <p class="font-semibold text-highlighted">{{ row.original.action }}</p>
+                    <p class="mt-1 max-w-xl truncate text-xs text-muted">{{ row.original.description }}</p>
+                    <p v-if="row.original.eventId" class="mt-1 max-w-52 truncate font-mono text-[10px] text-dimmed">
+                      {{ row.original.eventId }}
+                    </p>
+                  </template>
+                  <template #classification-cell="{ row }">
+                    <div class="flex flex-wrap gap-1.5">
+                      <UBadge :label="row.original.category" :color="categoryColor(row.original.category)" variant="soft" size="sm" />
+                      <UBadge :label="row.original.severity" :color="severityColor(row.original.severity)" variant="subtle" size="sm" />
+                    </div>
+                    <p class="mt-1 text-xs text-muted">{{ row.original.module }}</p>
+                  </template>
+                  <template #actor-cell="{ row }">
+                    <p class="text-sm font-medium text-highlighted">{{ row.original.actor }}</p>
+                    <p class="text-xs text-muted">{{ row.original.actorRole || 'Role unavailable' }}</p>
+                  </template>
+                  <template #target-cell="{ row }">
+                    <p class="text-sm text-default">{{ row.original.targetLabel || row.original.targetType || 'System' }}</p>
+                    <p v-if="row.original.targetId" class="max-w-48 truncate font-mono text-[11px] text-muted">{{ row.original.targetId }}</p>
+                  </template>
+                  <template #outcome-cell="{ row }">
+                    <AdminStatusBadge :label="row.original.outcome" />
+                  </template>
+                  <template #created-cell="{ row }">
+                    <time class="text-sm text-default">{{ formatDateTime(row.original.occurredAt || row.original.createdAt) }}</time>
+                    <p class="mt-1 text-[11px]" :class="row.original.sealed ? 'text-success' : 'text-muted'">
+                      {{ row.original.sealed ? 'Sealed' : 'Legacy unsealed' }}
+                    </p>
+                  </template>
+                  <template #actions-cell="{ row }">
+                    <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View audit record" @click="openDetail(row.original)" />
+                  </template>
+                </UTable>
         </template>
-        <template #target-cell="{ row }">
-          <p class="text-sm text-default">{{ row.original.targetLabel || row.original.targetType || 'System' }}</p>
-          <p v-if="row.original.targetId" class="max-w-48 truncate font-mono text-[11px] text-muted">{{ row.original.targetId }}</p>
-        </template>
-        <template #outcome-cell="{ row }">
-          <AdminStatusBadge :label="row.original.outcome" />
-        </template>
-        <template #created-cell="{ row }">
-          <time class="text-sm text-default">{{ formatDateTime(row.original.occurredAt || row.original.createdAt) }}</time>
-          <p class="mt-1 text-[11px]" :class="row.original.sealed ? 'text-success' : 'text-muted'">
-            {{ row.original.sealed ? 'Sealed' : 'Legacy unsealed' }}
-          </p>
-        </template>
-        <template #actions-cell="{ row }">
-          <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View audit record" @click="openDetail(row.original)" />
-        </template>
-      </UTable>
+      </AppResponsiveDataView>
 
       <template #footer>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

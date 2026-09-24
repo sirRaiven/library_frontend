@@ -1205,7 +1205,7 @@ watch(
             class="sncbt-portal-frame"
           >
             <SystemMaintenanceBanner />
-            <div class="sncbt-portal-view sncbt-librarian-view">
+            <div class="sncbt-portal-view sncbt-librarian-view sncbt-staff-view">
               <slot />
             </div>
           </div>

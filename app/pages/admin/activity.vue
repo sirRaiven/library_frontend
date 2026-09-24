@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminActivityRecord, AdminMonitoringSummary } from "~/composables/useAdminMonitoring";
 
@@ -74,7 +78,7 @@ onMounted(() => { load(); loadSummary(); });
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       eyebrow="System & Monitoring"
       title="Activity Log"
@@ -100,31 +104,58 @@ onMounted(() => { load(); loadSummary(); });
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <template #header>
-        <div class="space-y-3">
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div><h2 class="font-semibold text-highlighted">Activity Register</h2><p class="mt-1 text-xs text-muted">{{ total }} matching record{{ total === 1 ? '' : 's' }}</p></div>
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search activity, user, or route" class="w-full lg:max-w-sm" />
-          </div>
-          <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-            <USelect v-model="category" :items="categoryItems" />
-            <USelect v-model="outcome" :items="outcomeItems" />
-            <USelect v-model="profileType" :items="profileItems" />
-            <UInput v-model="dateFrom" type="date" aria-label="Date from" />
-            <UInput v-model="dateTo" type="date" aria-label="Date to" />
-          </div>
-        </div>
+        <AppFilterBar :title="`Activity Register · ${total} record${total === 1 ? '' : 's'}`">
+          <template #search>
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search activity, user, or route" class="w-full" />
+          </template>
+          <template #filters>
+            <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <USelect v-model="category" :items="categoryItems" />
+              <USelect v-model="outcome" :items="outcomeItems" />
+              <USelect v-model="profileType" :items="profileItems" />
+              <UInput v-model="dateFrom" type="date" aria-label="Date from" />
+              <UInput v-model="dateTo" type="date" aria-label="Date to" />
+            </div>
+          </template>
+        </AppFilterBar>
       </template>
 
       <div v-if="loading" class="space-y-3 p-6"><USkeleton v-for="i in 7" :key="i" class="h-16 w-full" /></div>
       <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-activity" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching activity</h3><p class="mt-1 text-sm text-muted">Adjust the filters or wait for new portal activity.</p></div>
-      <UTable v-else :data="records" :columns="columns">
-        <template #activity-cell="{ row }"><p class="font-semibold text-highlighted">{{ row.original.description }}</p><p class="mt-1 max-w-xl truncate font-mono text-[11px] text-muted">{{ row.original.eventCode }}<span v-if="row.original.route"> · {{ row.original.route }}</span></p></template>
-        <template #user-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/activity`" color="neutral" variant="link" class="h-auto p-0 font-medium" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.role || 'Role unavailable' }}</p></template>
-        <template #category-cell="{ row }"><UBadge :label="row.original.category" color="neutral" variant="soft" /></template>
-        <template #outcome-cell="{ row }"><UBadge :label="row.original.outcome" :color="outcomeColor(row.original.outcome)" variant="soft" /></template>
-        <template #occurred-cell="{ row }"><time class="text-sm text-default">{{ formatDate(row.original.occurredAt) }}</time></template>
-        <template #actions-cell="{ row }"><UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View activity" @click="openDetail(row.original)" /></template>
-      </UTable>
+      <AppResponsiveDataView v-else mobile-label="Activity records" desktop-label="Activity records table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard
+              v-for="record in records"
+              :key="record.id || `${record.eventCode}-${record.occurredAt}`"
+              :title="record.description"
+              :subtitle="`${record.account.username} · ${record.profileType}`"
+            >
+              <template #status>
+                <AppStatusBadge :label="record.outcome" :tone="record.outcome === 'Success' ? 'success' : record.outcome === 'Denied' || record.outcome === 'Failed' ? 'error' : 'neutral'" />
+              </template>
+              <template #meta>
+                <span>{{ record.category }}</span>
+                <span>{{ record.eventCode }}</span>
+                <time>{{ formatDate(record.occurredAt) }}</time>
+              </template>
+              <template #actions>
+                <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View activity" @click="openDetail(record)" />
+              </template>
+            </AppRecordCard>
+          </div>
+        </template>
+        <template #desktop>
+          <UTable :data="records" :columns="columns">
+                  <template #activity-cell="{ row }"><p class="font-semibold text-highlighted">{{ row.original.description }}</p><p class="mt-1 max-w-xl truncate font-mono text-[11px] text-muted">{{ row.original.eventCode }}<span v-if="row.original.route"> · {{ row.original.route }}</span></p></template>
+                  <template #user-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/activity`" color="neutral" variant="link" class="h-auto p-0 font-medium" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.role || 'Role unavailable' }}</p></template>
+                  <template #category-cell="{ row }"><UBadge :label="row.original.category" color="neutral" variant="soft" /></template>
+                  <template #outcome-cell="{ row }"><UBadge :label="row.original.outcome" :color="outcomeColor(row.original.outcome)" variant="soft" /></template>
+                  <template #occurred-cell="{ row }"><time class="text-sm text-default">{{ formatDate(row.original.occurredAt) }}</time></template>
+                  <template #actions-cell="{ row }"><UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View activity" @click="openDetail(row.original)" /></template>
+                </UTable>
+        </template>
+      </AppResponsiveDataView>
       <template #footer><div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm text-muted">Showing up to {{ pageSize }} records per page</p><UPagination v-model:page="page" :total="total" :items-per-page="pageSize" /></div></template>
     </UCard>
   </div>

@@ -368,7 +368,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
     <div class="space-y-6">
       <section
         class="relative overflow-hidden rounded-3xl border border-default bg-gradient-to-br from-primary/10 via-default to-sky-500/5 p-5 shadow-sm sm:p-6"

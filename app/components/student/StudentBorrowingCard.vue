@@ -83,8 +83,8 @@ const timingLabel = computed(() => {
 <template>
   <UCard class="sncbt-card-interactive" :ui="{ body: 'p-0 sm:p-0' }">
     <article class="p-5 sm:p-6">
-      <div class="flex flex-col gap-5 sm:flex-row">
-        <div class="flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-elevated sm:size-32">
+      <div class="flex gap-4 sm:gap-5">
+        <div class="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-default bg-elevated sm:size-32 sm:rounded-2xl">
           <img
             v-if="borrowing.book.cover?.url"
             :src="mediaUrl(borrowing.book.cover.url)"
@@ -93,7 +93,7 @@ const timingLabel = computed(() => {
             loading="lazy"
             decoding="async"
           >
-          <UIcon v-else name="i-lucide-book-open" class="size-10 text-dimmed" />
+          <UIcon v-else name="i-lucide-book-open" class="size-6 text-dimmed sm:size-10" />
         </div>
 
         <div class="min-w-0 flex-1">
@@ -123,7 +123,7 @@ const timingLabel = computed(() => {
             </div>
           </div>
 
-          <dl class="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
+          <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:mt-5 sm:gap-x-6 xl:grid-cols-3">
             <div>
               <dt class="text-xs text-muted">Borrowed on</dt>
               <dd class="mt-1 font-medium text-highlighted">{{ formatDateTime(borrowing.borrowDate) }}</dd>
@@ -138,19 +138,19 @@ const timingLabel = computed(() => {
               <dt class="text-xs text-muted">ISBN</dt>
               <dd class="mt-1 font-medium text-highlighted">{{ borrowing.book.isbn || 'Not available' }}</dd>
             </div>
-            <div>
+            <div class="hidden sm:block">
               <dt class="text-xs text-muted">Control number</dt>
               <dd class="mt-1 font-mono text-xs font-semibold text-highlighted">
                 {{ borrowing.copy.controlNumber || 'Not available' }}
               </dd>
             </div>
-            <div>
+            <div class="hidden sm:block">
               <dt class="text-xs text-muted">Accession number</dt>
               <dd class="mt-1 font-mono text-xs font-semibold text-highlighted">
                 {{ borrowing.copy.accessionNumber || 'Not available' }}
               </dd>
             </div>
-            <div>
+            <div class="hidden sm:block">
               <dt class="text-xs text-muted">Shelf location</dt>
               <dd class="mt-1 font-medium text-highlighted">{{ borrowing.copy.shelfLocation || 'Not available' }}</dd>
             </div>

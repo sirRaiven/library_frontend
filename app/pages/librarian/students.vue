@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 
 import { appLogger } from "~/utils/app-logger";
 import type { FormError, FormSubmitEvent, TableColumn } from "@nuxt/ui";
@@ -1530,8 +1533,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
-    <div class="mx-auto max-w-[1500px] space-y-6 mb-12">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
+    <div class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12">
       <LibrarianPageHeader
         eyebrow="Library Users"
         title="Students"
@@ -1665,131 +1668,160 @@ onBeforeUnmount(() => {
           <p class="mt-1 text-sm text-muted">Register a student or adjust the filters.</p>
         </div>
 
-        <UTable v-else :data="students" :columns="columns">
-          <template #select-cell="{ row }">
-            <UCheckbox
-              :model-value="isStudentSelected(row.original)"
-              :aria-label="`Select ${row.original.fullName} for Library Card printing`"
-              @update:model-value="
-                setStudentSelected(
-                  row.original,
-                  Boolean($event),
-                )
-              "
-            />
-          </template>
-
-          <template #student-cell="{ row }">
-            <div class="flex items-center gap-3">
-              <UAvatar :src="row.original.photoUrl ?? undefined" :alt="row.original.fullName" size="md" />
-              <div class="min-w-0">
-                <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>
-                <p class="truncate text-xs text-muted">
-                  {{ row.original.studentNo }}
-                  •
-                  {{ row.original.educationalLevel }}
-                  •
-                  {{
-                    yearGradeLabel(
-                      row.original.educationalLevel,
-                      row.original.yearLevel,
-                    )
-                  }}
-                </p>
-                <p class="truncate text-xs text-muted">
-                  {{ row.original.course }}
-                </p>
-              </div>
-            </div>
-          </template>
-          <template #card-cell="{ row }">
-            <p class="font-mono text-sm font-semibold text-highlighted">
-              {{ row.original.libraryCardNo }}
-            </p>
-
-            <p class="mt-1 font-mono text-xs text-muted">
-              {{ row.original.barcode }}
-            </p>
-
-            <div class="mt-2 flex flex-wrap items-center gap-2">
-              <UBadge
-                :color="
-                  cardStatusColor(
-                    row.original.libraryCardStatus,
-                  )
-                "
-                variant="soft"
+        <AppResponsiveDataView v-else mobile-label="Student records" desktop-label="Student records table">
+          <template #mobile>
+            <div class="sncbt-mobile-record-list">
+              <AppRecordCard
+                v-for="student in students"
+                :key="student.documentId"
+                :title="student.fullName"
+                :subtitle="`${student.studentNo} · ${student.course}`"
               >
-                {{
-                  row.original.libraryCardStatus
-                }}
-              </UBadge>
-
-              <span
-                v-if="
-                  row.original
-                    .libraryCardReleaseDate
-                "
-                class="text-xs text-muted"
-              >
-                Released
-                {{
-                  row.original
-                    .libraryCardReleaseDate
-                }}
-              </span>
+                <template #status>
+                  <AppStatusBadge :label="student.membership?.status || student.status" :tone="student.membership?.status === 'Active' ? 'success' : student.membership?.status === 'Suspended' ? 'warning' : student.status === 'Active' ? 'neutral' : 'warning'" />
+                </template>
+                <template #meta>
+                  <span>{{ student.educationalLevel }} · {{ yearGradeLabel(student.educationalLevel, student.yearLevel) }}</span>
+                  <span>Card {{ student.libraryCardNo }}</span>
+                  <span v-if="student.membership">Valid until {{ student.membership.expiryDate }}</span>
+                  <span v-else>No active membership</span>
+                </template>
+                <template #actions>
+                  <UButton icon="i-lucide-id-card" color="neutral" variant="ghost" square aria-label="View Library Card" @click="openCard(student)" />
+                  <UButton icon="i-lucide-rotate-cw" color="primary" variant="ghost" square aria-label="Renew membership" @click="renew(student)" />
+                  <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit Student" @click="openEdit(student)" />
+                </template>
+              </AppRecordCard>
             </div>
           </template>
-          <template #membership-cell="{ row }">
-            <div v-if="row.original.membership">
-              <UBadge :color="membershipColor(row.original.membership.status)" variant="soft">{{ row.original.membership.status }}</UBadge>
-              <p class="mt-1 text-xs text-muted">{{ row.original.membership.semester }} • {{ row.original.membership.academicYear }}</p>
-              <p class="text-xs text-muted">Until {{ row.original.membership.expiryDate }}</p>
-            </div>
-            <UBadge v-else color="error" variant="soft">No Membership</UBadge>
+          <template #desktop>
+            <UTable :data="students" :columns="columns">
+                      <template #select-cell="{ row }">
+                        <UCheckbox
+                          :model-value="isStudentSelected(row.original)"
+                          :aria-label="`Select ${row.original.fullName} for Library Card printing`"
+                          @update:model-value="
+                            setStudentSelected(
+                              row.original,
+                              Boolean($event),
+                            )
+                          "
+                        />
+                      </template>
+            
+                      <template #student-cell="{ row }">
+                        <div class="flex items-center gap-3">
+                          <UAvatar :src="row.original.photoUrl ?? undefined" :alt="row.original.fullName" size="md" />
+                          <div class="min-w-0">
+                            <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>
+                            <p class="truncate text-xs text-muted">
+                              {{ row.original.studentNo }}
+                              •
+                              {{ row.original.educationalLevel }}
+                              •
+                              {{
+                                yearGradeLabel(
+                                  row.original.educationalLevel,
+                                  row.original.yearLevel,
+                                )
+                              }}
+                            </p>
+                            <p class="truncate text-xs text-muted">
+                              {{ row.original.course }}
+                            </p>
+                          </div>
+                        </div>
+                      </template>
+                      <template #card-cell="{ row }">
+                        <p class="font-mono text-sm font-semibold text-highlighted">
+                          {{ row.original.libraryCardNo }}
+                        </p>
+            
+                        <p class="mt-1 font-mono text-xs text-muted">
+                          {{ row.original.barcode }}
+                        </p>
+            
+                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                          <UBadge
+                            :color="
+                              cardStatusColor(
+                                row.original.libraryCardStatus,
+                              )
+                            "
+                            variant="soft"
+                          >
+                            {{
+                              row.original.libraryCardStatus
+                            }}
+                          </UBadge>
+            
+                          <span
+                            v-if="
+                              row.original
+                                .libraryCardReleaseDate
+                            "
+                            class="text-xs text-muted"
+                          >
+                            Released
+                            {{
+                              row.original
+                                .libraryCardReleaseDate
+                            }}
+                          </span>
+                        </div>
+                      </template>
+                      <template #membership-cell="{ row }">
+                        <div v-if="row.original.membership">
+                          <UBadge :color="membershipColor(row.original.membership.status)" variant="soft">{{ row.original.membership.status }}</UBadge>
+                          <p class="mt-1 text-xs text-muted">{{ row.original.membership.semester }} • {{ row.original.membership.academicYear }}</p>
+                          <p class="text-xs text-muted">Until {{ row.original.membership.expiryDate }}</p>
+                        </div>
+                        <UBadge v-else color="error" variant="soft">No Membership</UBadge>
+                      </template>
+                      <template #status-cell="{ row }">
+                        <UBadge :color="row.original.status === 'Active' ? 'success' : 'neutral'" variant="soft">{{ row.original.status }}</UBadge>
+                      </template>
+                      <template #actions-cell="{ row }">
+                        <div class="flex justify-end gap-1">
+                          <UTooltip text="View front and back of Library ID card">
+                            <UButton
+                              icon="i-lucide-id-card"
+                              color="neutral"
+                              variant="ghost"
+                              square
+                              aria-label="View front and back of library card"
+                              @click="openCard(row.original)"
+                            />
+                          </UTooltip>
+            
+                          <UTooltip :text="canPrintLibraryCard(row.original) ? 'Open ready-to-print Library Card' : 'Verify the cashier OR for the replacement fee before printing'">
+                            <UButton
+                              icon="i-lucide-printer"
+                              color="primary"
+                              variant="ghost"
+                              square
+                              aria-label="Print student Library Card"
+                              :disabled="!canPrintLibraryCard(row.original)"
+                              @click="printStudentCard(row.original)"
+                            />
+                          </UTooltip>
+            
+                          <UButton icon="i-lucide-rotate-cw" color="primary" variant="ghost" square aria-label="Renew membership" @click="renew(row.original)" />
+                          <UTooltip text="Edit profile and Library Card photo">
+                            <UButton
+                              icon="i-lucide-pencil"
+                              color="neutral"
+                              variant="ghost"
+                              square
+                              aria-label="Edit Student profile and Library Card photo"
+                              @click="openEdit(row.original)"
+                            />
+                          </UTooltip>
+                        </div>
+                      </template>
+                    </UTable>
           </template>
-          <template #status-cell="{ row }">
-            <UBadge :color="row.original.status === 'Active' ? 'success' : 'neutral'" variant="soft">{{ row.original.status }}</UBadge>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex justify-end gap-1">
-              <UTooltip text="View front and back of Library ID card">
-                <UButton
-                  icon="i-lucide-id-card"
-                  color="neutral"
-                  variant="ghost"
-                  square
-                  aria-label="View front and back of library card"
-                  @click="openCard(row.original)"
-                />
-              </UTooltip>
-
-              <UTooltip :text="canPrintLibraryCard(row.original) ? 'Open ready-to-print Library Card' : 'Verify the cashier OR for the replacement fee before printing'">
-                <UButton
-                  icon="i-lucide-printer"
-                  color="primary"
-                  variant="ghost"
-                  square
-                  aria-label="Print student Library Card"
-                  :disabled="!canPrintLibraryCard(row.original)"
-                  @click="printStudentCard(row.original)"
-                />
-              </UTooltip>
-
-              <UButton icon="i-lucide-rotate-cw" color="primary" variant="ghost" square aria-label="Renew membership" @click="renew(row.original)" />
-              <UTooltip text="Edit profile and Library Card photo">
-                <UButton
-                  icon="i-lucide-pencil"
-                  color="neutral"
-                  variant="ghost"
-                  square
-                  aria-label="Edit Student profile and Library Card photo"
-                  @click="openEdit(row.original)"
-                />
-              </UTooltip>
-            </div>
-          </template>
-        </UTable>
+        </AppResponsiveDataView>
 
         <template #footer>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

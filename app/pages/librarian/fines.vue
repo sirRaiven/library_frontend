@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type { FineCalendarEntry, FineCalendarInput, LibraryFineRecord } from "~/composables/useLibraryFines";
 
@@ -532,8 +536,8 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
-    <div class="mx-auto max-w-[1500px] space-y-6 mb-12">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
+    <div class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12">
       <LibrarianPageHeader
         eyebrow="Fines & Payments"
         :title="activeView === 'calendar' ? 'No-Fine Days' : 'Fines & Cashier Payments'"
@@ -568,42 +572,78 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
 
         <UCard>
           <template #header>
-            <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem_16rem_auto]">
-              <UInput v-model="search" icon="i-lucide-search" placeholder="Search fine, Student, OR, book, or reference" />
-              <USelect v-model="status" :items="statusItems" />
-              <USelect v-model="type" :items="typeItems" />
-              <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="loadFines" />
-            </div>
+            <AppFilterBar :title="`Fine Records · ${pagination.total}`">
+              <template #search>
+                <UInput v-model="search" icon="i-lucide-search" placeholder="Search fine, Student, OR, book, or reference" class="w-full" />
+              </template>
+              <template #filters>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <USelect v-model="status" :items="statusItems" />
+                  <USelect v-model="type" :items="typeItems" />
+                </div>
+              </template>
+              <template #actions>
+                <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="loadFines" />
+              </template>
+            </AppFilterBar>
           </template>
 
           <div v-if="loading" class="space-y-3"><USkeleton v-for="i in 5" :key="i" class="h-16 w-full" /></div>
           <div v-else-if="records.length === 0" class="py-16 text-center"><UIcon name="i-lucide-receipt" class="mx-auto size-10 text-dimmed" /><h3 class="mt-3 font-semibold">No fine records found</h3></div>
-          <UTable v-else :data="records" :columns="fineColumns">
-            <template #fine-cell="{ row }">
-              <p class="font-semibold text-highlighted">{{ row.original.fineNo }}</p>
-              <p class="text-xs text-muted">{{ row.original.type }} • {{ row.original.referenceNo || 'No reference' }}</p>
-              <p v-if="row.original.bookTitle" class="mt-1 text-xs text-muted">{{ row.original.bookTitle }}</p>
-            </template>
-            <template #member-cell="{ row }">
-              <p class="font-medium text-highlighted">{{ row.original.member.fullName }}</p>
-              <p class="text-xs text-muted">{{ row.original.member.type }} • {{ row.original.member.identifier }}</p>
-            </template>
-            <template #amount-cell="{ row }">
-              <p class="font-bold text-highlighted">{{ money(row.original.amount) }}</p>
-              <p v-if="row.original.chargeableDays" class="text-xs text-muted">{{ row.original.chargeableDays }} school day(s) × {{ money(row.original.ratePerDay) }}</p>
-            </template>
-            <template #payment-cell="{ row }">
-              <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
-              <p v-if="row.original.orNumber" class="mt-1 text-xs text-muted">OR {{ row.original.orNumber }} • {{ dateLabel(row.original.paymentDate) }}</p>
-              <p v-else class="mt-1 text-xs text-muted">Assessed {{ dateLabel(row.original.assessedAt) }}</p>
-            </template>
-            <template #actions-cell="{ row }">
-              <div class="flex flex-wrap gap-2">
-                <UButton v-if="row.original.status === 'Unpaid'" label="Verify OR" icon="i-lucide-badge-check" size="sm" color="primary" @click="openPayment(row.original)" />
-                <UButton v-if="row.original.status === 'Unpaid'" label="Waive" icon="i-lucide-scale" size="sm" color="neutral" variant="outline" @click="openWaiver(row.original)" />
-              </div>
-            </template>
-          </UTable>
+          <AppResponsiveDataView v-else mobile-label="Fine records" desktop-label="Fine records table">
+          <template #mobile>
+            <div class="sncbt-mobile-record-list">
+              <AppRecordCard
+                v-for="fine in records"
+                :key="fine.documentId"
+                :title="`${fine.fineNo} · ${money(fine.amount)}`"
+                :subtitle="`${fine.member.fullName} · ${fine.member.identifier}`"
+              >
+                <template #status>
+                  <AppStatusBadge :label="fine.status" :tone="fine.status === 'Paid' ? 'success' : fine.status === 'Unpaid' ? 'warning' : fine.status === 'Waived' ? 'info' : 'neutral'" />
+                </template>
+                <template #meta>
+                  <span>{{ fine.type }} · {{ fine.referenceNo || 'No reference' }}</span>
+                  <span v-if="fine.bookTitle">{{ fine.bookTitle }}</span>
+                  <span v-if="fine.orNumber">OR {{ fine.orNumber }} · {{ dateLabel(fine.paymentDate) }}</span>
+                  <span v-else>Assessed {{ dateLabel(fine.assessedAt) }}</span>
+                </template>
+                <template #actions>
+                  <UButton v-if="fine.status === 'Unpaid'" icon="i-lucide-badge-check" color="primary" variant="ghost" square aria-label="Verify Official Receipt" @click="openPayment(fine)" />
+                  <UButton v-if="fine.status === 'Unpaid'" icon="i-lucide-scale" color="neutral" variant="ghost" square aria-label="Waive fine" @click="openWaiver(fine)" />
+                </template>
+              </AppRecordCard>
+            </div>
+          </template>
+          <template #desktop>
+            <UTable :data="records" :columns="fineColumns">
+                        <template #fine-cell="{ row }">
+                          <p class="font-semibold text-highlighted">{{ row.original.fineNo }}</p>
+                          <p class="text-xs text-muted">{{ row.original.type }} • {{ row.original.referenceNo || 'No reference' }}</p>
+                          <p v-if="row.original.bookTitle" class="mt-1 text-xs text-muted">{{ row.original.bookTitle }}</p>
+                        </template>
+                        <template #member-cell="{ row }">
+                          <p class="font-medium text-highlighted">{{ row.original.member.fullName }}</p>
+                          <p class="text-xs text-muted">{{ row.original.member.type }} • {{ row.original.member.identifier }}</p>
+                        </template>
+                        <template #amount-cell="{ row }">
+                          <p class="font-bold text-highlighted">{{ money(row.original.amount) }}</p>
+                          <p v-if="row.original.chargeableDays" class="text-xs text-muted">{{ row.original.chargeableDays }} school day(s) × {{ money(row.original.ratePerDay) }}</p>
+                        </template>
+                        <template #payment-cell="{ row }">
+                          <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
+                          <p v-if="row.original.orNumber" class="mt-1 text-xs text-muted">OR {{ row.original.orNumber }} • {{ dateLabel(row.original.paymentDate) }}</p>
+                          <p v-else class="mt-1 text-xs text-muted">Assessed {{ dateLabel(row.original.assessedAt) }}</p>
+                        </template>
+                        <template #actions-cell="{ row }">
+                          <div class="flex flex-wrap gap-2">
+                            <UButton v-if="row.original.status === 'Unpaid'" label="Verify OR" icon="i-lucide-badge-check" size="sm" color="primary" @click="openPayment(row.original)" />
+                            <UButton v-if="row.original.status === 'Unpaid'" label="Waive" icon="i-lucide-scale" size="sm" color="neutral" variant="outline" @click="openWaiver(row.original)" />
+                          </div>
+                        </template>
+                      </UTable>
+          </template>
+        </AppResponsiveDataView>
           <template #footer><div class="flex items-center justify-between"><p class="text-sm text-muted">{{ pagination.total }} records</p><UPagination v-model:page="page" :total="pagination.total" :items-per-page="pageSize" /></div></template>
         </UCard>
       </template>
@@ -701,105 +741,139 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
             />
           </div>
 
-          <UTable v-else :data="filteredCalendar" :columns="calendarColumns">
-            <template #event-cell="{ row }">
-              <div class="min-w-56">
-                <p class="font-semibold text-highlighted">{{ row.original.title }}</p>
-                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <UBadge :color="row.original.automatic ? 'primary' : 'neutral'" variant="soft">
-                    {{ row.original.automatic ? 'Official Holiday' : 'School-Added' }}
-                  </UBadge>
-                  <UBadge
-                    :color="row.original.type === 'Special Working Day' ? 'warning' : 'neutral'"
-                    variant="subtle"
-                  >
-                    {{ row.original.type }}
-                  </UBadge>
-                </div>
-                <p
-                  v-if="row.original.reason && (!row.original.automatic || row.original.status === 'Removed')"
-                  class="mt-2 max-w-lg text-xs text-muted"
-                >
-                  {{ row.original.reason }}
-                </p>
-              </div>
-            </template>
-
-            <template #dates-cell="{ row }">
-              <p class="font-medium text-highlighted">{{ dateLabel(row.original.startDate) }}</p>
-              <p v-if="row.original.endDate !== row.original.startDate" class="text-xs text-muted">
-                to {{ dateLabel(row.original.endDate) }}
-              </p>
-              <p
-                class="mt-1 text-xs font-medium"
-                :class="calendarTiming(row.original) === 'Current' ? 'text-success' : 'text-muted'"
+          <AppResponsiveDataView v-else mobile-label="No-fine calendar" desktop-label="No-fine calendar table">
+          <template #mobile>
+            <div class="sncbt-mobile-record-list">
+              <AppRecordCard
+                v-for="entry in filteredCalendar"
+                :key="entry.documentId"
+                :title="entry.title"
+                :subtitle="`${dateLabel(entry.startDate)}${entry.endDate !== entry.startDate ? ` to ${dateLabel(entry.endDate)}` : ''}`"
               >
-                {{ calendarDateHint(row.original) }}
-              </p>
-            </template>
-
-            <template #resume-cell="{ row }">
-              <template v-if="row.original.status !== 'Active'">
-                <p class="font-medium text-muted">Not applied</p>
-                <p class="mt-1 text-xs text-muted">This entry does not affect fines</p>
-              </template>
-              <template v-else-if="!row.original.affectsFines">
-                <p class="font-medium text-warning">Fines continue</p>
-                <p class="mt-1 text-xs text-muted">Official special working day</p>
-              </template>
-              <template v-else>
-                <p class="font-medium text-highlighted">{{ dateLabel(row.original.resumeDate) }}</p>
-                <p class="mt-1 text-xs text-muted">Fine counting resumes</p>
-              </template>
-            </template>
-
-            <template #status-cell="{ row }">
-              <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
-            </template>
-
-            <template #actions-cell="{ row }">
-              <div class="flex flex-wrap gap-2">
-                <UButton
-                  v-if="row.original.status === 'Removed'"
-                  label="Restore"
-                  icon="i-lucide-rotate-ccw"
-                  size="sm"
-                  color="primary"
-                  variant="outline"
-                  :loading="saving"
-                  @click="restoreCalendar(row.original)"
-                />
-                <template v-else>
-                  <UButton
-                    v-if="!row.original.automatic"
-                    label="Edit"
-                    icon="i-lucide-pencil"
-                    size="sm"
-                    color="neutral"
-                    variant="outline"
-                    @click="openCalendar(row.original)"
-                  />
-                  <UButton
-                    v-if="!row.original.automatic && row.original.status === 'Active'"
-                    label="Cancel"
-                    icon="i-lucide-x"
-                    size="sm"
-                    color="warning"
-                    variant="ghost"
-                    @click="openCancelCalendar(row.original)"
-                  />
-                  <UButton
-                    label="Remove"
-                    icon="i-lucide-trash-2"
-                    size="sm"
-                    color="error"
-                    variant="ghost"
-                    @click="openRemoveCalendar(row.original)"
-                  />
+                <template #status>
+                  <AppStatusBadge :label="entry.status" :tone="entry.status === 'Active' ? 'success' : entry.status === 'Removed' ? 'error' : 'warning'" />
                 </template>
-              </div>
-            </template>
-          </UTable>
+                <template #meta>
+                  <span>{{ entry.automatic ? 'Official Holiday' : 'School-Added' }} · {{ entry.type }}</span>
+                  <span>{{ calendarDateHint(entry) }}</span>
+                  <span v-if="entry.status === 'Active' && entry.affectsFines">Fine counting resumes {{ dateLabel(entry.resumeDate) }}</span>
+                  <span v-else-if="entry.status === 'Active'">Fines continue</span>
+                </template>
+                <template #actions>
+                  <UButton v-if="entry.status === 'Removed'" icon="i-lucide-rotate-ccw" color="primary" variant="ghost" square aria-label="Restore no-fine period" :loading="saving" @click="restoreCalendar(entry)" />
+                  <UDropdownMenu v-else :items="[
+                    ...(!entry.automatic ? [{ label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => openCalendar(entry) }] : []),
+                    ...(!entry.automatic && entry.status === 'Active' ? [{ label: 'Cancel', icon: 'i-lucide-x', onSelect: () => openCancelCalendar(entry) }] : []),
+                    { label: 'Remove', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveCalendar(entry) }
+                  ]">
+                    <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" square aria-label="No-fine period actions" />
+                  </UDropdownMenu>
+                </template>
+              </AppRecordCard>
+            </div>
+          </template>
+          <template #desktop>
+            <UTable :data="filteredCalendar" :columns="calendarColumns">
+                        <template #event-cell="{ row }">
+                          <div class="min-w-56">
+                            <p class="font-semibold text-highlighted">{{ row.original.title }}</p>
+                            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <UBadge :color="row.original.automatic ? 'primary' : 'neutral'" variant="soft">
+                                {{ row.original.automatic ? 'Official Holiday' : 'School-Added' }}
+                              </UBadge>
+                              <UBadge
+                                :color="row.original.type === 'Special Working Day' ? 'warning' : 'neutral'"
+                                variant="subtle"
+                              >
+                                {{ row.original.type }}
+                              </UBadge>
+                            </div>
+                            <p
+                              v-if="row.original.reason && (!row.original.automatic || row.original.status === 'Removed')"
+                              class="mt-2 max-w-lg text-xs text-muted"
+                            >
+                              {{ row.original.reason }}
+                            </p>
+                          </div>
+                        </template>
+            
+                        <template #dates-cell="{ row }">
+                          <p class="font-medium text-highlighted">{{ dateLabel(row.original.startDate) }}</p>
+                          <p v-if="row.original.endDate !== row.original.startDate" class="text-xs text-muted">
+                            to {{ dateLabel(row.original.endDate) }}
+                          </p>
+                          <p
+                            class="mt-1 text-xs font-medium"
+                            :class="calendarTiming(row.original) === 'Current' ? 'text-success' : 'text-muted'"
+                          >
+                            {{ calendarDateHint(row.original) }}
+                          </p>
+                        </template>
+            
+                        <template #resume-cell="{ row }">
+                          <template v-if="row.original.status !== 'Active'">
+                            <p class="font-medium text-muted">Not applied</p>
+                            <p class="mt-1 text-xs text-muted">This entry does not affect fines</p>
+                          </template>
+                          <template v-else-if="!row.original.affectsFines">
+                            <p class="font-medium text-warning">Fines continue</p>
+                            <p class="mt-1 text-xs text-muted">Official special working day</p>
+                          </template>
+                          <template v-else>
+                            <p class="font-medium text-highlighted">{{ dateLabel(row.original.resumeDate) }}</p>
+                            <p class="mt-1 text-xs text-muted">Fine counting resumes</p>
+                          </template>
+                        </template>
+            
+                        <template #status-cell="{ row }">
+                          <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
+                        </template>
+            
+                        <template #actions-cell="{ row }">
+                          <div class="flex flex-wrap gap-2">
+                            <UButton
+                              v-if="row.original.status === 'Removed'"
+                              label="Restore"
+                              icon="i-lucide-rotate-ccw"
+                              size="sm"
+                              color="primary"
+                              variant="outline"
+                              :loading="saving"
+                              @click="restoreCalendar(row.original)"
+                            />
+                            <template v-else>
+                              <UButton
+                                v-if="!row.original.automatic"
+                                label="Edit"
+                                icon="i-lucide-pencil"
+                                size="sm"
+                                color="neutral"
+                                variant="outline"
+                                @click="openCalendar(row.original)"
+                              />
+                              <UButton
+                                v-if="!row.original.automatic && row.original.status === 'Active'"
+                                label="Cancel"
+                                icon="i-lucide-x"
+                                size="sm"
+                                color="warning"
+                                variant="ghost"
+                                @click="openCancelCalendar(row.original)"
+                              />
+                              <UButton
+                                label="Remove"
+                                icon="i-lucide-trash-2"
+                                size="sm"
+                                color="error"
+                                variant="ghost"
+                                @click="openRemoveCalendar(row.original)"
+                              />
+                            </template>
+                          </div>
+                        </template>
+                      </UTable>
+          </template>
+        </AppResponsiveDataView>
         </UCard>
       </template>
     </div>

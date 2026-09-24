@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type {
   AdminLinkedProfile,
@@ -207,7 +210,7 @@ onMounted(loadReview);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="Account Review"
@@ -239,7 +242,7 @@ onMounted(loadReview);
       description="Student and Librarian accounts require their matching institutional record. Faculty accounts may optionally use an existing Faculty record; otherwise the system prepares a basic internal Library record automatically. Administrator accounts must not be connected to member profiles."
     />
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
       <AdminMetricCard
         label="Accounts Missing Profiles"
         :value="summary.accountsMissingProfile"
@@ -266,7 +269,7 @@ onMounted(loadReview);
         label="Faculty Without Accounts"
         :value="summary.facultyProfilesWithoutAccount"
         icon="i-lucide-briefcase-business"
-        description="Existing Faculty Library records that do not yet have a portal account. Faculty accounts can also be created without selecting one of these records."
+        description="Existing Faculty Library records without portal access."
         tone="info"
       />
       <AdminMetricCard
@@ -329,43 +332,55 @@ onMounted(loadReview);
           <p class="mt-1 text-sm text-muted">The selected accounts have the correct institutional profile connection.</p>
         </div>
 
-        <UTable v-else :data="accountRecords" :columns="accountColumns">
-          <template #account-cell="{ row }">
-            <div class="flex items-center gap-3">
-              <UAvatar :text="row.original.username.slice(0, 2).toUpperCase()" size="sm" />
-              <div class="min-w-0">
-                <p class="truncate font-semibold text-highlighted">{{ row.original.username }}</p>
-                <p class="truncate text-xs text-muted">{{ row.original.email }}</p>
-              </div>
-            </div>
-          </template>
-          <template #role-cell="{ row }">
-            <p class="font-medium text-default">{{ row.original.role?.name || 'No role' }}</p>
-            <p class="text-xs text-muted">Expected: {{ row.original.profileGovernance?.expectedType || 'Not managed' }}</p>
-          </template>
-          <template #issue-cell="{ row }">
-            <AdminProfileStatusBadge :status="row.original.profileGovernance?.status ?? 'Unavailable'" />
-            <p class="mt-1 max-w-md text-xs leading-5 text-muted">{{ row.original.profileGovernance?.issues?.[0] || 'Profile governance details are unavailable.' }}</p>
-          </template>
-          <template #linked-cell="{ row }">
-            <div v-if="row.original.profileGovernance?.profile">
-              <p class="font-medium text-default">{{ row.original.profileGovernance?.profile?.fullName || 'Unnamed profile' }}</p>
-              <p class="text-xs text-muted">{{ row.original.profileGovernance?.profile?.type || 'Profile' }} · {{ row.original.profileGovernance?.profile?.code || 'No code' }}</p>
-            </div>
-            <span v-else class="text-sm text-muted">No profile connected</span>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex justify-end">
-              <UButton
-                label="Review Account"
-                icon="i-lucide-arrow-right"
-                color="primary"
-                variant="soft"
-                :to="`/admin/users/${row.original.id}`"
-              />
-            </div>
-          </template>
-        </UTable>
+        <AppResponsiveDataView v-else mobile-label="Accounts needing review" desktop-label="Accounts needing review table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard v-for="record in accountRecords" :key="record.id" :title="record.username" :subtitle="record.email" :to="`/admin/users/${record.id}`">
+              <template #status><AdminProfileStatusBadge :status="record.profileGovernance?.status ?? 'Unavailable'" /></template>
+              <template #meta><span>{{ record.role?.name || 'No role' }}</span><span>{{ record.profileGovernance?.profile?.fullName || 'No profile connected' }}</span><span>{{ record.profileGovernance?.issues?.[0] || 'Review account connection' }}</span></template>
+            </AppRecordCard>
+          </div>
+        </template>
+        <template #desktop>
+          <UTable :data="accountRecords" :columns="accountColumns">
+                    <template #account-cell="{ row }">
+                      <div class="flex items-center gap-3">
+                        <UAvatar :text="row.original.username.slice(0, 2).toUpperCase()" size="sm" />
+                        <div class="min-w-0">
+                          <p class="truncate font-semibold text-highlighted">{{ row.original.username }}</p>
+                          <p class="truncate text-xs text-muted">{{ row.original.email }}</p>
+                        </div>
+                      </div>
+                    </template>
+                    <template #role-cell="{ row }">
+                      <p class="font-medium text-default">{{ row.original.role?.name || 'No role' }}</p>
+                      <p class="text-xs text-muted">Expected: {{ row.original.profileGovernance?.expectedType || 'Not managed' }}</p>
+                    </template>
+                    <template #issue-cell="{ row }">
+                      <AdminProfileStatusBadge :status="row.original.profileGovernance?.status ?? 'Unavailable'" />
+                      <p class="mt-1 max-w-md text-xs leading-5 text-muted">{{ row.original.profileGovernance?.issues?.[0] || 'Profile governance details are unavailable.' }}</p>
+                    </template>
+                    <template #linked-cell="{ row }">
+                      <div v-if="row.original.profileGovernance?.profile">
+                        <p class="font-medium text-default">{{ row.original.profileGovernance?.profile?.fullName || 'Unnamed profile' }}</p>
+                        <p class="text-xs text-muted">{{ row.original.profileGovernance?.profile?.type || 'Profile' }} · {{ row.original.profileGovernance?.profile?.code || 'No code' }}</p>
+                      </div>
+                      <span v-else class="text-sm text-muted">No profile connected</span>
+                    </template>
+                    <template #actions-cell="{ row }">
+                      <div class="flex justify-end">
+                        <UButton
+                          label="Review Account"
+                          icon="i-lucide-arrow-right"
+                          color="primary"
+                          variant="soft"
+                          :to="`/admin/users/${row.original.id}`"
+                        />
+                      </div>
+                    </template>
+                  </UTable>
+        </template>
+      </AppResponsiveDataView>
       </template>
 
       <template v-else>
@@ -375,39 +390,52 @@ onMounted(loadReview);
           <p class="mt-1 text-sm text-muted">The selected existing records already have portal accounts. Faculty accounts do not require a pre-existing record.</p>
         </div>
 
-        <UTable v-else :data="profileRecords" :columns="profileColumns">
-          <template #profile-cell="{ row }">
-            <div class="flex items-center gap-3">
-              <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <UIcon :name="profileTypeIcon(row.original.type)" class="size-4" />
-              </div>
-              <div class="min-w-0">
-                <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>
-                <p class="truncate text-xs text-muted">{{ row.original.code }}</p>
-              </div>
-            </div>
-          </template>
-          <template #type-cell="{ row }">
-            <UBadge :label="row.original.type" color="primary" variant="soft" />
-          </template>
-          <template #status-cell="{ row }">
-            <AdminStatusBadge :label="row.original.status || 'Unknown'" />
-          </template>
-          <template #email-cell="{ row }">
-            <p class="max-w-56 truncate text-sm text-default">{{ row.original.email || 'No email recorded' }}</p>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex justify-end">
-              <UButton
-                label="Create Portal Account"
-                icon="i-lucide-user-plus"
-                color="primary"
-                variant="soft"
-                @click="openCreateAccount(row.original)"
-              />
-            </div>
-          </template>
-        </UTable>
+        <AppResponsiveDataView v-else mobile-label="Profiles without portal accounts" desktop-label="Profiles without portal accounts table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard v-for="record in profileRecords" :key="`${record.type}-${record.documentId || record.code}`" :title="record.fullName" :subtitle="record.code">
+              <template #status><AppStatusBadge :label="record.status || 'Unknown'" :tone="record.status === 'Active' ? 'success' : 'neutral'" /></template>
+              <template #meta><span>{{ record.type }}</span><span>{{ record.email || 'No email recorded' }}</span></template>
+              <template #actions><UButton icon="i-lucide-user-plus" color="primary" variant="ghost" square aria-label="Create portal account" @click="openCreateAccount(record)" /></template>
+            </AppRecordCard>
+          </div>
+        </template>
+        <template #desktop>
+          <UTable :data="profileRecords" :columns="profileColumns">
+                    <template #profile-cell="{ row }">
+                      <div class="flex items-center gap-3">
+                        <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <UIcon :name="profileTypeIcon(row.original.type)" class="size-4" />
+                        </div>
+                        <div class="min-w-0">
+                          <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>
+                          <p class="truncate text-xs text-muted">{{ row.original.code }}</p>
+                        </div>
+                      </div>
+                    </template>
+                    <template #type-cell="{ row }">
+                      <UBadge :label="row.original.type" color="primary" variant="soft" />
+                    </template>
+                    <template #status-cell="{ row }">
+                      <AdminStatusBadge :label="row.original.status || 'Unknown'" />
+                    </template>
+                    <template #email-cell="{ row }">
+                      <p class="max-w-56 truncate text-sm text-default">{{ row.original.email || 'No email recorded' }}</p>
+                    </template>
+                    <template #actions-cell="{ row }">
+                      <div class="flex justify-end">
+                        <UButton
+                          label="Create Portal Account"
+                          icon="i-lucide-user-plus"
+                          color="primary"
+                          variant="soft"
+                          @click="openCreateAccount(row.original)"
+                        />
+                      </div>
+                    </template>
+                  </UTable>
+        </template>
+      </AppResponsiveDataView>
       </template>
 
       <template #footer>

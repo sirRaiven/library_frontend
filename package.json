@@ -44,7 +44,7 @@
     "verify:accessibility": "vitest --run --project unit test/unit/uswitch-accessibility-contract.test.ts test/unit/interactive-accessibility-source-scan.test.ts",
     "verify:compatibility": "node scripts/verify-production-compatibility.mjs",
     "verify:ui-ux": "node scripts/verify-ui-ux-modernization.mjs",
-    "verify:design-system": "npm run verify:design-system:foundation && npm run verify:design-system:shells && npm run verify:design-system:components",
+    "verify:design-system": "npm run verify:design-system:foundation && npm run verify:design-system:shells && npm run verify:design-system:components && npm run verify:design-system:staff-pages && npm run verify:design-system:member-pages",
     "verify:deployment:local": "node scripts/verify-deployment-compatibility.mjs --target=localhost",
     "verify:deployment:staging": "node scripts/verify-deployment-compatibility.mjs --target=staging",
     "verify:deployment:production": "node scripts/verify-deployment-compatibility.mjs --target=production",
@@ -76,7 +76,9 @@
     "phase35:cross-browser:docker-webkit": "npm run phase35:preview:prepare && npm run phase35:chromium && npm run phase35:firefox && npm run phase35:webkit:docker",
     "verify:design-system:foundation": "node scripts/verify-design-system-foundation.mjs",
     "verify:design-system:shells": "node scripts/verify-design-system-shells.mjs",
-    "verify:design-system:components": "node scripts/verify-design-system-components.mjs"
+    "verify:design-system:components": "node scripts/verify-design-system-components.mjs",
+    "verify:design-system:staff-pages": "node scripts/verify-design-system-staff-pages.mjs",
+    "verify:design-system:member-pages": "node scripts/verify-design-system-member-pages.mjs"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

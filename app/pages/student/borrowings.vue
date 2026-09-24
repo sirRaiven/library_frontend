@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 import type { StudentBorrowingView } from "~/composables/useStudentBorrowings";
 
 definePageMeta({
@@ -114,7 +115,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <StudentPageHeader
       eyebrow="Library Circulation"
       title="My Borrowed Books"
@@ -127,6 +128,7 @@ onMounted(load);
           label="Browse Books"
           icon="i-lucide-book-open"
           color="primary"
+          class="hidden lg:inline-flex"
         />
         <UButton
           label="Refresh"
@@ -139,7 +141,7 @@ onMounted(load);
       </template>
     </StudentPageHeader>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
       <StudentMetricCard
         label="Currently Borrowed"
         :value="borrowings.summary.value.currentCount"
@@ -186,10 +188,14 @@ onMounted(load);
       :description="`${borrowings.summary.value.overdueCount} book${borrowings.summary.value.overdueCount === 1 ? ' is' : 's are'} already past the due date. Please return the physical book to the Library counter.`"
     />
 
-    <UCard :ui="{ body: 'p-4 sm:p-5' }">
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div class="inline-flex w-full rounded-xl border border-default bg-elevated/40 p-1 lg:w-auto">
+    <form @submit.prevent="applySearch">
+      <AppFilterBar
+        :active-count="appliedSearch ? 1 : 0"
+        :show-clear="Boolean(appliedSearch)"
+        @clear="clearSearch"
+      >
+        <template #quick>
+          <div class="inline-flex min-w-max rounded-lg border border-default bg-elevated/40 p-1">
             <UButton
               v-for="item in viewItems"
               :key="item.value"
@@ -197,61 +203,44 @@ onMounted(load);
               :icon="item.icon"
               :color="view === item.value ? 'primary' : 'neutral'"
               :variant="view === item.value ? 'solid' : 'ghost'"
-              class="flex-1 lg:flex-none"
+              size="sm"
               @click="changeView(item.value)"
             />
           </div>
+        </template>
 
-          <p class="text-sm text-muted">
-            {{ borrowings.pagination.value.total }} record{{ borrowings.pagination.value.total === 1 ? '' : 's' }}
-          </p>
-        </div>
-
-        <form class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_15rem_auto]" @submit.prevent="applySearch">
+        <template #search>
           <UInput
             v-model="searchInput"
             icon="i-lucide-search"
-            placeholder="Search book title, author, ISBN, borrowing no., or physical copy"
+            placeholder="Search title, author, ISBN, borrowing no., or copy"
             maxlength="120"
             autocomplete="off"
-          >
-            <template #trailing>
-              <UKbd>Enter</UKbd>
-            </template>
-          </UInput>
+            class="w-full"
+          />
+        </template>
 
+        <template #filters>
           <USelect
             v-model="sort"
             :items="sortItems"
             icon="i-lucide-arrow-up-down"
             aria-label="Sort borrowing records"
+            class="w-full md:w-56"
           />
+        </template>
 
-          <div class="flex gap-2">
-            <UButton
-              type="submit"
-              label="Search"
-              icon="i-lucide-search"
-              color="primary"
-              class="flex-1 lg:flex-none"
-              :loading="borrowings.loading.value"
-            />
-            <UButton
-              v-if="appliedSearch"
-              label="Clear"
-              icon="i-lucide-x"
-              color="neutral"
-              variant="outline"
-              @click="clearSearch"
-            />
-          </div>
-        </form>
-
-        <p class="text-xs text-muted">
-          Only submitted searches are recorded for system activity monitoring. The raw search phrase is not retained.
-        </p>
-      </div>
-    </UCard>
+        <template #actions>
+          <UButton
+            type="submit"
+            label="Search"
+            icon="i-lucide-search"
+            color="primary"
+            :loading="borrowings.loading.value"
+          />
+        </template>
+      </AppFilterBar>
+    </form>
 
     <UAlert
       v-if="borrowings.error.value"
@@ -306,7 +295,7 @@ onMounted(load);
 
     <div
       v-if="borrowings.pagination.value.pageCount > 1"
-      class="flex justify-center border-t border-default pt-6 mb-12"
+      class="flex justify-center border-t border-default pt-6"
     >
       <UPagination
         v-model:page="page"
@@ -321,7 +310,7 @@ onMounted(load);
       variant="soft"
       icon="i-lucide-info"
       title="About fines and renewals"
-      class="mb-12"
+     
       :description="`${borrowings.notes.value.fineAmount} ${borrowings.notes.value.renewal}`"
     />
   </div>

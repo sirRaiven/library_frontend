@@ -13,7 +13,7 @@
 
 :root {
   /* SNCBT Library Design System v2 — Wave DS-1 foundation */
-  --sncbt-ds-version: "2.0-ds1";
+  --sncbt-ds-version: "2.0-ds4";
   --ui-container: 96rem;
 
   /* Brand + semantic foundation */
@@ -93,6 +93,8 @@
   --sncbt-mobile-gutter: 0.75rem;
   --sncbt-tablet-gutter: 1.25rem;
   --sncbt-desktop-gutter: 1.75rem;
+  --sncbt-mobile-bottom-nav-height: 4rem;
+  --sncbt-mobile-bottom-nav-clearance: calc(var(--sncbt-mobile-bottom-nav-height) + max(env(safe-area-inset-bottom), 0px) + 1.5rem);
 
   /* Backward-compatible aliases used by the existing UI */
   --sncbt-canvas: var(--sncbt-color-canvas);
@@ -178,7 +180,10 @@
 
 /* Product canvas: neutral by default; operational content carries the hierarchy. */
 .sncbt-dashboard-canvas {
-  min-height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   background: var(--sncbt-canvas);
 }
 
@@ -480,6 +485,7 @@ body {
   width: 100%;
   max-width: 100rem;
   margin-inline: auto;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 .sncbt-portal-view {
@@ -722,7 +728,10 @@ body {
  * sections without changing business behavior.
  * -------------------------------------------------------------------------- */
 .sncbt-dashboard-canvas {
-  min-height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   background-color: var(--sncbt-canvas);
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -1016,7 +1025,7 @@ body {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   max-width: 40rem;
-  min-height: 4rem;
+  min-height: var(--sncbt-mobile-bottom-nav-height);
   margin-inline: auto;
   padding-inline: 0.25rem;
 }
@@ -1025,7 +1034,7 @@ body {
   position: relative;
   display: inline-flex;
   min-width: 0;
-  min-height: 4rem;
+  min-height: var(--sncbt-mobile-bottom-nav-height);
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1088,7 +1097,33 @@ body {
 }
 
 .sncbt-mobile-bottom-nav-spacer {
-  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  padding-bottom: 0;
+}
+
+/*
+ * iOS Safari and other mobile browsers can change the visual viewport while
+ * their browser chrome is visible. Reserve a real flow spacer instead of
+ * relying only on padding so the final record/card/form action can scroll
+ * completely above the fixed portal navigation.
+ */
+@media (max-width: 1023px) {
+  .sncbt-mobile-nav-scrollport {
+    scroll-padding-bottom: var(--sncbt-mobile-bottom-nav-clearance);
+  }
+
+  .sncbt-mobile-bottom-nav-spacer::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: var(--sncbt-mobile-bottom-nav-clearance);
+    flex: 0 0 auto;
+    pointer-events: none;
+  }
+
+  .sncbt-has-mobile-bottom-nav .sncbt-action-bar--mobile-sticky,
+  .sncbt-has-mobile-bottom-nav .sncbt-form-actions {
+    bottom: calc(var(--sncbt-mobile-bottom-nav-height) + env(safe-area-inset-bottom));
+  }
 }
 
 .sncbt-mobile-title {
@@ -1557,5 +1592,237 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .sncbt-record-card--interactive {
     transition: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Design System v2 — Wave DS-4: operational staff pages
+ * Admin and Librarian routes share one responsive operational page contract.
+ * -------------------------------------------------------------------------- */
+.sncbt-staff-view {
+  --sncbt-staff-section-gap: 1rem;
+}
+
+.sncbt-staff-page {
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.sncbt-staff-content {
+  width: 100%;
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
+.sncbt-staff-page :where(form, section, article, fieldset) {
+  min-width: 0;
+}
+
+.sncbt-staff-page :where(.sncbt-page-header) {
+  margin-bottom: 0.125rem;
+}
+
+.sncbt-staff-page :where(.sncbt-data-region, .sncbt-form-section, .sncbt-filter-bar, .sncbt-record-card) {
+  box-shadow: var(--sncbt-shadow-card);
+}
+
+.sncbt-staff-page :where(table) {
+  width: 100%;
+}
+
+.sncbt-staff-page :where(th) {
+  white-space: nowrap;
+}
+
+.sncbt-staff-page :where(td) {
+  vertical-align: middle;
+}
+
+.sncbt-staff-page :where(.sncbt-mobile-record-list) {
+  gap: 0.625rem;
+}
+
+.sncbt-staff-page :where(.sncbt-record-card__meta) {
+  row-gap: 0.25rem;
+}
+
+.sncbt-staff-page :where(.sncbt-record-card__actions) {
+  align-self: center;
+}
+
+.sncbt-staff-page :where(.sncbt-filter-bar) {
+  position: relative;
+}
+
+.sncbt-staff-page :where(.sncbt-form-actions) {
+  border-color: var(--sncbt-color-border);
+}
+
+.sncbt-staff-print-page {
+  min-width: 0;
+}
+
+/* Dense operational pages should never force the entire viewport sideways. */
+.sncbt-staff-page :where(.overflow-x-auto, [class*="overflow-x-auto"]) {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 767px) {
+  .sncbt-staff-view {
+    --sncbt-staff-section-gap: 0.75rem;
+  }
+
+  .sncbt-staff-page {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* Header actions stay reachable without producing a full screen of buttons. */
+  .sncbt-staff-page .sncbt-page-header .sncbt-action-row {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 0.125rem;
+    scrollbar-width: none;
+  }
+
+  .sncbt-staff-page .sncbt-page-header .sncbt-action-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sncbt-staff-page .sncbt-page-header .sncbt-action-row > :where(button, a, div) {
+    flex: 0 0 auto;
+  }
+
+  .sncbt-staff-page :where(.sncbt-record-card) {
+    border-radius: var(--sncbt-radius-md);
+  }
+
+  .sncbt-staff-page :where(.sncbt-record-card__actions button) {
+    min-width: var(--sncbt-touch-target);
+  }
+
+  /* Legacy table views remain usable on routes not yet converted to semantic cards. */
+  .sncbt-staff-page :where(table) {
+    font-size: 0.8125rem;
+  }
+
+  .sncbt-staff-page :where(th, td) {
+    padding-inline: 0.625rem;
+  }
+
+  /* Long operational forms become one-column before phone widths get cramped. */
+  .sncbt-staff-page :where(.grid) > :where(.sm\:col-span-2, .md\:col-span-2) {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .sncbt-staff-page :where(.sncbt-page-header .sncbt-action-row) {
+    justify-content: flex-end;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Design System v2 — Wave DS-5: Student & Faculty member experiences
+ * Phone-first member portals prioritize current tasks and readable records.
+ * -------------------------------------------------------------------------- */
+.sncbt-member-page {
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.sncbt-member-page :where(section, article, form, fieldset, dl) {
+  min-width: 0;
+}
+
+.sncbt-member-page :where(.sncbt-filter-bar, .sncbt-form-section, .sncbt-record-card) {
+  box-shadow: var(--sncbt-shadow-control);
+}
+
+.sncbt-member-page :where(.sncbt-card-interactive) {
+  transition-duration: var(--sncbt-motion-fast);
+}
+
+.sncbt-member-page :where(.sncbt-mobile-record-list) {
+  gap: 0.625rem;
+}
+
+.sncbt-member-page :where(.sncbt-record-card__meta) {
+  row-gap: 0.25rem;
+}
+
+@media (max-width: 767px) {
+  .sncbt-member-page {
+    padding: 0.75rem;
+    row-gap: 0.875rem;
+  }
+
+  .sncbt-member-page.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.875rem;
+  }
+
+  .sncbt-member-page .sncbt-page-header {
+    margin-bottom: 0;
+  }
+
+  .sncbt-member-page .sncbt-page-header .sncbt-action-row {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 0.125rem;
+    scrollbar-width: none;
+  }
+
+  .sncbt-member-page .sncbt-page-header .sncbt-action-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sncbt-member-page .sncbt-page-header .sncbt-action-row > :where(button, a, div) {
+    flex: 0 0 auto;
+  }
+
+  .sncbt-member-page .sncbt-metric-card {
+    min-height: 6.25rem;
+    padding: 0.75rem;
+  }
+
+  .sncbt-member-page .sncbt-metric-card .sncbt-icon-tile {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+  }
+
+  .sncbt-member-page .sncbt-filter-bar {
+    border-radius: var(--sncbt-radius-md);
+    padding: 0.75rem;
+  }
+
+  .sncbt-member-page .sncbt-filter-bar__quick {
+    margin-inline: -0.125rem;
+    padding-inline: 0.125rem;
+  }
+
+  .sncbt-member-page :where(.sncbt-form-section) {
+    padding: 0.875rem;
+  }
+
+  .sncbt-member-page :where(.sncbt-card-interactive) {
+    transform: none !important;
+    box-shadow: none;
+  }
+
+  .sncbt-member-page :where(.sncbt-card-interactive:hover) {
+    transform: none !important;
+  }
+
+  .sncbt-member-page :where(.overflow-x-auto, [class*="overflow-x-auto"]) {
+    max-width: 100%;
+    overscroll-behavior-inline: contain;
   }
 }

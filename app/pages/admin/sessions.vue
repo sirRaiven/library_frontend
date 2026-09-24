@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminMonitoringSummary, AdminSessionRecord } from "~/composables/useAdminMonitoring";
 
@@ -60,7 +64,7 @@ onMounted(() => { load(); loadSummary(); });
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader eyebrow="System & Monitoring" title="Sessions" description="Review active sign-in sessions and privacy-safe portal sessions for Student, Faculty, Librarian, and Administrator accounts." icon="i-lucide-monitor-dot"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/reports?view=monitoring" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
     <UAlert color="info" variant="soft" icon="i-lucide-info" title="Two session sources" description="Authentication Sessions control actual sign-in refresh tokens. Portal Monitoring Sessions record portal presence and activity. They are displayed separately because they do not store or expose authentication tokens." />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -70,17 +74,57 @@ onMounted(() => { load(); loadSummary(); });
       <AdminMetricCard label="Blocked Devices" :value="summary?.blockedDevices ?? 0" description="Devices denied portal monitoring access." icon="i-lucide-ban" tone="warning" :loading="!summary" to="/admin/devices" />
     </div>
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
-      <template #header><div class="space-y-3"><div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><h2 class="font-semibold text-highlighted">Session Register</h2><p class="mt-1 text-xs text-muted">{{ total }} matching session{{ total === 1 ? '' : 's' }}</p></div><UInput v-model="search" icon="i-lucide-search" placeholder="Search user or email" class="w-full lg:max-w-sm" /></div><div class="grid gap-2 sm:grid-cols-3"><USelect v-model="source" :items="sourceItems" /><USelect v-model="status" :items="statusItems" /><USelect v-model="profileType" :items="profileItems" /></div></div></template>
+      <template #header>
+        <AppFilterBar :title="`Session Register · ${total} session${total === 1 ? '' : 's'}`">
+          <template #search>
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search user or email" class="w-full" />
+          </template>
+          <template #filters>
+            <div class="grid gap-2 sm:grid-cols-3">
+              <USelect v-model="source" :items="sourceItems" />
+              <USelect v-model="status" :items="statusItems" />
+              <USelect v-model="profileType" :items="profileItems" />
+            </div>
+          </template>
+        </AppFilterBar>
+      </template>
       <div v-if="loading" class="space-y-3 p-6"><USkeleton v-for="i in 7" :key="i" class="h-16 w-full" /></div>
       <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-monitor-off" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching sessions</h3><p class="mt-1 text-sm text-muted">Change the source or filters.</p></div>
-      <UTable v-else :data="records" :columns="columns">
-        <template #account-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/sessions`" color="neutral" variant="link" class="h-auto p-0 font-semibold" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.email || 'No email' }}</p></template>
-        <template #device-cell="{ row }"><p class="font-medium text-highlighted">{{ row.original.deviceName }}</p><p class="text-xs text-muted">{{ row.original.browser }} · {{ row.original.operatingSystem }}</p></template>
-        <template #source-cell="{ row }"><UBadge :label="row.original.source" color="neutral" variant="soft" /></template>
-        <template #status-cell="{ row }"><UBadge :label="row.original.status" :color="statusColor(row.original.status)" variant="soft" /></template>
-        <template #lastActivity-cell="{ row }"><p class="text-sm text-default">{{ formatDate(row.original.lastActivityAt) }}</p><p class="text-xs text-muted">Started {{ formatDate(row.original.loginAt) }}</p></template>
-        <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View session" @click="view(row.original)" /><UButton v-if="row.original.status === 'Active'" icon="i-lucide-log-out" color="error" variant="ghost" square aria-label="Revoke session" @click="beginRevoke(row.original)" /></div></template>
-      </UTable>
+      <AppResponsiveDataView v-else mobile-label="Session records" desktop-label="Session records table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard
+              v-for="record in records"
+              :key="record.id || record.sessionReference"
+              :title="record.account.username"
+              :subtitle="`${record.deviceName} · ${record.browser}`"
+            >
+              <template #status>
+                <AppStatusBadge :label="record.status" :tone="record.status === 'Active' ? 'success' : ['Blocked', 'Suspicious'].includes(record.status) ? 'error' : ['Expired', 'Revoked', 'Invalidated'].includes(record.status) ? 'warning' : 'neutral'" />
+              </template>
+              <template #meta>
+                <span>{{ record.profileType }} · {{ record.source }}</span>
+                <span>{{ record.operatingSystem }}</span>
+                <span>Last activity {{ formatDate(record.lastActivityAt) }}</span>
+              </template>
+              <template #actions>
+                <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View session" @click="view(record)" />
+                <UButton v-if="record.status === 'Active'" icon="i-lucide-log-out" color="error" variant="ghost" square aria-label="Revoke session" @click="beginRevoke(record)" />
+              </template>
+            </AppRecordCard>
+          </div>
+        </template>
+        <template #desktop>
+          <UTable :data="records" :columns="columns">
+                  <template #account-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/sessions`" color="neutral" variant="link" class="h-auto p-0 font-semibold" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.email || 'No email' }}</p></template>
+                  <template #device-cell="{ row }"><p class="font-medium text-highlighted">{{ row.original.deviceName }}</p><p class="text-xs text-muted">{{ row.original.browser }} · {{ row.original.operatingSystem }}</p></template>
+                  <template #source-cell="{ row }"><UBadge :label="row.original.source" color="neutral" variant="soft" /></template>
+                  <template #status-cell="{ row }"><UBadge :label="row.original.status" :color="statusColor(row.original.status)" variant="soft" /></template>
+                  <template #lastActivity-cell="{ row }"><p class="text-sm text-default">{{ formatDate(row.original.lastActivityAt) }}</p><p class="text-xs text-muted">Started {{ formatDate(row.original.loginAt) }}</p></template>
+                  <template #actions-cell="{ row }"><div class="flex justify-end gap-1"><UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View session" @click="view(row.original)" /><UButton v-if="row.original.status === 'Active'" icon="i-lucide-log-out" color="error" variant="ghost" square aria-label="Revoke session" @click="beginRevoke(row.original)" /></div></template>
+                </UTable>
+        </template>
+      </AppResponsiveDataView>
       <template #footer><div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm text-muted">Authentication-session listing may take longer when many accounts exist.</p><UPagination v-model:page="page" :total="total" :items-per-page="pageSize" /></div></template>
     </UCard>
   </div>

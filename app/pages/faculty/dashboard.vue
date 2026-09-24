@@ -92,7 +92,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <FacultyPageHeader
       eyebrow="Faculty Library Services"
       :title="`Good day, ${firstName}`"
@@ -100,8 +100,8 @@ onMounted(load);
       icon="i-lucide-briefcase-business"
     >
       <template #actions>
-        <UButton label="Review Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" color="primary" />
-        <UButton label="Browse Collection" icon="i-lucide-search" to="/faculty/books" color="neutral" variant="outline" />
+        <UButton label="Review Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" color="primary" class="hidden lg:inline-flex" />
+        <UButton label="Browse Collection" icon="i-lucide-search" to="/faculty/books" color="neutral" variant="outline" class="hidden lg:inline-flex" />
         <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="portal.loading.value" @click="load" />
       </template>
     </FacultyPageHeader>
@@ -117,7 +117,7 @@ onMounted(load);
       <span class="text-xs text-muted">{{ portal.dashboard.value.faculty.designation || 'Faculty member' }}</span>
     </div>
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <section class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <UCard v-for="card in metricCards" :key="card.label" :ui="{ root: 'ring-1 ring-default shadow-sm', body: 'p-5' }">
         <div class="flex items-start justify-between gap-4">
           <div>
@@ -132,7 +132,7 @@ onMounted(load);
       </UCard>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[1.4fr_1fr] mb-14">
+    <section class="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
       <UCard :ui="{ root: 'ring-1 ring-default', header: 'border-b border-default p-5', body: 'p-0' }">
         <template #header>
           <div class="flex items-center justify-between gap-3">

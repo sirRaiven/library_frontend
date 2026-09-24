@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type {
   AdminRoleSummary,
@@ -412,7 +415,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="Users"
@@ -438,23 +441,18 @@ onMounted(async () => {
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <template #header>
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 class="font-semibold text-highlighted">Users</h2>
-            <p class="mt-1 text-xs text-muted">{{ total }} account{{ total === 1 ? '' : 's' }} found</p>
-          </div>
-          <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 xl:w-[64rem]">
-            <UInput
-              v-model="search"
-              icon="i-lucide-search"
-              placeholder="Search username or email"
-              autocomplete="off"
-            />
-            <USelect v-model="roleFilter" :items="roleOptions" />
-            <USelect v-model="statusFilter" :items="statusOptions" />
-            <USelect v-model="profileFilter" :items="profileOptions" />
-          </div>
-        </div>
+        <AppFilterBar :title="`Users · ${total} account${total === 1 ? '' : 's'}`">
+          <template #search>
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search username or email" autocomplete="off" class="w-full" />
+          </template>
+          <template #filters>
+            <div class="grid gap-2 sm:grid-cols-3">
+              <USelect v-model="roleFilter" :items="roleOptions" />
+              <USelect v-model="statusFilter" :items="statusOptions" />
+              <USelect v-model="profileFilter" :items="profileOptions" />
+            </div>
+          </template>
+        </AppFilterBar>
       </template>
 
       <div v-if="loading" class="space-y-3 p-5 sm:p-6">
@@ -467,78 +465,106 @@ onMounted(async () => {
         <p class="mt-1 text-sm text-muted">Adjust the search or account-status filters.</p>
       </div>
 
-      <UTable v-else :data="records" :columns="columns">
-        <template #account-cell="{ row }">
-          <div class="flex items-center gap-3">
-            <UAvatar :text="row.original.username.slice(0, 2).toUpperCase()" size="sm" />
-            <div class="min-w-0">
-              <p class="truncate font-semibold text-highlighted">{{ row.original.username }}</p>
-              <p class="truncate text-xs text-muted">{{ row.original.email }}</p>
-            </div>
-          </div>
-        </template>
-        <template #role-cell="{ row }">
-          <UBadge
-            :label="row.original.role?.name || 'No role assigned'"
-            :color="row.original.role ? 'primary' : 'warning'"
-            variant="soft"
-          />
-        </template>
-        <template #status-cell="{ row }">
-          <AdminStatusBadge :label="accountStatus(row.original)" />
-        </template>
-        <template #profile-cell="{ row }">
-          <div class="space-y-1">
-            <AdminProfileStatusBadge
-              :status="row.original.profileGovernance?.status ?? 'Unavailable'"
-            />
-            <p
-              v-if="row.original.profileGovernance?.profile"
-              class="max-w-48 truncate text-xs text-muted"
+      <AppResponsiveDataView v-else mobile-label="User accounts" desktop-label="User accounts table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard
+              v-for="record in records"
+              :key="record.id"
+              :title="record.username"
+              :subtitle="record.email"
+              :to="`/admin/users/${record.id}`"
             >
-              {{ row.original.profileGovernance?.profile?.fullName || 'Profile details unavailable' }}
-            </p>
+              <template #status>
+                <AdminStatusBadge :label="accountStatus(record)" />
+              </template>
+              <template #meta>
+                <span>{{ record.role?.name || 'No role assigned' }}</span>
+                <span>{{ record.profileGovernance?.status ?? 'Profile unavailable' }}</span>
+                <span>Created {{ formatDate(record.createdAt) }}</span>
+              </template>
+              <template #actions>
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit account and role" @click="openEdit(record)" />
+                <UButton :icon="record.blocked ? 'i-lucide-user-round-check' : 'i-lucide-user-round-x'" :color="record.blocked ? 'success' : 'error'" variant="ghost" square :aria-label="record.blocked ? 'Restore account' : 'Block account'" @click="openStatus(record, !record.blocked)" />
+              </template>
+            </AppRecordCard>
           </div>
         </template>
-        <template #created-cell="{ row }">
-          <p class="text-sm text-default">{{ formatDate(row.original.createdAt) }}</p>
-          <p class="text-xs text-muted">{{ row.original.provider || 'local' }} provider</p>
+        <template #desktop>
+          <UTable :data="records" :columns="columns">
+                  <template #account-cell="{ row }">
+                    <div class="flex items-center gap-3">
+                      <UAvatar :text="row.original.username.slice(0, 2).toUpperCase()" size="sm" />
+                      <div class="min-w-0">
+                        <p class="truncate font-semibold text-highlighted">{{ row.original.username }}</p>
+                        <p class="truncate text-xs text-muted">{{ row.original.email }}</p>
+                      </div>
+                    </div>
+                  </template>
+                  <template #role-cell="{ row }">
+                    <UBadge
+                      :label="row.original.role?.name || 'No role assigned'"
+                      :color="row.original.role ? 'primary' : 'warning'"
+                      variant="soft"
+                    />
+                  </template>
+                  <template #status-cell="{ row }">
+                    <AdminStatusBadge :label="accountStatus(row.original)" />
+                  </template>
+                  <template #profile-cell="{ row }">
+                    <div class="space-y-1">
+                      <AdminProfileStatusBadge
+                        :status="row.original.profileGovernance?.status ?? 'Unavailable'"
+                      />
+                      <p
+                        v-if="row.original.profileGovernance?.profile"
+                        class="max-w-48 truncate text-xs text-muted"
+                      >
+                        {{ row.original.profileGovernance?.profile?.fullName || 'Profile details unavailable' }}
+                      </p>
+                    </div>
+                  </template>
+                  <template #created-cell="{ row }">
+                    <p class="text-sm text-default">{{ formatDate(row.original.createdAt) }}</p>
+                    <p class="text-xs text-muted">{{ row.original.provider || 'local' }} provider</p>
+                  </template>
+                  <template #actions-cell="{ row }">
+                    <div class="flex justify-end gap-1">
+                      <UTooltip text="Open account details">
+                        <UButton
+                          icon="i-lucide-external-link"
+                          color="primary"
+                          variant="ghost"
+                          square
+                          aria-label="Open account details"
+                          :to="`/admin/users/${row.original.id}`"
+                        />
+                      </UTooltip>
+                      <UTooltip text="Edit account and role">
+                        <UButton
+                          icon="i-lucide-pencil"
+                          color="neutral"
+                          variant="ghost"
+                          square
+                          aria-label="Edit account and role"
+                          @click="openEdit(row.original)"
+                        />
+                      </UTooltip>
+                      <UTooltip :text="row.original.blocked ? 'Restore account' : 'Block account'">
+                        <UButton
+                          :icon="row.original.blocked ? 'i-lucide-user-round-check' : 'i-lucide-user-round-x'"
+                          :color="row.original.blocked ? 'success' : 'error'"
+                          variant="ghost"
+                          square
+                          :aria-label="row.original.blocked ? 'Restore account' : 'Block account'"
+                          @click="openStatus(row.original, !row.original.blocked)"
+                        />
+                      </UTooltip>
+                    </div>
+                  </template>
+                </UTable>
         </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end gap-1">
-            <UTooltip text="Open account details">
-              <UButton
-                icon="i-lucide-external-link"
-                color="primary"
-                variant="ghost"
-                square
-                aria-label="Open account details"
-                :to="`/admin/users/${row.original.id}`"
-              />
-            </UTooltip>
-            <UTooltip text="Edit account and role">
-              <UButton
-                icon="i-lucide-pencil"
-                color="neutral"
-                variant="ghost"
-                square
-                aria-label="Edit account and role"
-                @click="openEdit(row.original)"
-              />
-            </UTooltip>
-            <UTooltip :text="row.original.blocked ? 'Restore account' : 'Block account'">
-              <UButton
-                :icon="row.original.blocked ? 'i-lucide-user-round-check' : 'i-lucide-user-round-x'"
-                :color="row.original.blocked ? 'success' : 'error'"
-                variant="ghost"
-                square
-                :aria-label="row.original.blocked ? 'Restore account' : 'Block account'"
-                @click="openStatus(row.original, !row.original.blocked)"
-              />
-            </UTooltip>
-          </div>
-        </template>
-      </UTable>
+      </AppResponsiveDataView>
 
       <template #footer>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

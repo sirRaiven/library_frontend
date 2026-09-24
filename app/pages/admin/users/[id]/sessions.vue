@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type {
   AdminSessionRecord,
@@ -167,7 +170,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       eyebrow="User Monitoring"
       :title="account ? `Sessions for ${account.username}` : 'Account Sessions'"
@@ -257,51 +260,64 @@ onMounted(refresh);
         <h3 class="mt-3 font-semibold text-highlighted">No matching sessions</h3>
         <p class="mt-1 text-sm text-muted">This account has no session matching the selected filters.</p>
       </div>
-      <UTable v-else :data="records" :columns="columns">
-        <template #device-cell="{ row }">
-          <p class="font-semibold text-highlighted">{{ row.original.deviceName }}</p>
-          <p class="text-xs text-muted">
-            {{ row.original.browser }} · {{ row.original.operatingSystem }}
-          </p>
-        </template>
-        <template #source-cell="{ row }">
-          <UBadge :label="row.original.source" color="neutral" variant="soft" />
-        </template>
-        <template #status-cell="{ row }">
-          <UBadge
-            :label="row.original.status"
-            :color="statusColor(row.original.status)"
-            variant="soft"
-          />
-        </template>
-        <template #login-cell="{ row }">
-          <time class="text-sm text-default">{{ formatDate(row.original.loginAt) }}</time>
-        </template>
-        <template #lastActivity-cell="{ row }">
-          <time class="text-sm text-default">{{ formatDate(row.original.lastActivityAt) }}</time>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end gap-1">
-            <UButton
-              icon="i-lucide-eye"
-              color="neutral"
-              variant="ghost"
-              square
-              aria-label="View session"
-              @click="view(row.original)"
-            />
-            <UButton
-              v-if="row.original.status === 'Active'"
-              icon="i-lucide-log-out"
-              color="error"
-              variant="ghost"
-              square
-              aria-label="Revoke session"
-              @click="beginRevoke(row.original)"
-            />
+      <AppResponsiveDataView v-else mobile-label="Account sessions" desktop-label="Account sessions table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard v-for="record in records" :key="record.id" :title="record.deviceName" :subtitle="`${record.browser} · ${record.operatingSystem}`">
+              <template #status><AppStatusBadge :label="record.status" :tone="record.status === 'Active' ? 'success' : ['Blocked', 'Suspicious'].includes(record.status) ? 'error' : ['Expired', 'Revoked', 'Invalidated'].includes(record.status) ? 'warning' : 'neutral'" /></template>
+              <template #meta><span>{{ record.source }}</span><span>Login {{ formatDate(record.loginAt) }}</span><span>Last activity {{ formatDate(record.lastActivityAt) }}</span></template>
+              <template #actions><UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View session" @click="view(record)" /><UButton v-if="record.status === 'Active'" icon="i-lucide-log-out" color="error" variant="ghost" square aria-label="Revoke session" @click="beginRevoke(record)" /></template>
+            </AppRecordCard>
           </div>
         </template>
-      </UTable>
+        <template #desktop>
+          <UTable :data="records" :columns="columns">
+                  <template #device-cell="{ row }">
+                    <p class="font-semibold text-highlighted">{{ row.original.deviceName }}</p>
+                    <p class="text-xs text-muted">
+                      {{ row.original.browser }} · {{ row.original.operatingSystem }}
+                    </p>
+                  </template>
+                  <template #source-cell="{ row }">
+                    <UBadge :label="row.original.source" color="neutral" variant="soft" />
+                  </template>
+                  <template #status-cell="{ row }">
+                    <UBadge
+                      :label="row.original.status"
+                      :color="statusColor(row.original.status)"
+                      variant="soft"
+                    />
+                  </template>
+                  <template #login-cell="{ row }">
+                    <time class="text-sm text-default">{{ formatDate(row.original.loginAt) }}</time>
+                  </template>
+                  <template #lastActivity-cell="{ row }">
+                    <time class="text-sm text-default">{{ formatDate(row.original.lastActivityAt) }}</time>
+                  </template>
+                  <template #actions-cell="{ row }">
+                    <div class="flex justify-end gap-1">
+                      <UButton
+                        icon="i-lucide-eye"
+                        color="neutral"
+                        variant="ghost"
+                        square
+                        aria-label="View session"
+                        @click="view(row.original)"
+                      />
+                      <UButton
+                        v-if="row.original.status === 'Active'"
+                        icon="i-lucide-log-out"
+                        color="error"
+                        variant="ghost"
+                        square
+                        aria-label="Revoke session"
+                        @click="beginRevoke(row.original)"
+                      />
+                    </div>
+                  </template>
+                </UTable>
+        </template>
+      </AppResponsiveDataView>
 
       <template #footer>
         <div class="flex justify-end">

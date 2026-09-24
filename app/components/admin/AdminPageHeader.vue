@@ -4,7 +4,7 @@ import AppPageHeader from "~/components/shared/AppPageHeader.vue";
 defineProps<{
   eyebrow?: string;
   title: string;
-  description: string;
+  description?: string;
   icon?: string;
 }>();
 </script>

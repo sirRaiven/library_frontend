@@ -1,5 +1,8 @@
 
 <script setup lang="ts">
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type {
   LibraryVisitMemberType,
   LibraryVisitRecord,
@@ -446,15 +449,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
     <div
-      class="mx-auto max-w-[1500px] space-y-6 mb-12"
+      class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Library Services"
         title="Library Visits"
         description="Record Library entry by scanning a Student Library Card or Faculty institutional ID. Each accepted scan creates one visit record."
-        icon="i-lucide-scan-line"s
+        icon="i-lucide-scan-line"
       >
         <template #actions>
           <UBadge color="primary" variant="soft" class="self-center">Time-in only</UBadge>
@@ -787,172 +790,191 @@ onMounted(() => {
           </p>
         </div>
 
-        <UTable
-          v-else
-          :data="recentVisits"
-          :columns="columns"
-        >
-          <template
-            #time-cell="{ row }"
-          >
-            <div>
-              <p
-                class="font-semibold text-highlighted"
+        <AppResponsiveDataView v-else mobile-label="Library visit records" desktop-label="Library visit records table">
+          <template #mobile>
+            <div class="sncbt-mobile-record-list">
+              <AppRecordCard
+                v-for="visit in recentVisits"
+                :key="visit.documentId"
+                :title="visit.memberName"
+                :subtitle="`${visit.memberIdentifier} · ${visit.memberType}`"
               >
-                {{
-                  formatTime(
-                    row.original
-                      .timeIn,
-                  )
-                }}
-              </p>
-
-              <p
-                class="text-xs text-muted"
-              >
-                {{
-                  row.original
-                    .visitDate
-                }}
-              </p>
+                <template #status>
+                  <AppStatusBadge :label="visit.memberType" :tone="visit.memberType === 'Student' ? 'info' : 'primary'" />
+                </template>
+                <template #meta>
+                  <span>{{ visit.programDepartment || 'Program / department not recorded' }}</span>
+                  <span>{{ visit.visitDate }} · {{ formatTime(visit.timeIn) }}</span>
+                  <span class="font-mono">{{ visit.barcode }}</span>
+                </template>
+              </AppRecordCard>
             </div>
           </template>
-
-          <template
-            #member-cell="{ row }"
-          >
-            <div
-              class="flex items-center gap-3"
-            >
-              <UAvatar
-                :src="
-                  row.original
-                    .member
-                    ?.photoUrl ??
-                  undefined
-                "
-                :text="
-                  memberInitials(
-                    row.original,
-                  )
-                "
-                :alt="
-                  row.original
-                    .memberName
-                "
-                size="md"
-              />
-
-              <div
-                class="min-w-0"
-              >
-                <p
-                  class="truncate font-semibold text-highlighted"
-                >
-                  {{
-                    row.original
-                      .memberName
-                  }}
-                </p>
-
-                <p
-                  class="truncate text-xs text-muted"
-                >
-                  {{
-                    row.original
-                      .memberIdentifier
-                  }}
-                </p>
-              </div>
-            </div>
+          <template #desktop>
+            <UTable :data="recentVisits" :columns="columns">
+                      <template
+                        #time-cell="{ row }"
+                      >
+                        <div>
+                          <p
+                            class="font-semibold text-highlighted"
+                          >
+                            {{
+                              formatTime(
+                                row.original
+                                  .timeIn,
+                              )
+                            }}
+                          </p>
+            
+                          <p
+                            class="text-xs text-muted"
+                          >
+                            {{
+                              row.original
+                                .visitDate
+                            }}
+                          </p>
+                        </div>
+                      </template>
+            
+                      <template
+                        #member-cell="{ row }"
+                      >
+                        <div
+                          class="flex items-center gap-3"
+                        >
+                          <UAvatar
+                            :src="
+                              row.original
+                                .member
+                                ?.photoUrl ??
+                              undefined
+                            "
+                            :text="
+                              memberInitials(
+                                row.original,
+                              )
+                            "
+                            :alt="
+                              row.original
+                                .memberName
+                            "
+                            size="md"
+                          />
+            
+                          <div
+                            class="min-w-0"
+                          >
+                            <p
+                              class="truncate font-semibold text-highlighted"
+                            >
+                              {{
+                                row.original
+                                  .memberName
+                              }}
+                            </p>
+            
+                            <p
+                              class="truncate text-xs text-muted"
+                            >
+                              {{
+                                row.original
+                                  .memberIdentifier
+                              }}
+                            </p>
+                          </div>
+                        </div>
+                      </template>
+            
+                      <template
+                        #memberType-cell="{ row }"
+                      >
+                        <UBadge
+                          :color="
+                            row.original
+                              .memberType ===
+                            'Student'
+                              ? 'info'
+                              : 'primary'
+                          "
+                          variant="soft"
+                        >
+                          {{
+                            row.original
+                              .memberType
+                          }}
+                        </UBadge>
+                      </template>
+            
+                      <template
+                        #programDepartment-cell="{ row }"
+                      >
+                        <p
+                          class="text-sm font-medium text-highlighted"
+                        >
+                          {{
+                            row.original
+                              .programDepartment ||
+                            "Not recorded"
+                          }}
+                        </p>
+            
+                        <p
+                          v-if="
+                            row.original
+                              .educationalLevel
+                          "
+                          class="text-xs text-muted"
+                        >
+                          {{
+                            row.original
+                              .educationalLevel
+                          }}
+                          <template
+                            v-if="
+                              row.original
+                                .yearLevel
+                            "
+                          >
+                            · Year
+                            {{
+                              row.original
+                                .yearLevel
+                            }}
+                          </template>
+                        </p>
+                      </template>
+            
+                      <template
+                        #barcode-cell="{ row }"
+                      >
+                        <span
+                          class="rounded-lg bg-elevated px-2 py-1 font-mono text-xs font-semibold text-highlighted"
+                        >
+                          {{
+                            row.original
+                              .barcode
+                          }}
+                        </span>
+                      </template>
+            
+                      <template
+                        #recordedBy-cell="{ row }"
+                      >
+                        <span
+                          class="text-sm text-muted"
+                        >
+                          {{
+                            row.original
+                              .recordedBy ||
+                            "Librarian"
+                          }}
+                        </span>
+                      </template>
+                    </UTable>
           </template>
-
-          <template
-            #memberType-cell="{ row }"
-          >
-            <UBadge
-              :color="
-                row.original
-                  .memberType ===
-                'Student'
-                  ? 'info'
-                  : 'primary'
-              "
-              variant="soft"
-            >
-              {{
-                row.original
-                  .memberType
-              }}
-            </UBadge>
-          </template>
-
-          <template
-            #programDepartment-cell="{ row }"
-          >
-            <p
-              class="text-sm font-medium text-highlighted"
-            >
-              {{
-                row.original
-                  .programDepartment ||
-                "Not recorded"
-              }}
-            </p>
-
-            <p
-              v-if="
-                row.original
-                  .educationalLevel
-              "
-              class="text-xs text-muted"
-            >
-              {{
-                row.original
-                  .educationalLevel
-              }}
-              <template
-                v-if="
-                  row.original
-                    .yearLevel
-                "
-              >
-                · Year
-                {{
-                  row.original
-                    .yearLevel
-                }}
-              </template>
-            </p>
-          </template>
-
-          <template
-            #barcode-cell="{ row }"
-          >
-            <span
-              class="rounded-lg bg-elevated px-2 py-1 font-mono text-xs font-semibold text-highlighted"
-            >
-              {{
-                row.original
-                  .barcode
-              }}
-            </span>
-          </template>
-
-          <template
-            #recordedBy-cell="{ row }"
-          >
-            <span
-              class="text-sm text-muted"
-            >
-              {{
-                row.original
-                  .recordedBy ||
-                "Librarian"
-              }}
-            </span>
-          </template>
-        </UTable>
+        </AppResponsiveDataView>
 
         <template #footer>
           <div

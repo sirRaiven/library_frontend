@@ -21,8 +21,16 @@ const emit = defineEmits<{
   clear: [];
 }>();
 
+const localMobileFiltersOpen = ref(props.mobileFiltersOpen);
+watch(() => props.mobileFiltersOpen, (value) => {
+  localMobileFiltersOpen.value = value;
+});
+const resolvedMobileFiltersOpen = computed(() => props.mobileFiltersOpen || localMobileFiltersOpen.value);
+
 const toggleMobileFilters = () => {
-  emit("update:mobileFiltersOpen", !props.mobileFiltersOpen);
+  const next = !resolvedMobileFiltersOpen.value;
+  localMobileFiltersOpen.value = next;
+  emit("update:mobileFiltersOpen", next);
 };
 </script>
 
@@ -51,7 +59,7 @@ const toggleMobileFilters = () => {
           color="neutral"
           variant="outline"
           size="sm"
-          :aria-expanded="mobileFiltersOpen"
+          :aria-expanded="resolvedMobileFiltersOpen"
           @click="toggleMobileFilters"
         />
         <UButton
@@ -72,7 +80,7 @@ const toggleMobileFilters = () => {
     <div
       v-if="$slots.filters"
       class="sncbt-filter-bar__advanced"
-      :class="mobileFiltersOpen ? 'sncbt-filter-bar__advanced--open' : ''"
+      :class="resolvedMobileFiltersOpen ? 'sncbt-filter-bar__advanced--open' : ''"
     >
       <slot name="filters" />
     </div>

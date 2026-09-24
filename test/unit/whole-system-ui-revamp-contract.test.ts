@@ -31,9 +31,9 @@ describe("whole-system UI revamp contract", () => {
 
   it("keeps the redesigned sign-in experience with light/dark support", () => {
     const signIn = read("app/pages/index.vue");
-    expect(signIn).toContain("relative min-h-screen overflow-hidden");
-    expect(signIn).toContain("bg-[#eef6f2]");
-    expect(signIn).toContain("dark:bg-[#020c12]");
+    expect(signIn).toContain("sncbt-public-entry relative min-h-dvh overflow-hidden");
+    expect(signIn).toContain("bg-[var(--sncbt-canvas)]");
+    expect(signIn).toContain("dark:bg-[#041725]/92");
     expect(signIn).toContain("Library Management System");
     expect(signIn).not.toContain("Open Student Registration");
     expect(signIn).toContain('id="signin-heading"');

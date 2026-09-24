@@ -399,7 +399,7 @@ watch(
         <main id="main-content" class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner admin />
-            <div class="sncbt-portal-view">
+            <div class="sncbt-portal-view sncbt-admin-view sncbt-staff-view">
               <slot />
             </div>
           </div>

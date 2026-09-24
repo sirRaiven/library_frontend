@@ -29,7 +29,8 @@ describe("Librarian book collection card UI", () => {
     const page = read("app/pages/librarian/books/index.vue");
 
     expect(page).toContain("sm:min-h-[248px]");
-    expect(page).toContain("sm:w-40 sm:self-stretch");
+    expect(page).toContain("w-32 shrink-0");
+    expect(page).toContain("sm:flex sm:self-stretch");
     expect(page).toContain("bookCoverSecondaryLabel(book)");
     expect(page).toContain('name="i-lucide-library"');
     expect(page).toContain("Collection");

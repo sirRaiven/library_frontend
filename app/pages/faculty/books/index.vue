@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import FacultyPageHeader from "~/components/faculty/FacultyPageHeader.vue";
 import PortalBookCard from "~/components/shared/PortalBookCard.vue";
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 
 definePageMeta({
   layout: "faculty",
@@ -82,11 +83,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
-    <div class="mx-auto w-full max-w-[1600px] space-y-6">
+  <UContainer class="sncbt-page-shell sncbt-member-page">
+    <div class="w-full space-y-6">
       <FacultyPageHeader
         eyebrow="Library collection"
-        title="Find books for teaching and department use"
+        title="Book Collection"
         description="Search the physical collection and check copy availability. Bring the book and your Faculty ID to the Library counter for checkout."
         icon="i-lucide-book-open"
       >
@@ -111,20 +112,26 @@ onBeforeUnmount(() => {
         :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
       />
 
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-4 sm:p-5' }">
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr]">
+      <AppFilterBar
+        title="Find books"
+        :active-count="(search.trim() ? 1 : 0) + (category !== ALL_CATEGORIES ? 1 : 0) + (availability !== 'all' ? 1 : 0) + (sort !== 'title-asc' ? 1 : 0)"
+      >
+        <template #search>
           <UInput
             v-model="search"
             icon="i-lucide-search"
             placeholder="Search title, author, ISBN, or call number"
             class="w-full"
           />
+        </template>
+
+        <template #filters>
           <USelect
             v-model="category"
             :items="categoryItems"
             value-key="value"
             label-key="label"
-            class="w-full"
+            class="w-full md:w-56"
             :disabled="libraryOptions.loading.value"
           />
           <USelect
@@ -132,17 +139,28 @@ onBeforeUnmount(() => {
             :items="availabilityItems"
             value-key="value"
             label-key="label"
-            class="w-full"
+            class="w-full md:w-48"
           />
           <USelect
             v-model="sort"
             :items="sortItems"
             value-key="value"
             label-key="label"
-            class="w-full"
+            class="w-full md:w-48"
           />
-        </div>
-      </UCard>
+        </template>
+
+        <template #actions>
+          <UButton
+            icon="i-lucide-refresh-cw"
+            color="neutral"
+            variant="ghost"
+            aria-label="Refresh book collection"
+            :loading="portal.loading.value"
+            @click="load"
+          />
+        </template>
+      </AppFilterBar>
 
       <div
         v-if="portal.loading.value && !portal.books.value.length"

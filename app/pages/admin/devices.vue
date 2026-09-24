@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminDeviceRecord, AdminMonitoringSummary } from "~/composables/useAdminMonitoring";
 
@@ -28,7 +32,7 @@ onMounted(() => { load(); loadSummary(); });
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader eyebrow="System & Monitoring" title="Devices" description="Review privacy-safe browser device records created by Student, Faculty, Librarian, and Administrator portal sessions." icon="i-lucide-monitor-smartphone"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/reports?view=monitoring" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
     <UAlert color="primary" variant="soft" icon="i-lucide-fingerprint" title="No hardware fingerprinting" description="The Library System uses a random application device identifier. It does not collect MAC addresses, IMEI numbers, hardware serial numbers, continuous location, or personal files." />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -38,17 +42,57 @@ onMounted(() => { load(); loadSummary(); });
       <AdminMetricCard label="Active Portal Sessions" :value="summary?.activeTrackedSessions ?? 0" description="Recently active portal monitoring sessions." icon="i-lucide-monitor-dot" tone="success" :loading="!summary" to="/admin/sessions" />
     </div>
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
-      <template #header><div class="space-y-3"><div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><h2 class="font-semibold text-highlighted">Device Register</h2><p class="mt-1 text-xs text-muted">{{ total }} matching device{{ total === 1 ? '' : 's' }}</p></div><UInput v-model="search" icon="i-lucide-search" placeholder="Search device, user, browser, or OS" class="w-full lg:max-w-sm" /></div><div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"><USelect v-model="trust" :items="trustItems" /><USelect v-model="blocked" :items="blockedItems" /><USelect v-model="deviceType" :items="deviceItems" /><USelect v-model="profileType" :items="profileItems" /></div></div></template>
+      <template #header>
+        <AppFilterBar :title="`Device Register · ${total} device${total === 1 ? '' : 's'}`">
+          <template #search>
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search device, user, browser, or OS" class="w-full" />
+          </template>
+          <template #filters>
+            <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <USelect v-model="trust" :items="trustItems" />
+              <USelect v-model="blocked" :items="blockedItems" />
+              <USelect v-model="deviceType" :items="deviceItems" />
+              <USelect v-model="profileType" :items="profileItems" />
+            </div>
+          </template>
+        </AppFilterBar>
+      </template>
       <div v-if="loading" class="space-y-3 p-6"><USkeleton v-for="i in 7" :key="i" class="h-16 w-full" /></div>
       <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-monitor-off" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching devices</h3><p class="mt-1 text-sm text-muted">Devices appear after a supported user opens their portal.</p></div>
-      <UTable v-else :data="records" :columns="columns">
-        <template #device-cell="{ row }"><div class="flex items-center gap-3"><div class="flex size-10 items-center justify-center rounded-xl bg-elevated"><UIcon :name="row.original.deviceType === 'Mobile Phone' ? 'i-lucide-smartphone' : 'i-lucide-monitor'" class="size-5" /></div><div><p class="font-semibold text-highlighted">{{ row.original.displayName }}</p><p class="text-xs text-muted">{{ row.original.deviceType }} · {{ row.original.applicationMode }}</p></div></div></template>
-        <template #account-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/devices`" color="neutral" variant="link" class="h-auto p-0 font-medium" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.email || 'No email' }}</p></template>
-        <template #trust-cell="{ row }"><div class="flex flex-wrap gap-1"><UBadge v-if="row.original.blocked" label="Blocked" color="error" variant="soft" /><UBadge v-else label="Allowed" color="success" variant="soft" /><UBadge :label="row.original.trusted ? 'Trusted' : 'Untrusted'" :color="row.original.trusted ? 'primary' : 'neutral'" variant="soft" /></div></template>
-        <template #seen-cell="{ row }"><p class="text-sm text-default">{{ formatDate(row.original.lastSeenAt) }}</p><p class="text-xs text-muted">First: {{ formatDate(row.original.firstSeenAt) }}</p></template>
-        <template #sessions-cell="{ row }"><UBadge :label="`${row.original.activeSessionCount} active`" :color="row.original.activeSessionCount ? 'success' : 'neutral'" variant="soft" /></template>
-        <template #actions-cell="{ row }"><UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View device" @click="view(row.original)" /></template>
-      </UTable>
+      <AppResponsiveDataView v-else mobile-label="Device records" desktop-label="Device records table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard
+              v-for="record in records"
+              :key="record.id"
+              :title="record.displayName"
+              :subtitle="`${record.account.username} · ${record.profileType}`"
+            >
+              <template #status>
+                <AppStatusBadge :label="record.blocked ? 'Blocked' : record.trusted ? 'Trusted' : 'Allowed'" :tone="record.blocked ? 'error' : record.trusted ? 'success' : 'neutral'" />
+              </template>
+              <template #meta>
+                <span>{{ record.deviceType }} · {{ record.applicationMode }}</span>
+                <span>{{ record.browser }} · {{ record.operatingSystem }}</span>
+                <span>Last seen {{ formatDate(record.lastSeenAt) }}</span>
+              </template>
+              <template #actions>
+                <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View device" @click="view(record)" />
+              </template>
+            </AppRecordCard>
+          </div>
+        </template>
+        <template #desktop>
+          <UTable :data="records" :columns="columns">
+                  <template #device-cell="{ row }"><div class="flex items-center gap-3"><div class="flex size-10 items-center justify-center rounded-xl bg-elevated"><UIcon :name="row.original.deviceType === 'Mobile Phone' ? 'i-lucide-smartphone' : 'i-lucide-monitor'" class="size-5" /></div><div><p class="font-semibold text-highlighted">{{ row.original.displayName }}</p><p class="text-xs text-muted">{{ row.original.deviceType }} · {{ row.original.applicationMode }}</p></div></div></template>
+                  <template #account-cell="{ row }"><UButton :label="row.original.account.username" :to="`/admin/users/${row.original.account.id}/devices`" color="neutral" variant="link" class="h-auto p-0 font-medium" /><p class="text-xs text-muted">{{ row.original.profileType }} · {{ row.original.account.email || 'No email' }}</p></template>
+                  <template #trust-cell="{ row }"><div class="flex flex-wrap gap-1"><UBadge v-if="row.original.blocked" label="Blocked" color="error" variant="soft" /><UBadge v-else label="Allowed" color="success" variant="soft" /><UBadge :label="row.original.trusted ? 'Trusted' : 'Untrusted'" :color="row.original.trusted ? 'primary' : 'neutral'" variant="soft" /></div></template>
+                  <template #seen-cell="{ row }"><p class="text-sm text-default">{{ formatDate(row.original.lastSeenAt) }}</p><p class="text-xs text-muted">First: {{ formatDate(row.original.firstSeenAt) }}</p></template>
+                  <template #sessions-cell="{ row }"><UBadge :label="`${row.original.activeSessionCount} active`" :color="row.original.activeSessionCount ? 'success' : 'neutral'" variant="soft" /></template>
+                  <template #actions-cell="{ row }"><UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View device" @click="view(row.original)" /></template>
+                </UTable>
+        </template>
+      </AppResponsiveDataView>
       <template #footer><div class="flex justify-end"><UPagination v-model:page="page" :total="total" :items-per-page="pageSize" /></div></template>
     </UCard>
   </div>

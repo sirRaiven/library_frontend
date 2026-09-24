@@ -328,7 +328,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
     <div class="mx-auto max-w-5xl space-y-6">
       <LibrarianPageHeader
         eyebrow="Books & Collection"

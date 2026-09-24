@@ -198,7 +198,7 @@ watch(
     storage="local"
     storage-key="sncbt-faculty-dashboard"
     unit="rem"
-    class="sncbt-density-comfortable min-h-dvh bg-[var(--sncbt-canvas)] text-default"
+    class="sncbt-has-mobile-bottom-nav sncbt-density-comfortable min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="faculty-main-navigation"
@@ -307,7 +307,7 @@ watch(
 
     <UDashboardPanel
       id="faculty-main"
-      :ui="{ root: 'min-w-0 bg-[var(--sncbt-canvas)]', body: 'sncbt-dashboard-canvas p-0 sm:p-0' }"
+      :ui="{ root: 'min-w-0 bg-[var(--sncbt-canvas)]', body: 'sncbt-dashboard-canvas sncbt-mobile-nav-scrollport p-0 sm:p-0' }"
     >
       <template #header>
         <UDashboardNavbar

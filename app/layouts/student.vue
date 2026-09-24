@@ -280,7 +280,7 @@ onBeforeUnmount(() => {
     storage="local"
     storage-key="sncbt-student-dashboard"
     unit="rem"
-    class="sncbt-density-comfortable min-h-dvh bg-[var(--sncbt-canvas)] text-default"
+    class="sncbt-has-mobile-bottom-nav sncbt-density-comfortable min-h-dvh bg-[var(--sncbt-canvas)] text-default"
   >
     <UDashboardSidebar
       id="student-main-navigation"
@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
 
     <UDashboardPanel
       id="student-main"
-      :ui="{ root: 'min-w-0 bg-[var(--sncbt-canvas)]', body: 'sncbt-dashboard-canvas p-0 sm:p-0' }"
+      :ui="{ root: 'min-w-0 bg-[var(--sncbt-canvas)]', body: 'sncbt-dashboard-canvas sncbt-mobile-nav-scrollport p-0 sm:p-0' }"
     >
       <template #header>
         <UDashboardNavbar

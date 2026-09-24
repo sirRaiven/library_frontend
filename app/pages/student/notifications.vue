@@ -5,6 +5,7 @@ import type {
   StudentNotificationFilters,
   StudentNotificationSeverity,
 } from "~/composables/useStudentNotifications";
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 
 definePageMeta({
   layout: "student",
@@ -321,7 +322,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="sncbt-page-shell space-y-6"
+    class="sncbt-page-shell sncbt-member-page space-y-6"
   >
     <StudentPageHeader
       eyebrow="Messages and Reminders"
@@ -346,19 +347,12 @@ onBeforeUnmount(() => {
           label="Refresh"
           icon="i-lucide-refresh-cw"
           color="primary"
+          class="hidden sm:inline-flex"
           :loading="center.loading.value"
           @click="refresh"
         />
       </template>
     </StudentPageHeader>
-
-    <UAlert
-      color="info"
-      variant="soft"
-      icon="i-lucide-radio"
-      title="Live Library updates"
-      :description="`This page checks for new notices every 2 minutes while open. Last updated: ${lastUpdatedLabel}.`"
-    />
 
     <UAlert
       v-if="center.error.value"
@@ -370,7 +364,7 @@ onBeforeUnmount(() => {
     />
 
     <div
-      class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4"
     >
       <StudentMetricCard
         v-for="item in metrics"
@@ -379,91 +373,58 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <UCard>
-      <div class="space-y-4">
-        <div
-          class="flex flex-wrap gap-2"
-        >
-          <UButton
-            v-for="item in views"
-            :key="item.value"
-            :label="item.label"
-            :icon="item.icon"
-            :color="
-              filters.view ===
-              item.value
-                ? 'primary'
-                : 'neutral'
-            "
-            :variant="
-              filters.view ===
-              item.value
-                ? 'solid'
-                : 'outline'
-            "
-            size="sm"
-            @click="() => { filters.view = item.value; }"
-          />
-        </div>
+    <AppFilterBar
+      title="Notification center"
+      :description="`Updates automatically while this page is open. Last updated: ${lastUpdatedLabel}.`"
+      :active-count="(filters.view !== 'unread' ? 1 : 0) + (filters.category !== 'all' ? 1 : 0) + (filters.severity !== 'all' ? 1 : 0) + (filters.search ? 1 : 0)"
+    >
+      <template #quick>
+        <UButton
+          v-for="item in views"
+          :key="item.value"
+          :label="item.label"
+          :icon="item.icon"
+          :color="filters.view === item.value ? 'primary' : 'neutral'"
+          :variant="filters.view === item.value ? 'solid' : 'ghost'"
+          size="sm"
+          @click="() => { filters.view = item.value; }"
+        />
+      </template>
 
-        <div
-          class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_11rem_auto]"
-        >
-          <UInput
-            v-model="searchInput"
-            icon="i-lucide-search"
-            placeholder="Search a book title, reservation, borrowing, return, or message"
-            @keyup.enter="applySearch"
-          />
+      <template #search>
+        <UInput
+          v-model="searchInput"
+          icon="i-lucide-search"
+          placeholder="Search notifications"
+          class="w-full"
+          @keyup.enter="applySearch"
+        />
+      </template>
 
-          <USelect
-            v-model="filters.category"
-            :items="
-              categories.map(
-                (value) => ({
-                  label:
-                    value === 'all'
-                      ? 'All categories'
-                      : value,
-                  value,
-                }),
-              )
-            "
-          />
+      <template #filters>
+        <USelect
+          v-model="filters.category"
+          :items="categories.map((value) => ({ label: value === 'all' ? 'All categories' : value, value }))"
+          class="w-full md:w-52"
+        />
+        <USelect
+          v-model="filters.severity"
+          :items="severities.map((value) => ({ label: value === 'all' ? 'All severity levels' : value, value }))"
+          class="w-full md:w-48"
+        />
+      </template>
 
-          <USelect
-            v-model="filters.severity"
-            :items="
-              severities.map(
-                (value) => ({
-                  label:
-                    value === 'all'
-                      ? 'All severity levels'
-                      : value,
-                  value,
-                }),
-              )
-            "
-          />
-
-          <div class="flex gap-2">
-            <UButton
-              label="Search"
-              icon="i-lucide-search"
-              @click="applySearch"
-            />
-
-            <UButton
-              icon="i-lucide-rotate-ccw"
-              color="neutral"
-              variant="outline"
-              aria-label="Reset notification filters"
-              @click="reset"
-            />
-          </div>
-        </div>
-      </div>
-    </UCard>
+      <template #actions>
+        <UButton label="Search" icon="i-lucide-search" @click="applySearch" />
+        <UButton
+          icon="i-lucide-rotate-ccw"
+          color="neutral"
+          variant="ghost"
+          aria-label="Reset notification filters"
+          @click="reset"
+        />
+      </template>
+    </AppFilterBar>
 
     <div
       v-if="
@@ -483,7 +444,7 @@ onBeforeUnmount(() => {
       v-else-if="
         !center.notifications.value.length
       "
-      class="mb-12"
+     
     >
       <div class="py-12 text-center">
         <div
@@ -511,7 +472,7 @@ onBeforeUnmount(() => {
 
     <div
       v-else
-      class="space-y-3 mb-12"
+      class="space-y-3"
     >
       <StudentNotificationCard
         v-for="
@@ -548,7 +509,7 @@ onBeforeUnmount(() => {
         center.pagination.value.pageCount >
         1
       "
-      class="flex justify-center mb-12"
+      class="flex justify-center"
     >
       <UPagination
         v-model:page="filters.page"

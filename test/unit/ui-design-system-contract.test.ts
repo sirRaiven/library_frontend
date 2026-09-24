@@ -31,9 +31,9 @@ describe("SNCBT UI design system", () => {
 
   it("preserves the approved responsive light/dark sign-in canvas", () => {
     const page = read("app/pages/index.vue");
-    expect(page).toContain('relative min-h-screen overflow-hidden');
-    expect(page).toContain('bg-[#eef6f2]');
-    expect(page).toContain('dark:bg-[#020c12]');
+    expect(page).toContain('sncbt-public-entry relative min-h-dvh overflow-hidden');
+    expect(page).toContain('bg-[var(--sncbt-canvas)]');
+    expect(page).toContain('dark:bg-[#041725]/92');
     expect(page).toContain('colorMode.preference');
   });
 });

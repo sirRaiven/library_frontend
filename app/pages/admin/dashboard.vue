@@ -111,7 +111,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       eyebrow="Administration"
       title="Dashboard"

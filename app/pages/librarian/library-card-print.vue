@@ -333,7 +333,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="print-page min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+  <div class="print-page sncbt-staff-page sncbt-staff-print-page min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
     <header
       class="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/95"
     >
@@ -391,7 +391,7 @@ onMounted(async () => {
       </div>
     </header>
 
-    <main class="mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6">
+    <main class="sncbt-staff-content mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6">
       <UAlert
         v-if="preparationError"
         class="no-print"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 definePageMeta({
   layout: "faculty",
   middleware: ["faculty"],
@@ -64,7 +65,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <FacultyPageHeader
       eyebrow="Library Services"
       title="Book Status Reports"
@@ -72,17 +73,29 @@ onMounted(load);
       icon="i-lucide-clipboard-check"
     >
       <template #actions>
-        <UButton label="Update Borrowed Book" icon="i-lucide-clipboard-pen" to="/faculty/borrowings" color="neutral" variant="outline" />
+        <UButton label="Update Borrowed Book" icon="i-lucide-clipboard-pen" to="/faculty/borrowings" color="neutral" variant="outline" class="hidden lg:inline-flex" />
       </template>
     </FacultyPageHeader>
 
-    <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-4 sm:p-5' }">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
-        <USelect v-model="status" :items="statusItems" class="w-full" />
-        <USelect v-model="usageStatus" :items="usageItems" class="w-full" />
-        <UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="portal.loading.value" @click="load" />
-      </div>
-    </UCard>
+    <AppFilterBar
+      title="Filter reports"
+      :active-count="(status !== 'All' ? 1 : 0) + (usageStatus !== 'All' ? 1 : 0)"
+    >
+      <template #filters>
+        <USelect v-model="status" :items="statusItems" class="w-full md:w-56" aria-label="Report status" />
+        <USelect v-model="usageStatus" :items="usageItems" class="w-full md:w-64" aria-label="Book usage status" />
+      </template>
+      <template #actions>
+        <UButton
+          icon="i-lucide-refresh-cw"
+          color="neutral"
+          variant="ghost"
+          aria-label="Refresh book status reports"
+          :loading="portal.loading.value"
+          @click="load"
+        />
+      </template>
+    </AppFilterBar>
 
     <div v-if="portal.loading.value && !portal.reports.value.length" class="space-y-4">
       <USkeleton v-for="item in 3" :key="item" class="h-48 rounded-2xl" />

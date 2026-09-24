@@ -60,7 +60,7 @@ watch(bookIdentifier, (value, previous) => {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <UButton
         to="/student/books"
@@ -133,7 +133,7 @@ watch(bookIdentifier, (value, previous) => {
               :cover-url="book.cover?.url"
               :cover-alt="book.cover?.alternativeText"
               size="detail"
-              class="min-h-[28rem] w-full"
+              class="min-h-[15rem] w-full sm:min-h-[28rem]"
             />
           </UCard>
 
@@ -180,7 +180,7 @@ watch(bookIdentifier, (value, previous) => {
             />
           </UCard>
 
-          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StudentMetricCard
               label="Total Copies"
               :value="book.availability.totalCopies"

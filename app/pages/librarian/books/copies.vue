@@ -368,7 +368,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
     <div class="space-y-6">
       <LibrarianPageHeader
         eyebrow="Books & Collection"

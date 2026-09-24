@@ -3,6 +3,7 @@ import type {
   PortalHistoryCategory,
   PortalHistorySort,
 } from "~/composables/usePortalHistory";
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 
 definePageMeta({
   layout: "student",
@@ -158,7 +159,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <StudentPageHeader
       eyebrow="Library Records"
       title="My History"
@@ -176,7 +177,7 @@ onMounted(load);
       </template>
     </StudentPageHeader>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
       <StudentMetricCard
         v-for="metric in metrics"
         :key="metric.label"
@@ -188,60 +189,58 @@ onMounted(load);
       />
     </div>
 
-    <UCard :ui="{ body: 'p-4 sm:p-5' }">
-      <form class="space-y-4" @submit.prevent="applyFilters">
-        <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_16rem_14rem]">
+    <form @submit.prevent="applyFilters">
+      <AppFilterBar
+        title="Filter history"
+        :active-count="hasFilters ? 1 : 0"
+        :show-clear="hasFilters"
+        @clear="resetFilters"
+      >
+        <template #search>
           <UInput
             v-model="searchInput"
             icon="i-lucide-search"
             placeholder="Search book title or reference no."
             maxlength="120"
             autocomplete="off"
+            class="w-full"
           />
+        </template>
+
+        <template #filters>
           <USelect
             v-model="category"
             :items="categoryItems"
             icon="i-lucide-list-filter"
             aria-label="History category"
+            class="w-full md:w-52"
           />
           <USelect
             v-model="sort"
             :items="sortItems"
             icon="i-lucide-arrow-up-down"
             aria-label="Sort history"
+            class="w-full md:w-48"
           />
-        </div>
-
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <UFormField label="From date">
-            <UInput v-model="dateFrom" type="date" icon="i-lucide-calendar" />
+          <UFormField label="From date" class="w-full md:w-44">
+            <UInput v-model="dateFrom" type="date" icon="i-lucide-calendar" class="w-full" />
           </UFormField>
-          <UFormField label="To date">
-            <UInput v-model="dateTo" type="date" icon="i-lucide-calendar" />
+          <UFormField label="To date" class="w-full md:w-44">
+            <UInput v-model="dateTo" type="date" icon="i-lucide-calendar" class="w-full" />
           </UFormField>
+        </template>
 
-          <div class="flex items-end gap-2">
-            <UButton
-              type="submit"
-              label="Apply Filters"
-              icon="i-lucide-filter"
-              color="primary"
-              class="flex-1 lg:flex-none"
-              :loading="history.loading.value"
-            />
-            <UButton
-              v-if="hasFilters"
-              type="button"
-              label="Reset"
-              icon="i-lucide-rotate-ccw"
-              color="neutral"
-              variant="outline"
-              @click="resetFilters"
-            />
-          </div>
-        </div>
-      </form>
-    </UCard>
+        <template #actions>
+          <UButton
+            type="submit"
+            label="Apply"
+            icon="i-lucide-filter"
+            color="primary"
+            :loading="history.loading.value"
+          />
+        </template>
+      </AppFilterBar>
+    </form>
 
     <UAlert
       v-if="history.error.value"
@@ -307,7 +306,7 @@ onMounted(load);
     <UAlert
       color="neutral"
       variant="soft"
-      class="mb-12"
+     
       icon="i-lucide-shield-check"
       title="Private account history"
       description="Only records connected to your Student account are shown on this page. Contact the Library if you notice an incorrect transaction."

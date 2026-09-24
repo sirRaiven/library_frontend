@@ -37,8 +37,8 @@ function formatDate(value?: string | null) {
 
 <template>
   <UCard :ui="{ body: 'p-0 sm:p-0' }" class="sncbt-card-interactive overflow-hidden">
-    <div class="flex flex-col gap-5 p-5 sm:flex-row sm:p-6">
-      <div class="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-elevated/50">
+    <div class="flex gap-4 p-4 sm:gap-5 sm:p-6">
+      <div class="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-default bg-elevated/50 sm:size-20 sm:rounded-xl">
         <img
           v-if="reservation.book.cover?.url"
           :src="reservation.book.cover.url"
@@ -46,7 +46,7 @@ function formatDate(value?: string | null) {
           class="size-full object-contain p-2"
           loading="lazy"
         >
-        <UIcon v-else name="i-lucide-book-open" class="size-8 text-muted" />
+        <UIcon v-else name="i-lucide-book-open" class="size-6 text-muted sm:size-8" />
       </div>
 
       <div class="min-w-0 flex-1">
@@ -80,7 +80,7 @@ function formatDate(value?: string | null) {
           />
         </div>
 
-        <dl class="mt-4 grid gap-3 text-xs sm:grid-cols-2 xl:grid-cols-4">
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs xl:grid-cols-4">
           <div>
             <dt class="text-muted">Reservation number</dt>
             <dd class="mt-1 font-mono font-semibold text-highlighted">

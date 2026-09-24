@@ -326,8 +326,8 @@ async function printImportedBarcodes(): Promise<void> {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
-    <div class="mx-auto w-full max-w-[1600px] space-y-6">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
+    <div class="sncbt-staff-content mx-auto w-full max-w-[1600px] space-y-6">
       <LibrarianPageHeader
         eyebrow="Books & Collection"
         title="Import Existing Inventory"

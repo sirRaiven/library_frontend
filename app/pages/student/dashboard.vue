@@ -300,7 +300,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <StudentPageHeader
       eyebrow="Student Library Services"
       :title="dashboard.student.value ? `Welcome back, ${firstName}` : 'Welcome to your Student Portal'"
@@ -494,7 +494,7 @@ onMounted(refresh);
         </p>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StudentMetricCard
           v-for="item in metricCards"
           :key="item.label"
@@ -504,7 +504,7 @@ onMounted(refresh);
       </div>
     </section>
 
-    <section aria-labelledby="quick-actions-heading">
+    <section aria-labelledby="quick-actions-heading" class="hidden lg:block">
       <div class="mb-3">
         <h2 id="quick-actions-heading" class="text-base font-semibold text-highlighted">
           Quick actions

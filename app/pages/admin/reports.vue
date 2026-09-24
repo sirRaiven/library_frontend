@@ -260,7 +260,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       title="Reports"
       description="Generate Library, audit, and monitoring reports from one place."

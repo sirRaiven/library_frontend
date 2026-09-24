@@ -1,11 +1,11 @@
 /**
- * SNCBT Library Design System v2 — Wave DS-3
+ * SNCBT Library Design System v2 — Wave DS-4
  *
  * Structural values shared by responsive checks and shared application shells.
  * Visual values remain CSS custom properties in assets/css/main.css so Nuxt UI,
  * Tailwind utilities, light mode and dark mode all resolve one source of truth.
  */
-export const SNCBT_DESIGN_SYSTEM_VERSION = "2.0-ds3" as const;
+export const SNCBT_DESIGN_SYSTEM_VERSION = "2.0-ds4" as const;
 
 export const SNCBT_BREAKPOINTS = {
   mobileMin: 320,
@@ -39,6 +39,15 @@ export const SNCBT_INTERACTION = {
   mobilePrimaryActionLimit: 1,
   minimumTouchTargetPx: SNCBT_LAYOUT.touchTargetPx,
   defaultLoadingRows: 4,
+} as const;
+
+export const SNCBT_STAFF_PAGES = {
+  responsiveRecordBreakpointPx: SNCBT_BREAKPOINTS.md,
+  compactHeaderActionsBelowPx: SNCBT_BREAKPOINTS.md,
+  minimumOperationalCardGapPx: 10,
+  protectedPortals: ["admin", "librarian"] as const,
+  expectedAdminPages: 21,
+  expectedLibrarianPages: 25,
 } as const;
 
 export const SNCBT_DENSITY = {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppFormSection from "~/components/shared/AppFormSection.vue";
+import AppStickyFormActions from "~/components/shared/AppStickyFormActions.vue";
 definePageMeta({
   layout: "faculty",
   middleware: ["faculty"],
@@ -65,7 +67,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="sncbt-page-shell sncbt-page-shell-narrow space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page sncbt-page-shell-narrow space-y-6">
     <FacultyPageHeader
       eyebrow="Account"
       title="Profile"
@@ -110,14 +112,11 @@ onMounted(load);
       </UCard>
 
       <div class="space-y-6">
-        <UCard :ui="{ root: 'ring-1 ring-default', header: 'border-b border-default p-5', body: 'space-y-5 p-5 sm:p-6' }">
-          <template #header>
-            <div>
-              <h2 class="font-semibold text-highlighted">Contact information</h2>
-              <p class="mt-1 text-xs text-muted">These details may be updated from the Faculty Portal.</p>
-            </div>
-          </template>
-
+        <AppFormSection
+          title="Contact information"
+          description="Update the contact details that Library staff may use to reach you."
+          icon="i-lucide-contact-round"
+        >
           <div class="grid gap-5 sm:grid-cols-2">
             <UFormField label="Email address">
               <UInput v-model="form.email" type="email" icon="i-lucide-mail" class="w-full" />
@@ -130,25 +129,19 @@ onMounted(load);
             </UFormField>
           </div>
 
-          <div class="flex justify-end gap-2">
-            <UButton label="Reset" color="neutral" variant="outline" :disabled="saving" @click="fillForm" />
+          <AppStickyFormActions>
+            <template #secondary>
+              <UButton label="Reset" color="neutral" variant="outline" :disabled="saving" @click="fillForm" />
+            </template>
             <UButton label="Save Changes" icon="i-lucide-save" :loading="saving" @click="save" />
-          </div>
-        </UCard>
+          </AppStickyFormActions>
+        </AppFormSection>
 
         <UAlert
-          title="Faculty information can be completed by Library staff"
-          description="Employee number, name, department, designation, and Faculty status are managed by authorized staff. Your portal access does not depend on completing every optional detail."
+          title="Official Faculty details are managed by Library staff"
+          description="Employee number, name, department, designation, and Faculty status are read-only in this portal."
           icon="i-lucide-lock-keyhole"
           color="neutral"
-          variant="soft"
-        />
-
-        <UAlert
-          title="Account security page will follow in the next Faculty Portal phase"
-          description="Password, session, and device controls will be added after the core borrowing and replacement workflow is validated."
-          icon="i-lucide-shield-user"
-          color="primary"
           variant="soft"
         />
       </div>

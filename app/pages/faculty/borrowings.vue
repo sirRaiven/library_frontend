@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 import type { FacultyBorrowing, FacultyUsageStatus } from "~/composables/useFacultyPortal";
 
 definePageMeta({
@@ -221,7 +222,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <FacultyPageHeader
       eyebrow="Library Services"
       title="Borrowed Books"
@@ -229,11 +230,11 @@ onBeforeUnmount(() => {
       icon="i-lucide-library-big"
     >
       <template #actions>
-        <UButton label="Book Status Reports" icon="i-lucide-clipboard-check" to="/faculty/reports" color="neutral" variant="outline" />
+        <UButton label="Book Status Reports" icon="i-lucide-clipboard-check" to="/faculty/reports" color="neutral" variant="outline" class="hidden lg:inline-flex" />
       </template>
     </FacultyPageHeader>
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <section class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }">
         <p class="text-xs font-semibold uppercase tracking-wide text-muted">Current Books</p>
         <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.currentCount }}</p>
@@ -256,14 +257,33 @@ onBeforeUnmount(() => {
       </UCard>
     </section>
 
-    <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-4 sm:p-5' }">
-      <div class="grid gap-3 lg:grid-cols-[1.5fr_1fr_1fr_auto]">
-        <UInput v-model="search" icon="i-lucide-search" placeholder="Search title, author, borrow number, or copy number" class="w-full" />
-        <USelect v-model="view" :items="viewItems" value-key="value" label-key="label" class="w-full" />
-        <USelect v-model="sort" :items="sortItems" value-key="value" label-key="label" class="w-full" />
-        <UButton icon="i-lucide-refresh-cw" label="Refresh" color="neutral" variant="outline" :loading="portal.loading.value" @click="load" />
-      </div>
-    </UCard>
+    <AppFilterBar
+      title="Borrowing records"
+      :active-count="(search.trim() ? 1 : 0) + (view !== 'current' ? 1 : 0) + (sort !== 'newest' ? 1 : 0)"
+    >
+      <template #search>
+        <UInput
+          v-model="search"
+          icon="i-lucide-search"
+          placeholder="Search title, author, borrow number, or copy number"
+          class="w-full"
+        />
+      </template>
+      <template #filters>
+        <USelect v-model="view" :items="viewItems" value-key="value" label-key="label" class="w-full md:w-56" />
+        <USelect v-model="sort" :items="sortItems" value-key="value" label-key="label" class="w-full md:w-52" />
+      </template>
+      <template #actions>
+        <UButton
+          icon="i-lucide-refresh-cw"
+          color="neutral"
+          variant="ghost"
+          aria-label="Refresh borrowing records"
+          :loading="portal.loading.value"
+          @click="load"
+        />
+      </template>
+    </AppFilterBar>
 
     <div v-if="portal.loading.value && !portal.borrowings.value.length" class="space-y-4">
       <USkeleton v-for="item in 3" :key="item" class="h-44 rounded-2xl" />
@@ -276,7 +296,7 @@ onBeforeUnmount(() => {
         :ui="{ root: 'overflow-hidden ring-1 ring-default', body: 'p-0' }"
       >
         <div class="grid md:grid-cols-[8rem_1fr_auto]">
-          <div class="flex min-h-36 items-center justify-center border-b border-default bg-elevated/50 p-4 md:border-b-0 md:border-e">
+          <div class="hidden min-h-36 items-center justify-center border-b border-default bg-elevated/50 p-4 md:flex md:border-b-0 md:border-e">
             <div class="flex h-32 w-24 items-center justify-center overflow-hidden rounded-xl border border-default bg-default">
               <img v-if="record.book.cover?.url" :src="record.book.cover.url" :alt="record.book.cover.alternativeText || record.book.title" class="size-full object-cover" loading="lazy">
               <UIcon v-else name="i-lucide-book-open" class="size-8 text-dimmed" />

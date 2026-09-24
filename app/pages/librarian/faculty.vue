@@ -1,5 +1,8 @@
 
 <script setup lang="ts">
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import type {
   FormError,
   FormSubmitEvent,
@@ -1061,9 +1064,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
     <div
-      class="mx-auto max-w-[1500px] space-y-6 mb-12"
+      class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Library Users"
@@ -1178,195 +1181,221 @@ onMounted(() => {
           </p>
         </div>
 
-        <UTable
-          v-else
-          :data="faculty"
-          :columns="columns"
-        >
-          <template
-            #faculty-cell="{ row }"
-          >
-            <button
-              type="button"
-              class="flex items-center gap-3 text-left"
-              @click="
-                openProfile(
-                  row.original,
-                )
-              "
-            >
-              <UAvatar
-                :src="
-                  row.original
-                    .photoUrl ??
-                  undefined
-                "
-                :alt="
-                  row.original
-                    .fullName
-                "
-                size="md"
-              />
-
-              <div
-                class="min-w-0"
+        <AppResponsiveDataView v-else mobile-label="Faculty records" desktop-label="Faculty records table">
+          <template #mobile>
+            <div class="sncbt-mobile-record-list">
+              <AppRecordCard
+                v-for="member in faculty"
+                :key="member.documentId"
+                :title="member.fullName"
+                :subtitle="`${member.employeeNo} · ${member.department}`"
+                interactive
               >
-                <p
-                  class="truncate font-semibold text-highlighted"
-                >
-                  {{
-                    row.original
-                      .fullName
-                  }}
-                </p>
-
-                <p
-                  class="truncate text-xs text-muted"
-                >
-                  {{
-                    row.original
-                      .employeeNo
-                  }}
-                  •
-                  {{
-                    row.original
-                      .department
-                  }}
-                </p>
-              </div>
-            </button>
-          </template>
-
-          <template
-            #employment-cell="{ row }"
-          >
-            <p
-              class="text-sm font-medium text-highlighted"
-            >
-              {{
-                row.original
-                  .employmentType
-              }}
-            </p>
-
-            <p
-              class="text-xs text-muted"
-            >
-              {{
-                row.original
-                  .designation ||
-                "No designation"
-              }}
-            </p>
-          </template>
-
-          <template
-            #barcode-cell="{ row }"
-          >
-            <button
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg bg-elevated px-3 py-2 transition hover:bg-accented"
-              title="Copy Faculty ID barcode"
-              @click="
-                copyBarcode(
-                  row.original,
-                )
-              "
-            >
-              <UIcon
-                name="i-lucide-scan-barcode"
-                class="size-4 text-primary"
-              />
-
-              <span
-                class="font-mono text-sm font-semibold text-highlighted"
-              >
-                {{
-                  row.original
-                    .barcode
-                }}
-              </span>
-            </button>
-          </template>
-
-          <template
-            #loans-cell="{ row }"
-          >
-            <UBadge
-              :color="
-                row.original
-                  .activeLoanCount > 0
-                  ? 'warning'
-                  : 'neutral'
-              "
-              variant="soft"
-            >
-              {{
-                row.original
-                  .activeLoanCount
-              }}
-              active
-            </UBadge>
-          </template>
-
-          <template
-            #status-cell="{ row }"
-          >
-            <div
-              class="space-y-1"
-            >
-              <UBadge
-                :color="
-                  statusColor(
-                    row.original
-                      .status,
-                  )
-                "
-                variant="soft"
-              >
-                {{
-                  row.original
-                    .status
-                }}
-              </UBadge>
-
-              <p
-                class="text-xs text-muted"
-              >
-                {{
-                  row.original
-                    .canBorrow
-                    ? "Borrowing enabled"
-                    : "Borrowing disabled"
-                }}
-              </p>
+                <template #status>
+                  <AppStatusBadge :label="member.status" :tone="member.status === 'Active' ? 'success' : member.status === 'Inactive' ? 'warning' : 'neutral'" />
+                </template>
+                <template #meta>
+                  <span>{{ member.employmentType }} · {{ member.designation || 'No designation' }}</span>
+                  <span>{{ member.activeLoanCount }} active loan{{ member.activeLoanCount === 1 ? '' : 's' }}</span>
+                  <span class="font-mono">{{ member.barcode }}</span>
+                </template>
+                <template #actions>
+                  <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View Faculty profile" @click="openProfile(member)" />
+                  <UDropdownMenu :items="rowActions(member)">
+                    <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" square aria-label="Faculty actions" />
+                  </UDropdownMenu>
+                </template>
+              </AppRecordCard>
             </div>
           </template>
-
-          <template
-            #actions-cell="{ row }"
-          >
-            <div
-              class="flex justify-end"
-            >
-              <UDropdownMenu
-                :items="
-                  rowActions(
-                    row.original,
-                  )
-                "
-              >
-                <UButton
-                  icon="i-lucide-ellipsis"
-                  color="neutral"
-                  variant="ghost"
-                  square
-                  aria-label="Faculty actions"
-                />
-              </UDropdownMenu>
-            </div>
+          <template #desktop>
+            <UTable :data="faculty" :columns="columns">
+                      <template
+                        #faculty-cell="{ row }"
+                      >
+                        <button
+                          type="button"
+                          class="flex items-center gap-3 text-left"
+                          @click="
+                            openProfile(
+                              row.original,
+                            )
+                          "
+                        >
+                          <UAvatar
+                            :src="
+                              row.original
+                                .photoUrl ??
+                              undefined
+                            "
+                            :alt="
+                              row.original
+                                .fullName
+                            "
+                            size="md"
+                          />
+            
+                          <div
+                            class="min-w-0"
+                          >
+                            <p
+                              class="truncate font-semibold text-highlighted"
+                            >
+                              {{
+                                row.original
+                                  .fullName
+                              }}
+                            </p>
+            
+                            <p
+                              class="truncate text-xs text-muted"
+                            >
+                              {{
+                                row.original
+                                  .employeeNo
+                              }}
+                              •
+                              {{
+                                row.original
+                                  .department
+                              }}
+                            </p>
+                          </div>
+                        </button>
+                      </template>
+            
+                      <template
+                        #employment-cell="{ row }"
+                      >
+                        <p
+                          class="text-sm font-medium text-highlighted"
+                        >
+                          {{
+                            row.original
+                              .employmentType
+                          }}
+                        </p>
+            
+                        <p
+                          class="text-xs text-muted"
+                        >
+                          {{
+                            row.original
+                              .designation ||
+                            "No designation"
+                          }}
+                        </p>
+                      </template>
+            
+                      <template
+                        #barcode-cell="{ row }"
+                      >
+                        <button
+                          type="button"
+                          class="inline-flex items-center gap-2 rounded-lg bg-elevated px-3 py-2 transition hover:bg-accented"
+                          title="Copy Faculty ID barcode"
+                          @click="
+                            copyBarcode(
+                              row.original,
+                            )
+                          "
+                        >
+                          <UIcon
+                            name="i-lucide-scan-barcode"
+                            class="size-4 text-primary"
+                          />
+            
+                          <span
+                            class="font-mono text-sm font-semibold text-highlighted"
+                          >
+                            {{
+                              row.original
+                                .barcode
+                            }}
+                          </span>
+                        </button>
+                      </template>
+            
+                      <template
+                        #loans-cell="{ row }"
+                      >
+                        <UBadge
+                          :color="
+                            row.original
+                              .activeLoanCount > 0
+                              ? 'warning'
+                              : 'neutral'
+                          "
+                          variant="soft"
+                        >
+                          {{
+                            row.original
+                              .activeLoanCount
+                          }}
+                          active
+                        </UBadge>
+                      </template>
+            
+                      <template
+                        #status-cell="{ row }"
+                      >
+                        <div
+                          class="space-y-1"
+                        >
+                          <UBadge
+                            :color="
+                              statusColor(
+                                row.original
+                                  .status,
+                              )
+                            "
+                            variant="soft"
+                          >
+                            {{
+                              row.original
+                                .status
+                            }}
+                          </UBadge>
+            
+                          <p
+                            class="text-xs text-muted"
+                          >
+                            {{
+                              row.original
+                                .canBorrow
+                                ? "Borrowing enabled"
+                                : "Borrowing disabled"
+                            }}
+                          </p>
+                        </div>
+                      </template>
+            
+                      <template
+                        #actions-cell="{ row }"
+                      >
+                        <div
+                          class="flex justify-end"
+                        >
+                          <UDropdownMenu
+                            :items="
+                              rowActions(
+                                row.original,
+                              )
+                            "
+                          >
+                            <UButton
+                              icon="i-lucide-ellipsis"
+                              color="neutral"
+                              variant="ghost"
+                              square
+                              aria-label="Faculty actions"
+                            />
+                          </UDropdownMenu>
+                        </div>
+                      </template>
+                    </UTable>
           </template>
-        </UTable>
+        </AppResponsiveDataView>
 
         <template #footer>
           <div

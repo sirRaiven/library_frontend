@@ -5,11 +5,17 @@ import { source } from "../helpers/source-files";
 const projectFile = (relativePath: string) => source(resolve(process.cwd(), relativePath));
 
 describe("librarian UI consistency contract", () => {
-  it("keeps the dashboard canvas on the scroll container across authenticated portals", () => {
+  it("keeps the dashboard canvas on authenticated scroll containers and mobile-nav clearance where required", () => {
     for (const layout of ["admin", "student", "faculty", "librarian"]) {
       const content = projectFile(`app/layouts/${layout}.vue`);
-      expect(content).toContain("body: 'sncbt-dashboard-canvas p-0 sm:p-0'");
+      expect(content).toContain("sncbt-dashboard-canvas");
       expect(content).toContain("bg-[var(--sncbt-canvas)]");
+    }
+
+    for (const layout of ["student", "faculty"]) {
+      const content = projectFile(`app/layouts/${layout}.vue`);
+      expect(content).toContain("sncbt-mobile-nav-scrollport");
+      expect(content).toContain("sncbt-mobile-bottom-nav-spacer");
     }
   });
 

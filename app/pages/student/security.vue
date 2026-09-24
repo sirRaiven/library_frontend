@@ -188,7 +188,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <StudentPageHeader
       eyebrow="Account and Privacy"
       title="Profile and Security"
@@ -216,7 +216,7 @@ onMounted(refresh);
       :description="center.error.value"
     />
 
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
       <StudentMetricCard
         label="Active Sessions"
         :value="center.summary.value.activeSessions"
@@ -255,7 +255,7 @@ onMounted(refresh);
     </UCard>
 
     <template v-if="activeSection === 'profile'">
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.7fr)] mb-12">
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.7fr)]">
         <UCard :ui="{ body: 'p-5 sm:p-6' }">
           <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
             <UAvatar

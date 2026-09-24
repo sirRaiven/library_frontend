@@ -169,7 +169,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       title="Library Operations"
       description="Monitor collection, circulation, memberships, reservations, fines, attendance, and Faculty accountability from a read-only administrative view."

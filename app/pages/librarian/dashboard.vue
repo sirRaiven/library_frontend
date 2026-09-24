@@ -327,7 +327,7 @@ async function refreshDashboard() {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-5">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-5">
     <section class="flex flex-col gap-3 border-b border-default/70 pb-4 sm:flex-row sm:items-end sm:justify-between">
       <div class="min-w-0">
         <h1 class="text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]">

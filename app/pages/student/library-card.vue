@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6 ">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <StudentPageHeader
       eyebrow="Membership and Identification"
       title="Digital Library Card"
@@ -335,14 +335,6 @@ onBeforeUnmount(() => {
           />
         </template>
       </UAlert>
-
-      <UAlert
-        color="warning"
-        variant="soft"
-        icon="i-lucide-shield-ban"
-        title="View-only digital identification"
-        description="Downloading and browser printing are disabled. Do not capture, copy, or share this card. Library personnel may require the live Student Portal display for verification."
-      />
 
       <UCard
         :ui="{
@@ -494,15 +486,9 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <p
-          class="rounded-xl border border-default bg-elevated/30 p-3 text-xs text-muted"
-        >
-          Changes saved by the Librarian in
-          <strong>Card Designer</strong> are loaded here after Refresh. Student accounts can view the design but cannot download or print it.
-        </p>
       </UCard>
 
-      <div class="grid gap-5 xl:grid-cols-2 mb-12">
+      <div class="grid gap-5 xl:grid-cols-2">
         <UCard :ui="{ body: 'p-5 sm:p-6' }">
           <template #header>
             <div class="flex items-center gap-3">
@@ -608,7 +594,7 @@ onBeforeUnmount(() => {
             :description="libraryCard.card.value.renewal.message"
           />
 
-          <ol class="mt-5 space-y-3">
+          <ol v-if="libraryCard.card.value.renewal.required" class="mt-5 space-y-3">
             <li
               v-for="(requirement, index) in libraryCard.card.value.renewal.requirements"
               :key="requirement"
@@ -621,8 +607,11 @@ onBeforeUnmount(() => {
             </li>
           </ol>
 
-          <p class="mt-5 rounded-xl border border-default bg-elevated/40 p-3 text-xs text-muted">
-            Online membership renewal is not enabled. Library personnel must verify enrollment and update the official membership record.
+          <p
+            v-if="libraryCard.card.value.renewal.required"
+            class="mt-5 rounded-xl border border-default bg-elevated/40 p-3 text-xs text-muted"
+          >
+            Renewal is completed at the Library after enrollment verification.
           </p>
         </UCard>
       </div>

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
 import type { TableColumn } from "@nuxt/ui";
 import type { AdminLibrarianRecord } from "~/composables/useAdminLibrarians";
 
@@ -117,7 +120,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       eyebrow="Accounts and Access"
       title="Librarians"
@@ -143,16 +146,14 @@ onMounted(load);
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <template #header>
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 class="font-semibold text-highlighted">Library Staff Directory</h2>
-            <p class="mt-1 text-xs text-muted">{{ total }} Librarian profile{{ total === 1 ? '' : 's' }}</p>
-          </div>
-          <div class="grid gap-2 sm:grid-cols-[minmax(0,22rem)_10rem]">
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search employee number, name, or email" />
-            <USelect v-model="status" :items="statusItems" />
-          </div>
-        </div>
+        <AppFilterBar :title="`Library Staff · ${total} profile${total === 1 ? '' : 's'}`">
+          <template #search>
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search employee number, name, or email" class="w-full" />
+          </template>
+          <template #filters>
+            <USelect v-model="status" :items="statusItems" class="w-full sm:max-w-xs" />
+          </template>
+        </AppFilterBar>
       </template>
 
       <div v-if="loading" class="space-y-3 p-5 sm:p-6">
@@ -165,46 +166,79 @@ onMounted(load);
         <p class="mt-1 text-sm text-muted">Adjust the search or profile-status filter.</p>
       </div>
 
-      <UTable v-else :data="records" :columns="columns">
-        <template #librarian-cell="{ row }">
-          <div class="flex items-center gap-3">
-            <UAvatar :text="`${row.original.firstName?.[0] || ''}${row.original.lastName?.[0] || ''}`" size="sm" />
-            <div class="min-w-0">
-              <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>
-              <p class="truncate text-xs text-muted">{{ row.original.employeeNo }} · {{ row.original.email }}</p>
-            </div>
+      <AppResponsiveDataView v-else mobile-label="Librarian profiles" desktop-label="Librarian profiles table">
+        <template #mobile>
+          <div class="sncbt-mobile-record-list p-3">
+            <AppRecordCard
+              v-for="record in records"
+              :key="record.employeeNo"
+              :title="record.fullName"
+              :subtitle="`${record.employeeNo} · ${record.email}`"
+            >
+              <template #status>
+                <AdminStatusBadge :label="record.status" />
+              </template>
+              <template #meta>
+                <span>{{ record.position }}</span>
+                <span>{{ record.account?.username || 'Account not linked' }}</span>
+                <span>Added {{ formatDate(record.createdAt) }}</span>
+              </template>
+              <template #actions>
+                <UButton
+                  :icon="record.status === 'Active' ? 'i-lucide-user-x' : 'i-lucide-user-check'"
+                  :color="record.status === 'Active' ? 'error' : 'success'"
+                  variant="ghost"
+                  square
+                  :aria-label="record.status === 'Active' ? 'Deactivate Librarian' : 'Activate Librarian'"
+                  @click="openStatus(record)"
+                />
+              </template>
+            </AppRecordCard>
           </div>
         </template>
-        <template #position-cell="{ row }">
-          <p class="text-sm font-medium text-default">{{ row.original.position }}</p>
-          <p class="text-xs text-muted">Added {{ formatDate(row.original.createdAt) }}</p>
+        <template #desktop>
+          <UTable :data="records" :columns="columns">
+                  <template #librarian-cell="{ row }">
+                    <div class="flex items-center gap-3">
+                      <UAvatar :text="`${row.original.firstName?.[0] || ''}${row.original.lastName?.[0] || ''}`" size="sm" />
+                      <div class="min-w-0">
+                        <p class="truncate font-semibold text-highlighted">{{ row.original.fullName }}</p>
+                        <p class="truncate text-xs text-muted">{{ row.original.employeeNo }} · {{ row.original.email }}</p>
+                      </div>
+                    </div>
+                  </template>
+                  <template #position-cell="{ row }">
+                    <p class="text-sm font-medium text-default">{{ row.original.position }}</p>
+                    <p class="text-xs text-muted">Added {{ formatDate(row.original.createdAt) }}</p>
+                  </template>
+                  <template #account-cell="{ row }">
+                    <div v-if="row.original.account">
+                      <p class="text-sm font-medium text-highlighted">{{ row.original.account.username }}</p>
+                      <div class="mt-1 flex flex-wrap gap-1">
+                        <AdminStatusBadge :label="row.original.account.blocked ? 'Blocked' : row.original.account.confirmed ? 'Active' : 'Unconfirmed'" />
+                        <UBadge :label="row.original.account.role?.name || 'No role'" color="primary" variant="subtle" size="sm" />
+                      </div>
+                    </div>
+                    <UBadge v-else label="Account not linked" color="warning" variant="soft" icon="i-lucide-unlink" />
+                  </template>
+                  <template #status-cell="{ row }">
+                    <AdminStatusBadge :label="row.original.status" />
+                  </template>
+                  <template #actions-cell="{ row }">
+                    <div class="flex justify-end">
+                      <UButton
+                        :label="row.original.status === 'Active' ? 'Deactivate' : 'Activate'"
+                        :icon="row.original.status === 'Active' ? 'i-lucide-user-x' : 'i-lucide-user-check'"
+                        :color="row.original.status === 'Active' ? 'error' : 'success'"
+                        variant="ghost"
+                        size="sm"
+                        @click="openStatus(row.original)"
+                      />
+                    </div>
+                  </template>
+                </UTable>
         </template>
-        <template #account-cell="{ row }">
-          <div v-if="row.original.account">
-            <p class="text-sm font-medium text-highlighted">{{ row.original.account.username }}</p>
-            <div class="mt-1 flex flex-wrap gap-1">
-              <AdminStatusBadge :label="row.original.account.blocked ? 'Blocked' : row.original.account.confirmed ? 'Active' : 'Unconfirmed'" />
-              <UBadge :label="row.original.account.role?.name || 'No role'" color="primary" variant="subtle" size="sm" />
-            </div>
-          </div>
-          <UBadge v-else label="Account not linked" color="warning" variant="soft" icon="i-lucide-unlink" />
-        </template>
-        <template #status-cell="{ row }">
-          <AdminStatusBadge :label="row.original.status" />
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end">
-            <UButton
-              :label="row.original.status === 'Active' ? 'Deactivate' : 'Activate'"
-              :icon="row.original.status === 'Active' ? 'i-lucide-user-x' : 'i-lucide-user-check'"
-              :color="row.original.status === 'Active' ? 'error' : 'success'"
-              variant="ghost"
-              size="sm"
-              @click="openStatus(row.original)"
-            />
-          </div>
-        </template>
-      </UTable>
+      </AppResponsiveDataView>
 
       <template #footer>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -239,7 +239,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <StudentPageHeader
       eyebrow="Library Services"
       title="My Reservations"
@@ -259,6 +259,7 @@ onMounted(async () => {
           icon="i-lucide-refresh-cw"
           color="neutral"
           variant="outline"
+          class="hidden sm:inline-flex"
           :loading="reservations.loading.value"
           @click="load"
         />
@@ -283,7 +284,7 @@ onMounted(async () => {
       :description="`You may have up to ${policy.maximumActiveReservations} active reservations. New requests expire after ${policy.expirationDays} day${policy.expirationDays === 1 ? '' : 's'} unless processed earlier.`"
     />
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <StudentMetricCard
         label="Active Reservations"
         :value="reservations.summary.value.activeCount"
@@ -355,7 +356,7 @@ onMounted(async () => {
       />
     </div>
 
-    <UCard v-else :ui="{ body: 'p-10 sm:p-14 ' }" class="mb-12">
+    <UCard v-else :ui="{ body: 'p-10 sm:p-14' }">
       <div class="mx-auto max-w-lg text-center">
         <div class="mx-auto flex size-16 items-center justify-center rounded-2xl bg-elevated text-muted">
           <UIcon :name="view === 'active' ? 'i-lucide-bookmark-x' : 'i-lucide-history'" class="size-8" />
@@ -379,7 +380,7 @@ onMounted(async () => {
       </div>
     </UCard>
 
-    <div v-if="reservations.pagination.value.pageCount > 1" class="flex justify-center border-t border-default pt-6 mb-12">
+    <div v-if="reservations.pagination.value.pageCount > 1" class="flex justify-center border-t border-default pt-6">
       <UPagination
         v-model:page="page"
         :total="reservations.pagination.value.total"
@@ -395,7 +396,7 @@ onMounted(async () => {
     :ui="{ content: 'sm:max-w-5xl max-h-[92dvh] overflow-y-auto' }"
   >
     <template #content>
-      <div class="bg-default p-5 sm:p-7 mb-12">
+      <div class="bg-default p-5 sm:p-7">
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 class="text-xl font-bold text-highlighted">Create New Reservation</h2>

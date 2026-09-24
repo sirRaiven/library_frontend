@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
+import AppRecordCard from "~/components/shared/AppRecordCard.vue";
+import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
+import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 
 import { appLogger } from "~/utils/app-logger";
 import type { MembershipListItem, StudentMember } from "~/composables/useLibraryMembers";
@@ -308,8 +312,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell">
-    <div class="mx-auto max-w-[1500px] space-y-6 mb-12">
+  <UContainer class="sncbt-page-shell sncbt-staff-page">
+    <div class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12">
       <LibrarianPageHeader
         eyebrow="Membership & Cards"
         title="Membership Renewal"
@@ -583,24 +587,18 @@ onMounted(async () => {
 
       <UCard>
         <template #header>
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 class="font-semibold text-highlighted">Membership History</h2>
-              <p class="mt-1 text-sm text-muted">One record is retained for every student and academic term.</p>
-            </div>
-            <div class="grid gap-2 sm:grid-cols-4">
-              <UInput v-model="search" icon="i-lucide-search" placeholder="Search" />
-              <UInput v-model="academicYearFilter" placeholder="2026-2027" />
-              <USelect
-                v-model="semesterFilter"
-                :items="semesterItems"
-                value-key="value"
-                label-key="label"
-                :disabled="libraryOptions.loading.value"
-              />
-              <USelect v-model="statusFilter" :items="statusItems" />
-            </div>
-          </div>
+          <AppFilterBar title="Membership History" description="One record is retained for every Student and academic term.">
+            <template #search>
+              <UInput v-model="search" icon="i-lucide-search" placeholder="Search Student or membership number" class="w-full" />
+            </template>
+            <template #filters>
+              <div class="grid gap-2 sm:grid-cols-3">
+                <UInput v-model="academicYearFilter" placeholder="Academic year" />
+                <USelect v-model="semesterFilter" :items="semesterItems" value-key="value" label-key="label" :disabled="libraryOptions.loading.value" />
+                <USelect v-model="statusFilter" :items="statusItems" />
+              </div>
+            </template>
+          </AppFilterBar>
         </template>
 
         <div v-if="loading" class="space-y-3">
@@ -611,27 +609,50 @@ onMounted(async () => {
           <h3 class="mt-3 font-semibold text-highlighted">No membership records found</h3>
         </div>
 
-        <UTable v-else :data="memberships" :columns="columns">
-          <template #student-cell="{ row }">
-            <p class="font-semibold text-highlighted">{{ row.original.student.fullName }}</p>
-            <p class="text-xs text-muted">{{ row.original.student.studentNo }} • {{ row.original.membershipNo }}</p>
+        <AppResponsiveDataView v-else mobile-label="Membership records" desktop-label="Membership records table">
+          <template #mobile>
+            <div class="sncbt-mobile-record-list">
+              <AppRecordCard
+                v-for="membership in memberships"
+                :key="membership.documentId"
+                :title="membership.student.fullName"
+                :subtitle="`${membership.student.studentNo} · ${membership.membershipNo}`"
+              >
+                <template #status>
+                  <AppStatusBadge :label="membership.status ?? membership.storedStatus" :tone="(membership.status ?? membership.storedStatus) === 'Active' ? 'success' : (membership.status ?? membership.storedStatus) === 'Suspended' ? 'warning' : 'error'" />
+                </template>
+                <template #meta>
+                  <span>{{ membership.semester }} · {{ membership.academicYear }}</span>
+                  <span>{{ membership.issuedDate }} to {{ membership.expiryDate }}</span>
+                  <span>{{ membership.enrollmentVerified ? 'Enrollment verified' : 'Enrollment not verified' }}</span>
+                </template>
+              </AppRecordCard>
+            </div>
           </template>
-          <template #term-cell="{ row }">
-            <p class="font-medium text-highlighted">{{ row.original.semester }}</p>
-            <p class="text-xs text-muted">{{ row.original.academicYear }} • {{ row.original.renewalType }}</p>
+          <template #desktop>
+            <UTable :data="memberships" :columns="columns">
+                      <template #student-cell="{ row }">
+                        <p class="font-semibold text-highlighted">{{ row.original.student.fullName }}</p>
+                        <p class="text-xs text-muted">{{ row.original.student.studentNo }} • {{ row.original.membershipNo }}</p>
+                      </template>
+                      <template #term-cell="{ row }">
+                        <p class="font-medium text-highlighted">{{ row.original.semester }}</p>
+                        <p class="text-xs text-muted">{{ row.original.academicYear }} • {{ row.original.renewalType }}</p>
+                      </template>
+                      <template #validity-cell="{ row }">
+                        <p class="text-sm">{{ row.original.issuedDate }}</p>
+                        <p class="text-xs text-muted">to {{ row.original.expiryDate }}</p>
+                      </template>
+                      <template #status-cell="{ row }">
+                        <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
+                      </template>
+                      <template #verified-cell="{ row }">
+                        <p class="text-sm text-highlighted">{{ row.original.verifiedBy ?? "Librarian" }}</p>
+                        <p class="text-xs text-muted">{{ row.original.enrollmentVerified ? "Enrollment verified" : "Not verified" }}</p>
+                      </template>
+                    </UTable>
           </template>
-          <template #validity-cell="{ row }">
-            <p class="text-sm">{{ row.original.issuedDate }}</p>
-            <p class="text-xs text-muted">to {{ row.original.expiryDate }}</p>
-          </template>
-          <template #status-cell="{ row }">
-            <UBadge :color="statusColor(row.original.status)" variant="soft">{{ row.original.status }}</UBadge>
-          </template>
-          <template #verified-cell="{ row }">
-            <p class="text-sm text-highlighted">{{ row.original.verifiedBy ?? "Librarian" }}</p>
-            <p class="text-xs text-muted">{{ row.original.enrollmentVerified ? "Enrollment verified" : "Not verified" }}</p>
-          </template>
-        </UTable>
+        </AppResponsiveDataView>
 
         <template #footer>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

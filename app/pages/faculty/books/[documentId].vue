@@ -34,7 +34,7 @@ watch(documentId, load, { immediate: true });
 </script>
 
 <template>
-  <div class="sncbt-page-shell sncbt-page-shell-narrow space-y-6">
+  <div class="sncbt-page-shell sncbt-member-page sncbt-page-shell-narrow space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <UButton label="Back to Collection" icon="i-lucide-arrow-left" to="/faculty/books" color="neutral" variant="ghost" />
       <UButton label="View Borrowed Books" icon="i-lucide-library-big" to="/faculty/borrowings" color="neutral" variant="outline" />
@@ -56,7 +56,7 @@ watch(documentId, load, { immediate: true });
             :cover-url="book.cover?.url"
             :cover-alt="book.cover?.alternativeText"
             size="detail"
-            class="min-h-[30rem] w-full shadow-sm"
+            class="min-h-[15rem] w-full shadow-sm sm:min-h-[30rem]"
           />
         </div>
 

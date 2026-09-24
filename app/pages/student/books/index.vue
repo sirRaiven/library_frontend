@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import StudentBookCard from "~/components/student/StudentBookCard.vue";
+import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 import type { StudentBookFilters } from "~/composables/useStudentBooks";
 
 const PAGE_SIZE = 12;
@@ -141,24 +142,13 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="space-y-6 p-4 sm:p-6 lg:p-8">
+  <div class="sncbt-page-shell sncbt-member-page space-y-6">
     <StudentPageHeader
       eyebrow="Library Services"
       title="Book Collection"
-      description="Search the Library catalog and check current physical-copy availability before visiting the Library."
+      description="Search the Library catalog and check which physical copies are currently available."
       icon="i-lucide-books"
-    >
-      <template #actions>
-        <UButton
-          label="Refresh"
-          icon="i-lucide-refresh-cw"
-          color="neutral"
-          variant="outline"
-          :loading="collection.loading.value"
-          @click="load()"
-        />
-      </template>
-    </StudentPageHeader>
+    />
 
     <UAlert
       v-if="libraryOptions.error.value"
@@ -170,17 +160,14 @@ onMounted(async () => {
       :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
     />
 
-    <UAlert
-      color="primary"
-      variant="soft"
-      icon="i-lucide-shield-check"
-      title="Student-safe collection view"
-      description="Only catalog details, availability totals, and shelf locations are shown. Physical-copy barcodes, accession numbers, prices, and internal inventory remarks remain protected."
-    />
-
-    <UCard :ui="{ body: 'p-4 sm:p-5' }">
-      <form class="space-y-4" @submit.prevent="submitSearch">
-        <div class="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_15rem_13rem_13rem]">
+    <form @submit.prevent="submitSearch">
+      <AppFilterBar
+        title="Find books"
+        :active-count="activeFilterCount"
+        :show-clear="activeFilterCount > 0"
+        @clear="clearFilters"
+      >
+        <template #search>
           <UInput
             v-model="search"
             icon="i-lucide-search"
@@ -189,12 +176,10 @@ onMounted(async () => {
             size="lg"
             maxlength="120"
             class="w-full"
-          >
-            <template #trailing>
-              <UKbd>Enter</UKbd>
-            </template>
-          </UInput>
+          />
+        </template>
 
+        <template #filters>
           <USelect
             v-model="category"
             :items="categoryItems"
@@ -202,10 +187,9 @@ onMounted(async () => {
             label-key="label"
             icon="i-lucide-tags"
             size="lg"
-            class="w-full"
+            class="w-full md:w-56"
             :disabled="libraryOptions.loading.value"
           />
-
           <USelect
             v-model="availability"
             :items="availabilityItems"
@@ -213,9 +197,8 @@ onMounted(async () => {
             label-key="label"
             icon="i-lucide-book-check"
             size="lg"
-            class="w-full"
+            class="w-full md:w-48"
           />
-
           <USelect
             v-model="sort"
             :items="sortItems"
@@ -223,37 +206,30 @@ onMounted(async () => {
             label-key="label"
             icon="i-lucide-arrow-up-down"
             size="lg"
-            class="w-full"
+            class="w-full md:w-48"
           />
-        </div>
+        </template>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p class="text-xs leading-relaxed text-muted">
-            Search activity is recorded only when you submit or apply filters; individual keystrokes are not collected.
-          </p>
-
-          <div class="flex flex-col-reverse gap-2 sm:flex-row">
-            <UButton
-              v-if="activeFilterCount"
-              type="button"
-              label="Clear Filters"
-              icon="i-lucide-filter-x"
-              color="neutral"
-              variant="ghost"
-              :disabled="collection.loading.value"
-              @click="clearFilters"
-            />
-            <UButton
-              type="submit"
-              label="Search Collection"
-              icon="i-lucide-search"
-              color="primary"
-              :loading="collection.loading.value"
-            />
-          </div>
-        </div>
-      </form>
-    </UCard>
+        <template #actions>
+          <UButton
+            type="submit"
+            label="Search"
+            icon="i-lucide-search"
+            color="primary"
+            :loading="collection.loading.value"
+          />
+          <UButton
+            type="button"
+            icon="i-lucide-refresh-cw"
+            color="neutral"
+            variant="ghost"
+            aria-label="Refresh book collection"
+            :loading="collection.loading.value"
+            @click="load()"
+          />
+        </template>
+      </AppFilterBar>
+    </form>
 
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>

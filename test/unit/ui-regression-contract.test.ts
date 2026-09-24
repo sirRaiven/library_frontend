@@ -7,9 +7,9 @@ const css = source(join(process.cwd(), "app/assets/css/main.css"));
 const nuxtConfig = source(join(process.cwd(), "nuxt.config.ts"));
 
 const approvedSignInCanvas = [
-  "relative min-h-screen overflow-hidden",
-  "bg-[#eef6f2]",
-  "dark:bg-[#020c12]",
+  "sncbt-public-entry relative min-h-dvh overflow-hidden",
+  "bg-[var(--sncbt-canvas)]",
+  "dark:bg-[#041725]/92",
 ];
 
 describe("UI regression contract", () => {

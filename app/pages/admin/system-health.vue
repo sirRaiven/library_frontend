@@ -116,7 +116,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
       title="System & Maintenance"
       description="Review system availability, control maintenance mode, and check the latest backup status."
