@@ -1099,7 +1099,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div
       class="sncbt-staff-content mx-auto max-w-[1750px] space-y-6 mb-12"
     >
@@ -1134,7 +1134,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="loading"
-        class="grid gap-6 xl:grid-cols-[28rem_minmax(0,1fr)]"
+        class="grid gap-6 2xl:grid-cols-[24rem_minmax(0,1fr)]"
       >
         <USkeleton
           class="h-[900px] w-full"
@@ -1146,7 +1146,7 @@ onBeforeUnmount(() => {
 
       <div
         v-else
-        class="grid items-start gap-6 xl:grid-cols-[28rem_minmax(0,1fr)]"
+        class="grid items-start gap-6 2xl:grid-cols-[24rem_minmax(0,1fr)]"
       >
         <div class="space-y-4">
           <UCard>
@@ -1952,7 +1952,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          class="space-y-4 xl:sticky xl:top-6"
+          class="sncbt-specialist-summary space-y-4 2xl:sticky 2xl:top-6"
         >
           <UCard>
             <template #header>
@@ -2164,7 +2164,7 @@ onBeforeUnmount(() => {
 
 .sticky-save-bar {
   position: sticky;
-  bottom: 4.5rem;
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
   z-index: 40;
   display: flex;
   flex-direction: column;
@@ -2178,7 +2178,6 @@ onBeforeUnmount(() => {
   box-shadow:
     0 18px 45px
       rgb(15 23 42 / 18%);
-  backdrop-filter: blur(16px);
 }
 
 @media (min-width: 640px) {

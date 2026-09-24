@@ -819,9 +819,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div
-      class="sncbt-staff-content mx-auto max-w-[1600px] space-y-6 mb-12"
+      class="sncbt-staff-content w-full space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Circulation"
@@ -836,10 +836,10 @@ onMounted(() => {
       </LibrarianPageHeader>
 
       <div
-        class="grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]"
+        class="sncbt-workflow-layout grid gap-6 2xl:grid-cols-[20rem_minmax(0,1fr)]"
       >
         <div class="space-y-6">
-          <UCard>
+          <UCard class="sncbt-scanner-station">
             <template #header>
               <div
                 class="flex items-center gap-3"
@@ -1759,10 +1759,38 @@ onMounted(() => {
           </p>
         </div>
 
-        <div
-          v-else
-          class="overflow-x-auto"
-        >
+        <div v-else>
+          <div class="grid gap-3 md:hidden" aria-label="Today's processed returns">
+            <article
+              v-for="record in todayRecords"
+              :key="`mobile-${record.documentId}`"
+              class="rounded-xl border border-default bg-default p-4"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate font-semibold text-highlighted">{{ record.title }}</p>
+                  <p class="mt-1 font-mono text-xs text-muted">{{ record.controlNumber || record.accessionNumber || '—' }}</p>
+                </div>
+                <UBadge :color="conditionColor(record.condition)" variant="soft">{{ record.condition }}</UBadge>
+              </div>
+
+              <div class="mt-3 grid gap-1 text-sm">
+                <p class="font-medium text-highlighted">{{ record.memberName }}</p>
+                <p class="text-xs text-muted">{{ record.memberIdentifier }} · {{ record.memberType }}</p>
+                <p class="text-xs text-muted">Return {{ record.returnNo }} · Borrow {{ record.borrowNo || '—' }}</p>
+              </div>
+
+              <div class="mt-3 flex items-end justify-between gap-3 border-t border-default pt-3">
+                <div>
+                  <p class="text-xs text-muted">Fine</p>
+                  <p class="font-semibold text-highlighted">{{ formatCurrency(record.fineAmount) }}</p>
+                </div>
+                <p class="text-right text-xs text-muted">{{ formatDateTime(record.returnDate) }}</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="hidden overflow-x-auto md:block">
           <table
             class="w-full min-w-[900px] text-left"
           >
@@ -1900,6 +1928,7 @@ onMounted(() => {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </UCard>
     </div>

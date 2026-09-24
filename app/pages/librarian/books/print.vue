@@ -176,10 +176,10 @@ watch(
 
 <template>
   <div
-    class="sncbt-staff-page sncbt-staff-print-page min-h-screen bg-slate-100 text-slate-950"
+    class="sncbt-staff-page sncbt-specialist-page sncbt-staff-print-page min-h-dvh bg-slate-100 text-slate-950"
   >
     <header
-      class="no-print sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur"
+      class="no-print sncbt-print-toolbar sticky top-0 z-20 border-b border-slate-200 bg-white px-4 py-3"
     >
       <div
         class="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -213,7 +213,7 @@ watch(
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="sncbt-print-actions flex flex-wrap gap-2">
           <UButton
             label="Print Labels"
             icon="i-lucide-printer"
@@ -329,7 +329,7 @@ watch(
 .labels-grid {
   display: grid;
   grid-template-columns:
-  repeat(auto-fit, minmax(310px, 1fr));
+  repeat(auto-fit, minmax(min(100%, 310px), 1fr));
   gap: 16px;
 }
 

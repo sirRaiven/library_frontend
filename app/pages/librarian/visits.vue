@@ -449,9 +449,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div
-      class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12"
+      class="sncbt-staff-content w-full space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Library Services"
@@ -466,7 +466,7 @@ onMounted(() => {
       </LibrarianPageHeader>
 
       <UCard
-        class="overflow-hidden border-success/30"
+        class="sncbt-scanner-station overflow-hidden border-success/30"
       >
         <template #header>
           <div
@@ -498,7 +498,7 @@ onMounted(() => {
         </template>
 
         <form
-          class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+          class="sncbt-scanner-row grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
           @submit.prevent="
             recordTimeIn
           "
@@ -713,7 +713,7 @@ onMounted(() => {
             </div>
 
             <div
-              class="grid gap-3 md:grid-cols-[minmax(0,1fr)_11rem_11rem_12rem]"
+              class="sncbt-specialist-filters grid gap-3 lg:grid-cols-[minmax(0,1fr)_11rem_11rem_12rem]"
             >
               <UInput
                 v-model="search"

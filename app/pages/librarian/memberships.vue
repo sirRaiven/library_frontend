@@ -312,8 +312,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
-    <div class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
+    <div class="sncbt-staff-content w-full space-y-6 mb-12">
       <LibrarianPageHeader
         eyebrow="Membership & Cards"
         title="Membership Renewal"
@@ -347,8 +347,8 @@ onMounted(async () => {
         />
       </section>
 
-      <div class="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <UCard>
+      <div class="sncbt-workflow-layout grid gap-4 2xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <UCard class="sncbt-scanner-station">
           <template #header>
             <div class="flex items-center gap-3">
               <div class="flex size-10 items-center justify-center rounded-xl bg-success/10 text-success">

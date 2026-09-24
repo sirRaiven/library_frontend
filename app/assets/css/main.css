@@ -1826,3 +1826,174 @@ body {
     overscroll-behavior-inline: contain;
   }
 }
+
+/* --------------------------------------------------------------------------
+ * Design System v2 — Wave DS-6: specialist workflows
+ * Scanner, circulation, import/print, report, approval, and card-production
+ * views use internal overflow and task-first responsive layouts.
+ * -------------------------------------------------------------------------- */
+.sncbt-specialist-page {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.sncbt-specialist-page :where(.sncbt-workflow-layout, .sncbt-specialist-form) > * {
+  min-width: 0;
+}
+
+.sncbt-scanner-station {
+  min-width: 0;
+  border-color: color-mix(in srgb, var(--sncbt-color-primary) 20%, var(--sncbt-color-border));
+}
+
+.sncbt-scanner-row,
+.sncbt-specialist-filters,
+.sncbt-specialist-summary {
+  min-width: 0;
+}
+
+.sncbt-specialist-table-region {
+  width: 100%;
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+
+.sncbt-physical-copy-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sncbt-print-toolbar {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.sncbt-print-actions {
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .sncbt-specialist-page {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .sncbt-specialist-page .sncbt-workflow-layout,
+  .sncbt-specialist-page .sncbt-specialist-form {
+    gap: 0.875rem;
+  }
+
+  .sncbt-specialist-page .sncbt-scanner-station {
+    border-radius: var(--sncbt-radius-md);
+  }
+
+  .sncbt-specialist-page .sncbt-workflow-step {
+    gap: 0.625rem;
+    padding: 0.625rem;
+  }
+
+  .sncbt-specialist-page .sncbt-specialist-table-region {
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
+  }
+
+  .sncbt-specialist-page .sncbt-specialist-summary {
+    position: static !important;
+  }
+
+  .sncbt-print-toolbar > div {
+    min-width: 0;
+  }
+
+  .sncbt-print-actions {
+    width: 100%;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 0.125rem;
+    scrollbar-width: none;
+  }
+
+  .sncbt-print-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sncbt-print-actions > :where(button, a, div) {
+    flex: 0 0 auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .sncbt-specialist-page .sncbt-specialist-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media print {
+  .sncbt-specialist-page {
+    overflow: visible !important;
+    padding-bottom: 0 !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Design System v2 — Wave DS-7: whole-system viewport and interaction safety
+ * Final cross-route guardrails. These rules intentionally avoid business
+ * behavior and only prevent content from escaping the available viewport.
+ * -------------------------------------------------------------------------- */
+.sncbt-portal-frame,
+.sncbt-portal-view,
+.sncbt-page-shell,
+.sncbt-staff-page,
+.sncbt-staff-content,
+.sncbt-member-page,
+.sncbt-specialist-page,
+.sncbt-public-entry,
+.sncbt-public-registration-shell {
+  min-width: 0;
+}
+
+/* Direct public routes do not inherit a dashboard panel, so contain them too. */
+.sncbt-public-entry,
+.sncbt-public-registration-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+/* Grid/flex children with long identifiers must be allowed to shrink. */
+:where(.sncbt-portal-view, .sncbt-public-registration-shell)
+  :where(.grid, .flex) > * {
+  min-width: 0;
+}
+
+:where(.sncbt-portal-view, .sncbt-public-registration-shell)
+  :where(input, textarea, select) {
+  max-width: 100%;
+}
+
+/* Camera popovers stay inside the dynamic visual viewport on narrow devices. */
+.sncbt-camera-popover {
+  width: min(28rem, calc(100dvw - 1.5rem));
+  max-width: calc(100dvw - 1.5rem);
+}
+
+/* Large operational dialogs may be wide on desktop but never exceed a phone. */
+.sncbt-viewport-modal {
+  width: min(72rem, calc(100dvw - 1rem));
+  max-width: calc(100dvw - 1rem);
+}
+
+@supports not (overflow: clip) {
+  .sncbt-public-entry,
+  .sncbt-public-registration-shell {
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 767px) {
+  .sncbt-viewport-modal {
+    max-height: calc(100dvh - 1rem);
+  }
+}

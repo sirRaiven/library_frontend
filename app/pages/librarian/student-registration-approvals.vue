@@ -528,7 +528,7 @@ onMounted(loadRequests);
 </script>
 
 <template>
-  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page space-y-6">
     <LibrarianPageHeader
       eyebrow="Library Users"
       title="Student Registration Approvals"
@@ -541,22 +541,22 @@ onMounted(loadRequests);
       </template>
     </LibrarianPageHeader>
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div class="rounded-xl border border-warning/30 bg-warning/5 p-5">
-        <p class="text-sm font-semibold text-muted">Pending Registrations</p>
-        <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.pendingRegistrations }}</p>
+    <section class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div class="rounded-xl border border-warning/30 bg-warning/5 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-muted sm:text-sm">Pending Registrations</p>
+        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.pendingRegistrations }}</p>
       </div>
-      <div class="rounded-xl border border-success/30 bg-success/5 p-5">
-        <p class="text-sm font-semibold text-muted">Approved Registrations</p>
-        <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.approvedRegistrations }}</p>
+      <div class="rounded-xl border border-success/30 bg-success/5 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-muted sm:text-sm">Approved Registrations</p>
+        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.approvedRegistrations }}</p>
       </div>
-      <div class="rounded-xl border border-error/30 bg-error/5 p-5">
-        <p class="text-sm font-semibold text-muted">Rejected Registrations</p>
-        <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.rejectedRegistrations }}</p>
+      <div class="rounded-xl border border-error/30 bg-error/5 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-muted sm:text-sm">Rejected Registrations</p>
+        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.rejectedRegistrations }}</p>
       </div>
-      <div class="rounded-xl border border-primary/30 bg-primary/5 p-5">
-        <p class="text-sm font-semibold text-muted">Credential Requests</p>
-        <p class="mt-2 text-3xl font-black text-highlighted">{{ summary.pendingCredentialRequests }}</p>
+      <div class="rounded-xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-muted sm:text-sm">Credential Requests</p>
+        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.pendingCredentialRequests }}</p>
       </div>
     </section>
 
@@ -582,7 +582,108 @@ onMounted(loadRequests);
         <p class="mt-3 font-semibold text-highlighted">No matching requests</p>
       </div>
 
-      <div v-else class="overflow-x-auto">
+      <div v-else>
+        <div class="grid gap-3 p-4 md:hidden" aria-label="Student registration requests">
+          <article
+            v-for="(request, index) in requests"
+            :key="`mobile-${request.documentId}`"
+            class="rounded-xl border border-default bg-default p-4 shadow-sm"
+          >
+            <div class="flex items-start gap-3">
+              <img
+                v-if="requestPhotoUrl(request)"
+                :src="requestPhotoUrl(request) || ''"
+                :alt="request.fullName"
+                class="size-11 shrink-0 rounded-full border border-default object-cover"
+              >
+              <div
+                v-else
+                class="flex size-11 shrink-0 items-center justify-center rounded-full bg-elevated font-bold text-muted"
+                aria-hidden="true"
+              >
+                {{ request.firstName?.charAt(0) }}{{ request.lastName?.charAt(0) }}
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="truncate font-semibold text-highlighted">{{ request.fullName }}</p>
+                    <p class="mt-0.5 truncate font-mono text-xs text-muted">{{ request.studentNo }}</p>
+                  </div>
+                  <span class="shrink-0 text-xs text-muted">#{{ (page - 1) * pageSize + index + 1 }}</span>
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <UBadge :label="statusLabel(request.status)" :color="statusColor(request.status)" variant="soft" />
+                  <UBadge
+                    v-if="request.type === 'Registration' && request.student"
+                    :label="request.student.libraryCardStatus || 'On Process'"
+                    :color="cardStatusColor(request.student.libraryCardStatus)"
+                    variant="soft"
+                  />
+                </div>
+
+                <div class="mt-3 grid gap-1 text-xs text-muted">
+                  <span>{{ request.educationalLevel || 'Level not provided' }} · {{ request.course || 'Program not provided' }}</span>
+                  <span>{{ request.email || 'No email provided' }}</span>
+                  <span>{{ formatDate(request.submittedAt) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-2 border-t border-default pt-3">
+              <UButton label="View" icon="i-lucide-eye" color="neutral" variant="soft" size="sm" @click="openDetails(request)" />
+              <UButton
+                v-if="request.type === 'Registration' && request.status === 'Verified' && nextCardStatus(request)"
+                :label="cardActionLabel()"
+                :icon="cardActionIcon()"
+                color="primary"
+                variant="soft"
+                size="sm"
+                @click="openCardStatusUpdate(request)"
+              />
+              <UButton
+                v-if="request.type === 'Registration' && request.status === 'Verified' && request.student && !nextCardStatus(request) && request.student.libraryCardStatus !== 'Released'"
+                label="Print Card"
+                icon="i-lucide-printer"
+                color="primary"
+                variant="soft"
+                size="sm"
+                :loading="openingPrintFor === request.documentId"
+                @click="openCardPrinting(request)"
+              />
+              <UButton
+                v-if="request.type === 'Registration' && request.status === 'Pending Verification'"
+                label="Approve"
+                icon="i-lucide-check"
+                color="primary"
+                variant="soft"
+                size="sm"
+                @click="openVerify(request)"
+              />
+              <UButton
+                v-if="request.type === 'Credential Recovery' && request.status === 'Pending Verification'"
+                label="Reset"
+                icon="i-lucide-key-round"
+                color="warning"
+                variant="soft"
+                size="sm"
+                @click="openReset(request)"
+              />
+              <UButton
+                v-if="request.status === 'Pending Verification'"
+                label="Reject"
+                icon="i-lucide-x"
+                color="error"
+                variant="soft"
+                size="sm"
+                @click="openReject(request)"
+              />
+            </div>
+          </article>
+        </div>
+
+        <div class="hidden overflow-x-auto md:block">
         <table class="min-w-full divide-y divide-default text-left text-sm">
           <thead class="bg-elevated/80 text-xs font-semibold uppercase tracking-wide text-muted">
             <tr>
@@ -726,6 +827,7 @@ onMounted(loadRequests);
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <div v-if="pagination.pageCount > 1" class="flex items-center justify-between border-t border-default p-4">
@@ -736,7 +838,7 @@ onMounted(loadRequests);
 
     <UModal
       v-model:open="detailsOpen"
-      :ui="{ content: 'sm:max-w-6xl max-h-[94dvh] overflow-hidden' }"
+      :ui="{ content: 'sncbt-viewport-modal max-w-none max-h-[94dvh] overflow-hidden sm:max-w-6xl' }"
     >
       <template #content>
         <div v-if="selectedRequest" class="flex max-h-[94dvh] flex-col bg-default">

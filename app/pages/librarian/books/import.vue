@@ -326,8 +326,8 @@ async function printImportedBarcodes(): Promise<void> {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
-    <div class="sncbt-staff-content mx-auto w-full max-w-[1600px] space-y-6">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
+    <div class="sncbt-staff-content w-full space-y-6">
       <LibrarianPageHeader
         eyebrow="Books & Collection"
         title="Import Existing Inventory"
@@ -358,7 +358,7 @@ async function printImportedBarcodes(): Promise<void> {
       />
 
       <UCard v-if="importedCopies.length === 0">
-        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="sncbt-specialist-form grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <div
             class="rounded-2xl border-2 border-dashed border-default bg-elevated/40 p-8 text-center"
           >
@@ -548,7 +548,7 @@ async function printImportedBarcodes(): Promise<void> {
           </div>
         </template>
 
-        <div class="overflow-x-auto">
+        <div class="sncbt-specialist-table-region overflow-x-auto">
           <table class="min-w-[1680px] w-full text-left text-sm">
             <thead>
               <tr class="border-b border-default bg-elevated/60">
@@ -685,7 +685,7 @@ async function printImportedBarcodes(): Promise<void> {
           </div>
         </div>
 
-        <div class="mt-5 max-h-96 overflow-auto rounded-xl border border-default">
+        <div class="sncbt-specialist-table-region mt-5 max-h-96 overflow-auto rounded-xl border border-default">
           <table class="w-full min-w-[760px] text-left text-sm">
             <thead class="sticky top-0 bg-default">
               <tr class="border-b border-default">

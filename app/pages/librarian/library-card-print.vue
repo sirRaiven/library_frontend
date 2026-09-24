@@ -333,9 +333,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="print-page sncbt-staff-page sncbt-staff-print-page min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+  <div class="print-page sncbt-staff-page sncbt-specialist-page sncbt-staff-print-page min-h-dvh bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
     <header
-      class="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/95"
+      class="no-print sncbt-print-toolbar sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/95"
     >
       <div class="mx-auto flex max-w-[1500px] flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex min-w-0 items-center gap-3">
@@ -360,7 +360,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="sncbt-print-actions flex flex-wrap items-center gap-2">
           <UButton
             label="Print Cards"
             icon="i-lucide-printer"
@@ -402,7 +402,7 @@ onMounted(async () => {
         :description="preparationError"
       />
 
-      <section class="no-print grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section class="no-print grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>

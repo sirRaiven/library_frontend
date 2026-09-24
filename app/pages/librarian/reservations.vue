@@ -898,7 +898,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div
       class="sncbt-staff-content mx-auto max-w-[1600px] space-y-6"
     >

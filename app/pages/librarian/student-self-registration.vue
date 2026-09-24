@@ -72,7 +72,7 @@ onMounted(generateLink);
 </script>
 
 <template>
-  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page space-y-6">
     <LibrarianPageHeader
       eyebrow="Student Registration"
       title="Registration QR Code"
@@ -94,7 +94,7 @@ onMounted(generateLink);
     />
 
     <section class="overflow-hidden rounded-3xl border border-default bg-default shadow-sm">
-      <div class="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div class="space-y-5">
           <div>
             <h2 class="text-lg font-bold text-highlighted">Public Registration Link</h2>

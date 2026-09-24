@@ -367,8 +367,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
-    <div class="sncbt-staff-content mx-auto w-full max-w-[1600px] space-y-6 mb-12">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
+    <div class="sncbt-staff-content w-full space-y-6 mb-12">
       <LibrarianPageHeader
         eyebrow="Books & Collection"
         title="Register a Book"
@@ -402,7 +402,7 @@ onMounted(async () => {
     <UForm
         :state="form"
         :validate="validate"
-        class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]"
+        class="sncbt-specialist-form grid gap-6 2xl:grid-cols-[minmax(0,1fr)_22rem]"
         @submit="submitRegistration"
       >
         <div class="space-y-6">
@@ -671,7 +671,7 @@ onMounted(async () => {
           </UCard>
         </div>
 
-        <aside class="lg:sticky lg:top-6 lg:self-start">
+        <aside class="sncbt-specialist-summary 2xl:sticky 2xl:top-6 2xl:self-start">
           <UCard>
             <template #header>
               <div>
@@ -737,7 +737,7 @@ onMounted(async () => {
             </div>
 
             <template #footer>
-              <div class="space-y-3">
+              <div class="sncbt-workflow-actions space-y-3">
                 <UButton
                   type="submit"
                   label="Register & View Barcodes"

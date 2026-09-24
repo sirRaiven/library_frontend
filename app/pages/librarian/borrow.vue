@@ -381,9 +381,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div
-      class="sncbt-staff-content mx-auto max-w-[1600px] space-y-6 mb-12"
+      class="sncbt-staff-content w-full space-y-6 mb-12"
     >
       <LibrarianPageHeader
         eyebrow="Circulation"
@@ -398,10 +398,10 @@ onMounted(() => {
       </LibrarianPageHeader>
 
       <div
-        class="grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]"
+        class="sncbt-workflow-layout grid gap-6 2xl:grid-cols-[20rem_minmax(0,1fr)]"
       >
         <div class="space-y-6">
-          <UCard>
+          <UCard class="sncbt-scanner-station">
             <template #header>
               <div
                 class="flex items-center gap-3"
@@ -517,7 +517,7 @@ onMounted(() => {
                   },
                 ]"
                 :key="step.number"
-                class="flex items-center gap-3 rounded-xl border p-3"
+                class="sncbt-workflow-step flex items-center gap-3 rounded-xl border p-3"
                 :class="
                   currentStep === step.number
                     ? 'border-success/30 bg-success/5'
@@ -558,13 +558,6 @@ onMounted(() => {
             </div>
           </UCard>
 
-          <UAlert
-            color="info"
-            variant="soft"
-            icon="i-lucide-lightbulb"
-            title="Fast checkout"
-            description="Use a hardware scanner, the camera button, or manual entry. After a member is verified, the same scanner automatically switches to book-copy scanning."
-          />
         </div>
 
         <div class="space-y-6">
@@ -894,7 +887,7 @@ onMounted(() => {
 
             <template #footer>
               <div
-                class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+                class="sncbt-workflow-actions flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
               >
                 <UButton
                   label="Cancel Transaction"

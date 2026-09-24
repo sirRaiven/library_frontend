@@ -368,7 +368,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div class="space-y-6">
       <LibrarianPageHeader
         eyebrow="Books & Collection"
@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
 
       <UCard>
         <div
-          class="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem_auto]"
+          class="sncbt-specialist-filters grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem_auto]"
         >
           <UInput
             v-model="search"
@@ -569,7 +569,7 @@ onBeforeUnmount(() => {
             copy.id ??
             copy.control_number
           "
-          class="space-y-3 border border-default bg-default rounded-3xl shadow-sm"
+          class="sncbt-physical-copy-card space-y-3 rounded-xl border border-default bg-default shadow-sm"
         >
           <div
             class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"

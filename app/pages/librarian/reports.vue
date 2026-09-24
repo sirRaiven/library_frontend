@@ -787,7 +787,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div class="space-y-6">
       <LibrarianPageHeader
         eyebrow="Library Records and Statistics"
@@ -883,7 +883,7 @@ onMounted(async () => {
       </div>
     </UCard>
 
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div class="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
       <main class="space-y-6">
         <section v-for="group in groupedReports" :key="group.key" class="space-y-3">
           <div class="flex items-start gap-3">
@@ -931,7 +931,7 @@ onMounted(async () => {
         </section>
       </main>
 
-      <aside class="xl:sticky xl:top-6 xl:self-start">
+      <aside class="sncbt-specialist-summary 2xl:sticky 2xl:top-6 2xl:self-start">
         <UCard>
           <template #header>
             <div class="flex items-center gap-3">
@@ -1103,7 +1103,7 @@ onMounted(async () => {
               <UBadge color="neutral" variant="soft" :label="`${table.rows.length} record${table.rows.length === 1 ? '' : 's'}`" />
             </div>
 
-            <div class="overflow-x-auto rounded-xl border border-default">
+            <div class="sncbt-specialist-table-region overflow-x-auto rounded-xl border border-default">
               <table class="min-w-full divide-y divide-default text-sm">
                 <thead class="bg-elevated/70">
                   <tr>

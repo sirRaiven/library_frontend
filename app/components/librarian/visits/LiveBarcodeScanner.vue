@@ -739,7 +739,7 @@ onBeforeUnmount(() => {
             v-if="open"
             ref="panel"
             :style="panelStyle"
-            class="fixed left-0 top-0 z-[100] w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-default bg-default shadow-2xl will-change-transform sm:w-[28rem]"
+            class="sncbt-camera-popover fixed left-0 top-0 z-[100] overflow-hidden rounded-2xl border border-default bg-default shadow-2xl will-change-transform"
             role="dialog"
             :aria-label="props.title"
           >
