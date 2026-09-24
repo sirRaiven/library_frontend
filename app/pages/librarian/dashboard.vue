@@ -328,25 +328,35 @@ async function refreshDashboard() {
 
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-5">
-    <section class="flex flex-col gap-3 border-b border-default/70 pb-4 sm:flex-row sm:items-end sm:justify-between">
-      <div class="min-w-0">
-        <h1 class="text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]">
-          {{ greeting }}, {{ displayName }}
-        </h1>
-        <p class="mt-1 text-sm text-muted">
-          Here is what needs attention in the library today.
-        </p>
-      </div>
+    <section class="sncbt-page-hero overflow-hidden rounded-2xl border border-default/80 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
+      <div class="relative z-[1] flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            Library Operations
+          </p>
+          <h1 class="mt-1.5 text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]">
+            {{ greeting }}, {{ displayName }}
+          </h1>
+          <p class="mt-1.5 max-w-2xl text-sm leading-6 text-muted">
+            Review today&apos;s circulation, resolve items that need attention, and continue common Library tasks.
+          </p>
+        </div>
 
-      <UButton
-        icon="i-lucide-refresh-cw"
-        label="Refresh"
-        color="neutral"
-        variant="ghost"
-        :loading="isRefreshing"
-        class="self-start sm:self-auto"
-        @click="refreshDashboard"
-      />
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
+          <div class="rounded-xl border border-default/70 bg-default/65 px-3.5 py-2.5 text-xs text-muted">
+            <p class="font-semibold text-highlighted">{{ currentDate }}</p>
+            <p class="mt-0.5">Updated {{ lastUpdated }}</p>
+          </div>
+          <UButton
+            icon="i-lucide-refresh-cw"
+            label="Refresh"
+            color="neutral"
+            variant="outline"
+            :loading="isRefreshing"
+            @click="refreshDashboard"
+          />
+        </div>
+      </div>
     </section>
 
     <UAlert
@@ -369,10 +379,15 @@ async function refreshDashboard() {
     />
 
     <section aria-labelledby="library-summary-heading">
-      <div class="mb-3 flex items-center justify-between gap-3">
-        <h2 id="library-summary-heading" class="text-base font-semibold text-highlighted sm:text-lg">
-          Today's Library Summary
-        </h2>
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 id="library-summary-heading" class="text-base font-semibold text-highlighted sm:text-lg">
+            Today&apos;s Library Summary
+          </h2>
+          <p class="mt-0.5 text-xs text-muted sm:text-sm">
+            Current collection availability and Library activity at a glance.
+          </p>
+        </div>
         <NuxtLink to="/librarian/books" class="text-xs font-semibold text-primary hover:underline">
           {{ formatNumber(dashboard.totalTitles) }} titles · {{ formatNumber(dashboard.totalCopies) }} copies
         </NuxtLink>
@@ -415,64 +430,114 @@ async function refreshDashboard() {
       </div>
     </section>
 
-    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
-      <div>
-        <div class="mb-3">
-          <h2 class="text-base font-semibold text-highlighted sm:text-lg">Quick Actions</h2>
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(19rem,0.75fr)]">
+      <div class="sncbt-card overflow-hidden rounded-xl border border-default/80 p-4 sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold text-highlighted sm:text-lg">Circulation Desk</h2>
+            <p class="mt-0.5 text-xs text-muted sm:text-sm">Start the most common Library tasks.</p>
+          </div>
+          <UIcon name="i-lucide-workflow" class="size-5 text-primary" />
         </div>
-        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+
+        <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <NuxtLink
             v-for="action in quickActions"
             :key="action.title"
             :to="action.to"
-            class="sncbt-quick-action flex min-h-20 flex-col justify-between gap-3 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-24 sm:p-4"
+            class="sncbt-quick-action group flex min-h-24 flex-col justify-between gap-4 p-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-28 sm:p-4"
           >
-            <div class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <UIcon :name="action.icon" class="size-4.5" />
+            <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-150 group-hover:-translate-y-0.5">
+              <UIcon :name="action.icon" class="size-5" />
             </div>
-            <p class="text-sm font-semibold text-highlighted">{{ action.title }}</p>
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-highlighted">{{ action.title }}</p>
+              <UIcon name="i-lucide-arrow-up-right" class="size-4 text-muted transition-colors group-hover:text-primary" />
+            </div>
           </NuxtLink>
         </div>
       </div>
 
-      <div>
-        <div class="mb-3">
-          <h2 class="text-base font-semibold text-highlighted sm:text-lg">Needs Attention</h2>
+      <div class="sncbt-card overflow-hidden rounded-xl border border-default/80 p-4 sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold text-highlighted sm:text-lg">Priority Queue</h2>
+            <p class="mt-0.5 text-xs text-muted sm:text-sm">Items that may need staff action.</p>
+          </div>
+          <UBadge :color="needsAttention > 0 ? 'error' : 'success'" variant="soft">
+            {{ needsAttention > 0 ? `${formatNumber(needsAttention)} attention` : 'All clear' }}
+          </UBadge>
         </div>
-        <div class="sncbt-record-list divide-y divide-default">
+
+        <div class="space-y-2">
           <NuxtLink
             v-for="item in queueItems"
             :key="item.label"
             :to="item.to"
-            class="sncbt-record-row flex items-center gap-3 p-3.5"
+            class="sncbt-record-row group flex items-center gap-3 rounded-xl border border-default/70 p-3.5 transition-colors hover:border-primary/25 hover:bg-elevated/50"
           >
             <div
-              class="flex size-9 shrink-0 items-center justify-center rounded-lg"
-              :class="{ 'bg-error/10 text-error': item.color === 'error', 'bg-info/10 text-info': item.color === 'info' }"
+              class="flex size-10 shrink-0 items-center justify-center rounded-xl"
+              :class="{
+                'bg-error/10 text-error': item.color === 'error',
+                'bg-info/10 text-info': item.color === 'info',
+              }"
             >
               <UIcon :name="item.icon" class="size-4.5" />
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-semibold text-highlighted">{{ item.label }}</p>
-              <p class="hidden text-xs text-muted sm:block">{{ item.description }}</p>
+              <p class="mt-0.5 hidden text-xs text-muted sm:block">{{ item.description }}</p>
             </div>
-            <span class="text-xl font-bold text-highlighted">{{ formatNumber(item.value) }}</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold text-highlighted">{{ formatNumber(item.value) }}</span>
+              <UIcon name="i-lucide-chevron-right" class="size-4 text-muted transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </NuxtLink>
+
+          <NuxtLink
+            to="/librarian/notifications"
+            class="sncbt-record-row group flex items-center gap-3 rounded-xl border border-default/70 p-3.5 transition-colors hover:border-primary/25 hover:bg-elevated/50"
+          >
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <UIcon name="i-lucide-bell" class="size-4.5" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-highlighted">Unread Notifications</p>
+              <p class="mt-0.5 hidden text-xs text-muted sm:block">Library notices that have not been reviewed.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold text-highlighted">{{ formatNumber(dashboard.unreadNotifications) }}</span>
+              <UIcon name="i-lucide-chevron-right" class="size-4 text-muted transition-transform group-hover:translate-x-0.5" />
+            </div>
           </NuxtLink>
         </div>
       </div>
     </section>
 
-    <section aria-labelledby="recent-borrowing-heading">
-      <div class="mb-3 flex items-center justify-between gap-3">
+    <section aria-labelledby="recent-borrowing-heading" class="sncbt-card overflow-hidden rounded-xl border border-default/80">
+      <div class="flex flex-col gap-3 border-b border-default/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
-          <h2 id="recent-borrowing-heading" class="text-base font-semibold text-highlighted sm:text-lg">Recent Borrowing</h2>
-          <p class="mt-0.5 hidden text-sm text-muted sm:block">Latest books borrowed by students and faculty.</p>
+          <h2 id="recent-borrowing-heading" class="text-base font-semibold text-highlighted sm:text-lg">
+            Recent Circulation
+          </h2>
+          <p class="mt-0.5 text-xs text-muted sm:text-sm">
+            Latest borrowing activity from Student and Faculty accounts.
+          </p>
         </div>
-        <UButton to="/librarian/borrow" label="View all" trailing-icon="i-lucide-arrow-right" color="neutral" variant="ghost" size="sm" />
+        <UButton
+          to="/librarian/borrow"
+          label="View all borrowings"
+          trailing-icon="i-lucide-arrow-right"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="self-start sm:self-auto"
+        />
       </div>
 
-      <div v-if="status === 'pending'" class="space-y-2">
-        <USkeleton v-for="item in 4" :key="item" class="h-18 rounded-xl" />
+      <div v-if="status === 'pending'" class="space-y-2 p-4 sm:p-5">
+        <USkeleton v-for="item in 5" :key="item" class="h-20 rounded-xl" />
       </div>
 
       <UEmpty
@@ -480,52 +545,44 @@ async function refreshDashboard() {
         icon="i-lucide-history"
         title="No borrowing records yet"
         description="Recent borrowing records will appear here after a book is borrowed."
-        class="py-10"
+        class="py-12"
       />
 
-      <template v-else>
-        <div class="sncbt-mobile-record-list md:hidden">
-          <div v-for="activity in dashboard.recentActivity" :key="activity.id" class="sncbt-mobile-record">
-            <div class="flex items-start justify-between gap-3">
+      <div v-else class="divide-y divide-default/70">
+        <div
+          v-for="activity in dashboard.recentActivity"
+          :key="activity.id"
+          class="grid gap-3 px-4 py-3.5 transition-colors hover:bg-elevated/35 sm:px-5 md:grid-cols-[minmax(9rem,0.9fr)_minmax(14rem,1.45fr)_minmax(7rem,0.55fr)_auto] md:items-center md:gap-4"
+        >
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <UIcon :name="activity.memberType === 'Faculty' ? 'i-lucide-briefcase-business' : 'i-lucide-graduation-cap'" class="size-4" />
+              </div>
               <div class="min-w-0">
                 <p class="truncate text-sm font-semibold text-highlighted">{{ activity.borrower }}</p>
-                <p class="mt-0.5 line-clamp-2 text-sm text-default">{{ activity.title }}</p>
+                <p class="text-xs text-muted">{{ activity.memberType }}</p>
               </div>
-              <UBadge :color="badgeColor(activity.status)" variant="soft">{{ activity.status }}</UBadge>
-            </div>
-            <div class="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
-              <span class="truncate">{{ activity.memberType }} · {{ activity.barcode }}</span>
-              <span class="shrink-0">{{ activity.date }}</span>
             </div>
           </div>
-        </div>
 
-        <div class="sncbt-table-surface hidden overflow-x-auto md:block">
-          <table class="w-full min-w-[46rem]">
-            <thead>
-              <tr class="border-b border-default text-left">
-                <th class="px-4 py-3">Borrower</th>
-                <th class="px-4 py-3">Book</th>
-                <th class="px-4 py-3">Barcode</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Borrowed On</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="activity in dashboard.recentActivity" :key="activity.id" class="border-b border-default last:border-b-0">
-                <td class="px-4 py-3">
-                  <p class="text-sm font-medium text-highlighted">{{ activity.borrower }}</p>
-                  <p class="text-xs text-muted">{{ activity.memberType }}</p>
-                </td>
-                <td class="max-w-72 px-4 py-3 text-sm"><p class="truncate">{{ activity.title }}</p></td>
-                <td class="px-4 py-3"><code class="text-xs">{{ activity.barcode }}</code></td>
-                <td class="px-4 py-3"><UBadge :color="badgeColor(activity.status)" variant="soft">{{ activity.status }}</UBadge></td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-muted">{{ activity.date }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="min-w-0 pl-10 md:pl-0">
+            <p class="truncate text-sm font-medium text-highlighted">{{ activity.title }}</p>
+            <p class="mt-0.5 truncate font-mono text-[11px] text-muted">{{ activity.barcode }}</p>
+          </div>
+
+          <div class="pl-10 md:pl-0">
+            <UBadge :color="badgeColor(activity.status)" variant="soft">
+              {{ activity.status }}
+            </UBadge>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 pl-10 text-xs text-muted md:block md:pl-0 md:text-right">
+            <span class="md:hidden">Borrowed on</span>
+            <span class="whitespace-nowrap">{{ activity.date }}</span>
+          </div>
         </div>
-      </template>
+      </div>
     </section>
   </div>
 </template>
