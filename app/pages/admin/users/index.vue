@@ -484,6 +484,7 @@ onMounted(async () => {
                 <span>Created {{ formatDate(record.createdAt) }}</span>
               </template>
               <template #actions>
+                <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View account" :to="`/admin/users/${record.id}`" />
                 <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit account and role" @click="openEdit(record)" />
                 <UButton :icon="record.blocked ? 'i-lucide-user-round-check' : 'i-lucide-user-round-x'" :color="record.blocked ? 'success' : 'error'" variant="ghost" square :aria-label="record.blocked ? 'Restore account' : 'Block account'" @click="openStatus(record, !record.blocked)" />
               </template>
@@ -530,6 +531,9 @@ onMounted(async () => {
                   </template>
                   <template #actions-cell="{ row }">
                     <div class="flex justify-end gap-1">
+                      <UTooltip text="View account">
+                        <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View account" :to="`/admin/users/${row.original.id}`" />
+                      </UTooltip>
                       <UTooltip text="Open account details">
                         <UButton
                           icon="i-lucide-external-link"

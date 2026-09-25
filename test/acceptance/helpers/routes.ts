@@ -26,6 +26,8 @@ export const adminRoutes: AcceptanceRoute[] = [
   staticRoute("administrator", "/admin/accounts-review", "Accounts review"),
   staticRoute("administrator", "/admin/activity", "Activity"),
   staticRoute("administrator", "/admin/audit-logs", "Audit logs"),
+  staticRoute("administrator", "/admin/data-management", "Data management"),
+  staticRoute("administrator", "/admin/archive", "Archive"),
   staticRoute("administrator", "/admin/dashboard", "Admin dashboard"),
   staticRoute("administrator", "/admin/devices", "Devices"),
   staticRoute("administrator", "/admin/librarians", "Librarians"),

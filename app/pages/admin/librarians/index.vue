@@ -12,6 +12,7 @@ definePageMeta({
 });
 
 const api = useAdminLibrarians();
+const libraryOptions = useLibraryOptions();
 const auth = useAuth();
 const toast = useToast();
 
@@ -25,6 +26,9 @@ const search = ref("");
 const status = ref("All");
 const selected = ref<AdminLibrarianRecord | null>(null);
 const statusOpen = ref(false);
+const editOpen = ref(false);
+const editForm = reactive({ firstName: "", middleName: "", lastName: "", email: "", contactNo: "", positionCode: "" });
+const librarianPositionOptions = computed(() => libraryOptions.librarianPositions.value);
 
 const columns: TableColumn<AdminLibrarianRecord>[] = [
   { id: "librarian", header: "Librarian" },
@@ -57,6 +61,47 @@ async function load() {
   } finally {
     loading.value = false;
   }
+}
+
+function openEdit(record: AdminLibrarianRecord) {
+  selected.value = record;
+  Object.assign(editForm, {
+    firstName: record.firstName,
+    middleName: record.middleName || "",
+    lastName: record.lastName,
+    email: record.email,
+    contactNo: record.contactNo || "",
+    positionCode: record.positionReference?.code || "",
+  });
+  editOpen.value = true;
+}
+
+async function saveEdit() {
+  if (!selected.value || saving.value) return;
+  if (!editForm.firstName.trim() || !editForm.lastName.trim() || !/^\S+@\S+\.\S+$/.test(editForm.email)) {
+    toast.add({ title: "Complete the Librarian details", description: "First name, last name, and a valid email address are required.", color: "warning", icon: "i-lucide-triangle-alert" });
+    return;
+  }
+  saving.value = true;
+  try {
+    await api.update(selected.value.documentId, {
+      firstName: editForm.firstName.trim(),
+      middleName: editForm.middleName.trim(),
+      lastName: editForm.lastName.trim(),
+      email: editForm.email.trim(),
+      contactNo: editForm.contactNo.trim(),
+      positionCode: editForm.positionCode || undefined,
+    });
+    editOpen.value = false;
+    await load();
+    toast.add({ title: "Librarian updated", description: "The staff profile and linked account details were updated.", color: "success", icon: "i-lucide-circle-check" });
+  } catch (error) {
+    toast.add({ title: "Unable to update Librarian", description: auth.getErrorMessage(error), color: "error", icon: "i-lucide-circle-alert" });
+  } finally { saving.value = false; }
+}
+
+function openAccount(record: AdminLibrarianRecord) {
+  if (record.account?.id) void navigateTo(`/admin/users/${record.account.id}`);
 }
 
 function openStatus(record: AdminLibrarianRecord) {
@@ -116,7 +161,10 @@ watch(search, () => {
   }, 350);
 });
 
-onMounted(load);
+onMounted(async () => {
+  try { await libraryOptions.loadOperational(); } catch {}
+  await load();
+});
 </script>
 
 <template>
@@ -184,6 +232,8 @@ onMounted(load);
                 <span>Added {{ formatDate(record.createdAt) }}</span>
               </template>
               <template #actions>
+                <UButton v-if="record.account" icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View Librarian account" @click="openAccount(record)" />
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit Librarian" @click="openEdit(record)" />
                 <UButton
                   :icon="record.status === 'Active' ? 'i-lucide-user-x' : 'i-lucide-user-check'"
                   :color="record.status === 'Active' ? 'error' : 'success'"
@@ -225,7 +275,9 @@ onMounted(load);
                     <AdminStatusBadge :label="row.original.status" />
                   </template>
                   <template #actions-cell="{ row }">
-                    <div class="flex justify-end">
+                    <div class="flex justify-end gap-1">
+                      <UButton v-if="row.original.account" icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View Librarian account" @click="openAccount(row.original)" />
+                      <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit Librarian" @click="openEdit(row.original)" />
                       <UButton
                         :label="row.original.status === 'Active' ? 'Deactivate' : 'Activate'"
                         :icon="row.original.status === 'Active' ? 'i-lucide-user-x' : 'i-lucide-user-check'"
@@ -248,6 +300,23 @@ onMounted(load);
       </template>
     </UCard>
   </div>
+
+  <UModal v-model:open="editOpen" :ui="{ content: 'sm:max-w-2xl' }">
+    <template #content>
+      <div v-if="selected" class="space-y-5 bg-default p-6">
+        <div><h2 class="text-xl font-bold text-highlighted">Edit Librarian</h2><p class="mt-1 text-sm text-muted">{{ selected.employeeNo }} · Update staff details without changing the employee identifier.</p></div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UFormField label="First Name" required><UInput v-model="editForm.firstName" /></UFormField>
+          <UFormField label="Middle Name"><UInput v-model="editForm.middleName" /></UFormField>
+          <UFormField label="Last Name" required><UInput v-model="editForm.lastName" /></UFormField>
+          <UFormField label="Email Address" required><UInput v-model="editForm.email" type="email" /></UFormField>
+          <UFormField label="Contact Number"><UInput v-model="editForm.contactNo" /></UFormField>
+          <UFormField label="Position"><USelect v-model="editForm.positionCode" :items="librarianPositionOptions" class="w-full" /></UFormField>
+        </div>
+        <div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="editOpen = false" /><UButton label="Save Changes" icon="i-lucide-save" :loading="saving" @click="saveEdit" /></div>
+      </div>
+    </template>
+  </UModal>
 
   <UModal v-model:open="statusOpen" :ui="{ content: 'sm:max-w-md' }">
     <template #content>

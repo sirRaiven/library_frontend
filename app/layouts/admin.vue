@@ -44,33 +44,31 @@ function active(path: string, exact = false) {
 const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     { label: "Overview", type: "label" },
-    {
-      label: "Dashboard",
-      icon: "i-lucide-layout-dashboard",
-      to: "/admin/dashboard",
-      active: active("/admin/dashboard", true),
-    },
+    { label: "Dashboard", icon: "i-lucide-layout-dashboard", to: "/admin/dashboard", active: active("/admin/dashboard", true) },
   ],
   [
-    { label: "Accounts & Access", type: "label" },
+    { label: "People & Access", type: "label" },
     { label: "Users", icon: "i-lucide-users", to: "/admin/users", active: active("/admin/users") },
     { label: "Librarians", icon: "i-lucide-user-round-cog", to: "/admin/librarians", active: active("/admin/librarians") },
     { label: "Account Review", icon: "i-lucide-list-checks", to: "/admin/accounts-review", active: active("/admin/accounts-review") },
     { label: "Roles & Permissions", icon: "i-lucide-shield-check", to: "/admin/roles", active: active("/admin/roles") },
   ],
   [
-    { label: "Library Management", type: "label" },
-    { label: "Library Operations", icon: "i-lucide-chart-no-axes-combined", to: "/admin/operations", active: active("/admin/operations") },
+    { label: "Library", type: "label" },
+    { label: "Operations", icon: "i-lucide-chart-no-axes-combined", to: "/admin/operations", active: active("/admin/operations") },
     { label: "Reports", icon: "i-lucide-file-chart-column-increasing", to: "/admin/reports", active: active("/admin/reports") || active("/admin/monitoring-reports") },
-    { label: "Library Settings", icon: "i-lucide-settings-2", to: "/admin/settings", active: active("/admin/settings") },
   ],
   [
-    { label: "System & Monitoring", type: "label" },
-    { label: "Activity Log", icon: "i-lucide-activity", to: "/admin/activity", active: active("/admin/activity") },
-    { label: "Sessions", icon: "i-lucide-monitor-dot", to: "/admin/sessions", active: active("/admin/sessions") },
-    { label: "Devices", icon: "i-lucide-monitor-smartphone", to: "/admin/devices", active: active("/admin/devices") },
+    { label: "Configuration", type: "label" },
+    { label: "Library Settings", icon: "i-lucide-settings-2", to: "/admin/settings", active: active("/admin/settings") },
+    { label: "Manage Data", icon: "i-lucide-database-zap", to: "/admin/data-management", active: active("/admin/data-management") },
+    { label: "Archive", icon: "i-lucide-archive", to: "/admin/archive", active: active("/admin/archive") },
+  ],
+  [
+    { label: "Monitoring", type: "label" },
+    { label: "Activity & Security", icon: "i-lucide-shield-ellipsis", to: "/admin/activity", active: active("/admin/activity") || active("/admin/sessions") || active("/admin/devices") },
     { label: "Audit Trail", icon: "i-lucide-scroll-text", to: "/admin/audit-logs", active: active("/admin/audit-logs") },
-    { label: "System & Maintenance", icon: "i-lucide-server-cog", to: "/admin/system-health", active: active("/admin/system-health") },
+    { label: "System Health", icon: "i-lucide-server-cog", to: "/admin/system-health", active: active("/admin/system-health") },
   ],
 ]);
 
@@ -103,6 +101,12 @@ function pageInformation() {
   }
   if (path.startsWith("/admin/settings")) {
     return { title: "Library Settings", icon: "i-lucide-settings-2" };
+  }
+  if (path.startsWith("/admin/data-management")) {
+    return { title: "Manage Data", icon: "i-lucide-database-zap" };
+  }
+  if (path.startsWith("/admin/archive")) {
+    return { title: "Archive", icon: "i-lucide-archive" };
   }
   if (path.startsWith("/admin/system-health")) {
     return { title: "System & Maintenance", icon: "i-lucide-server-cog" };

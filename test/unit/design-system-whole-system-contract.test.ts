@@ -16,10 +16,10 @@ function walkVue(relative: string): string[] {
 }
 
 describe("Design System DS-7 whole-system UX contract", () => {
-  it("preserves the complete 66-route page inventory", () => {
+  it("preserves the complete 67-route page inventory", () => {
     const pages = walkVue("app/pages");
-    expect(pages).toHaveLength(66);
-    expect(pages.filter(file => file.startsWith("app/pages/admin/"))).toHaveLength(21);
+    expect(pages).toHaveLength(67);
+    expect(pages.filter(file => file.startsWith("app/pages/admin/"))).toHaveLength(22);
     expect(pages.filter(file => file.startsWith("app/pages/librarian/"))).toHaveLength(25);
     expect(pages.filter(file => file.startsWith("app/pages/student/"))).toHaveLength(10);
     expect(pages.filter(file => file.startsWith("app/pages/faculty/"))).toHaveLength(7);

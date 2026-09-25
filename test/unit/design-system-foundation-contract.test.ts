@@ -33,7 +33,7 @@ describe("SNCBT Design System v2 DS-1 foundation", () => {
     const constants = read("app/constants/design-system.ts");
     expect(docs).toContain("All routes are in scope");
     expect(docs).toContain("320 px");
-    expect(docs).toContain("66 Vue page files");
+    expect(docs).toContain("67 Vue page files");
     expect(constants).toContain("minimumSupportedViewportPx: 320");
     expect(constants).toContain("touchTargetPx: 44");
   });
