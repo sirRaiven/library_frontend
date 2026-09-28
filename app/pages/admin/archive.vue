@@ -106,7 +106,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader title="Archive" description="Restore archived records or permanently remove them after reviewing every affected dependency." icon="i-lucide-archive">
       <template #actions>
         <UButton to="/admin/data-management" icon="i-lucide-database-zap" color="neutral" variant="outline" label="Manage Active Data" />
