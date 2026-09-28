@@ -489,7 +489,7 @@ onMounted(async () => {
     <AdminPageHeader
       eyebrow="System and Maintenance"
       title="Data Management"
-      description="Review records that are safe to edit and archive from one governed workspace. Identity, circulation, finance, security, and singleton records continue through their dedicated Admin workflows."
+      description="Govern catalog, identity, circulation, finance, notification, and security records from one archive-first workspace. Specialized editing still opens the established workflow so existing business rules are not bypassed."
       icon="i-lucide-database-zap"
     >
       <template #actions>
@@ -536,7 +536,7 @@ onMounted(async () => {
         :value="totalManagedRecords"
         icon="i-lucide-database"
         tone="primary"
-        description="Records in approved editable/archiveable categories"
+        description="Records covered by Admin archive and retention governance"
         :loading="catalogLoading"
       />
       <AdminMetricCard
@@ -548,11 +548,11 @@ onMounted(async () => {
         :loading="catalogLoading"
       />
       <AdminMetricCard
-        label="Specialized Records"
+        label="Protected System Records"
         :value="protectedRecordCount"
         icon="i-lucide-shield-lock"
         tone="info"
-        description="Managed through dedicated operational, account, security, or settings workflows"
+        description="Immutable or singleton records intentionally excluded from permanent deletion"
         :loading="catalogLoading"
       />
       <AdminMetricCard
@@ -574,7 +574,7 @@ onMounted(async () => {
         @click="mainView = 'managed'"
       />
       <UButton
-        label="Specialized Records"
+        label="Protected System Records"
         icon="i-lucide-shield-lock"
         :color="mainView === 'protected' ? 'primary' : 'neutral'"
         :variant="mainView === 'protected' ? 'soft' : 'ghost'"
@@ -587,7 +587,7 @@ onMounted(async () => {
         <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 id="managed-categories-heading" class="text-base font-semibold text-highlighted">Manage a data category</h2>
-            <p class="mt-1 text-sm text-muted">Choose a category. Only fields that are safe to change from this workspace are editable; identifiers, circulation state, and other specialized data stay protected by their established workflows.</p>
+            <p class="mt-1 text-sm text-muted">Choose a category. Archive/restore/delete governance is centralized here. When a record already has a dedicated editor, the Edit action opens that workflow instead of duplicating or bypassing its business rules.</p>
           </div>
         </div>
 
@@ -781,7 +781,7 @@ onMounted(async () => {
         <div>
           <h2 class="text-lg font-semibold text-highlighted">Protected system records</h2>
           <p class="mt-1 max-w-3xl text-sm leading-6 text-muted">
-            These records are intentionally excluded from generic archive and permanent-delete controls because they carry identity, financial, circulation, security, audit, or singleton configuration responsibilities.
+            Only immutable audit evidence and critical singleton configuration remain excluded from permanent deletion. Their dedicated managers are retained to protect system integrity.
           </p>
         </div>
 

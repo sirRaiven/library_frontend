@@ -44,7 +44,7 @@
     "verify:accessibility": "vitest --run --project unit test/unit/uswitch-accessibility-contract.test.ts test/unit/interactive-accessibility-source-scan.test.ts",
     "verify:compatibility": "node scripts/verify-production-compatibility.mjs",
     "verify:ui-ux": "node scripts/verify-ui-ux-modernization.mjs",
-    "verify:design-system": "npm run verify:design-system:foundation && npm run verify:design-system:shells && npm run verify:design-system:components && npm run verify:design-system:staff-pages && npm run verify:design-system:member-pages && npm run verify:design-system:specialist-workflows && npm run verify:design-system:whole-system && npm run verify:design-system:visual-theme && npm run verify:design-system:dark-navigation && npm run verify:design-system:librarian-dashboard && npm run verify:design-system:sign-out-modal",
+    "verify:design-system": "npm run verify:design-system:foundation && npm run verify:design-system:shells && npm run verify:design-system:components && npm run verify:design-system:staff-pages && npm run verify:design-system:member-pages && npm run verify:design-system:specialist-workflows && npm run verify:design-system:whole-system && npm run verify:design-system:visual-theme && npm run verify:design-system:dark-navigation && npm run verify:design-system:librarian-dashboard && npm run verify:design-system:sign-out-modal && npm run verify:design-system:desktop-member-portals && npm run verify:design-system:member-dashboard-account",
     "verify:deployment:local": "node scripts/verify-deployment-compatibility.mjs --target=localhost",
     "verify:deployment:staging": "node scripts/verify-deployment-compatibility.mjs --target=staging",
     "verify:deployment:production": "node scripts/verify-deployment-compatibility.mjs --target=production",
@@ -55,7 +55,7 @@
     "test:acceptance:production:chromium": "node scripts/run-library-acceptance.mjs --target=production --browser=chromium --scope=release",
     "verify:compatibility:contract": "node --test test/node/phase35-36-release-compatibility.test.mjs",
     "phase35:cross-browser": "npm run phase35:preview:prepare && node scripts/run-production-preview-check.mjs --check=acceptance --browser=all",
-    "phase36:local": "npm run verify:security && npm run verify:compatibility && npm run verify:accessibility && npm run verify:release-source && npm run verify:acceptance:coverage && npm run typecheck && npm run phase35:preview:prepare && npm run verify:deployment:preview",
+    "phase36:local": "npm run test:admin-data-governance && npm run verify:security && npm run verify:compatibility && npm run verify:accessibility && npm run verify:release-source && npm run verify:acceptance:coverage && npm run typecheck && npm run phase35:preview:prepare && npm run verify:deployment:preview",
     "phase36:staging": "npm run verify:deployment:staging && npm run test:acceptance:staging",
     "phase36:production": "npm run verify:deployment:production && npm run test:acceptance:production",
     "setup:acceptance:authenticated:production": "node scripts/setup-library-acceptance-auth.mjs --target=production",
@@ -84,7 +84,13 @@
     "verify:design-system:visual-theme": "node scripts/verify-design-system-visual-theme.mjs",
     "verify:design-system:dark-navigation": "node scripts/verify-design-system-dark-navigation.mjs",
     "verify:design-system:librarian-dashboard": "node scripts/verify-design-system-librarian-dashboard.mjs",
-    "verify:design-system:sign-out-modal": "node scripts/verify-design-system-sign-out-modal.mjs"
+    "verify:design-system:sign-out-modal": "node scripts/verify-design-system-sign-out-modal.mjs",
+    "verify:design-system:desktop-member-portals": "node scripts/verify-design-system-desktop-member-portals.mjs",
+    "verify:design-system:member-dashboard-account": "node scripts/verify-design-system-member-dashboard-account.mjs",
+    "verify:admin-data-management": "node scripts/verify-admin-data-management.mjs",
+    "verify:admin-table-actions": "node scripts/verify-admin-table-actions.mjs",
+    "verify:admin-data-governance": "node scripts/verify-admin-data-governance-phase32.mjs",
+    "test:admin-data-governance": "npm run verify:admin-data-management && npm run verify:admin-table-actions && npm run verify:admin-data-governance && vitest --run --project unit test/unit/admin-data-management-contract.test.ts test/unit/admin-data-governance-phase32.test.ts"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

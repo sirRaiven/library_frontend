@@ -31,7 +31,7 @@ export interface AdminManagedDataDomain {
   key: string;
   label: string;
   singularLabel: string;
-  group: "Catalog" | "Configuration" | "Communication";
+  group: "Catalog" | "Configuration" | "Communication" | "People" | "Operations" | "Security";
   description: string;
   icon: string;
   editor: AdminDataEditor;

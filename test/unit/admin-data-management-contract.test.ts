@@ -17,12 +17,12 @@ describe("Administrator Data Management contract", () => {
     expect(page).toContain('title: "Data Management"');
   });
 
-  it("uses archive-first lifecycle with separate protected records", () => {
+  it("uses archive-first lifecycle with archive-first lifecycle with protected system records", () => {
     expect(page).toContain('label="Managed Records"');
     expect(page).toContain("openCreate");
     expect(page).toContain("saveCreate");
     expect(page).toContain('label: "View Record"');
-    expect(page).toContain('label="Specialized Records"');
+    expect(page).toContain('label="Protected System Records"');
     expect(page).toContain('title="Archive this record?"');
     expect(page).toContain('title="Restore this record?"');
     expect(page).toContain('Open Existing Manager');
