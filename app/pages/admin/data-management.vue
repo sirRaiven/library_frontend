@@ -571,14 +571,14 @@ onMounted(async () => {
         icon="i-lucide-database"
         :color="mainView === 'managed' ? 'primary' : 'neutral'"
         :variant="mainView === 'managed' ? 'soft' : 'ghost'"
-        @click="mainView = 'managed'"
+        @click="() => { mainView = 'managed'; }"
       />
       <UButton
         label="Protected System Records"
         icon="i-lucide-shield-lock"
         :color="mainView === 'protected' ? 'primary' : 'neutral'"
         :variant="mainView === 'protected' ? 'soft' : 'ghost'"
-        @click="mainView = 'protected'"
+        @click="() => { mainView = 'protected'; }"
       />
     </div>
 
@@ -647,7 +647,7 @@ onMounted(async () => {
                 :icon="item.icon"
                 :color="scope === item.value ? 'primary' : 'neutral'"
                 :variant="scope === item.value ? 'soft' : 'outline'"
-                @click="scope = item.value"
+                @click="() => { scope = item.value; }"
               />
             </div>
           </div>
@@ -837,7 +837,7 @@ onMounted(async () => {
             <div v-for="item in selectedRecord.meta" :key="item" class="sm:col-span-2"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Detail</dt><dd class="mt-1 text-sm text-highlighted">{{ item }}</dd></div>
             <div v-for="field in selectedDomain.editableFields" :key="field.key"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">{{ field.label }}</dt><dd class="mt-1 whitespace-pre-wrap text-sm text-highlighted">{{ selectedRecord.editValues[field.key] ?? 'Not recorded' }}</dd></div>
           </dl>
-          <template #actions><UButton label="Close" color="neutral" variant="outline" @click="viewOpen = false" /></template>
+          <template #actions><UButton label="Close" color="neutral" variant="outline" @click="() => { viewOpen = false; }" /></template>
         </AppDialogFrame>
       </template>
     </UModal>
@@ -861,7 +861,7 @@ onMounted(async () => {
             </UFormField>
           </div>
           <UFormField label="Creation note" description="Optional context recorded in the Audit Trail."><UTextarea v-model="createReason" :rows="3" class="w-full" /></UFormField>
-          <template #actions><UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="createOpen = false" /><UButton :label="`Create ${selectedDomain.singularLabel}`" icon="i-lucide-plus" :loading="actionLoading" @click="saveCreate" /></template>
+          <template #actions><UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { createOpen = false; }" /><UButton :label="`Create ${selectedDomain.singularLabel}`" icon="i-lucide-plus" :loading="actionLoading" @click="saveCreate" /></template>
         </AppDialogFrame>
       </template>
     </UModal>
@@ -921,7 +921,7 @@ onMounted(async () => {
           </UFormField>
 
           <template #actions>
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="editOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { editOpen = false; }" />
             <UButton label="Save Changes" icon="i-lucide-save" :loading="actionLoading" @click="saveEdit" />
           </template>
         </AppDialogFrame>
@@ -948,7 +948,7 @@ onMounted(async () => {
             <UTextarea v-model="archiveReason" :rows="4" placeholder="Explain why this record should be archived" class="w-full" />
           </UFormField>
           <template #actions>
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="archiveOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { archiveOpen = false; }" />
             <UButton label="Archive Record" icon="i-lucide-archive" color="warning" :loading="actionLoading" :disabled="archiveReason.trim().length < 8" @click="confirmArchive" />
           </template>
         </AppDialogFrame>
@@ -968,7 +968,7 @@ onMounted(async () => {
             <UTextarea v-model="restoreReason" :rows="4" placeholder="Explain why this record should be restored" class="w-full" />
           </UFormField>
           <template #actions>
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="restoreOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { restoreOpen = false; }" />
             <UButton label="Restore Record" icon="i-lucide-archive-restore" color="success" :loading="actionLoading" :disabled="restoreReason.trim().length < 8" @click="confirmRestore" />
           </template>
         </AppDialogFrame>
@@ -1048,7 +1048,7 @@ onMounted(async () => {
           </template>
 
           <template #actions>
-            <UButton label="Keep Archived" color="neutral" variant="outline" :disabled="actionLoading" @click="deleteOpen = false" />
+            <UButton label="Keep Archived" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { deleteOpen = false; }" />
             <UButton
               label="Delete Permanently"
               icon="i-lucide-trash-2"

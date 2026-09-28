@@ -11,7 +11,7 @@ describe("Administrator Data Management contract", () => {
   const layout = read("app/layouts/admin.vue");
 
   it("keeps Data Management in Administrator navigation and route metadata", () => {
-    expect(layout).toContain('label: "Manage Data"');
+    expect(layout).toContain('label: "Data Management"');
     expect(layout).toContain('label: "Archive"');
     expect(layout).toContain('to: "/admin/data-management"');
     expect(page).toContain('title: "Data Management"');

@@ -7,6 +7,57 @@ interface MockRole {
   marker: string;
 }
 
+const adminDashboardData = {
+  generatedAt: "",
+  metrics: {
+    totalUsers: 0, activeUsers: 0, blockedUsers: 0, unconfirmedUsers: 0,
+    totalRoles: 0, totalLibrarians: 0, activeLibrarians: 0,
+    totalStudents: 0, totalFaculty: 0, totalBooks: 0, totalCopies: 0,
+    borrowedCopies: 0, overdueTransactions: 0, pendingReservations: 0,
+    visitorsToday: 0,
+  },
+  system: {
+    api: "Operational",
+    database: "Operational",
+    authentication: "Operational",
+    timezone: "Asia/Manila",
+  },
+  recentActivity: [],
+};
+
+const studentDashboardData = {
+  generatedAt: "",
+  student: null,
+  membership: {
+    documentId: null, membershipNo: null, academicYear: null, semester: null,
+    issuedDate: null, expiryDate: null, status: "Checking",
+    enrollmentVerified: false, daysRemaining: null, isActive: false,
+  },
+  metrics: {
+    currentLoans: 0, overdueLoans: 0, dueSoonLoans: 0,
+    activeReservations: 0, attentionItems: 0,
+  },
+  currentLoans: [],
+  activeReservations: [],
+  notices: [],
+};
+
+const facultyDashboardData = {
+  generatedAt: "",
+  faculty: null,
+  policy: {
+    finePolicy: "Faculty loans do not receive monetary fines.",
+    replacementPolicy: "Lost books must be replaced with a new acceptable copy.",
+    loanPeriod: "Due dates follow the annual department cycle or an earlier audit schedule.",
+  },
+  metrics: {
+    currentLoans: 0, reviewDueSoon: 0, lostForReplacement: 0, openReports: 0,
+  },
+  currentLoans: [],
+  recentReports: [],
+  notices: [],
+};
+
 interface RoleCase {
   role: "administrator" | "librarian" | "student" | "faculty";
   requested: string;
@@ -14,9 +65,9 @@ interface RoleCase {
 }
 
 const roles: MockRole[] = [
-  { type: "administrator", home: "/admin/dashboard", marker: "Administrator" },
-  { type: "super-administrator", home: "/admin/dashboard", marker: "Super Administrator" },
-  { type: "librarian", home: "/librarian/dashboard", marker: "Library Overview" },
+  { type: "administrator", home: "/admin/dashboard", marker: "Dashboard" },
+  { type: "super-administrator", home: "/admin/dashboard", marker: "Dashboard" },
+  { type: "librarian", home: "/librarian/dashboard", marker: "Library Operations" },
   { type: "student", home: "/student/dashboard", marker: "Student Portal" },
   { type: "faculty", home: "/faculty/dashboard", marker: "Faculty Portal" },
 ];
@@ -123,6 +174,63 @@ describe("chromium full browser regression", async () => {
               provider: "local",
               role: { id: 1, name: role.type, type: role.type },
             }),
+          });
+        }
+
+        if (url.pathname === "/api/admin-management/dashboard") {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ data: adminDashboardData }),
+          });
+        }
+
+        if (url.pathname === "/api/circulation/dashboard-summary") {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ data: {} }),
+          });
+        }
+
+        if (url.pathname === "/api/student-portal/session/start") {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              data: {
+                sessionKey: "mock-student-session",
+                status: "Active",
+                loginAt: new Date().toISOString(),
+                lastActivityAt: new Date().toISOString(),
+                resumed: false,
+                device: {
+                  deviceKey: "mock-device",
+                  displayName: "Chromium Test Browser",
+                  deviceType: "Desktop",
+                  operatingSystem: "Test",
+                  browser: "Chromium",
+                  applicationMode: "Web Browser",
+                  trusted: true,
+                },
+              },
+            }),
+          });
+        }
+
+        if (url.pathname === "/api/student-portal/dashboard") {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ data: studentDashboardData }),
+          });
+        }
+
+        if (url.pathname === "/api/faculty-portal/dashboard") {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ data: facultyDashboardData }),
           });
         }
 

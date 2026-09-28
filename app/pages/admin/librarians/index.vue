@@ -313,7 +313,7 @@ onMounted(async () => {
           <UFormField label="Contact Number"><UInput v-model="editForm.contactNo" /></UFormField>
           <UFormField label="Position"><USelect v-model="editForm.positionCode" :items="librarianPositionOptions" class="w-full" /></UFormField>
         </div>
-        <div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="editOpen = false" /><UButton label="Save Changes" icon="i-lucide-save" :loading="saving" @click="saveEdit" /></div>
+        <div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { editOpen = false; }" /><UButton label="Save Changes" icon="i-lucide-save" :loading="saving" @click="saveEdit" /></div>
       </div>
     </template>
   </UModal>

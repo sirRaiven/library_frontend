@@ -172,7 +172,7 @@ onMounted(refresh);
             <UTextarea v-model="restoreReason" :rows="3" placeholder="Explain why this record should be restored" class="w-full" />
           </UFormField>
           <template #actions>
-            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="restoreOpen = false" />
+            <UButton label="Cancel" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { restoreOpen = false; }" />
             <UButton label="Restore Record" icon="i-lucide-archive-restore" color="success" :loading="actionLoading" :disabled="restoreReason.trim().length < 8" @click="restoreRecord" />
           </template>
         </AppDialogFrame>
@@ -253,7 +253,7 @@ onMounted(refresh);
           />
 
           <template #actions>
-            <UButton label="Keep Archived" color="neutral" variant="outline" :disabled="actionLoading" @click="deleteOpen = false" />
+            <UButton label="Keep Archived" color="neutral" variant="outline" :disabled="actionLoading" @click="() => { deleteOpen = false; }" />
             <UButton
               label="Delete Permanently"
               icon="i-lucide-trash-2"
