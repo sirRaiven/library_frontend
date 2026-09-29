@@ -6,10 +6,12 @@ const props = withDefaults(
     entry: PortalHistoryEntry;
     showMember?: boolean;
     showActor?: boolean;
+    linkMemberRecord?: boolean;
   }>(),
   {
     showMember: true,
     showActor: false,
+    linkMemberRecord: false,
   },
 );
 
@@ -164,11 +166,27 @@ function formatCurrency(value: number) {
             {{ entry.reference }}
           </span>
 
+          <NuxtLink
+            v-if="
+              showMember &&
+              linkMemberRecord &&
+              entry.member?.type === 'Student' &&
+              entry.member.documentId
+            "
+            :to="`/librarian/students/${encodeURIComponent(entry.member.documentId)}/record`"
+            class="inline-flex items-center gap-1.5 rounded-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            :aria-label="`View Student Record for ${entry.member.name}`"
+          >
+            <UIcon name="i-lucide-user-round" class="size-3.5" aria-hidden="true" />
+            {{ entry.member.name }}
+            <span v-if="entry.member.identifier">({{ entry.member.identifier }})</span>
+          </NuxtLink>
+
           <span
-            v-if="showMember && entry.member"
+            v-else-if="showMember && entry.member"
             class="inline-flex items-center gap-1.5"
           >
-            <UIcon name="i-lucide-user-round" class="size-3.5" />
+            <UIcon name="i-lucide-user-round" class="size-3.5" aria-hidden="true" />
             {{ entry.member.name }}
             <span v-if="entry.member.identifier">({{ entry.member.identifier }})</span>
           </span>

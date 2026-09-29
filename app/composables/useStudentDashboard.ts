@@ -27,6 +27,16 @@ export interface StudentMembershipSummary {
   enrollmentVerified: boolean;
   daysRemaining: number | null;
   isActive: boolean;
+  academicTerm: {
+    documentId: string | null;
+    code: string | null;
+    name: string | null;
+    academicYear: string | null;
+    semester: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    isCurrent: boolean;
+  } | null;
 }
 
 export interface StudentCurrentLoan {
@@ -103,6 +113,7 @@ function emptyData(): StudentDashboardData {
       enrollmentVerified: false,
       daysRemaining: null,
       isActive: false,
+      academicTerm: null,
     },
     metrics: {
       currentLoans: 0,

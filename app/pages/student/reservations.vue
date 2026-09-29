@@ -23,6 +23,9 @@ const auth = useAuth();
 const view = ref<"active" | "history">(
   route.query.view === "history" ? "history" : "active",
 );
+const status = ref<"all" | "ready">(
+  view.value === "active" && route.query.status === "ready" ? "ready" : "all",
+);
 const page = ref(Math.max(1, Number(route.query.page) || 1));
 const createOpen = ref(false);
 const cancelOpen = ref(false);
@@ -41,6 +44,22 @@ const viewItems = [
   { label: "Active Reservations", value: "active", icon: "i-lucide-bookmark-check" },
   { label: "Reservation History", value: "history", icon: "i-lucide-history" },
 ];
+
+const activeStatusItems = [
+  { label: "All Active", value: "all", icon: "i-lucide-list" },
+  { label: "Ready for Pickup", value: "ready", icon: "i-lucide-package-check" },
+] as const;
+
+const resultAnnouncement = computed(() => {
+  if (reservations.loading.value) return "Loading reservation records.";
+  const total = reservations.pagination.value.total;
+  const label = view.value === "history"
+    ? "reservation history record"
+    : status.value === "ready"
+      ? "reservation ready for pickup"
+      : "active reservation";
+  return `${total} ${label}${total === 1 ? "" : "s"} shown.`;
+});
 
 function selected(book: ReservableStudentBook) {
   return selectedBooks.value.some(item => item.documentId === book.documentId);
@@ -80,13 +99,14 @@ function toggleBook(book: ReservableStudentBook) {
 async function syncRoute() {
   const query: Record<string, string> = {};
   if (view.value === "history") query.view = "history";
+  if (view.value === "active" && status.value === "ready") query.status = "ready";
   if (page.value > 1) query.page = String(page.value);
   await router.replace({ query });
 }
 
 async function load() {
   try {
-    await reservations.load(view.value, page.value);
+    await reservations.load(view.value, page.value, status.value);
     page.value = reservations.pagination.value.page;
   } catch (error) {
     toast.add({
@@ -100,6 +120,15 @@ async function load() {
 
 async function changeView(next: string | number) {
   view.value = next === "history" ? "history" : "active";
+  status.value = "all";
+  page.value = 1;
+  await syncRoute();
+  await load();
+}
+
+async function changeStatus(next: "all" | "ready") {
+  if (view.value !== "active" || status.value === next) return;
+  status.value = next;
   page.value = 1;
   await syncRoute();
   await load();
@@ -157,6 +186,7 @@ async function createReservations() {
     }
 
     view.value = "active";
+    status.value = "all";
     page.value = 1;
     await syncRoute();
     await load();
@@ -315,23 +345,45 @@ onMounted(async () => {
       />
     </div>
 
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div class="inline-flex w-full rounded-xl border border-default bg-elevated/40 p-1 sm:w-auto">
-        <UButton
-          v-for="item in viewItems"
-          :key="item.value"
-          :label="item.label"
-          :icon="item.icon"
-          :color="view === item.value ? 'primary' : 'neutral'"
-          :variant="view === item.value ? 'solid' : 'ghost'"
-          class="flex-1 sm:flex-none"
-          @click="changeView(item.value)"
-        />
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div class="inline-flex w-full rounded-xl border border-default bg-elevated/40 p-1 sm:w-auto" aria-label="Reservation record view">
+          <UButton
+            v-for="item in viewItems"
+            :key="item.value"
+            :label="item.label"
+            :icon="item.icon"
+            :color="view === item.value ? 'primary' : 'neutral'"
+            :variant="view === item.value ? 'solid' : 'ghost'"
+            :aria-pressed="view === item.value"
+            class="flex-1 sm:flex-none"
+            @click="changeView(item.value)"
+          />
+        </div>
+        <div
+          v-if="view === 'active'"
+          class="inline-flex w-full rounded-xl border border-default bg-elevated/40 p-1 sm:w-auto"
+          aria-label="Active reservation status filter"
+        >
+          <UButton
+            v-for="item in activeStatusItems"
+            :key="item.value"
+            :label="item.label"
+            :icon="item.icon"
+            :color="status === item.value ? 'primary' : 'neutral'"
+            :variant="status === item.value ? 'soft' : 'ghost'"
+            :aria-pressed="status === item.value"
+            class="flex-1 sm:flex-none"
+            @click="changeStatus(item.value)"
+          />
+        </div>
       </div>
       <p class="text-sm text-muted">
         {{ reservations.pagination.value.total }} record{{ reservations.pagination.value.total === 1 ? '' : 's' }}
       </p>
     </div>
+
+    <p class="sr-only" aria-live="polite" aria-atomic="true">{{ resultAnnouncement }}</p>
 
     <div v-if="reservations.loading.value && !reservations.records.value.length" class="space-y-4">
       <USkeleton v-for="index in 4" :key="index" class="h-56 w-full rounded-2xl" />
@@ -362,20 +414,35 @@ onMounted(async () => {
           <UIcon :name="view === 'active' ? 'i-lucide-bookmark-x' : 'i-lucide-history'" class="size-8" />
         </div>
         <h2 class="mt-5 text-lg font-bold text-highlighted">
-          {{ view === 'active' ? 'No active reservations' : 'No reservation history yet' }}
+          {{ view === 'active' && status === 'ready'
+            ? 'No reservations are ready for pickup'
+            : view === 'active'
+              ? 'No active reservations'
+              : 'No reservation history yet' }}
         </h2>
         <p class="mt-2 text-sm leading-relaxed text-muted">
-          {{ view === 'active'
-            ? 'Search the Book Collection and submit a reservation request for an eligible title.'
-            : 'Completed, cancelled, and expired reservations will appear here.' }}
+          {{ view === 'active' && status === 'ready'
+            ? 'Reservations approved for pickup will appear here as soon as the Library marks them ready.'
+            : view === 'active'
+              ? 'Search the Book Collection and submit a reservation request for an eligible title.'
+              : 'Completed, cancelled, and expired reservations will appear here.' }}
         </p>
         <UButton
-          v-if="view === 'active' && policy?.canCreate"
+          v-if="view === 'active' && status === 'all' && policy?.canCreate"
           label="Create a Reservation"
           icon="i-lucide-calendar-plus"
           color="primary"
           class="mt-5"
           @click="() => { createOpen = true }"
+        />
+        <UButton
+          v-if="view === 'active' && status === 'ready'"
+          label="Show All Active Reservations"
+          icon="i-lucide-list"
+          color="neutral"
+          variant="outline"
+          class="mt-5"
+          @click="changeStatus('all')"
         />
       </div>
     </UCard>

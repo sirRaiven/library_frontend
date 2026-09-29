@@ -170,7 +170,7 @@ onMounted(async () => {
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
-      eyebrow="Accounts and Access"
+      eyebrow="People & Access"
       title="Librarians"
       description="Manage Library staff profiles together with their secured sign-in accounts. Deactivating a Librarian also blocks the linked application account."
       icon="i-lucide-user-round-cog"
@@ -196,10 +196,10 @@ onMounted(async () => {
       <template #header>
         <AppFilterBar :title="`Library Staff · ${total} profile${total === 1 ? '' : 's'}`">
           <template #search>
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search employee number, name, or email" class="w-full" />
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search employee number, name, or email" class="w-full" aria-label="Search Librarian profiles" />
           </template>
           <template #filters>
-            <USelect v-model="status" :items="statusItems" class="w-full sm:max-w-xs" />
+            <USelect v-model="status" :items="statusItems" class="w-full sm:max-w-xs" aria-label="Filter Librarians by status" />
           </template>
         </AppFilterBar>
       </template>
@@ -208,11 +208,12 @@ onMounted(async () => {
         <USkeleton v-for="index in 5" :key="index" class="h-16 w-full" />
       </div>
 
-      <div v-else-if="!records.length" class="px-6 py-16 text-center">
-        <UIcon name="i-lucide-user-round-search" class="mx-auto size-11 text-dimmed" />
-        <h3 class="mt-3 font-semibold text-highlighted">No matching Librarian profiles</h3>
-        <p class="mt-1 text-sm text-muted">Adjust the search or profile-status filter.</p>
-      </div>
+      <AdminEmptyState
+        v-else-if="!records.length"
+        title="No matching Librarian profiles"
+        description="Adjust the search or profile-status filter."
+        icon="i-lucide-user-round-search"
+      />
 
       <AppResponsiveDataView v-else mobile-label="Librarian profiles" desktop-label="Librarian profiles table">
         <template #mobile>
@@ -318,33 +319,34 @@ onMounted(async () => {
     </template>
   </UModal>
 
-  <UModal v-model:open="statusOpen" :ui="{ content: 'sm:max-w-md' }">
+  <UModal v-model:open="statusOpen" :dismissible="!saving" :ui="{ content: 'sm:max-w-md max-h-[90vh] overflow-y-auto' }">
     <template #content>
-      <div class="space-y-5 bg-default p-6">
-        <div class="mx-auto flex size-14 items-center justify-center rounded-2xl" :class="selected?.status === 'Active' ? 'bg-error/10 text-error' : 'bg-success/10 text-success'">
-          <UIcon :name="selected?.status === 'Active' ? 'i-lucide-user-x' : 'i-lucide-user-check'" class="size-7" />
-        </div>
-        <div class="text-center">
-          <h2 class="text-xl font-bold text-highlighted">
-            {{ selected?.status === 'Active' ? 'Deactivate Librarian?' : 'Activate Librarian?' }}
-          </h2>
-          <p class="mt-2 text-sm leading-6 text-muted">
-            {{ selected?.status === 'Active'
-              ? `${selected?.fullName}'s linked account will be blocked from signing in.`
-              : `${selected?.fullName}'s linked account will be restored.` }}
-          </p>
-        </div>
-        <div class="flex flex-col-reverse gap-2 sm:flex-row">
-          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="() => { statusOpen = false; }" />
+      <AppDialogFrame
+        :title="selected?.status === 'Active' ? 'Deactivate Librarian?' : 'Activate Librarian?'"
+        :description="selected?.status === 'Active'
+          ? `${selected?.fullName}'s linked account will be blocked from signing in.`
+          : `${selected?.fullName}'s linked account will be restored.`"
+        :icon="selected?.status === 'Active' ? 'i-lucide-user-x' : 'i-lucide-user-check'"
+        :tone="selected?.status === 'Active' ? 'error' : 'success'"
+      >
+        <UAlert
+          v-if="selected?.status === 'Active'"
+          color="warning"
+          variant="soft"
+          icon="i-lucide-triangle-alert"
+          title="Linked account access will change"
+          description="Deactivation blocks the linked sign-in account. Existing Library history is retained."
+        />
+        <template #actions>
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { statusOpen = false; }" />
           <UButton
-            :label="selected?.status === 'Active' ? 'Deactivate' : 'Activate'"
+            :label="selected?.status === 'Active' ? 'Deactivate Librarian' : 'Activate Librarian'"
             :color="selected?.status === 'Active' ? 'error' : 'success'"
-            block
             :loading="saving"
             @click="toggleStatus"
           />
-        </div>
-      </div>
+        </template>
+      </AppDialogFrame>
     </template>
   </UModal>
 </template>

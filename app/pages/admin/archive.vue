@@ -106,7 +106,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6" :aria-busy="loading || actionLoading">
     <AdminPageHeader title="Archive" description="Restore archived records or permanently remove them after reviewing every affected dependency." icon="i-lucide-archive">
       <template #actions>
         <UButton to="/admin/data-management" icon="i-lucide-database-zap" color="neutral" variant="outline" label="Manage Active Data" />
@@ -118,10 +118,10 @@ onMounted(refresh);
     <UCard>
       <div class="grid gap-4 md:grid-cols-[minmax(220px,320px)_1fr]">
         <UFormField label="Data category">
-          <USelect v-model="domainKey" :items="domains.map(d => ({ label: `${d.label} (${d.counts.archived})`, value: d.key }))" value-key="value" label-key="label" class="w-full" />
+          <USelect v-model="domainKey" :items="domains.map(d => ({ label: `${d.label} (${d.counts.archived})`, value: d.key }))" value-key="value" label-key="label" class="w-full" aria-label="Select archived data category" />
         </UFormField>
         <UFormField label="Search archived records">
-          <UInput v-model="search" icon="i-lucide-search" placeholder="Search this archive…" class="w-full" />
+          <UInput v-model="search" icon="i-lucide-search" placeholder="Search this archive…" class="w-full" aria-label="Search archived records" />
         </UFormField>
       </div>
     </UCard>
@@ -129,12 +129,13 @@ onMounted(refresh);
     <div v-if="loading" class="grid gap-3">
       <USkeleton v-for="n in 4" :key="n" class="h-28 rounded-xl" />
     </div>
-    <UCard v-else-if="!records.length">
-      <div class="py-10 text-center">
-        <UIcon name="i-lucide-archive-restore" class="mx-auto size-10 text-muted" />
-        <h2 class="mt-3 font-semibold">No archived records</h2>
-        <p class="mt-1 text-sm text-muted">{{ selectedDomain?.label || 'This category' }} has nothing waiting in the archive.</p>
-      </div>
+    <UCard v-else-if="!records.length" :ui="{ body: 'p-0 sm:p-0' }">
+      <AdminEmptyState
+        title="No archived records"
+        :description="`${selectedDomain?.label || 'This category'} has nothing waiting in the archive.`"
+        icon="i-lucide-archive-restore"
+        compact
+      />
     </UCard>
     <div v-else class="grid gap-3">
       <UCard v-for="record in records" :key="record.documentId">
@@ -237,7 +238,7 @@ onMounted(refresh);
                 <div class="rounded-lg border border-default bg-elevated px-3 py-2 font-mono text-xs text-highlighted">
                   {{ impact.confirmationPhrase }}
                 </div>
-                <UInput v-model="confirmation" autocomplete="off" class="w-full font-mono" placeholder="Type the phrase exactly" />
+                <UInput v-model="confirmation" autocomplete="off" class="w-full font-mono" placeholder="Type the phrase exactly" aria-label="Permanent deletion confirmation phrase" />
                 <p v-if="confirmation && !confirmationMatches" class="text-xs text-error">The confirmation phrase must match exactly.</p>
               </div>
             </UFormField>

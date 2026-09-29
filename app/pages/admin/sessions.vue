@@ -65,7 +65,7 @@ onMounted(() => { load(); loadSummary(); });
 
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
-    <AdminPageHeader eyebrow="System & Monitoring" title="Sessions" description="Review active sign-in sessions and privacy-safe portal sessions for Student, Faculty, Librarian, and Administrator accounts." icon="i-lucide-monitor-dot"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/reports?view=monitoring" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
+    <AdminPageHeader eyebrow="System & Security" title="Sessions" description="Review active sign-in sessions and privacy-safe portal sessions for Student, Faculty, Librarian, and Administrator accounts." icon="i-lucide-monitor-dot"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/reports?view=monitoring" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
     <UAlert color="info" variant="soft" icon="i-lucide-info" title="Two session sources" description="Authentication Sessions control actual sign-in refresh tokens. Portal Monitoring Sessions record portal presence and activity. They are displayed separately because they do not store or expose authentication tokens." />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminMetricCard label="Authentication Sessions" :value="summary?.activeAuthenticationSessions ?? 0" description="Current sign-in sessions." icon="i-lucide-key-round" tone="success" :loading="!summary" />
@@ -77,19 +77,19 @@ onMounted(() => { load(); loadSummary(); });
       <template #header>
         <AppFilterBar :title="`Session Register · ${total} session${total === 1 ? '' : 's'}`">
           <template #search>
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search user or email" class="w-full" />
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search user or email" class="w-full" aria-label="Search sessions" />
           </template>
           <template #filters>
             <div class="grid gap-2 sm:grid-cols-3">
-              <USelect v-model="source" :items="sourceItems" />
-              <USelect v-model="status" :items="statusItems" />
-              <USelect v-model="profileType" :items="profileItems" />
+              <USelect v-model="source" :items="sourceItems" aria-label="Filter sessions by source" />
+              <USelect v-model="status" :items="statusItems" aria-label="Filter sessions by status" />
+              <USelect v-model="profileType" :items="profileItems" aria-label="Filter sessions by account type" />
             </div>
           </template>
         </AppFilterBar>
       </template>
       <div v-if="loading" class="space-y-3 p-6"><USkeleton v-for="i in 7" :key="i" class="h-16 w-full" /></div>
-      <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-monitor-off" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching sessions</h3><p class="mt-1 text-sm text-muted">Change the source or filters.</p></div>
+      <AdminEmptyState v-else-if="!records.length" title="No matching sessions" description="Change the session source, status, account type, or search terms." icon="i-lucide-monitor-off" />
       <AppResponsiveDataView v-else mobile-label="Session records" desktop-label="Session records table">
         <template #mobile>
           <div class="sncbt-mobile-record-list p-3">
@@ -130,5 +130,23 @@ onMounted(() => { load(); loadSummary(); });
   </div>
 
   <UModal v-model:open="detailOpen" :ui="{ content: 'sm:max-w-xl' }"><template #content><div v-if="selected" class="space-y-5 bg-default p-6"><div class="flex items-start justify-between"><div><h2 class="text-xl font-bold text-highlighted">Session Details</h2><p class="mt-1 text-sm text-muted">{{ selected.account.username }}</p></div><UBadge :label="selected.status" :color="statusColor(selected.status)" variant="soft" /></div><dl class="grid gap-4 text-sm sm:grid-cols-2"><div><dt class="text-xs font-semibold uppercase text-muted">Source</dt><dd class="mt-1 text-highlighted">{{ selected.source }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Reference</dt><dd class="mt-1 font-mono text-xs text-highlighted">{{ selected.sessionReference }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Device</dt><dd class="mt-1 text-highlighted">{{ selected.deviceName }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Application</dt><dd class="mt-1 text-highlighted">{{ selected.applicationMode }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Login</dt><dd class="mt-1 text-highlighted">{{ formatDate(selected.loginAt) }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Last Activity</dt><dd class="mt-1 text-highlighted">{{ formatDate(selected.lastActivityAt) }}</dd></div><div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase text-muted">Network</dt><dd class="mt-1 font-mono text-xs text-highlighted">{{ selected.maskedIpAddress || 'Not exposed by this session source' }}</dd></div></dl><div class="flex justify-end gap-2"><UButton label="Close" color="neutral" variant="outline" @click="() => { detailOpen = false; }" /><UButton v-if="selected.status === 'Active'" label="Revoke Session" icon="i-lucide-log-out" color="error" @click="() => { if (selected) { detailOpen = false; beginRevoke(selected); } }" /></div></div></template></UModal>
-  <UModal v-model:open="revokeOpen" :ui="{ content: 'sm:max-w-lg' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold text-highlighted">Revoke Session</h2><p class="mt-2 text-sm text-muted">Revoke the selected {{ selected?.source.toLowerCase() }} for {{ selected?.account.username }}.</p></div><UFormField label="Administrative reason" required><UTextarea v-model="reason" :rows="4" placeholder="Explain why this session must be revoked" /></UFormField><UAlert v-if="selected?.source === 'Portal Monitoring'" color="warning" variant="soft" icon="i-lucide-triangle-alert" title="Monitoring session only" description="Ending a portal activity session does not necessarily sign the user out of every device." /><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="outline" @click="() => { revokeOpen = false; }" /><UButton label="Confirm Revocation" color="error" icon="i-lucide-log-out" :disabled="reason.trim().length < 5" :loading="revoking" @click="confirmRevoke" /></div></div></template></UModal>
+  <UModal v-model:open="revokeOpen" :dismissible="!revoking" :ui="{ content: 'sm:max-w-lg max-h-[90vh] overflow-y-auto' }">
+    <template #content>
+      <AppDialogFrame
+        title="Revoke Session"
+        :description="`Revoke the selected ${selected?.source.toLowerCase() || 'session'} for ${selected?.account.username || 'this account'}.`"
+        icon="i-lucide-log-out"
+        tone="error"
+      >
+        <UFormField label="Administrative reason" required help="Enter at least 5 characters. The reason is retained with the administrative action.">
+          <UTextarea v-model="reason" :rows="4" class="w-full" placeholder="Explain why this session must be revoked" />
+        </UFormField>
+        <UAlert v-if="selected?.source === 'Portal Monitoring'" color="warning" variant="soft" icon="i-lucide-triangle-alert" title="Monitoring session only" description="Ending a portal activity session does not necessarily sign the user out of every device." />
+        <template #actions>
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="revoking" @click="() => { revokeOpen = false; }" />
+          <UButton label="Revoke Session" color="error" icon="i-lucide-log-out" :disabled="reason.trim().length < 5" :loading="revoking" @click="confirmRevoke" />
+        </template>
+      </AppDialogFrame>
+    </template>
+  </UModal>
 </template>

@@ -417,7 +417,7 @@ onMounted(async () => {
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
-      eyebrow="Accounts and Access"
+      eyebrow="People & Access"
       title="Users"
       description="Create accounts, assign application roles, confirm access, and block compromised or inactive accounts. Passwords and refresh tokens are never displayed in this panel."
       icon="i-lucide-users"
@@ -443,13 +443,13 @@ onMounted(async () => {
       <template #header>
         <AppFilterBar :title="`Users · ${total} account${total === 1 ? '' : 's'}`">
           <template #search>
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search username or email" autocomplete="off" class="w-full" />
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search username or email" autocomplete="off" class="w-full" aria-label="Search user accounts" />
           </template>
           <template #filters>
             <div class="grid gap-2 sm:grid-cols-3">
-              <USelect v-model="roleFilter" :items="roleOptions" />
-              <USelect v-model="statusFilter" :items="statusOptions" />
-              <USelect v-model="profileFilter" :items="profileOptions" />
+              <USelect v-model="roleFilter" :items="roleOptions" aria-label="Filter users by role" />
+              <USelect v-model="statusFilter" :items="statusOptions" aria-label="Filter users by account status" />
+              <USelect v-model="profileFilter" :items="profileOptions" aria-label="Filter users by Library record status" />
             </div>
           </template>
         </AppFilterBar>
@@ -459,11 +459,12 @@ onMounted(async () => {
         <USkeleton v-for="index in 6" :key="index" class="h-16 w-full" />
       </div>
 
-      <div v-else-if="!records.length" class="px-6 py-16 text-center">
-        <UIcon name="i-lucide-users" class="mx-auto size-11 text-dimmed" />
-        <h3 class="mt-3 font-semibold text-highlighted">No matching users</h3>
-        <p class="mt-1 text-sm text-muted">Adjust the search or account-status filters.</p>
-      </div>
+      <AdminEmptyState
+        v-else-if="!records.length"
+        title="No matching users"
+        description="Adjust the search, role, account-status, or Library-record filters."
+        icon="i-lucide-users"
+      />
 
       <AppResponsiveDataView v-else mobile-label="User accounts" desktop-label="User accounts table">
         <template #mobile>
@@ -533,16 +534,6 @@ onMounted(async () => {
                     <div class="flex justify-end gap-1">
                       <UTooltip text="View account">
                         <UButton icon="i-lucide-eye" color="neutral" variant="ghost" square aria-label="View account" :to="`/admin/users/${row.original.id}`" />
-                      </UTooltip>
-                      <UTooltip text="Open account details">
-                        <UButton
-                          icon="i-lucide-external-link"
-                          color="primary"
-                          variant="ghost"
-                          square
-                          aria-label="Open account details"
-                          :to="`/admin/users/${row.original.id}`"
-                        />
                       </UTooltip>
                       <UTooltip text="Edit account and role">
                         <UButton
@@ -684,23 +675,17 @@ onMounted(async () => {
     </template>
   </UModal>
 
-  <UModal v-model:open="statusOpen" :ui="{ content: 'sm:max-w-md' }">
+  <UModal v-model:open="statusOpen" :dismissible="!saving" :ui="{ content: 'sm:max-w-md max-h-[90vh] overflow-y-auto' }">
     <template #content>
-      <div class="space-y-5 bg-default p-6">
-        <div class="mx-auto flex size-14 items-center justify-center rounded-2xl" :class="pendingBlockedState ? 'bg-error/10 text-error' : 'bg-success/10 text-success'">
-          <UIcon :name="pendingBlockedState ? 'i-lucide-user-round-x' : 'i-lucide-user-round-check'" class="size-7" />
-        </div>
-        <div class="text-center">
-          <h2 class="text-xl font-bold text-highlighted">
-            {{ pendingBlockedState ? 'Block this account?' : 'Restore this account?' }}
-          </h2>
-          <p class="mt-2 text-sm leading-6 text-muted">
-            {{ pendingBlockedState
-              ? `${selectedUser?.username} will be prevented from signing in until an administrator restores the account.`
-              : `${selectedUser?.username} will be allowed to sign in again.` }}
-          </p>
-        </div>
-        <UFormField label="Reason for this account-status change" required help="The reason is stored in the administrator audit trail.">
+      <AppDialogFrame
+        :title="pendingBlockedState ? 'Block this account?' : 'Restore this account?'"
+        :description="pendingBlockedState
+          ? `${selectedUser?.username} will be prevented from signing in until an administrator restores the account.`
+          : `${selectedUser?.username} will be allowed to sign in again.`"
+        :icon="pendingBlockedState ? 'i-lucide-user-round-x' : 'i-lucide-user-round-check'"
+        :tone="pendingBlockedState ? 'error' : 'success'"
+      >
+        <UFormField label="Reason for this account-status change" required help="The reason is stored in the Administrator Audit Trail.">
           <UTextarea
             v-model="statusReason"
             :rows="3"
@@ -708,17 +693,17 @@ onMounted(async () => {
             :placeholder="pendingBlockedState ? 'Example: Account reported as compromised' : 'Example: Identity and access have been verified'"
           />
         </UFormField>
-        <div class="flex flex-col-reverse gap-2 sm:flex-row">
-          <UButton label="Cancel" color="neutral" variant="outline" block :disabled="saving" @click="() => { statusOpen = false; }" />
+        <template #actions>
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="saving" @click="() => { statusOpen = false; }" />
           <UButton
             :label="pendingBlockedState ? 'Block Account' : 'Restore Account'"
             :color="pendingBlockedState ? 'error' : 'success'"
-            block
             :loading="saving"
+            :disabled="statusReason.trim().length < 5"
             @click="confirmStatusChange"
           />
-        </div>
-      </div>
+        </template>
+      </AppDialogFrame>
     </template>
   </UModal>
 </template>

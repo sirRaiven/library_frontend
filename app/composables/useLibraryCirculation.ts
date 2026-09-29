@@ -218,6 +218,7 @@ export interface ManagedReservation {
   remarks?: string;
   member: {
     type: MemberType;
+    documentId?: string | null;
     fullName: string;
     identifier: string;
   };

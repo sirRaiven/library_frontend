@@ -1,4 +1,5 @@
 export type StudentBorrowingView = "current" | "history" | "all";
+export type StudentBorrowingAttention = "all" | "overdue" | "due-soon";
 
 export interface StudentBorrowingRecord {
   documentId: string;
@@ -57,6 +58,7 @@ interface StudentBorrowingResponse {
     filters: {
       search: string;
       sort: string;
+      attention: StudentBorrowingAttention;
     };
     pagination: {
       page: number;
@@ -139,6 +141,7 @@ export function useStudentBorrowings() {
     view?: StudentBorrowingView;
     search?: string;
     sort?: string;
+    attention?: StudentBorrowingAttention;
     page?: number;
   } = {}) {
     if (loading.value) return null;
@@ -156,6 +159,9 @@ export function useStudentBorrowings() {
             view: input.view ?? "current",
             search: input.search?.trim() || undefined,
             sort: input.sort || undefined,
+            attention: input.attention && input.attention !== "all"
+              ? input.attention
+              : undefined,
             page: input.page ?? 1,
             pageSize: pagination.value.pageSize,
           },

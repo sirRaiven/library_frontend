@@ -16,9 +16,30 @@ definePageMeta({
 const circulation = useLibraryCirculation();
 const auth = useAuth();
 const toast = useToast();
+const route = useRoute();
 
-const search = ref("");
-const statusFilter = ref("All");
+const reservationStatusOptions = [
+  "All",
+  "Pending",
+  "Approved",
+  "Ready for Pickup",
+  "Completed",
+  "Cancelled",
+  "Expired",
+] as const;
+
+const initialReservationStatus =
+  typeof route.query.status === "string" &&
+  reservationStatusOptions.includes(route.query.status as (typeof reservationStatusOptions)[number])
+    ? route.query.status
+    : "All";
+const initialReservationSearch =
+  typeof route.query.search === "string"
+    ? route.query.search.trim().slice(0, 120)
+    : "";
+
+const search = ref(initialReservationSearch);
+const statusFilter = ref(initialReservationStatus);
 const page = ref(1);
 const pageSize = ref(10);
 
@@ -86,15 +107,7 @@ const expirationDate = ref(
   defaultExpirationDate(),
 );
 
-const statusOptions = [
-  "All",
-  "Pending",
-  "Approved",
-  "Ready for Pickup",
-  "Completed",
-  "Cancelled",
-  "Expired",
-];
+const statusOptions = [...reservationStatusOptions];
 
 const activeCount = computed(() => queueSummary.value.activeCount);
 const readyCount = computed(() => queueSummary.value.readyCount);
@@ -1050,6 +1063,7 @@ onMounted(() => {
                   v-model="search"
                   icon="i-lucide-search"
                   placeholder="Search member, book, or number"
+                  aria-label="Search reservations"
                   class="w-full sm:w-72"
                 />
 
@@ -1067,6 +1081,7 @@ onMounted(() => {
                 v-model="statusFilter"
                 :items="statusOptions"
                 icon="i-lucide-list-filter"
+                aria-label="Reservation status"
                 class="w-full sm:w-52"
               />
             </div>
@@ -1220,6 +1235,16 @@ onMounted(() => {
             <div
               class="flex flex-wrap items-start gap-2 lg:justify-end"
             >
+              <UButton
+                v-if="reservation.member.type === 'Student' && reservation.member.documentId"
+                :to="`/librarian/students/${encodeURIComponent(reservation.member.documentId)}/record`"
+                label="Student Record"
+                icon="i-lucide-notebook-tabs"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                :aria-label="`View Student Record for ${reservation.member.fullName}`"
+              />
               <UButton
                 v-if="reservation.checkout?.required"
                 :label="

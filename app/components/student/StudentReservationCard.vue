@@ -62,7 +62,15 @@ function formatDate(value?: string | null) {
                 icon="i-lucide-timer"
               />
             </div>
-            <h2 class="mt-3 line-clamp-2 text-base font-bold text-highlighted">
+            <NuxtLink
+              v-if="reservation.book.documentId"
+              :to="`/student/books/${encodeURIComponent(reservation.book.documentId)}`"
+              class="mt-3 block line-clamp-2 rounded-sm text-base font-bold text-highlighted outline-none ring-primary hover:text-primary focus-visible:ring-2"
+              :aria-label="`View book details for ${reservation.book.title}`"
+            >
+              {{ reservation.book.title }}
+            </NuxtLink>
+            <h2 v-else class="mt-3 line-clamp-2 text-base font-bold text-highlighted">
               {{ reservation.book.title }}
             </h2>
             <p class="mt-1 text-sm text-muted">{{ reservation.book.author }}</p>

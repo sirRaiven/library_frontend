@@ -574,12 +574,12 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
           <template #header>
             <AppFilterBar :title="`Fine Records · ${pagination.total}`">
               <template #search>
-                <UInput v-model="search" icon="i-lucide-search" placeholder="Search fine, Student, OR, book, or reference" class="w-full" />
+                <UInput v-model="search" icon="i-lucide-search" placeholder="Search fine, Student, OR, book, or reference" aria-label="Search fine records" class="w-full" />
               </template>
               <template #filters>
                 <div class="grid gap-2 sm:grid-cols-2">
-                  <USelect v-model="status" :items="statusItems" />
-                  <USelect v-model="type" :items="typeItems" />
+                  <USelect v-model="status" :items="statusItems" aria-label="Fine payment status" />
+                  <USelect v-model="type" :items="typeItems" aria-label="Fine type" />
                 </div>
               </template>
               <template #actions>
@@ -609,6 +609,15 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
                   <span v-else>Assessed {{ dateLabel(fine.assessedAt) }}</span>
                 </template>
                 <template #actions>
+                  <UButton
+                    v-if="fine.member.type === 'Student' && fine.member.documentId"
+                    :to="`/librarian/students/${encodeURIComponent(fine.member.documentId)}/record`"
+                    icon="i-lucide-notebook-tabs"
+                    color="neutral"
+                    variant="ghost"
+                    square
+                    :aria-label="`View Student Record for ${fine.member.fullName}`"
+                  />
                   <UButton v-if="fine.status === 'Unpaid'" icon="i-lucide-badge-check" color="primary" variant="ghost" square aria-label="Verify Official Receipt" @click="openPayment(fine)" />
                   <UButton v-if="fine.status === 'Unpaid'" icon="i-lucide-scale" color="neutral" variant="ghost" square aria-label="Waive fine" @click="openWaiver(fine)" />
                 </template>
@@ -637,6 +646,16 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
                         </template>
                         <template #actions-cell="{ row }">
                           <div class="flex flex-wrap gap-2">
+                            <UButton
+                              v-if="row.original.member.type === 'Student' && row.original.member.documentId"
+                              :to="`/librarian/students/${encodeURIComponent(row.original.member.documentId)}/record`"
+                              label="Student Record"
+                              icon="i-lucide-notebook-tabs"
+                              size="sm"
+                              color="neutral"
+                              variant="ghost"
+                              :aria-label="`View Student Record for ${row.original.member.fullName}`"
+                            />
                             <UButton v-if="row.original.status === 'Unpaid'" label="Verify OR" icon="i-lucide-badge-check" size="sm" color="primary" @click="openPayment(row.original)" />
                             <UButton v-if="row.original.status === 'Unpaid'" label="Waive" icon="i-lucide-scale" size="sm" color="neutral" variant="outline" @click="openWaiver(row.original)" />
                           </div>
@@ -698,6 +717,7 @@ onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings
                 v-model="calendarSearch"
                 icon="i-lucide-search"
                 placeholder="Search holiday or school event"
+                aria-label="Search holiday and no-fine calendar"
               />
               <USelect v-model="calendarSource" :items="calendarSourceItems" aria-label="Entry source" />
               <USelect v-model="calendarClassification" :items="calendarClassificationItems" aria-label="Holiday or event type" />

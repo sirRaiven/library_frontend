@@ -323,16 +323,7 @@ watch(
             right: 'gap-1',
           }"
         >
-          <template #toggle="{ sidebarCollapsed: collapsed, sidebarOpen: open }">
-            <UTooltip :text="open ? 'Close navigation menu' : 'Open navigation menu'">
-              <UDashboardSidebarToggle
-                class="hidden lg:inline-flex"
-                icon="i-lucide-panel-left"
-                color="neutral"
-                :variant="open ? 'soft' : 'ghost'"
-                square
-              />
-            </UTooltip>
+          <template #toggle="{ sidebarCollapsed: collapsed }">
             <UTooltip :text="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
               <UDashboardSidebarCollapse
                 class="hidden lg:inline-flex"
@@ -340,6 +331,9 @@ watch(
                 color="neutral"
                 :variant="collapsed ? 'soft' : 'ghost'"
                 square
+                :aria-expanded="!collapsed"
+                :aria-label="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
+                aria-controls="sncbt-faculty-dashboard-sidebar-faculty-main-navigation"
               />
             </UTooltip>
           </template>

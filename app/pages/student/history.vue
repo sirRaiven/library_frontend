@@ -15,17 +15,46 @@ definePageMeta({
 const history = usePortalHistory("student");
 const toast = useToast();
 const auth = useAuth();
+const route = useRoute();
+const router = useRouter();
 
 const PAGE_SIZE = 15;
-const searchInput = ref("");
-const category = ref<PortalHistoryCategory>("all");
-const sort = ref<PortalHistorySort>("newest");
-const dateFrom = ref("");
-const dateTo = ref("");
-const page = ref(1);
-const appliedSearch = ref("");
-const appliedDateFrom = ref("");
-const appliedDateTo = ref("");
+const allowedCategories: PortalHistoryCategory[] = [
+  "all",
+  "borrowing",
+  "return",
+  "reservation",
+  "fine",
+  "visit",
+  "account",
+];
+const allowedSorts: PortalHistorySort[] = ["newest", "oldest"];
+
+function queryText(name: string, maxLength = 120) {
+  const value = route.query[name];
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function queryChoice<T extends string>(name: string, allowed: readonly T[], fallback: T): T {
+  const value = route.query[name];
+  return typeof value === "string" && allowed.includes(value as T)
+    ? (value as T)
+    : fallback;
+}
+
+const searchInput = ref(queryText("search"));
+const category = ref<PortalHistoryCategory>(
+  queryChoice("category", allowedCategories, "all"),
+);
+const sort = ref<PortalHistorySort>(
+  queryChoice("sort", allowedSorts, "newest"),
+);
+const dateFrom = ref(queryText("dateFrom", 10));
+const dateTo = ref(queryText("dateTo", 10));
+const page = ref(Math.max(1, Number(route.query.page) || 1));
+const appliedSearch = ref(searchInput.value);
+const appliedDateFrom = ref(dateFrom.value);
+const appliedDateTo = ref(dateTo.value);
 
 const categoryItems = [
   { label: "All Activities", value: "all" },
@@ -90,6 +119,17 @@ const hasFilters = computed(() =>
   ),
 );
 
+async function syncRouteQuery() {
+  const query: Record<string, string> = {};
+  if (appliedSearch.value) query.search = appliedSearch.value;
+  if (category.value !== "all") query.category = category.value;
+  if (sort.value !== "newest") query.sort = sort.value;
+  if (appliedDateFrom.value) query.dateFrom = appliedDateFrom.value;
+  if (appliedDateTo.value) query.dateTo = appliedDateTo.value;
+  if (page.value > 1) query.page = String(page.value);
+  await router.replace({ query });
+}
+
 async function load(showToast = false) {
   try {
     await history.load({
@@ -135,6 +175,7 @@ async function applyFilters() {
   appliedDateFrom.value = dateFrom.value;
   appliedDateTo.value = dateTo.value;
   page.value = 1;
+  await syncRouteQuery();
   await load();
 }
 
@@ -148,11 +189,15 @@ async function resetFilters() {
   appliedDateFrom.value = "";
   appliedDateTo.value = "";
   page.value = 1;
+  await syncRouteQuery();
   await load();
 }
 
 watch(page, async (current, previous) => {
-  if (current !== previous) await load();
+  if (current !== previous) {
+    await syncRouteQuery();
+    await load();
+  }
 });
 
 onMounted(load);
@@ -203,6 +248,7 @@ onMounted(load);
             placeholder="Search book title or reference no."
             maxlength="120"
             autocomplete="off"
+            aria-label="Search my Library history"
             class="w-full"
           />
         </template>

@@ -44,11 +44,21 @@ export interface StudentLibraryCardData {
     issuedDate: string | null;
     expiryDate: string | null;
     status: string;
-    renewalType: string;
+    renewalType: string | null;
     enrollmentVerified: boolean;
     verifiedAt: string | null;
     daysRemaining: number | null;
     isActive: boolean;
+    academicTerm: {
+      documentId: string | null;
+      code: string | null;
+      name: string | null;
+      academicYear: string | null;
+      semester: string | null;
+      startDate: string | null;
+      endDate: string | null;
+      isCurrent: boolean;
+    } | null;
   };
   eligibility: {
     canUseDigitalCard: boolean;

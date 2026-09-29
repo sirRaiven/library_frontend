@@ -80,7 +80,7 @@ onMounted(() => { load(); loadSummary(); });
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
-      eyebrow="System & Monitoring"
+      eyebrow="System & Security"
       title="Activity Log"
       description="Review meaningful authentication, navigation, account, and Library activities recorded for Student, Faculty, Librarian, and Administrator accounts."
       icon="i-lucide-activity"
@@ -106,13 +106,13 @@ onMounted(() => { load(); loadSummary(); });
       <template #header>
         <AppFilterBar :title="`Activity Register · ${total} record${total === 1 ? '' : 's'}`">
           <template #search>
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search activity, user, or route" class="w-full" />
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search activity, user, or route" class="w-full" aria-label="Search activity records" />
           </template>
           <template #filters>
             <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-              <USelect v-model="category" :items="categoryItems" />
-              <USelect v-model="outcome" :items="outcomeItems" />
-              <USelect v-model="profileType" :items="profileItems" />
+              <USelect v-model="category" :items="categoryItems" aria-label="Filter activity by category" />
+              <USelect v-model="outcome" :items="outcomeItems" aria-label="Filter activity by outcome" />
+              <USelect v-model="profileType" :items="profileItems" aria-label="Filter activity by account type" />
               <UInput v-model="dateFrom" type="date" aria-label="Date from" />
               <UInput v-model="dateTo" type="date" aria-label="Date to" />
             </div>
@@ -121,7 +121,7 @@ onMounted(() => { load(); loadSummary(); });
       </template>
 
       <div v-if="loading" class="space-y-3 p-6"><USkeleton v-for="i in 7" :key="i" class="h-16 w-full" /></div>
-      <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-activity" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching activity</h3><p class="mt-1 text-sm text-muted">Adjust the filters or wait for new portal activity.</p></div>
+      <AdminEmptyState v-else-if="!records.length" title="No matching activity" description="Adjust the filters or wait for new portal activity." icon="i-lucide-activity" />
       <AppResponsiveDataView v-else mobile-label="Activity records" desktop-label="Activity records table">
         <template #mobile>
           <div class="sncbt-mobile-record-list p-3">

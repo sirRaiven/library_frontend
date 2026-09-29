@@ -47,26 +47,29 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
     { label: "Dashboard", icon: "i-lucide-layout-dashboard", to: "/admin/dashboard", active: active("/admin/dashboard", true) },
   ],
   [
-    { label: "Accounts & Access", type: "label" },
+    { label: "People & Access", type: "label" },
     { label: "Users", icon: "i-lucide-users", to: "/admin/users", active: active("/admin/users") },
     { label: "Librarians", icon: "i-lucide-user-round-cog", to: "/admin/librarians", active: active("/admin/librarians") },
     { label: "Account Review", icon: "i-lucide-list-checks", to: "/admin/accounts-review", active: active("/admin/accounts-review") },
     { label: "Roles & Permissions", icon: "i-lucide-shield-check", to: "/admin/roles", active: active("/admin/roles") },
   ],
   [
-    { label: "Library Management", type: "label" },
+    { label: "Library Administration", type: "label" },
     { label: "Library Operations", icon: "i-lucide-chart-no-axes-combined", to: "/admin/operations", active: active("/admin/operations") },
-    { label: "Reports", icon: "i-lucide-file-chart-column-increasing", to: "/admin/reports", active: active("/admin/reports") || active("/admin/monitoring-reports") },
+    { label: "Data Management", icon: "i-lucide-database-zap", to: "/admin/data-management", active: active("/admin/data-management") },
     { label: "Library Settings", icon: "i-lucide-settings-2", to: "/admin/settings", active: active("/admin/settings") },
   ],
   [
-    { label: "System & Monitoring", type: "label" },
+    { label: "Governance & Oversight", type: "label" },
+    { label: "Reports", icon: "i-lucide-file-chart-column-increasing", to: "/admin/reports", active: active("/admin/reports") || active("/admin/monitoring-reports") },
+    { label: "Audit Trail", icon: "i-lucide-scroll-text", to: "/admin/audit-logs", active: active("/admin/audit-logs") },
+    { label: "Archive", icon: "i-lucide-archive", to: "/admin/archive", active: active("/admin/archive") },
+  ],
+  [
+    { label: "System & Security", type: "label" },
     { label: "Activity Log", icon: "i-lucide-activity", to: "/admin/activity", active: active("/admin/activity") },
     { label: "Sessions", icon: "i-lucide-monitor-dot", to: "/admin/sessions", active: active("/admin/sessions") },
     { label: "Devices", icon: "i-lucide-monitor-smartphone", to: "/admin/devices", active: active("/admin/devices") },
-    { label: "Audit Trail", icon: "i-lucide-scroll-text", to: "/admin/audit-logs", active: active("/admin/audit-logs") },
-    { label: "Data Management", icon: "i-lucide-database-zap", to: "/admin/data-management", active: active("/admin/data-management") },
-    { label: "Archive", icon: "i-lucide-archive", to: "/admin/archive", active: active("/admin/archive") },
     { label: "System & Maintenance", icon: "i-lucide-server-cog", to: "/admin/system-health", active: active("/admin/system-health") },
   ],
 ]);
@@ -363,6 +366,7 @@ watch(
           <template #toggle="{ sidebarCollapsed: collapsed, sidebarOpen: open }">
             <UTooltip :text="open ? 'Close navigation menu' : 'Open navigation menu'">
               <UDashboardSidebarToggle
+                class="lg:hidden"
                 icon="i-lucide-panel-left"
                 color="neutral"
                 :variant="open ? 'soft' : 'ghost'"

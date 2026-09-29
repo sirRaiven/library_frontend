@@ -48,6 +48,7 @@ interface ReservationListResponse {
   data: StudentReservationRecord[];
   meta: {
     view: "active" | "history" | "all";
+    status: "all" | "ready";
     pagination: {
       page: number;
       pageSize: number;
@@ -150,6 +151,7 @@ export function useStudentReservations() {
   async function load(
     view: "active" | "history" | "all" = "active",
     page = 1,
+    status: "all" | "ready" = "all",
   ) {
     loading.value = true;
     error.value = "";
@@ -160,7 +162,12 @@ export function useStudentReservations() {
         {
           method: "GET",
           headers: headers(),
-          query: { view, page, pageSize: pagination.value.pageSize },
+          query: {
+            view,
+            status: view === "active" && status === "ready" ? "ready" : undefined,
+            page,
+            pageSize: pagination.value.pageSize,
+          },
         },
       );
 

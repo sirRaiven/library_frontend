@@ -3,6 +3,7 @@ import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 import PortalMobileBottomNav from "~/components/shared/PortalMobileBottomNav.vue";
+import PortalNotificationTrigger from "~/components/shared/PortalNotificationTrigger.vue";
 import type {
   DropdownMenuItem,
   NavigationMenuItem,
@@ -91,26 +92,16 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     { label: "Account", type: "label" },
     {
-      label: "Notifications",
-      icon: "i-lucide-bell",
+      label:
+        notificationCenter.badgeCount.value > 0
+          ? `Notifications (${notificationCenter.chipText.value} unread)`
+          : "Notifications",
+      icon:
+        notificationCenter.badgeCount.value > 0
+          ? "i-lucide-bell-ring"
+          : "i-lucide-bell",
       to: "/student/notifications",
       active: active("/student/notifications"),
-      chip:
-        notificationCenter
-          .badgeCount.value > 0
-          ? {
-              color:
-                notificationCenter
-                  .chipColor.value,
-              text:
-                notificationCenter
-                  .chipText.value,
-              size:
-                "md",
-              inset:
-                false,
-            }
-          : undefined,
     },
     {
       label: "My Account",
@@ -412,18 +403,7 @@ onBeforeUnmount(() => {
             right: 'gap-1',
           }"
         >
-          <template #toggle="{ sidebarCollapsed: collapsed, sidebarOpen: open }">
-            <UTooltip :text="open ? 'Close navigation menu' : 'Open navigation menu'">
-              <UDashboardSidebarToggle
-                class="hidden lg:inline-flex"
-                icon="i-lucide-panel-left"
-                color="neutral"
-                :variant="open ? 'soft' : 'ghost'"
-                square
-                :aria-expanded="open"
-                aria-controls="sncbt-student-dashboard-sidebar-student-main-navigation"
-              />
-            </UTooltip>
+          <template #toggle="{ sidebarCollapsed: collapsed }">
             <UTooltip :text="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
               <UDashboardSidebarCollapse
                 class="hidden lg:inline-flex"
@@ -432,53 +412,18 @@ onBeforeUnmount(() => {
                 :variant="collapsed ? 'soft' : 'ghost'"
                 square
                 :aria-expanded="!collapsed"
+                :aria-label="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
                 aria-controls="sncbt-student-dashboard-sidebar-student-main-navigation"
               />
             </UTooltip>
           </template>
 
           <template #right>
-            <UTooltip text="Open notifications">
-              <UChip
-                v-if="
-                  notificationCenter
-                    .badgeCount.value > 0
-                "
-                :text="
-                  notificationCenter
-                    .chipText.value
-                "
-                :color="
-                  notificationCenter
-                    .chipColor.value
-                "
-                size="lg"
-                position="top-right"
-              >
-                <UButton
-                  to="/student/notifications"
-                  icon="i-lucide-bell"
-                  color="neutral"
-                  variant="ghost"
-                  size="lg"
-                  square
-                  class="size-11 rounded-xl"
-                  :aria-label="`Open notifications. ${notificationCenter.badgeCount.value} unread notification${notificationCenter.badgeCount.value === 1 ? '' : 's'}.`"
-                />
-              </UChip>
-
-              <UButton
-                v-else
-                to="/student/notifications"
-                icon="i-lucide-bell"
-                color="neutral"
-                variant="ghost"
-                size="lg"
-                square
-                class="size-11 rounded-xl"
-                aria-label="Open notifications"
-              />
-            </UTooltip>
+            <PortalNotificationTrigger
+              to="/student/notifications"
+              :count="notificationCenter.badgeCount.value"
+              :active="active('/student/notifications')"
+            />
 
             <UColorModeButton class="hidden sm:inline-flex" color="neutral" variant="ghost" />
             <UDropdownMenu

@@ -487,7 +487,7 @@ onMounted(async () => {
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
-      eyebrow="System and Maintenance"
+      eyebrow="Library Administration"
       title="Data Management"
       description="Govern catalog, identity, circulation, finance, notification, and security records from one archive-first workspace. Specialized editing still opens the established workflow so existing business rules are not bypassed."
       icon="i-lucide-database-zap"
@@ -569,6 +569,8 @@ onMounted(async () => {
       <UButton
         label="Managed Records"
         icon="i-lucide-database"
+        role="tab"
+        :aria-selected="mainView === 'managed'"
         :color="mainView === 'managed' ? 'primary' : 'neutral'"
         :variant="mainView === 'managed' ? 'soft' : 'ghost'"
         @click="() => { mainView = 'managed'; }"
@@ -576,6 +578,8 @@ onMounted(async () => {
       <UButton
         label="Protected System Records"
         icon="i-lucide-shield-lock"
+        role="tab"
+        :aria-selected="mainView === 'protected'"
         :color="mainView === 'protected' ? 'primary' : 'neutral'"
         :variant="mainView === 'protected' ? 'soft' : 'ghost'"
         @click="() => { mainView = 'protected'; }"
@@ -598,6 +602,7 @@ onMounted(async () => {
             type="button"
             class="sncbt-surface sncbt-card-interactive relative overflow-hidden rounded-xl border p-4 text-left transition"
             :class="selectedDomainKey === domain.key ? 'border-primary/50 ring-2 ring-primary/15' : 'border-default hover:border-primary/25'"
+            :aria-pressed="selectedDomainKey === domain.key"
             @click="selectDomain(domain.key)"
           >
             <div class="flex items-start gap-3">
@@ -647,6 +652,7 @@ onMounted(async () => {
                 :icon="item.icon"
                 :color="scope === item.value ? 'primary' : 'neutral'"
                 :variant="scope === item.value ? 'soft' : 'outline'"
+                :aria-pressed="scope === item.value"
                 @click="() => { scope = item.value; }"
               />
             </div>
@@ -660,6 +666,7 @@ onMounted(async () => {
               icon="i-lucide-search"
               :placeholder="`Search ${selectedDomain.label.toLowerCase()}...`"
               class="w-full"
+              :aria-label="`Search ${selectedDomain.label}`"
             />
           </template>
           <template #actions>
@@ -678,17 +685,13 @@ onMounted(async () => {
           <USkeleton v-for="item in 6" :key="item" class="h-20 w-full rounded-xl" />
         </div>
 
-        <div
-          v-else-if="records.length === 0"
-          class="mt-5 flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-default bg-elevated/20 p-8 text-center"
-        >
-          <div class="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <UIcon :name="scope === 'archived' ? 'i-lucide-archive' : 'i-lucide-database'" class="size-7" />
-          </div>
-          <h3 class="mt-4 font-semibold text-highlighted">{{ scope === 'archived' ? 'No archived records' : 'No matching active records' }}</h3>
-          <p class="mt-1 max-w-md text-sm text-muted">
-            {{ search ? 'Change the search text or clear it to see more records.' : scope === 'archived' ? 'Archived records for this category will appear here.' : 'There are currently no records in this category.' }}
-          </p>
+        <div v-else-if="records.length === 0" class="mt-5 rounded-xl border border-dashed border-default bg-elevated/20">
+          <AdminEmptyState
+            :title="scope === 'archived' ? 'No archived records' : 'No matching active records'"
+            :description="search ? 'Change the search text or clear it to see more records.' : scope === 'archived' ? 'Archived records for this category will appear here.' : 'There are currently no records in this category.'"
+            :icon="scope === 'archived' ? 'i-lucide-archive' : 'i-lucide-database'"
+            compact
+          />
         </div>
 
         <AppResponsiveDataView

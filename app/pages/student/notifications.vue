@@ -20,19 +20,54 @@ const auth =
   useAuth();
 const toast =
   useToast();
+const route =
+  useRoute();
+const router =
+  useRouter();
+
+const allowedViews: StudentNotificationFilters["view"][] = ["active", "unread", "read", "all"];
+const allowedCategories: StudentNotificationFilters["category"][] = [
+  "all",
+  "Circulation",
+  "Reservation",
+  "Membership",
+  "Library Card",
+  "Announcement",
+  "Security",
+  "System",
+];
+const allowedSeverities: StudentNotificationFilters["severity"][] = [
+  "all",
+  "Critical",
+  "Warning",
+  "Info",
+  "Success",
+];
+
+function queryText(name: string, maxLength = 120) {
+  const value = route.query[name];
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function queryChoice<T extends string>(name: string, allowed: readonly T[], fallback: T): T {
+  const value = route.query[name];
+  return typeof value === "string" && allowed.includes(value as T)
+    ? (value as T)
+    : fallback;
+}
 
 const filters =
   reactive<StudentNotificationFilters>({
-    view: "unread",
-    search: "",
-    category: "all",
-    severity: "all",
-    page: 1,
+    view: queryChoice("view", allowedViews, "unread"),
+    search: queryText("search"),
+    category: queryChoice("category", allowedCategories, "all"),
+    severity: queryChoice("severity", allowedSeverities, "all"),
+    page: Math.max(1, Number(route.query.page) || 1),
     pageSize: 10,
   });
 
 const searchInput =
-  ref("");
+  ref(filters.search);
 const acting =
   ref<string | null>(null);
 const markingAll =
@@ -142,6 +177,22 @@ const lastUpdatedLabel = computed(
   },
 );
 
+const resultAnnouncement = computed(() => {
+  if (center.loading.value) return "Loading notifications.";
+  const total = center.pagination.value.total;
+  return `${total} notification${total === 1 ? "" : "s"} shown.`;
+});
+
+async function syncRouteQuery() {
+  const query: Record<string, string> = {};
+  if (filters.view !== "unread") query.view = filters.view;
+  if (filters.search) query.search = filters.search;
+  if (filters.category !== "all") query.category = filters.category;
+  if (filters.severity !== "all") query.severity = filters.severity;
+  if (filters.page > 1) query.page = String(filters.page);
+  await router.replace({ query });
+}
+
 async function load(
   synchronize = false,
 ) {
@@ -250,14 +301,15 @@ async function markAllRead() {
   }
 }
 
-function applySearch() {
+async function applySearch() {
   filters.search =
     searchInput.value.trim();
   filters.page = 1;
-  void load();
+  await syncRouteQuery();
+  await load();
 }
 
-function reset() {
+async function reset() {
   searchInput.value = "";
 
   Object.assign(
@@ -271,7 +323,8 @@ function reset() {
     },
   );
 
-  void load();
+  await syncRouteQuery();
+  await load();
 }
 
 watch(
@@ -280,16 +333,18 @@ watch(
     filters.category,
     filters.severity,
   ],
-  () => {
+  async () => {
     filters.page = 1;
-    void load();
+    await syncRouteQuery();
+    await load();
   },
 );
 
 watch(
   () => filters.page,
-  () => {
-    void load();
+  async () => {
+    await syncRouteQuery();
+    await load();
   },
 );
 
@@ -331,6 +386,16 @@ onBeforeUnmount(() => {
       icon="i-lucide-bell"
     >
       <template #actions>
+        <UBadge
+          v-if="center.badgeCount.value > 0"
+          :label="`${center.chipText.value} unread`"
+          color="error"
+          variant="soft"
+          size="lg"
+          icon="i-lucide-bell-dot"
+          :aria-label="`${center.badgeCount.value} unread notification${center.badgeCount.value === 1 ? '' : 's'}`"
+        />
+
         <UButton
           label="Mark All Read"
           icon="i-lucide-mail-check"
@@ -386,6 +451,7 @@ onBeforeUnmount(() => {
           :icon="item.icon"
           :color="filters.view === item.value ? 'primary' : 'neutral'"
           :variant="filters.view === item.value ? 'solid' : 'ghost'"
+          :aria-pressed="filters.view === item.value"
           size="sm"
           @click="() => { filters.view = item.value; }"
         />
@@ -396,6 +462,7 @@ onBeforeUnmount(() => {
           v-model="searchInput"
           icon="i-lucide-search"
           placeholder="Search notifications"
+          aria-label="Search Student notifications"
           class="w-full"
           @keyup.enter="applySearch"
         />
@@ -405,11 +472,13 @@ onBeforeUnmount(() => {
         <USelect
           v-model="filters.category"
           :items="categories.map((value) => ({ label: value === 'all' ? 'All categories' : value, value }))"
+          aria-label="Notification category"
           class="w-full md:w-52"
         />
         <USelect
           v-model="filters.severity"
           :items="severities.map((value) => ({ label: value === 'all' ? 'All severity levels' : value, value }))"
+          aria-label="Notification severity"
           class="w-full md:w-48"
         />
       </template>
@@ -425,6 +494,8 @@ onBeforeUnmount(() => {
         />
       </template>
     </AppFilterBar>
+
+    <p class="sr-only" aria-live="polite" aria-atomic="true">{{ resultAnnouncement }}</p>
 
     <div
       v-if="

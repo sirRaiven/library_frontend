@@ -580,15 +580,26 @@ onMounted(() => {
                   </p>
                 </div>
 
-                <UButton
-                  v-if="member"
-                  label="Change Member"
-                  icon="i-lucide-user-round-x"
-                  color="neutral"
-                  variant="ghost"
-                  size="sm"
-                  @click="clearTransaction"
-                />
+                <div v-if="member" class="flex flex-wrap items-center gap-2">
+                  <UButton
+                    v-if="member.type === 'Student' && member.documentId"
+                    :to="`/librarian/students/${encodeURIComponent(member.documentId)}/record`"
+                    label="Student Record"
+                    icon="i-lucide-notebook-tabs"
+                    color="neutral"
+                    variant="outline"
+                    size="sm"
+                    :aria-label="`View Student Record for ${member.fullName}`"
+                  />
+                  <UButton
+                    label="Change Member"
+                    icon="i-lucide-user-round-x"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    @click="clearTransaction"
+                  />
+                </div>
               </div>
             </template>
 

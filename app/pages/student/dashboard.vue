@@ -140,7 +140,7 @@ const attentionItems = computed(() => {
       description: "Return overdue items to the Library as soon as possible.",
       icon: "i-lucide-triangle-alert",
       color: "error",
-      to: "/student/borrowings",
+      to: "/student/borrowings?attention=overdue",
       action: "Review overdue books",
     });
   } else if (dashboard.metrics.value.dueSoonLoans > 0) {
@@ -152,7 +152,7 @@ const attentionItems = computed(() => {
       description: "Check the due dates and plan your return before penalties apply.",
       icon: "i-lucide-calendar-clock",
       color: "warning",
-      to: "/student/borrowings",
+      to: "/student/borrowings?attention=due-soon",
       action: "View due dates",
     });
   }
@@ -166,7 +166,7 @@ const attentionItems = computed(() => {
       description: "Bring your Library Card and claim the reserved book within the pickup period.",
       icon: "i-lucide-package-check",
       color: "success",
-      to: "/student/reservations",
+      to: "/student/reservations?status=ready",
       action: "View pickup details",
     });
   }

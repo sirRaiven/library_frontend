@@ -8,72 +8,80 @@ definePageMeta({
 const dashboard = useAdminDashboard();
 const toast = useToast();
 
+const accountAttention = computed(() =>
+  dashboard.metrics.value.blockedUsers + dashboard.metrics.value.unconfirmedUsers,
+);
+const libraryAttention = computed(() =>
+  dashboard.metrics.value.overdueTransactions + dashboard.metrics.value.pendingReservations,
+);
+
 const metricCards = computed(() => [
   {
-    label: "Users",
+    label: "Accounts",
     value: dashboard.metrics.value.totalUsers,
-    description: `${dashboard.metrics.value.activeUsers} active accounts`,
+    description: `${dashboard.metrics.value.activeUsers} active application accounts`,
     icon: "i-lucide-users",
     tone: "primary" as const,
     to: "/admin/users",
   },
   {
-    label: "Librarians",
-    value: dashboard.metrics.value.totalLibrarians,
-    description: `${dashboard.metrics.value.activeLibrarians} active Librarians`,
+    label: "Access Review",
+    value: accountAttention.value,
+    description: `${dashboard.metrics.value.blockedUsers} blocked · ${dashboard.metrics.value.unconfirmedUsers} unconfirmed`,
+    icon: "i-lucide-user-round-search",
+    tone: accountAttention.value ? "warning" as const : "success" as const,
+    to: "/admin/accounts-review",
+  },
+  {
+    label: "Library Attention",
+    value: libraryAttention.value,
+    description: `${dashboard.metrics.value.overdueTransactions} overdue · ${dashboard.metrics.value.pendingReservations} pending reservations`,
+    icon: "i-lucide-triangle-alert",
+    tone: libraryAttention.value ? "warning" as const : "success" as const,
+    to: "/admin/operations",
+  },
+  {
+    label: "Active Librarians",
+    value: dashboard.metrics.value.activeLibrarians,
+    description: `${dashboard.metrics.value.totalLibrarians} total Library staff profiles`,
     icon: "i-lucide-user-round-cog",
     tone: "success" as const,
     to: "/admin/librarians",
   },
+]);
+
+const attentionItems = computed(() => [
   {
-    label: "Blocked Accounts",
+    label: "Blocked accounts",
     value: dashboard.metrics.value.blockedUsers,
-    description: "Accounts currently prevented from signing in",
-    icon: "i-lucide-user-round-x",
-    tone: dashboard.metrics.value.blockedUsers ? "error" as const : "neutral" as const,
+    description: "Accounts currently prevented from signing in.",
     to: "/admin/users?status=blocked",
+    icon: "i-lucide-user-round-x",
+    tone: dashboard.metrics.value.blockedUsers ? "error" : "neutral",
   },
   {
-    label: "Unconfirmed Accounts",
+    label: "Unconfirmed accounts",
     value: dashboard.metrics.value.unconfirmedUsers,
-    description: "Accounts that still require confirmation",
-    icon: "i-lucide-user-round-check",
-    tone: dashboard.metrics.value.unconfirmedUsers ? "warning" as const : "neutral" as const,
+    description: "Accounts that still require confirmation or review.",
     to: "/admin/users?status=unconfirmed",
+    icon: "i-lucide-user-round-check",
+    tone: dashboard.metrics.value.unconfirmedUsers ? "warning" : "neutral",
   },
   {
-    label: "Registered Students",
-    value: dashboard.metrics.value.totalStudents,
-    description: "Student records in the Library system",
-    icon: "i-lucide-graduation-cap",
-    tone: "info" as const,
+    label: "Overdue borrowings",
+    value: dashboard.metrics.value.overdueTransactions,
+    description: "Circulation records requiring Library follow-up.",
+    to: "/admin/operations",
+    icon: "i-lucide-clock-alert",
+    tone: dashboard.metrics.value.overdueTransactions ? "warning" : "neutral",
   },
   {
-    label: "Registered Faculty",
-    value: dashboard.metrics.value.totalFaculty,
-    description: "Faculty records in the Library system",
-    icon: "i-lucide-briefcase-business",
-    tone: "info" as const,
-  },
-  {
-    label: "Book Copies",
-    value: dashboard.metrics.value.totalCopies,
-    description: `${dashboard.metrics.value.totalBooks} unique book titles`,
-    icon: "i-lucide-library",
-    tone: "success" as const,
-  },
-  {
-    label: "Items Requiring Attention",
-    value:
-      dashboard.metrics.value.overdueTransactions +
-      dashboard.metrics.value.pendingReservations,
-    description: `${dashboard.metrics.value.overdueTransactions} overdue · ${dashboard.metrics.value.pendingReservations} pending reservations`,
-    icon: "i-lucide-triangle-alert",
-    tone:
-      dashboard.metrics.value.overdueTransactions ||
-      dashboard.metrics.value.pendingReservations
-        ? "warning" as const
-        : "neutral" as const,
+    label: "Pending reservations",
+    value: dashboard.metrics.value.pendingReservations,
+    description: "Reservation requests waiting for Library processing.",
+    to: "/admin/operations",
+    icon: "i-lucide-calendar-clock",
+    tone: dashboard.metrics.value.pendingReservations ? "warning" : "neutral",
   },
 ]);
 
@@ -111,12 +119,16 @@ onMounted(refresh);
 </script>
 
 <template>
-  <div class="sncbt-page-shell sncbt-staff-page space-y-6">
+  <div class="sncbt-page-shell sncbt-staff-page space-y-6" :aria-busy="dashboard.loading.value">
+    <p class="sr-only" aria-live="polite">
+      {{ dashboard.loading.value ? 'Refreshing Administrator dashboard.' : 'Administrator dashboard ready.' }}
+    </p>
+
     <AdminPageHeader
       eyebrow="Administration"
       title="Dashboard"
-      description="Review key Library activity, accounts, and system status at a glance."
-      icon="i-lucide-shield-check"
+      description="Focus on access issues, Library exceptions, and the administrative actions that need attention."
+      icon="i-lucide-layout-dashboard"
     >
       <template #actions>
         <UButton
@@ -144,20 +156,19 @@ onMounted(refresh);
       :description="dashboard.error.value"
     />
 
-    <section aria-labelledby="account-overview-heading">
-      <div class="mb-3 flex items-center justify-between">
-        <div>
-          <h2 id="account-overview-heading" class="text-base font-semibold text-highlighted">
-            System Summary
-          </h2>
-          <p class="mt-1 text-xs text-muted">
-            Current figures from the Library system.
+    <section aria-labelledby="admin-priority-summary-heading" class="space-y-3">
+      <AdminSectionHeader
+        title="Priority Summary"
+        description="High-value indicators for account governance and Library exceptions."
+        icon="i-lucide-gauge"
+        heading-id="admin-priority-summary-heading"
+      >
+        <template #actions>
+          <p v-if="dashboard.data.value.generatedAt" class="text-xs text-muted">
+            Updated {{ formatDateTime(dashboard.data.value.generatedAt) }}
           </p>
-        </div>
-        <p v-if="dashboard.data.value.generatedAt" class="hidden text-xs text-muted sm:block">
-          Updated {{ formatDateTime(dashboard.data.value.generatedAt) }}
-        </p>
-      </div>
+        </template>
+      </AdminSectionHeader>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AdminMetricCard
@@ -169,19 +180,70 @@ onMounted(refresh);
       </div>
     </section>
 
-    <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+    <section aria-labelledby="admin-quick-actions-heading" class="space-y-3">
+      <AdminSectionHeader
+        title="Quick Actions"
+        description="Open the most frequently used administrative workflows without searching through the sidebar."
+        icon="i-lucide-zap"
+        heading-id="admin-quick-actions-heading"
+      />
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <AdminQuickAction label="Manage Users" description="Create, review, edit, block, or restore application accounts." icon="i-lucide-users" tone="primary" to="/admin/users" />
+        <AdminQuickAction label="Review Accounts" description="Resolve account and profile-linking issues that need attention." icon="i-lucide-list-checks" tone="warning" to="/admin/accounts-review" />
+        <AdminQuickAction label="Manage Data" description="Maintain catalog, reference, people, and operational records." icon="i-lucide-database-zap" tone="info" to="/admin/data-management" />
+        <AdminQuickAction label="Open Archive" description="Restore archived records or review permanent-deletion impact." icon="i-lucide-archive" tone="warning" to="/admin/archive" />
+        <AdminQuickAction label="Library Settings" description="Update borrowing, membership, reservation, and fine rules." icon="i-lucide-settings-2" tone="neutral" to="/admin/settings" />
+      </div>
+    </section>
+
+    <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <UCard :ui="{ body: 'p-0 sm:p-0' }">
-        <div class="border-b border-default p-5 sm:p-6">
-          <div class="flex items-center gap-3">
-            <div class="flex size-10 items-center justify-center rounded-xl bg-success/10 text-success">
-              <UIcon name="i-lucide-server-cog" class="size-5" />
+        <template #header>
+          <AdminSectionHeader
+            title="Needs Attention"
+            description="Items that may require administrative or Library follow-up."
+            icon="i-lucide-circle-alert"
+          />
+        </template>
+
+        <div class="divide-y divide-default">
+          <NuxtLink
+            v-for="item in attentionItems"
+            :key="item.label"
+            :to="item.to"
+            class="group flex items-center gap-3 px-5 py-4 outline-none transition hover:bg-elevated/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
+          >
+            <div
+              class="flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
+              :class="item.tone === 'error' ? 'bg-error/10 text-error ring-error/15' : item.tone === 'warning' ? 'bg-warning/10 text-warning ring-warning/15' : 'bg-elevated text-muted ring-default'"
+              aria-hidden="true"
+            >
+              <UIcon :name="item.icon" class="size-4" />
             </div>
-            <div>
-              <h2 class="font-semibold text-highlighted">System Status</h2>
-              <p class="text-xs text-muted">Core services used by the Library System.</p>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-highlighted">{{ item.label }}</p>
+                <span class="text-lg font-bold tabular-nums text-highlighted">{{ item.value }}</span>
+              </div>
+              <p class="mt-0.5 text-xs leading-5 text-muted">{{ item.description }}</p>
             </div>
-          </div>
+            <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-dimmed transition group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
+          </NuxtLink>
         </div>
+      </UCard>
+
+      <UCard :ui="{ body: 'p-0 sm:p-0' }">
+        <template #header>
+          <AdminSectionHeader
+            title="System Status"
+            description="Core services used by the Library System."
+            icon="i-lucide-server-cog"
+          >
+            <template #actions>
+              <UButton label="System & Maintenance" size="sm" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" to="/admin/system-health" />
+            </template>
+          </AdminSectionHeader>
+        </template>
 
         <div class="divide-y divide-default">
           <div
@@ -193,66 +255,67 @@ onMounted(refresh);
             <AdminStatusBadge :label="check.value" />
           </div>
         </div>
-
-      </UCard>
-
-      <UCard :ui="{ body: 'p-0 sm:p-0' }">
-        <div class="flex items-center justify-between border-b border-default p-5 sm:p-6">
-          <div class="flex items-center gap-3">
-            <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <UIcon name="i-lucide-history" class="size-5" />
-            </div>
-            <div>
-              <h2 class="font-semibold text-highlighted">Recent Admin Activity</h2>
-              <p class="text-xs text-muted">Latest account, configuration, and system changes.</p>
-            </div>
-          </div>
-          <UButton
-            label="View All"
-            to="/admin/audit-logs"
-            color="neutral"
-            variant="ghost"
-            trailing-icon="i-lucide-arrow-right"
-            size="sm"
-          />
-        </div>
-
-        <div v-if="dashboard.loading.value && !dashboard.recentActivity.value.length" class="space-y-4 p-5 sm:p-6">
-          <USkeleton v-for="index in 4" :key="index" class="h-14 w-full" />
-        </div>
-
-        <div v-else-if="dashboard.recentActivity.value.length" class="divide-y divide-default">
-          <div
-            v-for="activity in dashboard.recentActivity.value"
-            :key="activity.documentId || activity.id"
-            class="flex items-start gap-3 px-5 py-4 sm:px-6"
-          >
-            <div
-              class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg"
-              :class="activity.outcome === 'Success' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'"
-            >
-              <UIcon
-                :name="activity.outcome === 'Success' ? 'i-lucide-circle-check' : 'i-lucide-circle-x'"
-                class="size-4"
-              />
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <p class="text-sm font-semibold text-highlighted">{{ activity.action }}</p>
-                <time class="text-xs text-muted">{{ formatDateTime(activity.createdAt) }}</time>
-              </div>
-              <p class="mt-1 text-sm leading-5 text-muted">{{ activity.description }}</p>
-              <p class="mt-1 text-xs text-dimmed">Performed by {{ activity.actor }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div v-else class="p-8 text-center">
-          <UIcon name="i-lucide-scroll-text" class="mx-auto size-10 text-dimmed" />
-          <p class="mt-3 text-sm font-medium text-highlighted">No administrative activity recorded yet</p>
-          <p class="mt-1 text-xs text-muted">Recent administrative changes will appear here automatically.</p>
-        </div>
       </UCard>
     </div>
+
+    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <template #header>
+        <AdminSectionHeader
+          title="Recent Administrative Activity"
+          description="Latest account, configuration, and system-governance changes."
+          icon="i-lucide-history"
+        >
+          <template #actions>
+            <UButton
+              label="View Audit Trail"
+              to="/admin/audit-logs"
+              color="neutral"
+              variant="ghost"
+              trailing-icon="i-lucide-arrow-right"
+              size="sm"
+            />
+          </template>
+        </AdminSectionHeader>
+      </template>
+
+      <div v-if="dashboard.loading.value && !dashboard.recentActivity.value.length" class="space-y-4 p-5 sm:p-6" aria-label="Loading recent activity">
+        <USkeleton v-for="index in 4" :key="index" class="h-14 w-full" />
+      </div>
+
+      <div v-else-if="dashboard.recentActivity.value.length" class="divide-y divide-default">
+        <article
+          v-for="activity in dashboard.recentActivity.value"
+          :key="activity.documentId || activity.id"
+          class="flex items-start gap-3 px-5 py-4 sm:px-6"
+        >
+          <div
+            class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg"
+            :class="activity.outcome === 'Success' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'"
+            aria-hidden="true"
+          >
+            <UIcon
+              :name="activity.outcome === 'Success' ? 'i-lucide-circle-check' : 'i-lucide-circle-x'"
+              class="size-4"
+            />
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-highlighted">{{ activity.action }}</p>
+              <time class="text-xs text-muted" :datetime="activity.createdAt">{{ formatDateTime(activity.createdAt) }}</time>
+            </div>
+            <p class="mt-1 text-sm leading-5 text-muted">{{ activity.description }}</p>
+            <p class="mt-1 text-xs text-dimmed">Performed by {{ activity.actor }}</p>
+          </div>
+        </article>
+      </div>
+
+      <AdminEmptyState
+        v-else
+        title="No administrative activity recorded yet"
+        description="Recent administrative changes will appear here automatically."
+        icon="i-lucide-scroll-text"
+        compact
+      />
+    </UCard>
   </div>
 </template>

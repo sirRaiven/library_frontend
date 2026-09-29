@@ -212,7 +212,7 @@ onMounted(loadReview);
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
-      eyebrow="Accounts and Access"
+      eyebrow="People & Access"
       title="Account Review"
       description="Find login accounts that need identity-record review and institutional records that do not yet have portal access. Faculty accounts do not require a pre-existing profile; their basic Library record can be prepared automatically."
       icon="i-lucide-list-checks"
@@ -295,8 +295,9 @@ onMounted(loadReview);
                 icon="i-lucide-search"
                 placeholder="Search account, name, number, or email"
                 autocomplete="off"
+                aria-label="Search account and profile review records"
               />
-              <USelect v-model="profileType" :items="typeOptions" />
+              <USelect v-model="profileType" :items="typeOptions" aria-label="Filter review records by profile type" />
             </div>
           </div>
 
@@ -326,11 +327,12 @@ onMounted(loadReview);
       </div>
 
       <template v-else-if="section === 'accounts'">
-        <div v-if="!accountRecords.length" class="px-6 py-16 text-center">
-          <UIcon name="i-lucide-circle-check-big" class="mx-auto size-11 text-success" />
-          <h3 class="mt-3 font-semibold text-highlighted">No account connection problems found</h3>
-          <p class="mt-1 text-sm text-muted">The selected accounts have the correct institutional profile connection.</p>
-        </div>
+        <AdminEmptyState
+          v-if="!accountRecords.length"
+          title="No account connection problems found"
+          description="The selected accounts have the correct institutional profile connection."
+          icon="i-lucide-circle-check-big"
+        />
 
         <AppResponsiveDataView v-else mobile-label="Accounts needing review" desktop-label="Accounts needing review table">
         <template #mobile>
@@ -384,11 +386,12 @@ onMounted(loadReview);
       </template>
 
       <template v-else>
-        <div v-if="!profileRecords.length" class="px-6 py-16 text-center">
-          <UIcon name="i-lucide-circle-check-big" class="mx-auto size-11 text-success" />
-          <h3 class="mt-3 font-semibold text-highlighted">No unassigned institutional records found</h3>
-          <p class="mt-1 text-sm text-muted">The selected existing records already have portal accounts. Faculty accounts do not require a pre-existing record.</p>
-        </div>
+        <AdminEmptyState
+          v-if="!profileRecords.length"
+          title="No unassigned institutional records found"
+          description="The selected existing records already have portal accounts. Faculty accounts do not require a pre-existing record."
+          icon="i-lucide-circle-check-big"
+        />
 
         <AppResponsiveDataView v-else mobile-label="Profiles without portal accounts" desktop-label="Profiles without portal accounts table">
         <template #mobile>

@@ -51,7 +51,7 @@ onMounted(load);
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
-      eyebrow="Accounts and Access"
+      eyebrow="People & Access"
       title="Roles & Permissions"
       description="Review application roles, their permissions, and the users assigned to each role. Role assignment is performed from Users."
       icon="i-lucide-shield-check"
@@ -68,6 +68,13 @@ onMounted(load);
     <div v-if="loading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <USkeleton v-for="index in 6" :key="index" class="h-44 w-full rounded-2xl" />
     </div>
+
+    <AdminEmptyState
+      v-else-if="!roles.length"
+      title="No roles available"
+      description="Application roles will appear here after they are available from the authentication service."
+      icon="i-lucide-shield-off"
+    />
 
     <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <NuxtLink

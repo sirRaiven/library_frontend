@@ -303,10 +303,11 @@ onMounted(load);
               class="xl:col-span-2"
               icon="i-lucide-search"
               placeholder="Search event, actor, request, or record"
+              aria-label="Search Audit Trail records"
             />
-            <USelect v-model="category" :items="categoryItems" />
-            <USelect v-model="severity" :items="severityItems" />
-            <USelect v-model="outcome" :items="outcomeItems" />
+            <USelect v-model="category" :items="categoryItems" aria-label="Filter Audit Trail by category" />
+            <USelect v-model="severity" :items="severityItems" aria-label="Filter Audit Trail by severity" />
+            <USelect v-model="outcome" :items="outcomeItems" aria-label="Filter Audit Trail by outcome" />
             <div class="grid grid-cols-2 gap-2 xl:col-span-1">
               <UInput v-model="dateFrom" type="date" aria-label="Audit start date" />
               <UInput v-model="dateTo" type="date" aria-label="Audit end date" />
@@ -319,11 +320,12 @@ onMounted(load);
         <USkeleton v-for="index in 6" :key="index" class="h-16 w-full" />
       </div>
 
-      <div v-else-if="!records.length" class="px-6 py-16 text-center">
-        <UIcon name="i-lucide-scroll-text" class="mx-auto size-11 text-dimmed" />
-        <h3 class="mt-3 font-semibold text-highlighted">No matching audit records</h3>
-        <p class="mt-1 text-sm text-muted">Adjust the search, classification, result, severity, or date filters.</p>
-      </div>
+      <AdminEmptyState
+        v-else-if="!records.length"
+        title="No matching audit records"
+        description="Adjust the search, classification, result, severity, or date filters."
+        icon="i-lucide-scroll-text"
+      />
 
       <AppResponsiveDataView v-else mobile-label="Audit records" desktop-label="Audit records table">
         <template #mobile>

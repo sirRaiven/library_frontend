@@ -2,6 +2,7 @@
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
+import PortalNotificationTrigger from "~/components/shared/PortalNotificationTrigger.vue";
 
 import { appLogger } from "~/utils/app-logger";
 import type {
@@ -133,10 +134,31 @@ function getPageInformation(): {
     };
   }
 
+  if (/^\/librarian\/students\/[^/]+\/record(?:\/|$)/.test(path)) {
+    return {
+      title: "Student Record",
+      icon: "i-lucide-notebook-tabs",
+    };
+  }
+
   if (path.startsWith("/librarian/students")) {
     return {
       title: "Students",
       icon: "i-lucide-graduation-cap",
+    };
+  }
+
+  if (path.startsWith("/librarian/student-registration-approvals")) {
+    return {
+      title: "Registration Approvals",
+      icon: "i-lucide-clipboard-check",
+    };
+  }
+
+  if (path.startsWith("/librarian/student-self-registration")) {
+    return {
+      title: "Registration QR Code",
+      icon: "i-lucide-qr-code",
     };
   }
 
@@ -180,6 +202,20 @@ function getPageInformation(): {
     return {
       title: "Card Design",
       icon: "i-lucide-palette",
+    };
+  }
+
+  if (path.startsWith("/librarian/fines")) {
+    return {
+      title: "Fines & Payments",
+      icon: "i-lucide-receipt-text",
+    };
+  }
+
+  if (path.startsWith("/librarian/library-card-print")) {
+    return {
+      title: "Print Library Cards",
+      icon: "i-lucide-printer",
     };
   }
 
@@ -257,6 +293,8 @@ const contentNavigationItems = computed(() => {
     isRouteActive("/librarian/reservations");
   const usersActive =
     isRouteActive("/librarian/students") ||
+    isRouteActive("/librarian/student-registration-approvals") ||
+    isRouteActive("/librarian/student-self-registration") ||
     isRouteActive("/librarian/faculty");
   const membershipActive =
     isRouteActive("/librarian/membership-term") ||
@@ -342,6 +380,18 @@ const contentNavigationItems = computed(() => {
           icon: "i-lucide-graduation-cap",
           path: "/librarian/students",
           active: isRouteActive("/librarian/students"),
+        },
+        {
+          title: "Registration Approvals",
+          icon: "i-lucide-clipboard-check",
+          path: "/librarian/student-registration-approvals",
+          active: isRouteActive("/librarian/student-registration-approvals"),
+        },
+        {
+          title: "Registration QR",
+          icon: "i-lucide-qr-code",
+          path: "/librarian/student-self-registration",
+          active: isRouteActive("/librarian/student-self-registration"),
         },
         {
           title: "Faculty",
@@ -489,12 +539,24 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
     icon: "i-lucide-users-round",
     active:
       isRouteActive("/librarian/students") ||
+      isRouteActive("/librarian/student-registration-approvals") ||
+      isRouteActive("/librarian/student-self-registration") ||
       isRouteActive("/librarian/faculty"),
     children: [
       {
         label: "Students",
         icon: "i-lucide-graduation-cap",
         to: "/librarian/students",
+      },
+      {
+        label: "Registration Approvals",
+        icon: "i-lucide-clipboard-check",
+        to: "/librarian/student-registration-approvals",
+      },
+      {
+        label: "Registration QR",
+        icon: "i-lucide-qr-code",
+        to: "/librarian/student-self-registration",
       },
       {
         label: "Faculty",
@@ -1054,6 +1116,7 @@ watch(
               }"
             >
               <UDashboardSidebarToggle
+                class="lg:hidden"
                 icon="i-lucide-panel-left"
                 color="neutral"
                 :variant="
@@ -1114,53 +1177,11 @@ watch(
               />
             </form>
 
-            <UTooltip
-              text="Open notifications"
-              :content="{
-                side: 'bottom',
-                sideOffset: 8,
-              }"
-            >
-              <UChip
-                v-if="
-                  notificationCenter
-                    .badgeCount.value > 0
-                "
-                :text="
-                  notificationCenter
-                    .chipText.value
-                "
-                :color="
-                  notificationCenter
-                    .chipColor.value
-                "
-                size="lg"
-                position="top-right"
-              >
-                <UButton
-                  to="/librarian/notifications"
-                  icon="i-lucide-bell"
-                  color="neutral"
-                  variant="ghost"
-                  size="lg"
-                  square
-                  class="size-11 rounded-xl"
-                  :aria-label="`Open notifications. ${notificationCenter.badgeCount.value} unread notification${notificationCenter.badgeCount.value === 1 ? '' : 's'}.`"
-                />
-              </UChip>
-
-              <UButton
-                v-else
-                to="/librarian/notifications"
-                icon="i-lucide-bell"
-                color="neutral"
-                variant="ghost"
-                size="lg"
-                square
-                class="size-11 rounded-xl"
-                aria-label="Open notifications"
-              />
-            </UTooltip>
+            <PortalNotificationTrigger
+              to="/librarian/notifications"
+              :count="notificationCenter.badgeCount.value"
+              :active="isRouteActive('/librarian/notifications')"
+            />
 
             <UTooltip
               text="Change color mode"

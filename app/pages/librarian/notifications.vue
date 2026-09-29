@@ -775,14 +775,15 @@ onBeforeUnmount(() => {
         icon="i-lucide-bell-ring"
       >
         <template #actions>
-          <UChip
+          <UBadge
             v-if="notificationCenter.badgeCount.value > 0"
-            :text="notificationCenter.chipText.value"
-            :color="notificationCenter.chipColor.value"
-            size="sm"
-          >
-            <UButton label="Unread" icon="i-lucide-bell-dot" color="neutral" variant="soft" />
-          </UChip>
+            :label="`${notificationCenter.chipText.value} unread`"
+            color="error"
+            variant="soft"
+            size="lg"
+            icon="i-lucide-bell-dot"
+            :aria-label="`${notificationCenter.badgeCount.value} unread notification${notificationCenter.badgeCount.value === 1 ? '' : 's'}`"
+          />
           <UButton label="Mark All Read" icon="i-lucide-check-check" color="neutral" variant="outline" :loading="isMarkingAll" :disabled="notificationCenter.summary.value.unread === 0" @click="markAllRead" />
           <UButton label="Refresh" icon="i-lucide-refresh-cw" color="primary" :loading="notificationCenter.isSyncing.value" @click="refreshNotifications" />
         </template>

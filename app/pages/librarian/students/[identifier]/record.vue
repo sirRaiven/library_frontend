@@ -14,6 +14,7 @@ definePageMeta({ layout: "librarian", title: "Student Record" });
 
 const route = useRoute();
 const recordApi = useLibrarianStudentRecord();
+const toast = useToast();
 
 const identifier = computed(() => String(route.params.identifier ?? "").trim());
 const loading = ref(false);
@@ -68,6 +69,7 @@ const activityMeta = computed(() => [
   { label: "Borrowings", value: historySummary.borrowing, icon: "i-lucide-book-up" },
   { label: "Returns", value: historySummary.return, icon: "i-lucide-book-down" },
   { label: "Reservations", value: historySummary.reservation, icon: "i-lucide-calendar-check-2" },
+  { label: "Fines", value: historySummary.fine, icon: "i-lucide-receipt-text" },
   { label: "Time-ins", value: historySummary.visit, icon: "i-lucide-log-in" },
 ]);
 
@@ -170,6 +172,16 @@ async function loadRecord() {
 }
 
 function applyFilters() {
+  if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
+    toast.add({
+      title: "Check the activity dates",
+      description: "The start date must be earlier than or equal to the end date.",
+      color: "warning",
+      icon: "i-lucide-calendar-alert",
+    });
+    return;
+  }
+
   page.value = 1;
   void loadRecord();
 }

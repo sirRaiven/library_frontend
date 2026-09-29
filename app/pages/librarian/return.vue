@@ -955,14 +955,26 @@ onMounted(() => {
                   </p>
                 </div>
 
-                <UBadge
-                  color="success"
-                  variant="soft"
-                >
-                  {{
-                    memberReturns.member.type
-                  }}
-                </UBadge>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <UButton
+                    v-if="memberReturns.member.type === 'Student' && memberReturns.member.documentId"
+                    :to="`/librarian/students/${encodeURIComponent(memberReturns.member.documentId)}/record`"
+                    label="Student Record"
+                    icon="i-lucide-notebook-tabs"
+                    color="neutral"
+                    variant="outline"
+                    size="sm"
+                    :aria-label="`View Student Record for ${memberReturns.member.fullName}`"
+                  />
+                  <UBadge
+                    color="success"
+                    variant="soft"
+                  >
+                    {{
+                      memberReturns.member.type
+                    }}
+                  </UBadge>
+                </div>
               </div>
             </template>
 

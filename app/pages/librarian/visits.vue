@@ -139,6 +139,10 @@ const columns = [
     accessorKey: "recordedBy",
     header: "Recorded By",
   },
+  {
+    id: "actions",
+    header: "Actions",
+  },
 ];
 
 const summaryCards = computed(
@@ -192,6 +196,14 @@ const summaryCards = computed(
     },
   ],
 );
+
+function studentRecordPath(visit: LibraryVisitRecord): string | null {
+  if (visit.memberType !== "Student" || !visit.memberDocumentId) {
+    return null;
+  }
+
+  return `/librarian/students/${encodeURIComponent(visit.memberDocumentId)}/record`;
+}
 
 function focusScanner() {
   nextTick(() => {
@@ -719,6 +731,7 @@ onMounted(() => {
                 v-model="search"
                 icon="i-lucide-search"
                 placeholder="Search member, number, barcode, or program"
+                aria-label="Search Library visits"
                 class="w-full"
               />
 
@@ -726,6 +739,7 @@ onMounted(() => {
                 v-model="fromDate"
                 type="date"
                 icon="i-lucide-calendar-range"
+                aria-label="Library visits from date"
                 class="w-full"
               />
 
@@ -733,6 +747,7 @@ onMounted(() => {
                 v-model="toDate"
                 type="date"
                 icon="i-lucide-calendar-range"
+                aria-label="Library visits to date"
                 class="w-full"
               />
 
@@ -745,6 +760,7 @@ onMounted(() => {
                 "
                 value-key="value"
                 label-key="label"
+                aria-label="Library visit member type"
                 class="w-full"
               />
             </div>
@@ -806,6 +822,18 @@ onMounted(() => {
                   <span>{{ visit.programDepartment || 'Program / department not recorded' }}</span>
                   <span>{{ visit.visitDate }} · {{ formatTime(visit.timeIn) }}</span>
                   <span class="font-mono">{{ visit.barcode }}</span>
+                </template>
+                <template #actions>
+                  <UButton
+                    v-if="studentRecordPath(visit)"
+                    :to="studentRecordPath(visit) ?? undefined"
+                    label="Student Record"
+                    icon="i-lucide-notebook-tabs"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    :aria-label="`View Student Record for ${visit.memberName}`"
+                  />
                 </template>
               </AppRecordCard>
             </div>
@@ -971,6 +999,19 @@ onMounted(() => {
                             "Librarian"
                           }}
                         </span>
+                      </template>
+
+                      <template #actions-cell="{ row }">
+                        <UButton
+                          v-if="studentRecordPath(row.original)"
+                          :to="studentRecordPath(row.original) ?? undefined"
+                          label="Student Record"
+                          icon="i-lucide-notebook-tabs"
+                          color="neutral"
+                          variant="ghost"
+                          size="sm"
+                          :aria-label="`View Student Record for ${row.original.memberName}`"
+                        />
                       </template>
                     </UTable>
           </template>

@@ -67,6 +67,12 @@ const resultSummary = computed(() => {
   return `${total.toLocaleString()} book title${total === 1 ? "" : "s"} found`;
 });
 
+const resultAnnouncement = computed(() =>
+  collection.loading.value
+    ? "Loading book collection results."
+    : `${resultSummary.value}.`,
+);
+
 function currentFilters(): StudentBookFilters {
   return {
     search: search.value.trim(),
@@ -175,6 +181,7 @@ onMounted(async () => {
             autocomplete="off"
             size="lg"
             maxlength="120"
+            aria-label="Search the Library book collection"
             class="w-full"
           />
         </template>
@@ -189,6 +196,7 @@ onMounted(async () => {
             size="lg"
             class="w-full md:w-56"
             :disabled="libraryOptions.loading.value"
+            aria-label="Book category"
           />
           <USelect
             v-model="availability"
@@ -198,6 +206,7 @@ onMounted(async () => {
             icon="i-lucide-book-check"
             size="lg"
             class="w-full md:w-48"
+            aria-label="Book availability"
           />
           <USelect
             v-model="sort"
@@ -207,6 +216,7 @@ onMounted(async () => {
             icon="i-lucide-arrow-up-down"
             size="lg"
             class="w-full md:w-48"
+            aria-label="Sort book collection"
           />
         </template>
 
@@ -245,6 +255,8 @@ onMounted(async () => {
         icon="i-lucide-list-filter"
       />
     </div>
+
+    <p class="sr-only" aria-live="polite" aria-atomic="true">{{ resultAnnouncement }}</p>
 
     <div
       v-if="collection.loading.value && !collection.books.value.length"

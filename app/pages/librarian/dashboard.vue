@@ -241,7 +241,7 @@ const stats = computed(() => [
     description: "Currently on loan",
     icon: "i-lucide-book-up",
     color: "warning" as BadgeColor,
-    to: "/librarian/borrow",
+    to: "/librarian/history?category=borrowing&search=Borrowed",
   },
   {
     label: "Needs Attention",
@@ -268,7 +268,7 @@ const queueItems = computed(() => [
     description: "Requests waiting for review or preparation",
     icon: "i-lucide-calendar-clock",
     color: "info" as BadgeColor,
-    to: "/librarian/reservations",
+    to: "/librarian/reservations?status=Pending",
   },
   {
     label: "Overdue Borrowed Books",
@@ -276,7 +276,7 @@ const queueItems = computed(() => [
     description: "Loans already past their due date",
     icon: "i-lucide-clock-alert",
     color: "error" as BadgeColor,
-    to: "/librarian/borrow?status=Overdue",
+    to: "/librarian/history?category=borrowing&search=Overdue",
   },
 ]);
 
@@ -284,6 +284,8 @@ const quickActions = [
   { title: "Scan Entry", icon: "i-lucide-scan-line", to: "/librarian/visits" },
   { title: "Borrow", icon: "i-lucide-book-up", to: "/librarian/borrow" },
   { title: "Return", icon: "i-lucide-book-down", to: "/librarian/return" },
+  { title: "Reservations", icon: "i-lucide-calendar-check-2", to: "/librarian/reservations" },
+  { title: "Student Records", icon: "i-lucide-notebook-tabs", to: "/librarian/students" },
   { title: "Add Book", icon: "i-lucide-book-plus", to: "/librarian/books/register" },
 ];
 
@@ -440,7 +442,7 @@ async function refreshDashboard() {
           <UIcon name="i-lucide-workflow" class="size-5 text-primary" />
         </div>
 
-        <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           <NuxtLink
             v-for="action in quickActions"
             :key="action.title"
@@ -526,8 +528,8 @@ async function refreshDashboard() {
           </p>
         </div>
         <UButton
-          to="/librarian/borrow"
-          label="View all borrowings"
+          to="/librarian/history?category=borrowing"
+          label="View borrowing history"
           trailing-icon="i-lucide-arrow-right"
           color="neutral"
           variant="ghost"

@@ -102,7 +102,15 @@ const timingLabel = computed(() => {
               <p class="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                 {{ borrowing.borrowNo || 'Borrowing record' }}
               </p>
-              <h2 class="mt-1 line-clamp-2 text-lg font-bold text-highlighted">
+              <NuxtLink
+                v-if="borrowing.book.documentId"
+                :to="`/student/books/${encodeURIComponent(borrowing.book.documentId)}`"
+                class="mt-1 block line-clamp-2 rounded-sm text-lg font-bold text-highlighted outline-none ring-primary hover:text-primary focus-visible:ring-2"
+                :aria-label="`View book details for ${borrowing.book.title}`"
+              >
+                {{ borrowing.book.title }}
+              </NuxtLink>
+              <h2 v-else class="mt-1 line-clamp-2 text-lg font-bold text-highlighted">
                 {{ borrowing.book.title }}
               </h2>
               <p class="mt-1 text-sm text-muted">{{ borrowing.book.author }}</p>

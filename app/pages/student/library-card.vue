@@ -488,6 +488,14 @@ onBeforeUnmount(() => {
 
       </UCard>
 
+      <UAlert
+        color="info"
+        variant="soft"
+        icon="i-lucide-info"
+        title="Library Card and membership are separate"
+        description="A released Library Card remains your physical identification card, while borrowing and reservation access also depends on your current verified term membership."
+      />
+
       <div class="grid gap-5 xl:grid-cols-2">
         <UCard :ui="{ body: 'p-5 sm:p-6' }">
           <template #header>

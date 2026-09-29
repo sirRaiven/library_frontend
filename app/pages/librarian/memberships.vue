@@ -92,6 +92,7 @@ const columns: TableColumn<MembershipListItem>[] = [
   { id: "validity", header: "Validity" },
   { accessorKey: "status", header: "Status" },
   { id: "verified", header: "Verified By" },
+  { id: "actions", header: "Actions" },
 ];
 
 const cards = computed(() => [
@@ -589,13 +590,13 @@ onMounted(async () => {
         <template #header>
           <AppFilterBar title="Membership History" description="One record is retained for every Student and academic term.">
             <template #search>
-              <UInput v-model="search" icon="i-lucide-search" placeholder="Search Student or membership number" class="w-full" />
+              <UInput v-model="search" icon="i-lucide-search" placeholder="Search Student or membership number" aria-label="Search membership records" class="w-full" />
             </template>
             <template #filters>
               <div class="grid gap-2 sm:grid-cols-3">
-                <UInput v-model="academicYearFilter" placeholder="Academic year" />
-                <USelect v-model="semesterFilter" :items="semesterItems" value-key="value" label-key="label" :disabled="libraryOptions.loading.value" />
-                <USelect v-model="statusFilter" :items="statusItems" />
+                <UInput v-model="academicYearFilter" placeholder="Academic year" aria-label="Membership academic year" />
+                <USelect v-model="semesterFilter" :items="semesterItems" value-key="value" label-key="label" :disabled="libraryOptions.loading.value" aria-label="Membership semester" />
+                <USelect v-model="statusFilter" :items="statusItems" aria-label="Membership status" />
               </div>
             </template>
           </AppFilterBar>
@@ -626,6 +627,17 @@ onMounted(async () => {
                   <span>{{ membership.issuedDate }} to {{ membership.expiryDate }}</span>
                   <span>{{ membership.enrollmentVerified ? 'Enrollment verified' : 'Enrollment not verified' }}</span>
                 </template>
+                <template #actions>
+                  <UButton
+                    :to="`/librarian/students/${encodeURIComponent(membership.student.documentId)}/record`"
+                    label="Student Record"
+                    icon="i-lucide-notebook-tabs"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    :aria-label="`View Student Record for ${membership.student.fullName}`"
+                  />
+                </template>
               </AppRecordCard>
             </div>
           </template>
@@ -649,6 +661,17 @@ onMounted(async () => {
                       <template #verified-cell="{ row }">
                         <p class="text-sm text-highlighted">{{ row.original.verifiedBy ?? "Librarian" }}</p>
                         <p class="text-xs text-muted">{{ row.original.enrollmentVerified ? "Enrollment verified" : "Not verified" }}</p>
+                      </template>
+                      <template #actions-cell="{ row }">
+                        <UButton
+                          :to="`/librarian/students/${encodeURIComponent(row.original.student.documentId)}/record`"
+                          label="Student Record"
+                          icon="i-lucide-notebook-tabs"
+                          color="neutral"
+                          variant="ghost"
+                          size="sm"
+                          :aria-label="`View Student Record for ${row.original.student.fullName}`"
+                        />
                       </template>
                     </UTable>
           </template>

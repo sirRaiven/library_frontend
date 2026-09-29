@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import AppFilterBar from "~/components/shared/AppFilterBar.vue";
-import type { StudentBorrowingView } from "~/composables/useStudentBorrowings";
+import type {
+  StudentBorrowingAttention,
+  StudentBorrowingView,
+} from "~/composables/useStudentBorrowings";
 
 definePageMeta({
   layout: "student",
@@ -9,15 +12,41 @@ definePageMeta({
   roleTitle: "Student",
 });
 
+const route = useRoute();
+const router = useRouter();
 const borrowings = useStudentBorrowings();
 const toast = useToast();
 
 const PAGE_SIZE = 10;
-const view = ref<StudentBorrowingView>("current");
-const page = ref(1);
-const searchInput = ref("");
-const appliedSearch = ref("");
-const sort = ref("due-soon");
+
+function queryText(name: string, maxLength = 120) {
+  const value = route.query[name];
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+const initialView: StudentBorrowingView =
+  route.query.view === "history" ? "history" : "current";
+const initialAttention = queryText("attention", 30);
+const view = ref<StudentBorrowingView>(initialView);
+const attention = ref<StudentBorrowingAttention>(
+  initialView === "current" && ["overdue", "due-soon"].includes(initialAttention)
+    ? (initialAttention as StudentBorrowingAttention)
+    : "all",
+);
+const page = ref(Math.max(1, Number(route.query.page) || 1));
+const searchInput = ref(queryText("search"));
+const appliedSearch = ref(searchInput.value);
+const requestedSort = queryText("sort", 40);
+const validCurrentSorts = ["due-soon", "borrowed-newest", "borrowed-oldest"];
+const validHistorySorts = ["recently-completed", "borrowed-newest", "borrowed-oldest"];
+const sort = ref(
+  (initialView === "history" ? validHistorySorts : validCurrentSorts).includes(requestedSort)
+    ? requestedSort
+    : initialView === "history"
+      ? "recently-completed"
+      : "due-soon",
+);
+let internalChange = false;
 
 const viewItems: Array<{
   label: string;
@@ -36,6 +65,16 @@ const viewItems: Array<{
   },
 ];
 
+const attentionItems: Array<{
+  label: string;
+  value: StudentBorrowingAttention;
+  icon: string;
+}> = [
+  { label: "All Current", value: "all", icon: "i-lucide-list" },
+  { label: "Overdue", value: "overdue", icon: "i-lucide-calendar-x" },
+  { label: "Due Soon", value: "due-soon", icon: "i-lucide-alarm-clock" },
+];
+
 const sortItems = computed(() =>
   view.value === "history"
     ? [
@@ -50,6 +89,25 @@ const sortItems = computed(() =>
       ],
 );
 
+const activeFilterCount = computed(() =>
+  Number(Boolean(appliedSearch.value)) +
+  Number(view.value === "current" && attention.value !== "all"),
+);
+
+const resultAnnouncement = computed(() => {
+  const total = borrowings.pagination.value.total;
+  if (borrowings.loading.value) return "Loading borrowing records.";
+  if (view.value === "history") {
+    return `${total} borrowing history record${total === 1 ? "" : "s"} shown.`;
+  }
+  const label = attention.value === "overdue"
+    ? "overdue loan"
+    : attention.value === "due-soon"
+      ? "loan due soon"
+      : "current loan";
+  return `${total} ${label}${total === 1 ? "" : "s"} shown.`;
+});
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -58,15 +116,30 @@ function formatCurrency(value: number) {
   }).format(value || 0);
 }
 
+async function syncRoute() {
+  const query: Record<string, string> = {};
+  if (view.value === "history") query.view = "history";
+  if (view.value === "current" && attention.value !== "all") {
+    query.attention = attention.value;
+  }
+  if (appliedSearch.value) query.search = appliedSearch.value;
+  const defaultSort = view.value === "history" ? "recently-completed" : "due-soon";
+  if (sort.value !== defaultSort) query.sort = sort.value;
+  if (page.value > 1) query.page = String(page.value);
+  await router.replace({ query });
+}
+
 async function load() {
   try {
     await borrowings.load({
       view: view.value,
       search: appliedSearch.value,
       sort: sort.value,
+      attention: attention.value,
       page: page.value,
     });
-  } catch (error) {
+    page.value = borrowings.pagination.value.page;
+  } catch {
     toast.add({
       title: "Unable to load borrowing records",
       description: borrowings.error.value,
@@ -79,17 +152,28 @@ async function load() {
 async function changeView(nextView: StudentBorrowingView) {
   if (view.value === nextView && page.value === 1) return;
 
+  internalChange = true;
   view.value = nextView;
+  attention.value = "all";
   page.value = 1;
-  sort.value = nextView === "history"
-    ? "recently-completed"
-    : "due-soon";
+  sort.value = nextView === "history" ? "recently-completed" : "due-soon";
+  internalChange = false;
+  await syncRoute();
+  await load();
+}
+
+async function changeAttention(nextAttention: StudentBorrowingAttention) {
+  if (view.value !== "current" || attention.value === nextAttention) return;
+  attention.value = nextAttention;
+  page.value = 1;
+  await syncRoute();
   await load();
 }
 
 async function applySearch() {
   appliedSearch.value = searchInput.value.trim();
   page.value = 1;
+  await syncRoute();
   await load();
 }
 
@@ -97,17 +181,29 @@ async function clearSearch() {
   searchInput.value = "";
   appliedSearch.value = "";
   page.value = 1;
+  await syncRoute();
+  await load();
+}
+
+async function resetFilters() {
+  searchInput.value = "";
+  appliedSearch.value = "";
+  attention.value = "all";
+  page.value = 1;
+  await syncRoute();
   await load();
 }
 
 watch(page, async (nextPage, previousPage) => {
-  if (nextPage === previousPage) return;
+  if (nextPage === previousPage || internalChange || borrowings.loading.value) return;
+  await syncRoute();
   await load();
 });
 
 watch(sort, async (nextSort, previousSort) => {
-  if (nextSort === previousSort) return;
+  if (nextSort === previousSort || internalChange) return;
   page.value = 1;
+  await syncRoute();
   await load();
 });
 
@@ -190,22 +286,42 @@ onMounted(load);
 
     <form @submit.prevent="applySearch">
       <AppFilterBar
-        :active-count="appliedSearch ? 1 : 0"
-        :show-clear="Boolean(appliedSearch)"
-        @clear="clearSearch"
+        :active-count="activeFilterCount"
+        :show-clear="activeFilterCount > 0"
+        @clear="resetFilters"
       >
         <template #quick>
-          <div class="inline-flex min-w-max rounded-lg border border-default bg-elevated/40 p-1">
-            <UButton
-              v-for="item in viewItems"
-              :key="item.value"
-              :label="item.label"
-              :icon="item.icon"
-              :color="view === item.value ? 'primary' : 'neutral'"
-              :variant="view === item.value ? 'solid' : 'ghost'"
-              size="sm"
-              @click="changeView(item.value)"
-            />
+          <div class="flex min-w-max flex-wrap gap-2">
+            <div class="inline-flex rounded-lg border border-default bg-elevated/40 p-1" aria-label="Borrowing record view">
+              <UButton
+                v-for="item in viewItems"
+                :key="item.value"
+                :label="item.label"
+                :icon="item.icon"
+                :color="view === item.value ? 'primary' : 'neutral'"
+                :variant="view === item.value ? 'solid' : 'ghost'"
+                :aria-pressed="view === item.value"
+                size="sm"
+                @click="changeView(item.value)"
+              />
+            </div>
+            <div
+              v-if="view === 'current'"
+              class="inline-flex rounded-lg border border-default bg-elevated/40 p-1"
+              aria-label="Current loan attention filter"
+            >
+              <UButton
+                v-for="item in attentionItems"
+                :key="item.value"
+                :label="item.label"
+                :icon="item.icon"
+                :color="attention === item.value ? 'primary' : 'neutral'"
+                :variant="attention === item.value ? 'soft' : 'ghost'"
+                :aria-pressed="attention === item.value"
+                size="sm"
+                @click="changeAttention(item.value)"
+              />
+            </div>
           </div>
         </template>
 
@@ -216,6 +332,7 @@ onMounted(load);
             placeholder="Search title, author, ISBN, borrowing no., or copy"
             maxlength="120"
             autocomplete="off"
+            aria-label="Search borrowing records"
             class="w-full"
           />
         </template>
@@ -241,6 +358,8 @@ onMounted(load);
         </template>
       </AppFilterBar>
     </form>
+
+    <p class="sr-only" aria-live="polite" aria-atomic="true">{{ resultAnnouncement }}</p>
 
     <UAlert
       v-if="borrowings.error.value"
@@ -277,18 +396,22 @@ onMounted(load);
         <p class="mt-2 text-sm leading-relaxed text-muted">
           {{ appliedSearch
             ? 'No record matches the submitted search.'
-            : view === 'current'
-              ? 'Books issued to your Student account will appear here automatically.'
-              : 'Completed, lost, and cancelled borrowing transactions will appear here.' }}
+            : attention === 'overdue'
+              ? 'No overdue books are currently recorded on your account.'
+              : attention === 'due-soon'
+                ? 'No borrowed books are due within the next three days.'
+                : view === 'current'
+                  ? 'Books issued to your Student account will appear here automatically.'
+                  : 'Completed, lost, and cancelled borrowing transactions will appear here.' }}
         </p>
         <UButton
-          v-if="appliedSearch"
-          label="Clear Search"
-          icon="i-lucide-x"
+          v-if="activeFilterCount"
+          label="Reset Filters"
+          icon="i-lucide-rotate-ccw"
           color="neutral"
           variant="outline"
           class="mt-5"
-          @click="clearSearch"
+          @click="resetFilters"
         />
       </div>
     </UCard>

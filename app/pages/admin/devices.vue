@@ -33,7 +33,7 @@ onMounted(() => { load(); loadSummary(); });
 
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
-    <AdminPageHeader eyebrow="System & Monitoring" title="Devices" description="Review privacy-safe browser device records created by Student, Faculty, Librarian, and Administrator portal sessions." icon="i-lucide-monitor-smartphone"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/reports?view=monitoring" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
+    <AdminPageHeader eyebrow="System & Security" title="Devices" description="Review privacy-safe browser device records created by Student, Faculty, Librarian, and Administrator portal sessions." icon="i-lucide-monitor-smartphone"><template #actions><div class="flex flex-wrap gap-2"><UButton label="Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/admin/reports?view=monitoring" /><UButton label="Refresh" icon="i-lucide-refresh-cw" color="neutral" variant="outline" :loading="loading" @click="load(); loadSummary()" /></div></template></AdminPageHeader>
     <UAlert color="primary" variant="soft" icon="i-lucide-fingerprint" title="No hardware fingerprinting" description="The Library System uses a random application device identifier. It does not collect MAC addresses, IMEI numbers, hardware serial numbers, continuous location, or personal files." />
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminMetricCard label="Known Devices" :value="summary?.knownDevices ?? 0" description="Registered privacy-safe devices." icon="i-lucide-monitor-smartphone" tone="primary" :loading="!summary" />
@@ -45,20 +45,20 @@ onMounted(() => { load(); loadSummary(); });
       <template #header>
         <AppFilterBar :title="`Device Register · ${total} device${total === 1 ? '' : 's'}`">
           <template #search>
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search device, user, browser, or OS" class="w-full" />
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Search device, user, browser, or OS" class="w-full" aria-label="Search devices" />
           </template>
           <template #filters>
             <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <USelect v-model="trust" :items="trustItems" />
-              <USelect v-model="blocked" :items="blockedItems" />
-              <USelect v-model="deviceType" :items="deviceItems" />
-              <USelect v-model="profileType" :items="profileItems" />
+              <USelect v-model="trust" :items="trustItems" aria-label="Filter devices by trust status" />
+              <USelect v-model="blocked" :items="blockedItems" aria-label="Filter devices by access status" />
+              <USelect v-model="deviceType" :items="deviceItems" aria-label="Filter devices by device type" />
+              <USelect v-model="profileType" :items="profileItems" aria-label="Filter devices by account type" />
             </div>
           </template>
         </AppFilterBar>
       </template>
       <div v-if="loading" class="space-y-3 p-6"><USkeleton v-for="i in 7" :key="i" class="h-16 w-full" /></div>
-      <div v-else-if="!records.length" class="px-6 py-16 text-center"><UIcon name="i-lucide-monitor-off" class="mx-auto size-11 text-dimmed" /><h3 class="mt-3 font-semibold text-highlighted">No matching devices</h3><p class="mt-1 text-sm text-muted">Devices appear after a supported user opens their portal.</p></div>
+      <AdminEmptyState v-else-if="!records.length" title="No matching devices" description="Adjust the device filters or search. Devices appear after a supported user opens their portal." icon="i-lucide-monitor-off" />
       <AppResponsiveDataView v-else mobile-label="Device records" desktop-label="Device records table">
         <template #mobile>
           <div class="sncbt-mobile-record-list p-3">
@@ -98,5 +98,24 @@ onMounted(() => { load(); loadSummary(); });
   </div>
 
   <UModal v-model:open="detailOpen" :ui="{ content: 'sm:max-w-2xl' }"><template #content><div v-if="selected" class="space-y-5 bg-default p-6"><div class="flex items-start justify-between"><div><h2 class="text-xl font-bold text-highlighted">{{ selected.displayName }}</h2><p class="mt-1 text-sm text-muted">{{ selected.account.username }} · {{ selected.profileType }}</p></div><UBadge :label="selected.blocked ? 'Blocked' : 'Allowed'" :color="selected.blocked ? 'error' : 'success'" variant="soft" /></div><dl class="grid gap-4 text-sm sm:grid-cols-2"><div><dt class="text-xs font-semibold uppercase text-muted">Device Type</dt><dd class="mt-1 text-highlighted">{{ selected.deviceType }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Application</dt><dd class="mt-1 text-highlighted">{{ selected.applicationMode }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Browser</dt><dd class="mt-1 text-highlighted">{{ selected.browser }} {{ selected.browserVersion || '' }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Operating System</dt><dd class="mt-1 text-highlighted">{{ selected.operatingSystem }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">First Seen</dt><dd class="mt-1 text-highlighted">{{ formatDate(selected.firstSeenAt) }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Last Seen</dt><dd class="mt-1 text-highlighted">{{ formatDate(selected.lastSeenAt) }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Masked Network</dt><dd class="mt-1 font-mono text-xs text-highlighted">{{ selected.maskedIpAddress || 'Not recorded' }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted">Portal Sessions</dt><dd class="mt-1 text-highlighted">{{ selected.activeSessionCount }} active</dd></div></dl><div class="flex flex-wrap justify-end gap-2"><UButton label="Close" color="neutral" variant="outline" @click="() => { detailOpen = false; }" /><UButton :label="selected.trusted ? 'Remove Trust' : 'Mark Trusted'" :icon="selected.trusted ? 'i-lucide-shield-off' : 'i-lucide-shield-check'" color="primary" variant="soft" @click="begin(selected, selected.trusted ? 'untrust' : 'trust')" /><UButton label="Revoke Sessions" icon="i-lucide-log-out" color="warning" variant="soft" @click="begin(selected, 'revoke-sessions')" /><UButton :label="selected.blocked ? 'Unblock Device' : 'Block Device'" :icon="selected.blocked ? 'i-lucide-shield-check' : 'i-lucide-ban'" :color="selected.blocked ? 'success' : 'error'" @click="begin(selected, selected.blocked ? 'unblock' : 'block')" /></div></div></template></UModal>
-  <UModal v-model:open="actionOpen" :ui="{ content: 'sm:max-w-lg' }"><template #content><div class="space-y-5 bg-default p-6"><div><h2 class="text-xl font-bold text-highlighted">{{ actionLabel }}</h2><p class="mt-2 text-sm text-muted">Apply this security action to {{ selected?.displayName }} used by {{ selected?.account.username }}.</p></div><UFormField label="Administrative reason" required><UTextarea v-model="reason" :rows="4" placeholder="Explain why this device action is required" /></UFormField><UAlert v-if="action === 'block'" color="error" variant="soft" icon="i-lucide-shield-ban" title="Device access will be denied" description="This device will no longer be allowed to use the account. Other devices for the same account remain available." /><UAlert v-else-if="action === 'revoke-sessions'" color="warning" variant="soft" icon="i-lucide-triangle-alert" title="Authentication sessions" description="For safety, revoking sessions from this device may sign the account out from other active sessions as well." /><div class="flex justify-end gap-2"><UButton label="Cancel" color="neutral" variant="outline" @click="() => { actionOpen = false; }" /><UButton :label="actionLabel" :color="action === 'block' ? 'error' : 'primary'" :loading="acting" :disabled="reason.trim().length < 5" @click="confirm" /></div></div></template></UModal>
+  <UModal v-model:open="actionOpen" :dismissible="!acting" :ui="{ content: 'sm:max-w-lg max-h-[90vh] overflow-y-auto' }">
+    <template #content>
+      <AppDialogFrame
+        :title="actionLabel"
+        :description="`Apply this security action to ${selected?.displayName || 'the selected device'} used by ${selected?.account.username || 'this account'}.`"
+        :icon="action === 'block' ? 'i-lucide-shield-ban' : action === 'unblock' ? 'i-lucide-shield-check' : action === 'revoke-sessions' ? 'i-lucide-log-out' : 'i-lucide-shield'"
+        :tone="action === 'block' ? 'error' : action === 'revoke-sessions' ? 'warning' : 'primary'"
+      >
+        <UFormField label="Administrative reason" required help="Enter at least 5 characters. The reason is retained with the administrative action.">
+          <UTextarea v-model="reason" :rows="4" class="w-full" placeholder="Explain why this device action is required" />
+        </UFormField>
+        <UAlert v-if="action === 'block'" color="error" variant="soft" icon="i-lucide-shield-ban" title="Device access will be denied" description="This device will no longer be allowed to use the account. Other devices for the same account remain available." />
+        <UAlert v-else-if="action === 'revoke-sessions'" color="warning" variant="soft" icon="i-lucide-triangle-alert" title="Authentication sessions" description="For safety, revoking sessions from this device may sign the account out from other active sessions as well." />
+        <template #actions>
+          <UButton label="Cancel" color="neutral" variant="outline" :disabled="acting" @click="() => { actionOpen = false; }" />
+          <UButton :label="actionLabel" :color="action === 'block' ? 'error' : 'primary'" :loading="acting" :disabled="reason.trim().length < 5" @click="confirm" />
+        </template>
+      </AppDialogFrame>
+    </template>
+  </UModal>
 </template>

@@ -91,7 +91,15 @@
     "verify:admin-table-actions": "node scripts/verify-admin-table-actions.mjs",
     "verify:admin-data-governance": "node scripts/verify-admin-data-governance-phase32.mjs",
     "test:admin-data-governance": "npm run verify:admin-data-management && npm run verify:admin-table-actions && npm run verify:admin-data-governance && vitest --run --project unit test/unit/admin-data-management-contract.test.ts test/unit/admin-data-governance-phase32.test.ts",
-    "test:librarian-student-record": "node scripts/verify-librarian-student-record.mjs && vitest --run --project unit test/unit/librarian-student-record-contract.test.ts"
+    "test:librarian-student-record": "node scripts/verify-librarian-student-record.mjs && vitest --run --project unit test/unit/librarian-student-record-contract.test.ts",
+    "verify:admin-ui-ux-phase33": "node scripts/verify-admin-ui-ux-phase33.mjs",
+    "test:admin-ui-ux-phase33": "npm run verify:admin-ui-ux-phase33 && vitest --run --project unit test/unit/admin-ui-ux-phase33.test.ts",
+    "verify:librarian-portal-phase4": "node scripts/verify-librarian-portal-phase4.mjs",
+    "test:librarian-portal-phase4": "npm run verify:librarian-portal-phase4 && vitest --run --project unit test/unit/librarian-portal-phase4.test.ts",
+    "verify:student-portal-phase5": "node scripts/verify-student-portal-phase5.mjs",
+    "test:student-portal-phase5": "npm run verify:student-portal-phase5 && vitest --run --project unit test/unit/student-portal-phase5.test.ts",
+    "verify:portal-shell-phase51": "node scripts/verify-portal-shell-notifications-phase51.mjs",
+    "test:portal-shell-phase51": "npm run verify:portal-shell-phase51 && vitest --run --project unit test/unit/portal-shell-notification-ui-phase51.test.ts"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

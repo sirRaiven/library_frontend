@@ -267,7 +267,7 @@ onMounted(async () => {
 <template>
   <div class="sncbt-page-shell sncbt-staff-page space-y-6">
     <AdminPageHeader
-      eyebrow="Library Configuration"
+      eyebrow="Library Administration"
       title="Library Settings"
       description="Control the official Library policies used for borrowing, memberships, reservations, and fines. Changes apply to future transactions and are recorded in the security Audit Log."
       icon="i-lucide-settings-2"
