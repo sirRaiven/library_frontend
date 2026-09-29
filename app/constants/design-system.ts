@@ -46,8 +46,8 @@ export const SNCBT_STAFF_PAGES = {
   compactHeaderActionsBelowPx: SNCBT_BREAKPOINTS.md,
   minimumOperationalCardGapPx: 10,
   protectedPortals: ["admin", "librarian"] as const,
-  expectedAdminPages: 22,
-  expectedLibrarianPages: 25,
+  expectedAdminPages: 23,
+  expectedLibrarianPages: 26,
 } as const;
 
 export const SNCBT_DENSITY = {

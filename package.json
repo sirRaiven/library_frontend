@@ -90,7 +90,8 @@
     "verify:admin-data-management": "node scripts/verify-admin-data-management.mjs",
     "verify:admin-table-actions": "node scripts/verify-admin-table-actions.mjs",
     "verify:admin-data-governance": "node scripts/verify-admin-data-governance-phase32.mjs",
-    "test:admin-data-governance": "npm run verify:admin-data-management && npm run verify:admin-table-actions && npm run verify:admin-data-governance && vitest --run --project unit test/unit/admin-data-management-contract.test.ts test/unit/admin-data-governance-phase32.test.ts"
+    "test:admin-data-governance": "npm run verify:admin-data-management && npm run verify:admin-table-actions && npm run verify:admin-data-governance && vitest --run --project unit test/unit/admin-data-management-contract.test.ts test/unit/admin-data-governance-phase32.test.ts",
+    "test:librarian-student-record": "node scripts/verify-librarian-student-record.mjs && vitest --run --project unit test/unit/librarian-student-record-contract.test.ts"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

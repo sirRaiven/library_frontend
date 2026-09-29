@@ -17,7 +17,7 @@ function walkVue(relative: string): string[] {
 
 describe("Design System DS-8 visual theme contract", () => {
   it("keeps the complete route inventory under the shared visual theme", () => {
-    expect(walkVue("app/pages")).toHaveLength(68);
+    expect(walkVue("app/pages")).toHaveLength(69);
     for (const layout of ["admin", "librarian", "student", "faculty"]) {
       const source = read(`app/layouts/${layout}.vue`);
       expect(source).toContain("sncbt-dashboard-canvas");

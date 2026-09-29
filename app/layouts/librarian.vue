@@ -126,6 +126,13 @@ function getPageInformation(): {
     };
   }
 
+  if (/^\/librarian\/students\/[^/]+\/record\/?$/.test(path)) {
+    return {
+      title: "Student Record",
+      icon: "i-lucide-notebook-tabs",
+    };
+  }
+
   if (path.startsWith("/librarian/students")) {
     return {
       title: "Students",

@@ -29,6 +29,9 @@ const termManager = useMembershipTerm();
 const auth = useAuth();
 const toast = useToast();
 const route = useRoute();
+const isStudentDirectoryRoute = computed(() =>
+  route.path.replace(/\/+$/, "") === "/librarian/students",
+);
 const cardPrintQueue =
   useLibraryCardPrintQueue();
 
@@ -1533,7 +1536,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="sncbt-page-shell sncbt-staff-page">
+  <NuxtPage v-if="!isStudentDirectoryRoute" />
+  <UContainer v-else class="sncbt-page-shell sncbt-staff-page">
     <div class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12">
       <LibrarianPageHeader
         eyebrow="Library Users"
@@ -1687,6 +1691,14 @@ onBeforeUnmount(() => {
                   <span v-else>No active membership</span>
                 </template>
                 <template #actions>
+                  <UButton
+                    :to="`/librarian/students/${encodeURIComponent(student.documentId)}/record`"
+                    icon="i-lucide-notebook-tabs"
+                    color="neutral"
+                    variant="ghost"
+                    square
+                    :aria-label="`View Student Record for ${student.fullName}`"
+                  />
                   <UButton icon="i-lucide-id-card" color="neutral" variant="ghost" square aria-label="View Library Card" @click="openCard(student)" />
                   <UButton icon="i-lucide-rotate-cw" color="primary" variant="ghost" square aria-label="Renew membership" @click="renew(student)" />
                   <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" square aria-label="Edit Student" @click="openEdit(student)" />
@@ -1783,6 +1795,17 @@ onBeforeUnmount(() => {
                       </template>
                       <template #actions-cell="{ row }">
                         <div class="flex justify-end gap-1">
+                          <UTooltip text="View borrowing, reservation, and Library visit record">
+                            <UButton
+                              :to="`/librarian/students/${encodeURIComponent(row.original.documentId)}/record`"
+                              icon="i-lucide-notebook-tabs"
+                              color="neutral"
+                              variant="ghost"
+                              square
+                              :aria-label="`View Student Record for ${row.original.fullName}`"
+                            />
+                          </UTooltip>
+
                           <UTooltip text="View front and back of Library ID card">
                             <UButton
                               icon="i-lucide-id-card"

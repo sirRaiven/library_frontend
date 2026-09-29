@@ -86,6 +86,11 @@ export const librarianRoutes: AcceptanceRoute[] = [
   staticRoute("librarian", "/librarian/student-registration-approvals", "Registration approvals"),
   staticRoute("librarian", "/librarian/student-self-registration", "Student self registration"),
   staticRoute("librarian", "/librarian/students", "Students"),
+  dynamicRoute("librarian", "/librarian/students/[identifier]/record", "Student record", (env) =>
+    env.fixtures.studentBarcode
+      ? `/librarian/students/${encodeURIComponent(env.fixtures.studentBarcode)}/record`
+      : null,
+  ),
   staticRoute("librarian", "/librarian/visits", "Visits"),
 ];
 

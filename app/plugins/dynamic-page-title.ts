@@ -32,6 +32,7 @@ const PAGE_TITLE_RULES: PageTitleRule[] = [
   { pattern: /^\/librarian\/catalog\/?$/, title: "Book Catalog" },
   { pattern: /^\/librarian\/categories\/?$/, title: "Book Categories" },
 
+  { pattern: /^\/librarian\/students\/[^/]+\/record\/?$/, title: "Student Record" },
   { pattern: /^\/librarian\/students\/?$/, title: "Student Records" },
   { pattern: /^\/librarian\/faculty-book-reports\/?$/, title: "Faculty Book Reports" },
   { pattern: /^\/librarian\/faculty\/?$/, title: "Faculty Records" },
