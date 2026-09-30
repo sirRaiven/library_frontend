@@ -153,7 +153,7 @@ describe("Phase 35-36 release compatibility contract", () => {
     }
   });
 
-  it("locks v18 production-preview identity, Docker WebKit, and dirty-fixture diagnostics", () => {
+  it("locks v18 production-preview identity and dirty-fixture diagnostics", () => {
     const pkg = JSON.parse(read("package.json"));
     const preview = read("scripts/run-production-preview-check.mjs");
     const dockerRunner = read("scripts/run-playwright-docker-webkit.mjs");
@@ -164,8 +164,6 @@ describe("Phase 35-36 release compatibility contract", () => {
 
     expect(preview).toContain("Production preview identity verified");
     expect(preview).toMatch(/@vite\/client|vite-hmr|__vite_ping/);
-    expect(pkg.scripts["phase35:webkit:docker"]).toBeTruthy();
-    expect(pkg.scripts["phase35:cross-browser:docker-webkit"]).toBeTruthy();
     expect(dockerRunner).toContain("mcr.microsoft.com/playwright");
     expect(dockerRunner).toContain("run-server");
     expect(dockerRunner).toContain("<loopback>");

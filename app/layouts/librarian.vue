@@ -5,17 +5,13 @@ import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner
 import PortalNotificationTrigger from "~/components/shared/PortalNotificationTrigger.vue";
 
 import { appLogger } from "~/utils/app-logger";
-import type {
-  DropdownMenuItem,
-  NavigationMenuItem,
-} from "@nuxt/ui";
+import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 
 const route = useRoute();
 const auth = useAuth();
 const maintenance = useSystemMaintenance();
 const toast = useToast();
-const notificationCenter =
-  useLibraryNotifications();
+const notificationCenter = useLibraryNotifications();
 const monitoring = usePortalMonitoring();
 
 const sidebarOpen = ref(false);
@@ -26,51 +22,34 @@ const globalSearch = ref("");
 
 let desktopMediaQuery: MediaQueryList | undefined;
 
-function closeMobileSidebarOnDesktop(
-  event: MediaQueryListEvent,
-) {
+function closeMobileSidebarOnDesktop(event: MediaQueryListEvent) {
   if (event.matches) {
     sidebarOpen.value = false;
   }
 }
 
-const userName = computed(
-  () => auth.user.value?.username || "Librarian",
-);
+const userName = computed(() => auth.user.value?.username || "Librarian");
 
 const userEmail = computed(
-  () =>
-    auth.user.value?.email ||
-    "Library staff account",
+  () => auth.user.value?.email || "Library staff account",
 );
 
 const userInitials = computed(() => {
-  const parts = userName.value
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = userName.value.trim().split(/\s+/).filter(Boolean);
 
   return (
     parts
       .slice(0, 2)
-      .map((part) =>
-        part.charAt(0).toUpperCase(),
-      )
+      .map((part) => part.charAt(0).toUpperCase())
       .join("") || "L"
   );
 });
 
-const pageTitle = computed(
-  () =>
-    String(
-      route.meta.title ||
-        getPageInformation().title,
-    ),
+const pageTitle = computed(() =>
+  String(route.meta.title || getPageInformation().title),
 );
 
-const pageIcon = computed(
-  () => getPageInformation().icon,
-);
+const pageIcon = computed(() => getPageInformation().icon);
 
 function getPageInformation(): {
   title: string;
@@ -78,10 +57,7 @@ function getPageInformation(): {
 } {
   const path = route.path;
 
-  if (
-    path === "/librarian/dashboard" ||
-    path === "/librarian"
-  ) {
+  if (path === "/librarian/dashboard" || path === "/librarian") {
     return {
       title: "Library Overview",
       icon: "i-lucide-layout-dashboard",
@@ -116,11 +92,7 @@ function getPageInformation(): {
     };
   }
 
-  if (
-    path.startsWith(
-      "/librarian/reservations",
-    )
-  ) {
+  if (path.startsWith("/librarian/reservations")) {
     return {
       title: "Reservations",
       icon: "i-lucide-calendar-check-2",
@@ -183,22 +155,14 @@ function getPageInformation(): {
     };
   }
 
-  if (
-    path.startsWith(
-      "/librarian/memberships",
-    )
-  ) {
+  if (path.startsWith("/librarian/memberships")) {
     return {
       title: "Library Cards",
       icon: "i-lucide-id-card",
     };
   }
 
-  if (
-    path.startsWith(
-      "/librarian/library-card-designer",
-    )
-  ) {
+  if (path.startsWith("/librarian/library-card-designer")) {
     return {
       title: "Card Design",
       icon: "i-lucide-palette",
@@ -233,11 +197,7 @@ function getPageInformation(): {
     };
   }
 
-  if (
-    path.startsWith(
-      "/librarian/notifications",
-    )
-  ) {
+  if (path.startsWith("/librarian/notifications")) {
     return {
       title: "Notifications",
       icon: "i-lucide-bell",
@@ -250,14 +210,10 @@ function getPageInformation(): {
   };
 }
 
-function isRouteActive(
-  path: string,
-  exact = false,
-): boolean {
+function isRouteActive(path: string, exact = false): boolean {
   return exact
     ? route.path === path
-    : route.path === path ||
-        route.path.startsWith(`${path}/`);
+    : route.path === path || route.path.startsWith(`${path}/`);
 }
 
 function isBooksCatalogActive(): boolean {
@@ -271,9 +227,7 @@ function isBooksCatalogActive(): boolean {
   return (
     route.path.startsWith("/librarian/books") &&
     !utilityPages.some(
-      (path) =>
-        route.path === path ||
-        route.path.startsWith(`${path}/`),
+      (path) => route.path === path || route.path.startsWith(`${path}/`),
     )
   );
 }
@@ -407,7 +361,6 @@ const contentNavigationItems = computed(() => {
           path: "/librarian/faculty-book-reports",
           active: isRouteActive("/librarian/faculty-book-reports"),
         },
-
       ],
     },
     {
@@ -467,8 +420,8 @@ const contentNavigationItems = computed(() => {
 
 // UContentNavigation accepts group nodes without paths at runtime, while its public type
 // currently requires a path on every node. Keep the existing group-only navigation behavior.
-const contentNavigationLinks = computed<any[]>(() =>
-  contentNavigationItems.value,
+const contentNavigationLinks = computed<any[]>(
+  () => contentNavigationItems.value,
 );
 
 const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
@@ -625,25 +578,17 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   },
 ]);
 
-function getCompactChildItems(
-  item: NavigationMenuItem,
-): DropdownMenuItem[][] {
-  const children = Array.isArray(item.children)
-    ? item.children
-    : [];
+function getCompactChildItems(item: NavigationMenuItem): DropdownMenuItem[][] {
+  const children = Array.isArray(item.children) ? item.children : [];
 
   return [
     children.map((child) => ({
       label: String(child.label || "Open"),
-      icon:
-        typeof child.icon === "string"
-          ? child.icon
-          : undefined,
+      icon: typeof child.icon === "string" ? child.icon : undefined,
       to: child.to,
     })),
   ];
 }
-
 
 function handleSidebarNavigationClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
@@ -653,39 +598,37 @@ function handleSidebarNavigationClick(event: MouseEvent) {
   }
 }
 
-const accountMenuItems =
-  computed<DropdownMenuItem[][]>(() => [
-    [
-      {
-        label: userName.value,
-        type: "label",
+const accountMenuItems = computed<DropdownMenuItem[][]>(() => [
+  [
+    {
+      label: userName.value,
+      type: "label",
+    },
+    {
+      label: "Library Overview",
+      icon: "i-lucide-layout-dashboard",
+      to: "/librarian/dashboard",
+    },
+    {
+      label:
+        notificationCenter.badgeCount.value > 0
+          ? `Notifications (${notificationCenter.chipText.value})`
+          : "Notifications",
+      icon: "i-lucide-bell",
+      to: "/librarian/notifications",
+    },
+  ],
+  [
+    {
+      label: "Sign out",
+      icon: "i-lucide-log-out",
+      color: "error",
+      onSelect() {
+        isLogoutModalOpen.value = true;
       },
-      {
-        label: "Library Overview",
-        icon: "i-lucide-layout-dashboard",
-        to: "/librarian/dashboard",
-      },
-      {
-        label:
-          notificationCenter
-            .badgeCount.value > 0
-            ? `Notifications (${notificationCenter.chipText.value})`
-            : "Notifications",
-        icon: "i-lucide-bell",
-        to: "/librarian/notifications",
-      },
-    ],
-    [
-      {
-        label: "Sign out",
-        icon: "i-lucide-log-out",
-        color: "error",
-        onSelect() {
-          isLogoutModalOpen.value = true;
-        },
-      },
-    ],
-  ]);
+    },
+  ],
+]);
 
 async function submitGlobalSearch() {
   const search = globalSearch.value.trim();
@@ -719,8 +662,7 @@ async function handleLogout() {
 
     toast.add({
       title: "Signed out",
-      description:
-        "Your librarian session has been closed.",
+      description: "Your librarian session has been closed.",
       color: "success",
       icon: "i-lucide-circle-check",
     });
@@ -743,9 +685,7 @@ async function handleLogout() {
 onMounted(async () => {
   await maintenance.refresh().catch(() => undefined);
   await auth.initialize();
-  notificationCenter
-    .startPolling(120_000);
-
+  notificationCenter.startPolling(120_000);
 
   try {
     await monitoring.start();
@@ -754,25 +694,14 @@ onMounted(async () => {
     appLogger.warn("Unable to initialize Librarian portal monitoring.", error);
   }
 
-  desktopMediaQuery = window.matchMedia(
-    "(min-width: 1024px)",
-  );
-  desktopMediaQuery.addEventListener(
-    "change",
-    closeMobileSidebarOnDesktop,
-  );
-
+  desktopMediaQuery = window.matchMedia("(min-width: 1024px)");
+  desktopMediaQuery.addEventListener("change", closeMobileSidebarOnDesktop);
 });
 
 onBeforeUnmount(() => {
-  notificationCenter
-    .stopPolling();
+  notificationCenter.stopPolling();
 
-
-  desktopMediaQuery?.removeEventListener(
-    "change",
-    closeMobileSidebarOnDesktop,
-  );
+  desktopMediaQuery?.removeEventListener("change", closeMobileSidebarOnDesktop);
 });
 
 watch(
@@ -783,7 +712,6 @@ watch(
 
     await nextTick();
     void monitoring.recordPageView(route.path, pageTitle.value);
-
   },
 );
 </script>
@@ -842,11 +770,7 @@ watch(
         <NuxtLink
           to="/librarian/dashboard"
           class="flex min-w-0 flex-1 items-center rounded-xl py-1 outline-none ring-primary transition-[gap,padding,background-color] duration-300 ease-out hover:bg-elevated/60 focus-visible:ring-2 motion-reduce:transition-none"
-          :class="
-            collapsed
-              ? 'justify-center gap-0 px-0'
-              : 'gap-3 px-1.5'
-          "
+          :class="collapsed ? 'justify-center gap-0 px-0' : 'gap-3 px-1.5'"
           aria-label="Open library overview"
         >
           <div
@@ -860,7 +784,7 @@ watch(
               class="size-full object-contain"
               decoding="async"
               draggable="false"
-            >
+            />
           </div>
 
           <div
@@ -872,58 +796,39 @@ watch(
             "
             :aria-hidden="collapsed"
           >
-            <p
-              class="truncate text-sm font-bold text-highlighted"
-            >
+            <p class="truncate text-sm font-bold text-highlighted">
               SNCBT Library
             </p>
-            <p class="truncate text-xs text-muted">
-              Management System
-            </p>
+            <p class="truncate text-xs text-muted">Management System</p>
           </div>
         </NuxtLink>
       </template>
 
       <template #default="{ collapsed }">
         <div class="w-full">
-          <UContentNavigation
+          <UNavigationMenu
             v-if="!collapsed"
-            :key="`librarian-content-navigation:${route.path}`"
-            :navigation="contentNavigationLinks"
-            :default-open="true"
-            type="multiple"
-            :collapsible="true"
+            :key="`librarian-navigation:${route.path}`"
+            :items="compactNavigationItems"
+            orientation="vertical"
             color="primary"
             variant="pill"
             highlight
-            highlight-color="primary"
             class="sncbt-navigation sncbt-librarian-navigation w-full min-w-0 max-w-full overflow-x-hidden"
             :ui="{
               root: 'w-full min-w-0 max-w-full overflow-hidden',
-              list: 'w-full min-w-0 space-y-1.5',
+              list: 'w-full min-w-0 gap-1.5',
               item: 'w-full min-w-0',
-              itemWithChildren: 'w-full min-w-0',
               link: [
-                'group min-h-10 w-full min-w-0 rounded-xl px-3 py-2',
+                'min-h-10 w-full min-w-0 rounded-xl px-3 py-2',
                 'text-sm font-medium text-muted transition-[background-color,color,box-shadow] duration-150',
                 'hover:bg-primary/8 hover:text-primary',
                 'data-[active]:bg-primary/12 data-[active]:font-semibold data-[active]:text-primary data-[active]:shadow-sm',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
               ].join(' '),
-              trigger: [
-                'font-semibold text-toned',
-                'hover:bg-primary/8 hover:text-primary',
-                'data-[state=open]:bg-primary/6 data-[state=open]:text-primary',
-              ].join(' '),
-              content: 'min-w-0 pt-1',
-              listWithChildren: [
-                'ms-3 w-auto min-w-0 space-y-0.5 border-s border-primary/15 ps-2 pe-1',
-              ].join(' '),
               linkLeadingIcon: 'size-5 shrink-0 text-primary/85',
-              linkTitle: 'min-w-0 flex-1 truncate',
-              linkTrailing: 'ms-auto shrink-0',
-              linkTrailingIcon: 'size-4 text-primary/60',
-              linkTrailingBadge: 'max-w-20 truncate',
+              linkLabel: 'min-w-0 flex-1 truncate',
+              linkTrailingIcon: 'size-4 shrink-0 text-primary/60',
             }"
             aria-label="Librarian portal navigation"
             @click="handleSidebarNavigationClick"
@@ -1025,9 +930,7 @@ watch(
                 : 'Open account menu'
             "
             :ui="{
-              base: collapsed
-                ? 'justify-center'
-                : 'justify-start',
+              base: collapsed ? 'justify-center' : 'justify-start',
             }"
           >
             <UAvatar
@@ -1046,9 +949,7 @@ watch(
               "
               :aria-hidden="collapsed"
             >
-              <p
-                class="truncate text-sm font-semibold text-highlighted"
-              >
+              <p class="truncate text-sm font-semibold text-highlighted">
                 {{ userName }}
               </p>
               <p class="truncate text-xs text-muted">
@@ -1092,8 +993,7 @@ watch(
             ].join(' '),
             left: 'min-w-0 gap-1 sm:gap-1.5',
             icon: 'hidden size-5 shrink-0 sm:block',
-            title:
-              'max-w-[10rem] truncate text-sm font-semibold sm:hidden',
+            title: 'max-w-[10rem] truncate text-sm font-semibold sm:hidden',
             right: 'gap-0.5 sm:gap-1.5',
           }"
         >
@@ -1119,14 +1019,14 @@ watch(
                 class="lg:hidden"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="
-                  dashboardSidebarOpen
-                    ? 'soft'
-                    : 'ghost'
-                "
+                :variant="dashboardSidebarOpen ? 'soft' : 'ghost'"
                 square
                 :aria-expanded="dashboardSidebarOpen"
-                :aria-label="dashboardSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'"
+                :aria-label="
+                  dashboardSidebarOpen
+                    ? 'Close navigation menu'
+                    : 'Open navigation menu'
+                "
                 aria-controls="sncbt-librarian-dashboard-sidebar-main-navigation"
               />
             </UTooltip>
@@ -1147,16 +1047,14 @@ watch(
                 class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="
-                  dashboardSidebarCollapsed
-                    ? 'soft'
-                    : 'ghost'
-                "
+                :variant="dashboardSidebarCollapsed ? 'soft' : 'ghost'"
                 square
-                :aria-expanded="
-                  !dashboardSidebarCollapsed
+                :aria-expanded="!dashboardSidebarCollapsed"
+                :aria-label="
+                  dashboardSidebarCollapsed
+                    ? 'Expand navigation sidebar'
+                    : 'Collapse navigation sidebar'
                 "
-                :aria-label="dashboardSidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
                 aria-controls="sncbt-librarian-dashboard-sidebar-main-navigation"
               />
             </UTooltip>
@@ -1214,11 +1112,7 @@ watch(
                 square
                 aria-label="Open account menu"
               >
-                <UAvatar
-                  :alt="userName"
-                  :text="userInitials"
-                  size="sm"
-                />
+                <UAvatar :alt="userName" :text="userInitials" size="sm" />
               </UButton>
             </UDropdownMenu>
           </template>
@@ -1230,11 +1124,11 @@ watch(
           id="main-content"
           class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors duration-200"
         >
-          <div
-            class="sncbt-portal-frame"
-          >
+          <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
-            <div class="sncbt-portal-view sncbt-librarian-view sncbt-staff-view">
+            <div
+              class="sncbt-portal-view sncbt-librarian-view sncbt-staff-view"
+            >
               <slot />
             </div>
           </div>

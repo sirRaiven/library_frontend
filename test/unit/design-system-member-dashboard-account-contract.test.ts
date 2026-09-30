@@ -17,7 +17,7 @@ describe("DS-8.4 member dashboard and account experience contract", () => {
     expect(faculty).toContain("sncbt-member-dashboard-hero");
     expect(faculty).toContain("Department Library overview");
     expect(faculty).toContain("Books currently assigned");
-    expect(faculty).toContain("Action center");
+    expect(faculty).toContain("Faculty action center");
   });
 
   it("uses My Account wording instead of implementation-oriented profile/security titles", () => {

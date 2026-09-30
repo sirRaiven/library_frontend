@@ -147,6 +147,8 @@ export interface FacultyDashboardData {
   policy: {
     finePolicy: string;
     replacementPolicy: string;
+    loanDays: number;
+    maxRenewals: number;
     loanPeriod: string;
   };
   metrics: {
@@ -174,8 +176,10 @@ function emptyDashboard(): FacultyDashboardData {
       finePolicy: "Faculty loans do not receive monetary fines.",
       replacementPolicy:
         "Lost books must be replaced with a new acceptable copy.",
+      loanDays: 365,
+      maxRenewals: 2,
       loanPeriod:
-        "Due dates follow the annual department cycle or an earlier audit schedule.",
+        "Faculty checkout defaults to 365 days unless the Library sets an earlier review or audit date.",
     },
     metrics: {
       currentLoans: 0,
@@ -389,6 +393,7 @@ export function useFacultyPortal() {
 
   async function loadBorrowings(input: {
     view?: "current" | "history" | "all";
+    attention?: "all" | "due-soon" | "lost" | "overdue";
     search?: string;
     sort?: string;
     page?: number;
@@ -405,6 +410,7 @@ export function useFacultyPortal() {
       }>("/api/faculty-portal/borrowings", {
         query: {
           view: input.view ?? "current",
+          attention: input.attention && input.attention !== "all" ? input.attention : undefined,
           search: input.search?.trim() || undefined,
           sort: input.sort ?? "newest",
           page: input.page ?? 1,
@@ -427,6 +433,8 @@ export function useFacultyPortal() {
   async function loadReports(input: {
     status?: string;
     usageStatus?: string;
+    search?: string;
+    sort?: "newest" | "oldest";
     page?: number;
   } = {}) {
     loading.value = true;
@@ -442,6 +450,8 @@ export function useFacultyPortal() {
             input.usageStatus && input.usageStatus !== "All"
               ? input.usageStatus
               : undefined,
+          search: input.search?.trim() || undefined,
+          sort: input.sort ?? "newest",
           page: input.page ?? 1,
           pageSize: pagination.value.pageSize,
         },

@@ -121,7 +121,7 @@ export default defineNuxtConfig({
     enabled: !isProduction,
   },
 
-  modules: ["@nuxt/ui", "@nuxt/content"],
+  modules: ["@nuxt/ui"],
 
   // Nuxt UI integrates @nuxt/fonts automatically. Keep Inter as an optional
   // locally-installed face instead of proxying/downloading it through /_fonts.

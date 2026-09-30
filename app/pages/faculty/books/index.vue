@@ -9,17 +9,28 @@ definePageMeta({
   title: "Book Collection",
 });
 
+const route = useRoute();
+const router = useRouter();
 const portal = useFacultyPortal();
 const libraryOptions = useLibraryOptions();
 const toast = useToast();
 
 const ALL_CATEGORIES = "__all_categories__";
 
-const search = ref("");
-const category = ref(ALL_CATEGORIES);
-const availability = ref<"all" | "available">("all");
-const sort = ref<"title-asc" | "author-asc" | "newest">("title-asc");
-const page = ref(1);
+function queryText(name: string, maxLength = 120): string {
+  const value = route.query[name];
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+const search = ref(queryText("search"));
+const category = ref(queryText("category", 160) || ALL_CATEGORIES);
+const availability = ref<"all" | "available">(route.query.availability === "available" ? "available" : "all");
+const sort = ref<"title-asc" | "author-asc" | "newest">(
+  ["title-asc", "author-asc", "newest"].includes(String(route.query.sort))
+    ? (String(route.query.sort) as "title-asc" | "author-asc" | "newest")
+    : "title-asc",
+);
+const page = ref(Math.max(1, Number(route.query.page) || 1));
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
 const categoryItems = computed(() => [
@@ -35,6 +46,21 @@ const sortItems = [
   { label: "Author A–Z", value: "author-asc" },
   { label: "Newest Added", value: "newest" },
 ];
+
+function syncRouteQuery() {
+  const query: Record<string, string> = {};
+  if (search.value.trim()) query.search = search.value.trim();
+  if (category.value !== ALL_CATEGORIES) query.category = category.value;
+  if (availability.value !== "all") query.availability = availability.value;
+  if (sort.value !== "title-asc") query.sort = sort.value;
+  if (page.value > 1) query.page = String(page.value);
+  void router.replace({ query });
+}
+
+const resultsAnnouncement = computed(() => {
+  const total = portal.pagination.value.total;
+  return `${total} book${total === 1 ? "" : "s"} found in the Faculty collection view.`;
+});
 
 async function load() {
   try {
@@ -58,13 +84,18 @@ async function load() {
 
 watch([category, availability, sort], () => {
   page.value = 1;
+  syncRouteQuery();
   void load();
 });
-watch(page, load);
+watch(page, () => {
+  syncRouteQuery();
+  void load();
+});
 watch(search, () => {
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     page.value = 1;
+    syncRouteQuery();
     void load();
   }, 350);
 });
@@ -122,6 +153,7 @@ onBeforeUnmount(() => {
             icon="i-lucide-search"
             placeholder="Search title, author, ISBN, or call number"
             class="w-full"
+            aria-label="Search Faculty book collection"
           />
         </template>
 
@@ -133,6 +165,7 @@ onBeforeUnmount(() => {
             label-key="label"
             class="w-full md:w-56"
             :disabled="libraryOptions.loading.value"
+            aria-label="Book category"
           />
           <USelect
             v-model="availability"
@@ -140,6 +173,7 @@ onBeforeUnmount(() => {
             value-key="value"
             label-key="label"
             class="w-full md:w-48"
+            aria-label="Book availability"
           />
           <USelect
             v-model="sort"
@@ -147,6 +181,7 @@ onBeforeUnmount(() => {
             value-key="value"
             label-key="label"
             class="w-full md:w-48"
+            aria-label="Sort Faculty book collection"
           />
         </template>
 
@@ -161,6 +196,8 @@ onBeforeUnmount(() => {
           />
         </template>
       </AppFilterBar>
+
+      <p class="sr-only" aria-live="polite" aria-atomic="true">{{ resultsAnnouncement }}</p>
 
       <div
         v-if="portal.loading.value && !portal.books.value.length"
@@ -202,6 +239,7 @@ onBeforeUnmount(() => {
           v-model:page="page"
           :total="portal.pagination.value.total"
           :items-per-page="portal.pagination.value.pageSize"
+          aria-label="Faculty book collection pages"
         />
       </div>
     </div>

@@ -71,6 +71,7 @@ const envFile = resolve(
       : ".env.e2e.local",
 );
 const fileEnv = parseEnvFile(envFile);
+const projectEnv = parseEnvFile(resolve(process.cwd(), ".env"));
 const childBaseEnv = { ...process.env, ...fileEnv, E2E_TARGET: target };
 if (args.get("frontend-url")) childBaseEnv.E2E_FRONTEND_URL = args.get("frontend-url");
 if (args.get("backend-url")) childBaseEnv.E2E_BACKEND_URL = args.get("backend-url");
@@ -199,6 +200,36 @@ async function preflight(url, name) {
   console.log(`[PASS] ${name} reachable (${response.status})`);
 }
 
+async function preflightBrowserCors(apiOrigin, browserOrigin) {
+  const url = `${apiOrigin.replace(/\/$/, "")}/api/system-status/maintenance?timestamp=${Date.now()}`;
+  let response;
+  try {
+    response = await fetch(url, {
+      redirect: "manual",
+      headers: { Origin: browserOrigin },
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (error) {
+    throw new Error(`Browser CORS preflight could not reach ${apiOrigin}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const allowedOrigin = response.headers.get("access-control-allow-origin");
+  if (allowedOrigin !== browserOrigin) {
+    throw new Error([
+      `Local acceptance would fail CORS before authentication.`,
+      `Browser origin: ${browserOrigin}`,
+      `Nuxt API origin: ${apiOrigin}`,
+      `Backend Access-Control-Allow-Origin: ${allowedOrigin || "<missing>"}`,
+      "",
+      "Allow both local browser origins in the Strapi backend .env, for example:",
+      "  FRONTEND_URLS=http://192.168.254.103:3000,http://localhost:3000",
+      "Then restart Strapi before rerunning acceptance tests.",
+    ].join("\n"));
+  }
+
+  console.log(`[PASS] Browser CORS allows ${browserOrigin} -> ${apiOrigin}`);
+}
+
 const browsers = requestedBrowser === "all" ? ["chromium", "firefox", "webkit"] : [requestedBrowser];
 function usesRemoteBrowser(browser) {
   return browser === "webkit" && Boolean(childBaseEnv.E2E_BROWSER_WS_ENDPOINT);
@@ -270,6 +301,22 @@ if (scope === "readonly") {
 
 await preflight(`${childBaseEnv.E2E_FRONTEND_URL.replace(/\/$/, "")}/`, "Nuxt frontend");
 await preflight(`${childBaseEnv.E2E_BACKEND_URL.replace(/\/$/, "")}/api/reference-data?scope=public-registration`, "Strapi backend");
+
+if (target === "localhost") {
+  const configuredAppBackend = String(
+    process.env.NUXT_PUBLIC_STRAPI_URL ?? projectEnv.NUXT_PUBLIC_STRAPI_URL ?? childBaseEnv.E2E_BACKEND_URL,
+  ).trim().replace(/\/+$/, "");
+
+  if (configuredAppBackend) {
+    let apiOrigin;
+    try {
+      apiOrigin = new URL(configuredAppBackend).origin;
+    } catch {
+      throw new Error(`NUXT_PUBLIC_STRAPI_URL is not a valid absolute origin: ${configuredAppBackend}`);
+    }
+    await preflightBrowserCors(apiOrigin, frontend.origin);
+  }
+}
 
 let playwright;
 try {

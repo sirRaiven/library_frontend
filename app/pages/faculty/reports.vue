@@ -6,15 +6,69 @@ definePageMeta({
   title: "Book Status Reports",
 });
 
+const route = useRoute();
+const router = useRouter();
 const portal = useFacultyPortal();
 const toast = useToast();
 
-const status = ref("All");
-const usageStatus = ref("All");
-const page = ref(1);
+type ReportSort = "newest" | "oldest";
 
-const statusItems = ["All", "Submitted", "Acknowledged", "Replacement Verified", "Resolved", "Cancelled"];
-const usageItems = ["All", "In Use - Good", "In Use - Needs Attention", "Lost - Will Replace", "Replacement Submitted", "Ready for Library Return"];
+const allowedStatuses = [
+  "All",
+  "open",
+  "closed",
+  "Submitted",
+  "Acknowledged",
+  "Replacement Verified",
+  "Resolved",
+  "Cancelled",
+] as const;
+const allowedUsage = [
+  "All",
+  "In Use - Good",
+  "In Use - Needs Attention",
+  "Lost - Will Replace",
+  "Replacement Submitted",
+  "Ready for Library Return",
+] as const;
+
+function queryChoice<T extends string>(name: string, allowed: readonly T[], fallback: T): T {
+  const value = route.query[name];
+  return typeof value === "string" && allowed.includes(value as T)
+    ? (value as T)
+    : fallback;
+}
+
+function queryText(name: string, maxLength = 120): string {
+  const value = route.query[name];
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+const status = ref(queryChoice("status", allowedStatuses, "All"));
+const usageStatus = ref(queryChoice("usage", allowedUsage, "All"));
+const search = ref(queryText("search"));
+const sort = ref<ReportSort>(queryChoice("sort", ["newest", "oldest"] as const, "newest"));
+const page = ref(Math.max(1, Number(route.query.page) || 1));
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+
+const statusItems = [
+  { label: "All Reports", value: "All" },
+  { label: "Open Review", value: "open" },
+  { label: "Closed Reports", value: "closed" },
+  { label: "Submitted", value: "Submitted" },
+  { label: "Acknowledged", value: "Acknowledged" },
+  { label: "Replacement Verified", value: "Replacement Verified" },
+  { label: "Resolved", value: "Resolved" },
+  { label: "Cancelled", value: "Cancelled" },
+];
+const usageItems = allowedUsage.map(value => ({
+  label: value === "All" ? "All Book Updates" : value,
+  value,
+}));
+const sortItems = [
+  { label: "Newest First", value: "newest" },
+  { label: "Oldest First", value: "oldest" },
+];
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "Not available";
@@ -39,11 +93,28 @@ function usageColor(value: string) {
   return "primary" as const;
 }
 
+function syncRouteQuery() {
+  const query: Record<string, string> = {};
+  if (status.value !== "All") query.status = status.value;
+  if (usageStatus.value !== "All") query.usage = usageStatus.value;
+  if (search.value.trim()) query.search = search.value.trim();
+  if (sort.value !== "newest") query.sort = sort.value;
+  if (page.value > 1) query.page = String(page.value);
+  void router.replace({ query });
+}
+
+const resultsAnnouncement = computed(() => {
+  const total = portal.pagination.value.total;
+  return `${total} Faculty book status report${total === 1 ? "" : "s"} shown.`;
+});
+
 async function load() {
   try {
     await portal.loadReports({
       status: status.value,
       usageStatus: usageStatus.value,
+      search: search.value,
+      sort: sort.value,
       page: page.value,
     });
   } catch (error) {
@@ -56,12 +127,28 @@ async function load() {
   }
 }
 
-watch([status, usageStatus], () => {
+watch([status, usageStatus, sort], () => {
   page.value = 1;
+  syncRouteQuery();
   void load();
 });
-watch(page, load);
+watch(page, () => {
+  syncRouteQuery();
+  void load();
+});
+watch(search, () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    page.value = 1;
+    syncRouteQuery();
+    void load();
+  }, 350);
+});
+
 onMounted(load);
+onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer);
+});
 </script>
 
 <template>
@@ -79,11 +166,21 @@ onMounted(load);
 
     <AppFilterBar
       title="Filter reports"
-      :active-count="(status !== 'All' ? 1 : 0) + (usageStatus !== 'All' ? 1 : 0)"
+      :active-count="(search.trim() ? 1 : 0) + (status !== 'All' ? 1 : 0) + (usageStatus !== 'All' ? 1 : 0) + (sort !== 'newest' ? 1 : 0)"
     >
+      <template #search>
+        <UInput
+          v-model="search"
+          icon="i-lucide-search"
+          placeholder="Search report, book, author, or copy number"
+          class="w-full"
+          aria-label="Search Faculty book status reports"
+        />
+      </template>
       <template #filters>
-        <USelect v-model="status" :items="statusItems" class="w-full md:w-56" aria-label="Report status" />
-        <USelect v-model="usageStatus" :items="usageItems" class="w-full md:w-64" aria-label="Book usage status" />
+        <USelect v-model="status" :items="statusItems" value-key="value" label-key="label" class="w-full md:w-56" aria-label="Report status" />
+        <USelect v-model="usageStatus" :items="usageItems" value-key="value" label-key="label" class="w-full md:w-64" aria-label="Book usage status" />
+        <USelect v-model="sort" :items="sortItems" value-key="value" label-key="label" class="w-full md:w-44" aria-label="Sort Faculty reports" />
       </template>
       <template #actions>
         <UButton
@@ -96,6 +193,8 @@ onMounted(load);
         />
       </template>
     </AppFilterBar>
+
+    <p class="sr-only" aria-live="polite" aria-atomic="true">{{ resultsAnnouncement }}</p>
 
     <div v-if="portal.loading.value && !portal.reports.value.length" class="space-y-4">
       <USkeleton v-for="item in 3" :key="item" class="h-48 rounded-2xl" />
@@ -114,7 +213,13 @@ onMounted(load);
               <UBadge :label="report.reportStatus" :color="statusColor(report.reportStatus)" variant="outline" />
               <span class="text-xs font-mono text-muted">{{ report.reportNo }}</span>
             </div>
-            <h2 class="mt-3 text-lg font-semibold text-highlighted">{{ report.book?.title || 'Borrowed book' }}</h2>
+            <NuxtLink
+              v-if="report.book?.documentId"
+              :to="`/faculty/books/${report.book.documentId}`"
+              class="mt-3 block text-lg font-semibold text-highlighted hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              :aria-label="`View book details for ${report.book?.title || 'borrowed book'}`"
+            >{{ report.book?.title || 'Borrowed book' }}</NuxtLink>
+            <h2 v-else class="mt-3 text-lg font-semibold text-highlighted">{{ report.book?.title || 'Borrowed book' }}</h2>
             <p class="mt-1 text-sm text-muted">{{ report.book?.author || 'Author unavailable' }}</p>
 
             <dl class="mt-4 grid gap-3 text-xs sm:grid-cols-2 xl:grid-cols-4">
@@ -146,7 +251,7 @@ onMounted(load);
     </UCard>
 
     <div v-if="portal.pagination.value.pageCount > 1" class="flex justify-center">
-      <UPagination v-model:page="page" :total="portal.pagination.value.total" :items-per-page="portal.pagination.value.pageSize" />
+      <UPagination v-model:page="page" :total="portal.pagination.value.total" :items-per-page="portal.pagination.value.pageSize" aria-label="Faculty report pages" />
     </div>
   </div>
 </template>

@@ -13,10 +13,31 @@ const router = useRouter();
 const portal = useFacultyPortal();
 const toast = useToast();
 
-const view = ref<"current" | "history" | "all">("current");
-const search = ref("");
-const sort = ref("newest");
-const page = ref(1);
+type BorrowView = "current" | "history" | "all";
+type BorrowAttention = "all" | "due-soon" | "lost" | "overdue";
+type BorrowSort = "newest" | "oldest" | "due-soon";
+
+const viewValues: BorrowView[] = ["current", "history", "all"];
+const attentionValues: BorrowAttention[] = ["all", "due-soon", "lost", "overdue"];
+const sortValues: BorrowSort[] = ["newest", "oldest", "due-soon"];
+
+function queryText(name: string, maxLength = 120): string {
+  const value = route.query[name];
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function queryChoice<T extends string>(name: string, allowed: readonly T[], fallback: T): T {
+  const value = route.query[name];
+  return typeof value === "string" && allowed.includes(value as T)
+    ? (value as T)
+    : fallback;
+}
+
+const view = ref<BorrowView>(queryChoice("view", viewValues, "current"));
+const attention = ref<BorrowAttention>(queryChoice("attention", attentionValues, "all"));
+const search = ref(queryText("search"));
+const sort = ref<BorrowSort>(queryChoice("sort", sortValues, "newest"));
+const page = ref(Math.max(1, Number(route.query.page) || 1));
 const reportOpen = ref(false);
 const selected = ref<FacultyBorrowing | null>(null);
 const submitting = ref(false);
@@ -30,6 +51,12 @@ const viewItems = [
   { label: "Current Department Books", value: "current" },
   { label: "Return History", value: "history" },
   { label: "All Borrowing Records", value: "all" },
+];
+const attentionItems = [
+  { label: "All Current Books", value: "all" },
+  { label: "Review Due Soon", value: "due-soon" },
+  { label: "Lost / For Replacement", value: "lost" },
+  { label: "Past Review Date", value: "overdue" },
 ];
 const sortItems = [
   { label: "Newest Borrowed", value: "newest" },
@@ -130,10 +157,36 @@ function beginReport(record: FacultyBorrowing) {
   reportOpen.value = true;
 }
 
+function syncRouteQuery() {
+  const query: Record<string, string> = {};
+  if (view.value !== "current") query.view = view.value;
+  if (attention.value !== "all") query.attention = attention.value;
+  if (search.value.trim()) query.search = search.value.trim();
+  if (sort.value !== "newest") query.sort = sort.value;
+  if (page.value > 1) query.page = String(page.value);
+  if (typeof route.query.report === "string" && route.query.report) {
+    query.report = route.query.report;
+  }
+  void router.replace({ query });
+}
+
+function applyPreset(nextView: BorrowView, nextAttention: BorrowAttention, nextSort: BorrowSort = "newest") {
+  view.value = nextView;
+  attention.value = nextAttention;
+  sort.value = nextSort;
+  page.value = 1;
+}
+
+const resultsAnnouncement = computed(() => {
+  const total = portal.pagination.value.total;
+  return `${total} borrowing record${total === 1 ? "" : "s"} shown.`;
+});
+
 async function load() {
   try {
     await portal.loadBorrowings({
       view: view.value,
+      attention: attention.value,
       search: search.value,
       sort: sort.value,
       page: page.value,
@@ -197,15 +250,20 @@ async function submitReport() {
   }
 }
 
-watch([view, sort], () => {
+watch([view, attention, sort], () => {
   page.value = 1;
+  syncRouteQuery();
   void load();
 });
-watch(page, load);
+watch(page, () => {
+  syncRouteQuery();
+  void load();
+});
 watch(search, () => {
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     page.value = 1;
+    syncRouteQuery();
     void load();
   }, 350);
 });
@@ -234,32 +292,40 @@ onBeforeUnmount(() => {
       </template>
     </FacultyPageHeader>
 
-    <section class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }">
-        <p class="text-xs font-semibold uppercase tracking-wide text-muted">Current Books</p>
-        <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.currentCount }}</p>
-        <p class="mt-2 text-xs text-muted">Issued to your Faculty account</p>
-      </UCard>
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }">
-        <p class="text-xs font-semibold uppercase tracking-wide text-muted">Review Due Soon</p>
-        <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.reviewDueSoon }}</p>
-        <p class="mt-2 text-xs text-muted">Within the next 30 days</p>
-      </UCard>
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }">
-        <p class="text-xs font-semibold uppercase tracking-wide text-muted">For Replacement</p>
-        <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.lostCount }}</p>
-        <p class="mt-2 text-xs text-muted">Lost books requiring a new copy</p>
-      </UCard>
-      <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5' }">
-        <p class="text-xs font-semibold uppercase tracking-wide text-muted">Completed</p>
-        <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.completedCount }}</p>
-        <p class="mt-2 text-xs text-muted">Returned or replacement-completed records</p>
-      </UCard>
+    <section class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4" aria-label="Borrowing record shortcuts">
+      <button type="button" class="text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" @click="applyPreset('current', 'all')">
+        <UCard :ui="{ root: 'h-full ring-1 ring-default transition hover:ring-primary/40 hover:bg-elevated/30', body: 'p-5' }">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Current Books</p>
+          <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.currentCount }}</p>
+          <p class="mt-2 text-xs text-muted">Issued to your Faculty account</p>
+        </UCard>
+      </button>
+      <button type="button" class="text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" @click="applyPreset('current', 'due-soon', 'due-soon')">
+        <UCard :ui="{ root: 'h-full ring-1 ring-default transition hover:ring-primary/40 hover:bg-elevated/30', body: 'p-5' }">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Review Due Soon</p>
+          <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.reviewDueSoon }}</p>
+          <p class="mt-2 text-xs text-muted">Within the next 30 days</p>
+        </UCard>
+      </button>
+      <button type="button" class="text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" @click="applyPreset('current', 'lost')">
+        <UCard :ui="{ root: 'h-full ring-1 ring-default transition hover:ring-primary/40 hover:bg-elevated/30', body: 'p-5' }">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">For Replacement</p>
+          <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.lostCount }}</p>
+          <p class="mt-2 text-xs text-muted">Lost books requiring a new copy</p>
+        </UCard>
+      </button>
+      <button type="button" class="text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" @click="applyPreset('history', 'all')">
+        <UCard :ui="{ root: 'h-full ring-1 ring-default transition hover:ring-primary/40 hover:bg-elevated/30', body: 'p-5' }">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Completed</p>
+          <p class="mt-2 text-3xl font-bold text-highlighted">{{ portal.summary.value.completedCount }}</p>
+          <p class="mt-2 text-xs text-muted">Returned or replacement-completed records</p>
+        </UCard>
+      </button>
     </section>
 
     <AppFilterBar
       title="Borrowing records"
-      :active-count="(search.trim() ? 1 : 0) + (view !== 'current' ? 1 : 0) + (sort !== 'newest' ? 1 : 0)"
+      :active-count="(search.trim() ? 1 : 0) + (view !== 'current' ? 1 : 0) + (attention !== 'all' ? 1 : 0) + (sort !== 'newest' ? 1 : 0)"
     >
       <template #search>
         <UInput
@@ -267,11 +333,13 @@ onBeforeUnmount(() => {
           icon="i-lucide-search"
           placeholder="Search title, author, borrow number, or copy number"
           class="w-full"
+          aria-label="Search Faculty borrowing records"
         />
       </template>
       <template #filters>
-        <USelect v-model="view" :items="viewItems" value-key="value" label-key="label" class="w-full md:w-56" />
-        <USelect v-model="sort" :items="sortItems" value-key="value" label-key="label" class="w-full md:w-52" />
+        <USelect v-model="view" :items="viewItems" value-key="value" label-key="label" class="w-full md:w-56" aria-label="Borrowing record view" />
+        <USelect v-model="attention" :items="attentionItems" value-key="value" label-key="label" class="w-full md:w-56" aria-label="Borrowing attention filter" :disabled="view === 'history'" />
+        <USelect v-model="sort" :items="sortItems" value-key="value" label-key="label" class="w-full md:w-52" aria-label="Sort Faculty borrowing records" />
       </template>
       <template #actions>
         <UButton
@@ -284,6 +352,8 @@ onBeforeUnmount(() => {
         />
       </template>
     </AppFilterBar>
+
+    <p class="sr-only" aria-live="polite" aria-atomic="true">{{ resultsAnnouncement }}</p>
 
     <div v-if="portal.loading.value && !portal.borrowings.value.length" class="space-y-4">
       <USkeleton v-for="item in 3" :key="item" class="h-44 rounded-2xl" />
@@ -308,7 +378,13 @@ onBeforeUnmount(() => {
               <UBadge :label="record.status" :color="loanStatusColor(record.status)" variant="soft" />
               <UBadge v-if="record.latestReport" :label="record.latestReport.reportStatus" :color="reportStatusColor(record.latestReport.reportStatus)" variant="outline" />
             </div>
-            <h2 class="mt-3 text-lg font-semibold text-highlighted">{{ record.book.title }}</h2>
+            <NuxtLink
+              v-if="record.book.documentId"
+              :to="`/faculty/books/${record.book.documentId}`"
+              class="mt-3 block text-lg font-semibold text-highlighted hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              :aria-label="`View book details for ${record.book.title}`"
+            >{{ record.book.title }}</NuxtLink>
+            <h2 v-else class="mt-3 text-lg font-semibold text-highlighted">{{ record.book.title }}</h2>
             <p class="mt-1 text-sm text-muted">{{ record.book.author }}</p>
 
             <dl class="mt-4 grid gap-3 text-xs sm:grid-cols-2 xl:grid-cols-4">
@@ -345,7 +421,7 @@ onBeforeUnmount(() => {
     </UCard>
 
     <div v-if="portal.pagination.value.pageCount > 1" class="flex justify-center">
-      <UPagination v-model:page="page" :total="portal.pagination.value.total" :items-per-page="portal.pagination.value.pageSize" />
+      <UPagination v-model:page="page" :total="portal.pagination.value.total" :items-per-page="portal.pagination.value.pageSize" aria-label="Faculty borrowing pages" />
     </div>
 
     <UModal v-model:open="reportOpen" :dismissible="!submitting" :ui="{ content: 'sm:max-w-2xl' }">

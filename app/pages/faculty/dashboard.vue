@@ -15,6 +15,7 @@ const metricCards = computed(() => [
     description: "Library books currently issued to your Faculty account.",
     icon: "i-lucide-library-big",
     color: "primary" as const,
+    to: "/faculty/borrowings?view=current",
   },
   {
     label: "Review Due Soon",
@@ -22,6 +23,7 @@ const metricCards = computed(() => [
     description: "Books due for return or condition confirmation within 30 days.",
     icon: "i-lucide-calendar-clock",
     color: portal.dashboard.value.metrics.reviewDueSoon ? "warning" as const : "success" as const,
+    to: "/faculty/borrowings?attention=due-soon",
   },
   {
     label: "For Replacement",
@@ -29,6 +31,7 @@ const metricCards = computed(() => [
     description: "Lost books that still require a new replacement copy.",
     icon: "i-lucide-package-plus",
     color: portal.dashboard.value.metrics.lostForReplacement ? "error" as const : "success" as const,
+    to: "/faculty/borrowings?attention=lost",
   },
   {
     label: "Open Status Reports",
@@ -36,6 +39,7 @@ const metricCards = computed(() => [
     description: "Submitted reports still being reviewed by the Library.",
     icon: "i-lucide-clipboard-clock",
     color: portal.dashboard.value.metrics.openReports ? "warning" as const : "neutral" as const,
+    to: "/faculty/reports?status=open",
   },
 ]);
 
@@ -73,6 +77,12 @@ function noticeToneClass(value: string) {
   if (value === "Warning") return "text-warning";
   if (value === "Success") return "text-success";
   return "text-primary";
+}
+
+function noticeActionLabel(code: string) {
+  if (code === "LOST_REPLACEMENT") return "Review replacement";
+  if (code === "REVIEW_DUE") return "Review due books";
+  return "Open borrowed books";
 }
 
 async function load() {
@@ -163,18 +173,27 @@ onMounted(load);
       </div>
 
       <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <UCard v-for="card in metricCards" :key="card.label" :ui="{ root: 'ring-1 ring-default shadow-sm', body: 'p-4 sm:p-5' }">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-muted sm:text-xs">{{ card.label }}</p>
-              <p class="mt-2 text-2xl font-bold text-highlighted sm:text-3xl">{{ card.value }}</p>
+        <NuxtLink
+          v-for="card in metricCards"
+          :key="card.label"
+          :to="card.to"
+          class="group rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          :aria-label="`${card.label}: ${card.value}. Open related records`"
+        >
+          <UCard :ui="{ root: 'h-full ring-1 ring-default shadow-sm transition group-hover:ring-primary/40 group-hover:bg-elevated/30', body: 'p-4 sm:p-5' }">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-muted sm:text-xs">{{ card.label }}</p>
+                <p class="mt-2 text-2xl font-bold text-highlighted sm:text-3xl">{{ card.value }}</p>
+              </div>
+              <div class="flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11 sm:rounded-2xl" :class="metricToneClass(card.color)">
+                <UIcon :name="card.icon" class="size-5" aria-hidden="true" />
+              </div>
             </div>
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11 sm:rounded-2xl" :class="metricToneClass(card.color)">
-              <UIcon :name="card.icon" class="size-5" />
-            </div>
-          </div>
-          <p class="mt-3 line-clamp-2 text-xs leading-5 text-muted">{{ card.description }}</p>
-        </UCard>
+            <p class="mt-3 line-clamp-2 text-xs leading-5 text-muted">{{ card.description }}</p>
+            <p class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">Open records <UIcon name="i-lucide-arrow-right" class="size-3.5 transition group-hover:translate-x-0.5" aria-hidden="true" /></p>
+          </UCard>
+        </NuxtLink>
       </div>
     </section>
 
@@ -201,7 +220,13 @@ onMounted(load);
           >
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <h3 class="line-clamp-2 font-semibold text-highlighted">{{ loan.book.title }}</h3>
+                <NuxtLink
+                  v-if="loan.book.documentId"
+                  :to="`/faculty/books/${loan.book.documentId}`"
+                  class="line-clamp-2 font-semibold text-highlighted hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  :aria-label="`View book details for ${loan.book.title}`"
+                >{{ loan.book.title }}</NuxtLink>
+                <h3 v-else class="line-clamp-2 font-semibold text-highlighted">{{ loan.book.title }}</h3>
                 <UBadge :label="loan.status" :color="statusColor(loan.status)" variant="soft" size="sm" />
               </div>
               <p class="mt-1 truncate text-sm text-muted">{{ loan.book.author }}</p>
@@ -226,11 +251,11 @@ onMounted(load);
         <UCard :ui="{ root: 'ring-1 ring-default', body: 'p-5 sm:p-6' }">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h2 class="font-semibold text-highlighted">Action center</h2>
-              <p class="mt-1 text-xs text-muted">Notices and Library tasks that may require attention.</p>
+              <h2 class="font-semibold text-highlighted">Faculty action center</h2>
+              <p class="mt-1 text-xs text-muted">Borrowing and report tasks that may require your attention.</p>
             </div>
             <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <UIcon name="i-lucide-bell-dot" class="size-5" />
+              <UIcon name="i-lucide-list-todo" class="size-5" aria-hidden="true" />
             </div>
           </div>
 
@@ -241,7 +266,7 @@ onMounted(load);
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-semibold text-highlighted">{{ notice.title }}</p>
                   <p class="mt-1 text-xs leading-5 text-muted">{{ notice.message }}</p>
-                  <UButton v-if="notice.actionUrl" label="Open" :to="notice.actionUrl" color="neutral" variant="link" size="xs" class="mt-1 h-auto p-0" />
+                  <UButton v-if="notice.actionUrl" :label="noticeActionLabel(notice.code)" :to="notice.actionUrl" color="neutral" variant="link" size="xs" class="mt-1 h-auto p-0" />
                 </div>
               </div>
             </div>

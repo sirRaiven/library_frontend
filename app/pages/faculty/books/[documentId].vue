@@ -106,7 +106,7 @@ watch(documentId, load, { immediate: true });
               <div>
                 <h2 class="font-semibold text-highlighted">How to borrow this book</h2>
                 <p class="mt-1 text-sm leading-6 text-muted">
-                  Visit the Library, present your Faculty ID, and bring an available physical copy to the counter. The Librarian will assign the due date based on the annual department cycle or the next CHED/TESDA audit schedule.
+                  Visit the Library, present your Faculty ID, and bring an available physical copy to the counter. The Librarian will assign the due date using the current Faculty borrowing rules and may set an earlier review date when an institutional or audit schedule requires it.
                 </p>
               </div>
             </div>
