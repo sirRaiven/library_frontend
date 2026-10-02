@@ -216,6 +216,56 @@ function isRouteActive(path: string, exact = false): boolean {
     : route.path === path || route.path.startsWith(`${path}/`);
 }
 
+const activeNavigationSection = computed(() => {
+  const path = route.path;
+
+  if (path === "/librarian" || path === "/librarian/dashboard") {
+    return "dashboard";
+  }
+
+  if (path.startsWith("/librarian/books")) {
+    return "books";
+  }
+
+  if (
+    path.startsWith("/librarian/visits") ||
+    path.startsWith("/librarian/borrow") ||
+    path.startsWith("/librarian/return") ||
+    path.startsWith("/librarian/fines") ||
+    path.startsWith("/librarian/reservations")
+  ) {
+    return "services";
+  }
+
+  if (
+    path.startsWith("/librarian/students") ||
+    path.startsWith("/librarian/student-registration-approvals") ||
+    path.startsWith("/librarian/student-self-registration") ||
+    path.startsWith("/librarian/faculty")
+  ) {
+    return "users";
+  }
+
+  if (
+    path.startsWith("/librarian/membership-term") ||
+    path.startsWith("/librarian/memberships") ||
+    path.startsWith("/librarian/library-card-designer") ||
+    path.startsWith("/librarian/library-card-print")
+  ) {
+    return "membership";
+  }
+
+  if (
+    path.startsWith("/librarian/history") ||
+    path.startsWith("/librarian/reports") ||
+    path.startsWith("/librarian/notifications")
+  ) {
+    return "reports";
+  }
+
+  return "other";
+});
+
 function isBooksCatalogActive(): boolean {
   const utilityPages = [
     "/librarian/books/register",
@@ -249,11 +299,13 @@ const contentNavigationItems = computed(() => {
     isRouteActive("/librarian/students") ||
     isRouteActive("/librarian/student-registration-approvals") ||
     isRouteActive("/librarian/student-self-registration") ||
-    isRouteActive("/librarian/faculty");
+    isRouteActive("/librarian/faculty") ||
+    isRouteActive("/librarian/faculty-book-reports");
   const membershipActive =
     isRouteActive("/librarian/membership-term") ||
     isRouteActive("/librarian/memberships") ||
-    isRouteActive("/librarian/library-card-designer");
+    isRouteActive("/librarian/library-card-designer") ||
+    isRouteActive("/librarian/library-card-print");
   const reportsActive =
     isRouteActive("/librarian/history") ||
     isRouteActive("/librarian/reports") ||
@@ -494,7 +546,8 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
       isRouteActive("/librarian/students") ||
       isRouteActive("/librarian/student-registration-approvals") ||
       isRouteActive("/librarian/student-self-registration") ||
-      isRouteActive("/librarian/faculty"),
+      isRouteActive("/librarian/faculty") ||
+      isRouteActive("/librarian/faculty-book-reports"),
     children: [
       {
         label: "Students",
@@ -529,7 +582,8 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
     active:
       isRouteActive("/librarian/membership-term") ||
       isRouteActive("/librarian/memberships") ||
-      isRouteActive("/librarian/library-card-designer"),
+      isRouteActive("/librarian/library-card-designer") ||
+      isRouteActive("/librarian/library-card-print"),
     children: [
       {
         label: "Membership Term",
@@ -592,8 +646,43 @@ function getCompactChildItems(item: NavigationMenuItem): DropdownMenuItem[][] {
 
 function handleSidebarNavigationClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
+  const anchor =
+    target?.closest<HTMLAnchorElement>("a[href]");
 
-  if (target?.closest("a[href]")) {
+  if (!anchor) {
+    return;
+  }
+
+  // Preserve normal browser behavior for opening links
+  // in another tab or window.
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    event.altKey ||
+    anchor.target === "_blank"
+  ) {
+    return;
+  }
+
+  const destination = new URL(
+    anchor.href,
+    window.location.origin,
+  );
+
+  if (destination.origin !== window.location.origin) {
+    return;
+  }
+
+  const destinationRoute =
+    `${destination.pathname}${destination.search}${destination.hash}`;
+
+  // Normal navigation is closed by the route watcher after
+  // Nuxt has actually changed the page. Clicking the current
+  // page should still close the mobile sidebar immediately.
+  if (destinationRoute === route.fullPath) {
     sidebarOpen.value = false;
   }
 }
@@ -754,6 +843,7 @@ watch(
         body: [
           'min-w-0 gap-1.5 px-2.5 py-3',
           'overflow-y-auto overflow-x-hidden overscroll-contain',
+          '[scrollbar-gutter:stable]',
         ].join(' '),
         footer: [
           'border-t border-default/70 bg-transparent px-2 py-3',
@@ -806,29 +896,58 @@ watch(
 
       <template #default="{ collapsed }">
         <div class="w-full">
-          <UNavigationMenu
+          <UContentNavigation
             v-if="!collapsed"
-            :key="`librarian-navigation:${route.path}`"
-            :items="compactNavigationItems"
-            orientation="vertical"
+            :key="`librarian-content-navigation:${activeNavigationSection}`"
+            :navigation="contentNavigationLinks"
+            :default-open="true"
+            type="multiple"
+            :collapsible="true"
             color="primary"
             variant="pill"
             highlight
+            highlight-color="primary"
             class="sncbt-navigation sncbt-librarian-navigation w-full min-w-0 max-w-full overflow-x-hidden"
             :ui="{
               root: 'w-full min-w-0 max-w-full overflow-hidden',
-              list: 'w-full min-w-0 gap-1.5',
+              list: 'w-full min-w-0 space-y-1.5',
               item: 'w-full min-w-0',
+              itemWithChildren: 'w-full min-w-0',
               link: [
-                'min-h-10 w-full min-w-0 rounded-xl px-3 py-2',
-                'text-sm font-medium text-muted transition-[background-color,color,box-shadow] duration-150',
+                'group min-h-10 w-full min-w-0 rounded-xl px-3 py-2',
+                'text-sm font-medium text-muted',
+                'transition-[background-color,color,box-shadow] duration-150 ease-out',
                 'hover:bg-primary/8 hover:text-primary',
-                'data-[active]:bg-primary/12 data-[active]:font-semibold data-[active]:text-primary data-[active]:shadow-sm',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                'data-[active]:bg-primary/12',
+                'data-[active]:font-semibold',
+                'data-[active]:text-primary',
+                'data-[active]:shadow-sm',
+                'focus-visible:outline-none',
+                'focus-visible:ring-2',
+                'focus-visible:ring-primary/40',
+                'motion-reduce:transition-none',
+              ].join(' '),
+              trigger: [
+                'font-semibold text-toned',
+                'transition-[background-color,color] duration-150 ease-out',
+                'hover:bg-primary/8 hover:text-primary',
+                'data-[state=open]:bg-primary/6',
+                'data-[state=open]:text-primary',
+                'focus-visible:outline-none',
+                'focus-visible:ring-2',
+                'focus-visible:ring-primary/40',
+                'motion-reduce:transition-none',
+              ].join(' '),
+              content: 'min-w-0 pt-1',
+              listWithChildren: [
+                'ms-3 w-auto min-w-0 space-y-0.5',
+                'border-s border-primary/15 ps-2 pe-1',
               ].join(' '),
               linkLeadingIcon: 'size-5 shrink-0 text-primary/85',
-              linkLabel: 'min-w-0 flex-1 truncate',
-              linkTrailingIcon: 'size-4 shrink-0 text-primary/60',
+              linkTitle: 'min-w-0 flex-1 truncate',
+              linkTrailing: 'ms-auto shrink-0',
+              linkTrailingIcon: 'size-4 text-primary/60',
+              linkTrailingBadge: 'max-w-20 truncate',
             }"
             aria-label="Librarian portal navigation"
             @click="handleSidebarNavigationClick"

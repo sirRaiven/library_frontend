@@ -131,12 +131,9 @@ export default defineNuxtConfig({
     families: [{ name: "Inter", provider: "none" }],
   },
 
-  content: {
-    experimental: {
-      sqliteConnector: "native",
-    },
+  ui: {
+    content: true,
   },
-
 
   css: ["~/assets/css/main.css"],
 
