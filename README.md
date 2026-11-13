@@ -1,75 +1,30 @@
-# Nuxt Minimal Starter
+# SNCBT Library Management System — Frontend
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Nuxt 4 / Vue 3 web portal for administrators, librarians, students, and faculty. Source-only cleanup baseline: **13 November 2026**.
 
 ## Setup
 
-Make sure to install dependencies:
+1. Install **Node.js 22+** and npm 10+.
+2. Copy `.env.example` to `.env` and configure `NUXT_PUBLIC_STRAPI_URL`. Do not commit real secrets.
+3. Run `npm ci` to restore locked dependencies and prepare the barcode scanner WASM.
+4. Run `npm run dev` and open `http://localhost:3000`.
 
-```bash
-# npm
-npm install
+The backend should be running and accessible at the configured Strapi origin.
 
-# pnpm
-pnpm install
+## Validation and build
 
-# yarn
-yarn install
+- `npm run typecheck` — Nuxt TypeScript check.
+- `npm run build` — builds the application and regenerates barcode WASM.
+- `npm run check` — typecheck and build.
+- `npm run verify:security` — existing static production security checks.
+- `npm run build:production` — verifies a production environment and builds.
 
-# bun
-bun install
-```
+## Test suite
 
-## Development Server
+The old unit, E2E, acceptance and release contract suites were **intentionally reset**; no `npm test` command is advertised until a new suite exists. See `TEST_RESET.md`.
 
-Start the development server on `http://localhost:3000`:
+## Repository hygiene
 
-```bash
-# npm
-npm run dev
+Generated `.nuxt`, `.output`, `.data`, `public/barcode/*.wasm`, local environment files and runtime caches are deliberately excluded. Nuxt will regenerate these on install/build.
 
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+This cleanup is not a claim that Phase 6.1 or production acceptance has passed. The source should be checked and tested in a fully provisioned development environment.

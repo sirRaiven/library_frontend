@@ -39,3 +39,9 @@ coverage/
 .fleet/
 .idea/
 .vscode/
+# Additional source-only release exclusions
+env-backup.txt
+*.sqlite
+*.db
+*.tsbuildinfo
+public/barcode/*.wasm
