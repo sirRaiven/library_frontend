@@ -1,0 +1,46 @@
+# NUXT_PUBLIC_STRAPI_URL=http://localhost:1337
+
+NUXT_PUBLIC_STRAPI_URL=http://192.168.241.1:1337
+
+
+# Copy to .env.e2e.local for localhost testing.
+# Do not commit real credentials.
+E2E_FRONTEND_URL=http://localhost:3000
+E2E_BACKEND_URL=http://localhost:1337
+
+# Authenticated read-only gate: all four dedicated role accounts are required.
+# These accounts should be test-only/local or staging accounts; do not use production credentials.
+# Role accounts reserved for automated testing.
+E2E_ADMIN_USERNAME=Admin
+E2E_ADMIN_PASSWORD=Admin@1234
+E2E_LIBRARIAN_USERNAME=librarian
+E2E_LIBRARIAN_PASSWORD=librarian@1234
+E2E_STUDENT_USERNAME=26-000635
+E2E_STUDENT_PASSWORD=Student@1234
+E2E_FACULTY_USERNAME=facult-test1
+E2E_FACULTY_PASSWORD=Faculty@1234
+
+# These four read-only route fixtures can be discovered automatically after the four role credentials are filled.
+# Run: npm run setup:acceptance:authenticated
+# They may also be supplied manually when needed.
+# npm run setup:acceptance:authenticated
+E2E_BOOK_DOCUMENT_ID=fryir7l6wj3byueipysomq3q
+E2E_BOOK_ID=fryir7l6wj3byueipysomq3q
+E2E_ADMIN_USER_ID=5
+E2E_ADMIN_ROLE_ID=8
+
+# Transaction fixtures used only when E2E_ALLOW_WRITES=true.
+# Use a dedicated test Student and one Available test copy.
+E2E_STUDENT_BARCODE=LC-2026-000003
+E2E_AVAILABLE_BOOK_BARCODE=0061
+E2E_RESERVATION_BOOK_QUERY=Computer-aided design
+
+E2E_LOCAL_WRITE_CONFIRMATION=I_UNDERSTAND_THIS_MUTATES_LOCAL_TEST_DATA
+# Local writes are opt-in. Remote writes require all three values below.
+E2E_ALLOW_WRITES=false
+E2E_ALLOW_REMOTE_WRITES=false
+E2E_REMOTE_WRITE_CONFIRMATION=
+
+# Optional runtime behavior.
+E2E_TIMEOUT_MS=30000
+E2E_HEADED=false
