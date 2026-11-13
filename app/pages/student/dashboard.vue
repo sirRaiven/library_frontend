@@ -93,9 +93,6 @@ const quickActions = [
   },
 ];
 
-const firstName = computed(() =>
-  dashboard.student.value?.firstName?.trim() || "Student",
-);
 
 const visibleNotices = computed(() =>
   dashboard.notices.value.slice(0, 3),
@@ -312,7 +309,7 @@ onMounted(refresh);
           </div>
 
           <h1 class="mt-4 text-2xl font-bold tracking-tight text-highlighted sm:text-3xl lg:text-4xl">
-            {{ dashboard.student.value ? `Welcome back, ${firstName}` : 'Welcome to your Library' }}
+            Your Library overview
           </h1>
           <p class="mt-2 max-w-2xl text-sm leading-6 text-muted sm:text-base">
             Keep track of your borrowed books, reservations, Library Card, and account activity from one place.

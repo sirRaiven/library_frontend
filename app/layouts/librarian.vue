@@ -8,6 +8,7 @@ import { appLogger } from "~/utils/app-logger";
 import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 
 const route = useRoute();
+const { isNavigating: pageLoading } = usePageExperience();
 const auth = useAuth();
 const maintenance = useSystemMaintenance();
 const toast = useToast();
@@ -216,266 +217,6 @@ function isRouteActive(path: string, exact = false): boolean {
     : route.path === path || route.path.startsWith(`${path}/`);
 }
 
-const activeNavigationSection = computed(() => {
-  const path = route.path;
-
-  if (path === "/librarian" || path === "/librarian/dashboard") {
-    return "dashboard";
-  }
-
-  if (path.startsWith("/librarian/books")) {
-    return "books";
-  }
-
-  if (
-    path.startsWith("/librarian/visits") ||
-    path.startsWith("/librarian/borrow") ||
-    path.startsWith("/librarian/return") ||
-    path.startsWith("/librarian/fines") ||
-    path.startsWith("/librarian/reservations")
-  ) {
-    return "services";
-  }
-
-  if (
-    path.startsWith("/librarian/students") ||
-    path.startsWith("/librarian/student-registration-approvals") ||
-    path.startsWith("/librarian/student-self-registration") ||
-    path.startsWith("/librarian/faculty")
-  ) {
-    return "users";
-  }
-
-  if (
-    path.startsWith("/librarian/membership-term") ||
-    path.startsWith("/librarian/memberships") ||
-    path.startsWith("/librarian/library-card-designer") ||
-    path.startsWith("/librarian/library-card-print")
-  ) {
-    return "membership";
-  }
-
-  if (
-    path.startsWith("/librarian/history") ||
-    path.startsWith("/librarian/reports") ||
-    path.startsWith("/librarian/notifications")
-  ) {
-    return "reports";
-  }
-
-  return "other";
-});
-
-function isBooksCatalogActive(): boolean {
-  const utilityPages = [
-    "/librarian/books/register",
-    "/librarian/books/import",
-    "/librarian/books/copies",
-    "/librarian/books/print",
-  ];
-
-  return (
-    route.path.startsWith("/librarian/books") &&
-    !utilityPages.some(
-      (path) => route.path === path || route.path.startsWith(`${path}/`),
-    )
-  );
-}
-
-const contentNavigationItems = computed(() => {
-  const notificationBadge =
-    notificationCenter.badgeCount.value > 0
-      ? notificationCenter.chipText.value
-      : undefined;
-
-  const booksActive = route.path.startsWith("/librarian/books");
-  const servicesActive =
-    isRouteActive("/librarian/visits") ||
-    isRouteActive("/librarian/borrow") ||
-    isRouteActive("/librarian/return") ||
-    isRouteActive("/librarian/fines") ||
-    isRouteActive("/librarian/reservations");
-  const usersActive =
-    isRouteActive("/librarian/students") ||
-    isRouteActive("/librarian/student-registration-approvals") ||
-    isRouteActive("/librarian/student-self-registration") ||
-    isRouteActive("/librarian/faculty") ||
-    isRouteActive("/librarian/faculty-book-reports");
-  const membershipActive =
-    isRouteActive("/librarian/membership-term") ||
-    isRouteActive("/librarian/memberships") ||
-    isRouteActive("/librarian/library-card-designer") ||
-    isRouteActive("/librarian/library-card-print");
-  const reportsActive =
-    isRouteActive("/librarian/history") ||
-    isRouteActive("/librarian/reports") ||
-    isRouteActive("/librarian/notifications");
-
-  return [
-    {
-      title: "Dashboard",
-      icon: "i-lucide-layout-dashboard",
-      path: "/librarian/dashboard",
-      active:
-        isRouteActive("/librarian/dashboard", true) ||
-        route.path === "/librarian",
-    },
-    {
-      title: "Books & Collection",
-      icon: "i-lucide-library-big",
-      active: booksActive,
-      children: [
-        {
-          title: "View Books",
-          icon: "i-lucide-library",
-          path: "/librarian/books",
-          active: isBooksCatalogActive(),
-        },
-        {
-          title: "Add New Book",
-          icon: "i-lucide-book-plus",
-          path: "/librarian/books/register",
-          active: isRouteActive("/librarian/books/register"),
-        },
-      ],
-    },
-    {
-      title: "Library Services",
-      icon: "i-lucide-hand-helping",
-      active: servicesActive,
-      children: [
-        {
-          title: "Library Visits",
-          icon: "i-lucide-scan-line",
-          path: "/librarian/visits",
-          active: isRouteActive("/librarian/visits"),
-        },
-        {
-          title: "Borrow a Book",
-          icon: "i-lucide-book-up",
-          path: "/librarian/borrow",
-          active: isRouteActive("/librarian/borrow"),
-        },
-        {
-          title: "Return a Book",
-          icon: "i-lucide-book-down",
-          path: "/librarian/return",
-          active: isRouteActive("/librarian/return"),
-        },
-        {
-          title: "Fines & Payments",
-          icon: "i-lucide-receipt-text",
-          path: "/librarian/fines",
-          active: isRouteActive("/librarian/fines"),
-        },
-        {
-          title: "Reservations",
-          icon: "i-lucide-calendar-check-2",
-          path: "/librarian/reservations",
-          active: isRouteActive("/librarian/reservations"),
-        },
-      ],
-    },
-    {
-      title: "Library Users",
-      icon: "i-lucide-users-round",
-      active: usersActive,
-      children: [
-        {
-          title: "Students",
-          icon: "i-lucide-graduation-cap",
-          path: "/librarian/students",
-          active: isRouteActive("/librarian/students"),
-        },
-        {
-          title: "Registration Approvals",
-          icon: "i-lucide-clipboard-check",
-          path: "/librarian/student-registration-approvals",
-          active: isRouteActive("/librarian/student-registration-approvals"),
-        },
-        {
-          title: "Registration QR",
-          icon: "i-lucide-qr-code",
-          path: "/librarian/student-self-registration",
-          active: isRouteActive("/librarian/student-self-registration"),
-        },
-        {
-          title: "Faculty",
-          icon: "i-lucide-briefcase-business",
-          path: "/librarian/faculty",
-          active:
-            isRouteActive("/librarian/faculty") &&
-            !isRouteActive("/librarian/faculty-book-reports"),
-        },
-        {
-          title: "Faculty Book Reports",
-          icon: "i-lucide-clipboard-check",
-          path: "/librarian/faculty-book-reports",
-          active: isRouteActive("/librarian/faculty-book-reports"),
-        },
-      ],
-    },
-    {
-      title: "Membership & Cards",
-      icon: "i-lucide-id-card",
-      active: membershipActive,
-      children: [
-        {
-          title: "Membership Term",
-          icon: "i-lucide-calendar-range",
-          path: "/librarian/membership-term",
-          active: isRouteActive("/librarian/membership-term"),
-        },
-        {
-          title: "Library Cards",
-          icon: "i-lucide-id-card",
-          path: "/librarian/memberships",
-          active: isRouteActive("/librarian/memberships"),
-        },
-        {
-          title: "Card Design",
-          icon: "i-lucide-palette",
-          path: "/librarian/library-card-designer",
-          active: isRouteActive("/librarian/library-card-designer"),
-        },
-      ],
-    },
-    {
-      title: "Reports & Notices",
-      icon: "i-lucide-chart-no-axes-combined",
-      active: reportsActive,
-      badge: notificationBadge,
-      children: [
-        {
-          title: "History",
-          icon: "i-lucide-history",
-          path: "/librarian/history",
-          active: isRouteActive("/librarian/history"),
-        },
-        {
-          title: "Reports",
-          icon: "i-lucide-chart-no-axes-combined",
-          path: "/librarian/reports",
-          active: isRouteActive("/librarian/reports"),
-        },
-        {
-          title: "Notifications",
-          icon: "i-lucide-bell",
-          path: "/librarian/notifications",
-          active: isRouteActive("/librarian/notifications"),
-          badge: notificationBadge,
-        },
-      ],
-    },
-  ];
-});
-
-// UContentNavigation accepts group nodes without paths at runtime, while its public type
-// currently requires a path on every node. Keep the existing group-only navigation behavior.
-const contentNavigationLinks = computed<any[]>(
-  () => contentNavigationItems.value,
-);
-
 const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   {
     label: "Dashboard",
@@ -631,6 +372,15 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
     ],
   },
 ]);
+
+// Nuxt UI vertical menus use per-item defaultOpen, not a root default-open prop.
+// Opening only the current section keeps the staff navigation easy to scan.
+const expandedNavigationItems = computed<NavigationMenuItem[]>(() =>
+  compactNavigationItems.value.map((item) => ({
+    ...item,
+    defaultOpen: Boolean(item.active && item.children?.length),
+  })),
+);
 
 function getCompactChildItems(item: NavigationMenuItem): DropdownMenuItem[][] {
   const children = Array.isArray(item.children) ? item.children : [];
@@ -896,59 +646,18 @@ watch(
 
       <template #default="{ collapsed }">
         <div class="w-full">
-          <UContentNavigation
+          <UNavigationMenu
             v-if="!collapsed"
-            :key="`librarian-content-navigation:${activeNavigationSection}`"
-            :navigation="contentNavigationLinks"
-            :default-open="true"
+            :key="`librarian-menu:${route.path.split('/').slice(0, 3).join('/')}`"
+            :items="expandedNavigationItems"
+            orientation="vertical"
             type="multiple"
             :collapsible="true"
+            :highlight="true"
+            highlight-color="primary"
             color="primary"
             variant="pill"
-            highlight
-            highlight-color="primary"
-            class="sncbt-navigation sncbt-librarian-navigation w-full min-w-0 max-w-full overflow-x-hidden"
-            :ui="{
-              root: 'w-full min-w-0 max-w-full overflow-hidden',
-              list: 'w-full min-w-0 space-y-1.5',
-              item: 'w-full min-w-0',
-              itemWithChildren: 'w-full min-w-0',
-              link: [
-                'group min-h-10 w-full min-w-0 rounded-xl px-3 py-2',
-                'text-sm font-medium text-muted',
-                'transition-[background-color,color,box-shadow] duration-150 ease-out',
-                'hover:bg-primary/8 hover:text-primary',
-                'data-[active]:bg-primary/12',
-                'data-[active]:font-semibold',
-                'data-[active]:text-primary',
-                'data-[active]:shadow-sm',
-                'focus-visible:outline-none',
-                'focus-visible:ring-2',
-                'focus-visible:ring-primary/40',
-                'motion-reduce:transition-none',
-              ].join(' '),
-              trigger: [
-                'font-semibold text-toned',
-                'transition-[background-color,color] duration-150 ease-out',
-                'hover:bg-primary/8 hover:text-primary',
-                'data-[state=open]:bg-primary/6',
-                'data-[state=open]:text-primary',
-                'focus-visible:outline-none',
-                'focus-visible:ring-2',
-                'focus-visible:ring-primary/40',
-                'motion-reduce:transition-none',
-              ].join(' '),
-              content: 'min-w-0 pt-1',
-              listWithChildren: [
-                'ms-3 w-auto min-w-0 space-y-0.5',
-                'border-s border-primary/15 ps-2 pe-1',
-              ].join(' '),
-              linkLeadingIcon: 'size-5 shrink-0 text-primary/85',
-              linkTitle: 'min-w-0 flex-1 truncate',
-              linkTrailing: 'ms-auto shrink-0',
-              linkTrailingIcon: 'size-4 text-primary/60',
-              linkTrailingBadge: 'max-w-20 truncate',
-            }"
+            class="sncbt-navigation sncbt-librarian-navigation w-full min-w-0"
             aria-label="Librarian portal navigation"
             @click="handleSidebarNavigationClick"
           />
@@ -1248,6 +957,7 @@ watch(
             <div
               class="sncbt-portal-view sncbt-librarian-view sncbt-staff-view"
             >
+              <AppPageLoadingSkeleton v-if="pageLoading" />
               <slot />
             </div>
           </div>

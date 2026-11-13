@@ -10,6 +10,7 @@ import type {
 } from "@nuxt/ui";
 
 const route = useRoute();
+const { isNavigating: pageLoading } = usePageExperience();
 const auth = useAuth();
 const maintenance = useSystemMaintenance();
 const dashboard = useStudentDashboard();
@@ -444,6 +445,7 @@ onBeforeUnmount(() => {
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
             <div class="sncbt-portal-view">
+              <AppPageLoadingSkeleton v-if="pageLoading" />
               <slot />
             </div>
           </div>

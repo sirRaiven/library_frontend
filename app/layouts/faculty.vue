@@ -7,6 +7,7 @@ import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { appLogger } from "~/utils/app-logger";
 
 const route = useRoute();
+const { isNavigating: pageLoading } = usePageExperience();
 const auth = useAuth();
 const maintenance = useSystemMaintenance();
 const portal = useFacultyPortal();
@@ -356,6 +357,7 @@ watch(
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
             <div class="sncbt-portal-view">
+              <AppPageLoadingSkeleton v-if="pageLoading" />
               <slot />
             </div>
           </div>

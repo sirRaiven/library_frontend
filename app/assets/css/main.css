@@ -2438,3 +2438,122 @@ body {
     display: none !important;
   }
 }
+
+
+/* Phase 8 — Human-centered interaction and loading states (all portals). */
+.sncbt-portal-view,
+.sncbt-public-default-layout { position: relative; }
+
+.sncbt-route-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  min-height: calc(100dvh - var(--sncbt-header-height));
+  padding: var(--sncbt-space-page);
+  background: var(--sncbt-canvas);
+  pointer-events: auto;
+  opacity: 0;
+  animation: sncbt-reveal-loading 100ms ease-out 140ms both;
+}
+.sncbt-skeleton-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+.sncbt-skeleton-panel {
+  padding: clamp(0.875rem, 1.8vw, 1.5rem);
+  border: 1px solid var(--ui-border);
+  border-radius: 0.875rem;
+  background: var(--ui-bg);
+}
+@keyframes sncbt-reveal-loading { to { opacity: 1; } }
+
+/* Functional feedback only: avoid constant bouncing, fake counters and card float effects. */
+.sncbt-portal-view :where(button, a, [role="button"]),
+.sncbt-signin :where(button, a),
+.sncbt-navigation :where(button, a) {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: var(--sncbt-motion-base);
+  transition-timing-function: var(--sncbt-ease-standard);
+}
+.sncbt-portal-view :where(button, [role="button"]):not(:disabled):active,
+.sncbt-signin :where(button):not(:disabled):active {
+  transform: scale(0.985);
+}
+.sncbt-portal-view :where(button, a, input, select, textarea, [role="button"]):focus-visible,
+.sncbt-signin :where(button, a, input):focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+.sncbt-portal-view :where(button, [role="button"]):disabled,
+.sncbt-signin :where(button):disabled { cursor: not-allowed; }
+
+/* Librarian: clear hierarchy; native Nuxt UI expanded groups and compact flyouts. */
+.sncbt-librarian-navigation { padding-inline: 0.35rem; }
+.sncbt-librarian-navigation :where([role="menuitem"], a, button) { min-height: 2.6rem; }
+.sncbt-librarian-navigation :where([data-state="open"]) { font-weight: 600; }
+.sncbt-librarian-navigation :where([data-active="true"], [aria-current="page"]) {
+  border-radius: 0.625rem;
+  border-inline-start: 3px solid var(--ui-primary);
+  background-color: rgba(52, 211, 153, 0.10);
+}
+
+/* Sign-in: quiet academic presentation instead of template gradients / status ornaments. */
+.sncbt-signin { background: var(--sncbt-canvas); }
+.sncbt-signin-topline { height: 5px; background: #047857; }
+.sncbt-signin-context { padding-block: 1.5rem; }
+.sncbt-signin-form-wrap {
+  width: 100%; max-width: 29rem; margin-inline: auto;
+  padding: clamp(1.5rem, 3vw, 2.75rem);
+  border: 1px solid var(--ui-border);
+  border-radius: 0.875rem;
+  background: var(--ui-bg);
+  box-shadow: 0 12px 30px -28px rgba(2, 25, 24, 0.35);
+}
+.sncbt-signin-eyebrow { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em; color: #047857; }
+.dark .sncbt-signin-eyebrow { color: #6ee7b7; }
+.sncbt-password-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: 0.375rem;
+  color: var(--ui-text-muted);
+}
+.sncbt-password-toggle:hover:not(:disabled) { color: var(--ui-text-highlighted); background: var(--ui-bg-elevated); }
+.sncbt-signin-progress { position: relative; height: 3px; overflow: hidden; border-radius: 6px; background: var(--ui-bg-elevated); }
+.sncbt-signin-progress span {
+  position: absolute; inset: 0 auto 0 0; width: 40%; border-radius: inherit;
+  background: var(--ui-primary);
+  animation: sncbt-progress-indeterminate 1.2s ease-in-out infinite;
+}
+@keyframes sncbt-progress-indeterminate { from { transform: translateX(-110%); } to { transform: translateX(360%); } }
+@media (max-width: 1023px) { .sncbt-signin-form-wrap { box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .sncbt-route-skeleton { animation: none; opacity: 1; }
+  .sncbt-signin-progress span { animation: none; width: 100%; }
+  .sncbt-portal-view :where(button, a, [role="button"]),
+  .sncbt-signin :where(button, a),
+  .sncbt-navigation :where(button, a) { transition: none !important; transform: none !important; }
+  .sncbt-route-skeleton :where([class*="animate-pulse"]) { animation: none !important; }
+}
+
+
+/* Phase 8 — remove unnecessary template-style decorative layers across portals. */
+@layer base {
+  html, body { background-image: none; }
+}
+.sncbt-dashboard-canvas { background: var(--sncbt-canvas); }
+.sncbt-portal-view :where(
+  .sncbt-member-dashboard-hero,
+  .sncbt-account-identity-card,
+  .sncbt-account-settings-nav,
+  .sncbt-form-section,
+  .sncbt-filter-panel,
+  .sncbt-filter-bar,
+  .sncbt-record-card,
+  .sncbt-mobile-record,
+  .sncbt-quick-action,
+  .sncbt-context-strip,
+  .sncbt-empty-state,
+  .sncbt-empty-state-card,
+  .sncbt-welcome-card
+) {
+  background: var(--ui-bg) !important;
+  box-shadow: var(--sncbt-elevation-1);
+}
+.sncbt-portal-view :where(.sncbt-member-dashboard-hero, .sncbt-account-identity-card)::before,
+.sncbt-portal-view .sncbt-page-hero::after { display: none !important; }

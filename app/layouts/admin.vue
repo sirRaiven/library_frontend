@@ -9,6 +9,7 @@ import type {
 } from "@nuxt/ui";
 
 const route = useRoute();
+const { isNavigating: pageLoading } = usePageExperience();
 const auth = useAuth();
 const maintenance = useSystemMaintenance();
 const monitoring = usePortalMonitoring();
@@ -408,6 +409,7 @@ watch(
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner admin />
             <div class="sncbt-portal-view sncbt-admin-view sncbt-staff-view">
+              <AppPageLoadingSkeleton v-if="pageLoading" />
               <slot />
             </div>
           </div>

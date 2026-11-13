@@ -131,10 +131,6 @@ export default defineNuxtConfig({
     families: [{ name: "Inter", provider: "none" }],
   },
 
-  ui: {
-    content: true,
-  },
-
   css: ["~/assets/css/main.css"],
 
   nitro: {
