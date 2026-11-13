@@ -1,0 +1,44 @@
+{
+  "name": "library_frontend",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "npm run prepare:barcode && nuxt dev",
+    "build": "npm run prepare:barcode && nuxt build",
+    "build:production": "npm run verify:production-env && npm run verify:security && npm run build",
+    "generate": "npm run prepare:barcode && nuxt generate",
+    "preview": "nuxt preview",
+    "prepare:barcode": "node scripts/copy-zxing-wasm.mjs",
+    "postinstall": "nuxt prepare && npm run prepare:barcode",
+    "typecheck": "nuxt typecheck",
+    "analyze": "nuxt build --analyze",
+    "verify:production-env": "node scripts/verify-production-env.mjs",
+    "verify:security": "node scripts/verify-production-security.mjs",
+    "check": "npm run typecheck && npm run build"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.9.0",
+    "docx": "^9.7.1",
+    "exceljs": "^3.4.0",
+    "html-to-image": "^1.11.13",
+    "jsbarcode": "^3.12.3",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "nuxt": "^4.1.3",
+    "qrcode": "^1.5.4",
+    "tailwindcss": "^4.3.2",
+    "vue": "^3.5.39",
+    "vue-qrcode-reader": "5.7.3",
+    "vue-router": "^5.1.0"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.119",
+    "@types/qrcode": "^1.5.6",
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.3.11"
+  },
+  "engines": {
+    "node": ">=22.5.0 <25",
+    "npm": ">=10.0.0"
+  }
+}
