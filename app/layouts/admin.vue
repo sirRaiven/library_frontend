@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
+import PortalBreadcrumbs from "~/components/shared/PortalBreadcrumbs.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
@@ -16,7 +17,8 @@ const maintenance = useSystemMaintenance();
 const monitoring = usePortalMonitoring();
 
 
-const sidebarOpen = ref(false);
+const { sidebarOpen, sidebarMenu, openSidebar, onSidebarLinkClick } =
+  usePortalSidebar();
 const sidebarCollapsed = ref(false);
 const logoutOpen = ref(false);
 const loggingOut = ref(false);
@@ -50,10 +52,34 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   ],
   [
     { label: "People & Access", type: "label" },
-    { label: "Users", icon: "i-lucide-users", to: "/admin/users", active: active("/admin/users") },
-    { label: "Librarians", icon: "i-lucide-user-round-cog", to: "/admin/librarians", active: active("/admin/librarians") },
+    {
+      label: "Users",
+      icon: "i-lucide-users",
+      to: "/admin/users",
+      exact: true,
+      class: active("/admin/users") && !active("/admin/users", true)
+        ? "sncbt-navigation-current-section"
+        : undefined,
+    },
+    {
+      label: "Librarians",
+      icon: "i-lucide-user-round-cog",
+      to: "/admin/librarians",
+      exact: true,
+      class: active("/admin/librarians") && !active("/admin/librarians", true)
+        ? "sncbt-navigation-current-section"
+        : undefined,
+    },
     { label: "Account Review", icon: "i-lucide-list-checks", to: "/admin/accounts-review", active: active("/admin/accounts-review") },
-    { label: "Roles & Permissions", icon: "i-lucide-shield-check", to: "/admin/roles", active: active("/admin/roles") },
+    {
+      label: "Roles & Permissions",
+      icon: "i-lucide-shield-check",
+      to: "/admin/roles",
+      exact: true,
+      class: active("/admin/roles") && !active("/admin/roles", true)
+        ? "sncbt-navigation-current-section"
+        : undefined,
+    },
   ],
   [
     { label: "Library Administration", type: "label" },
@@ -63,7 +89,15 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
   ],
   [
     { label: "Governance & Oversight", type: "label" },
-    { label: "Reports", icon: "i-lucide-file-chart-column-increasing", to: "/admin/reports", active: active("/admin/reports") || active("/admin/monitoring-reports") },
+    {
+      label: "Reports",
+      icon: "i-lucide-file-chart-column-increasing",
+      to: "/admin/reports",
+      exact: true,
+      class: (active("/admin/reports") || active("/admin/monitoring-reports")) && !active("/admin/reports", true)
+        ? "sncbt-navigation-current-section"
+        : undefined,
+    },
     { label: "Audit Trail", icon: "i-lucide-scroll-text", to: "/admin/audit-logs", active: active("/admin/audit-logs") },
     { label: "Archive", icon: "i-lucide-archive", to: "/admin/archive", active: active("/admin/archive") },
   ],
@@ -213,7 +247,6 @@ onBeforeUnmount(() => {
 watch(
   () => route.fullPath,
   async () => {
-    sidebarOpen.value = false;
     await nextTick();
     void monitoring.recordPageView(route.path, pageTitle.value);
   },
@@ -238,7 +271,8 @@ watch(
       :min-size="16"
       :max-size="21"
       mode="slideover"
-      :auto-close="true"
+      :auto-close="false"
+      :menu="sidebarMenu"
       :toggle="{
         color: 'neutral',
         variant: 'ghost',
@@ -289,6 +323,7 @@ watch(
 
       <template #default="{ collapsed }">
         <UNavigationMenu
+          aria-label="Administrator portal navigation"
           :items="navigationItems"
           orientation="vertical"
           :collapsed="collapsed"
@@ -312,7 +347,7 @@ watch(
             linkLabel: 'text-sm font-medium',
             label: 'px-2 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted',
           }"
-          @click="sidebarOpen = false"
+          @click="onSidebarLinkClick"
         />
       </template>
 
@@ -367,7 +402,8 @@ watch(
         >
           <template #toggle>
             <UTooltip :text="sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'">
-              <UDashboardSidebarToggle
+              <UButton
+                @click="openSidebar"
                 class="lg:hidden"
                 icon="i-lucide-panel-left"
                 color="neutral"
@@ -411,6 +447,7 @@ watch(
         <main id="main-content" tabindex="-1" class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner admin />
+            <PortalBreadcrumbs />
             <div class="sncbt-portal-view sncbt-admin-view sncbt-staff-view">
               <AppPageLoadingSkeleton v-if="pageLoading" />
               <slot />

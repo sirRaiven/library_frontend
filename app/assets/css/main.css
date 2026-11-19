@@ -675,6 +675,11 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+.sncbt-navigation-current-section {
+  background-color: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+  color: var(--ui-text-highlighted);
+}
+
 .sncbt-navigation [data-active] {
   background: color-mix(in srgb, var(--ui-primary) 9%, transparent);
   color: var(--ui-primary);

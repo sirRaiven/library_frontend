@@ -21,8 +21,10 @@ const props = withDefaults(
   },
 );
 
+const route = useRoute();
+
 const emit = defineEmits<{
-  more: [];
+  more: [event: MouseEvent];
 }>();
 </script>
 
@@ -38,7 +40,7 @@ const emit = defineEmits<{
         :to="item.to"
         class="sncbt-mobile-bottom-nav__item"
         :class="{ 'sncbt-mobile-bottom-nav__item--active': item.active }"
-        :aria-current="item.active ? 'page' : undefined"
+        :aria-current="item.active ? (route.path === item.to ? 'page' : 'location') : undefined"
       >
         <span class="relative inline-flex">
           <UIcon :name="item.icon" class="size-5" />
@@ -60,7 +62,7 @@ const emit = defineEmits<{
         aria-haspopup="dialog"
         :aria-expanded="props.moreOpen"
         :aria-label="props.moreLabel"
-        @click="emit('more')"
+        @click="emit('more', $event)"
       >
         <UIcon name="i-lucide-menu" class="size-5" aria-hidden="true" />
         <span class="sncbt-mobile-bottom-nav__label">{{ props.moreLabel }}</span>

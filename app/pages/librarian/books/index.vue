@@ -86,7 +86,14 @@ const printQueue = useBarcodePrintQueue();
 const inventoryExcel = useLibraryInventoryExcel();
 const libraryOptions = useLibraryOptions();
 
-const search = ref("");
+const route = useRoute();
+const routeSearch = computed(() => typeof route.query.search === "string" ? route.query.search.trim() : "");
+const search = useState<string>("sncbt-librarian-collection-search", () => "");
+search.value = routeSearch.value;
+
+watch(routeSearch, (term) => {
+  search.value = term;
+});
 const ALL_SHELF_LOCATIONS = "__all__";
 const selectedShelfLocation = ref(ALL_SHELF_LOCATIONS);
 const page = ref(1);
@@ -664,7 +671,10 @@ watch(search, () => {
   }
 
   searchTimer = setTimeout(() => {
-    page.value = 1;
+    if (page.value !== 1) {
+      page.value = 1;
+      return;
+    }
     void loadBooks();
   }, 350);
 });

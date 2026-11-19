@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
+import PortalBreadcrumbs from "~/components/shared/PortalBreadcrumbs.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
@@ -16,19 +17,13 @@ const toast = useToast();
 const notificationCenter = useLibraryNotifications();
 const monitoring = usePortalMonitoring();
 
-const sidebarOpen = ref(false);
+const { sidebarOpen, sidebarMenu, openSidebar, onSidebarLinkClick } =
+  usePortalSidebar();
 const sidebarCollapsed = ref(false);
 const isLogoutModalOpen = ref(false);
 const isLoggingOut = ref(false);
 const globalSearch = ref("");
-
-let desktopMediaQuery: MediaQueryList | undefined;
-
-function closeMobileSidebarOnDesktop(event: MediaQueryListEvent) {
-  if (event.matches) {
-    sidebarOpen.value = false;
-  }
-}
+const collectionSearch = useState<string>("sncbt-librarian-collection-search", () => "");
 
 const userName = computed(() => auth.user.value?.username || "Librarian");
 
@@ -212,25 +207,16 @@ function getPageInformation(): {
   };
 }
 
-function isRouteActive(path: string, exact = false): boolean {
-  return exact
-    ? route.path === path
-    : route.path === path || route.path.startsWith(`${path}/`);
-}
-
-const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
+const navigationSections = computed<NavigationMenuItem[]>(() => [
   {
     label: "Dashboard",
     icon: "i-lucide-layout-dashboard",
     to: "/librarian/dashboard",
-    active:
-      isRouteActive("/librarian/dashboard", true) ||
-      route.path === "/librarian",
   },
   {
     label: "Books & Collection",
+    value: "collection",
     icon: "i-lucide-library-big",
-    active: route.path.startsWith("/librarian/books"),
     children: [
       {
         label: "View Books",
@@ -242,17 +228,22 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
         icon: "i-lucide-book-plus",
         to: "/librarian/books/register",
       },
+      {
+        label: "Physical Copies",
+        icon: "i-lucide-book-copy",
+        to: "/librarian/books/copies",
+      },
+      {
+        label: "Import Inventory",
+        icon: "i-lucide-file-up",
+        to: "/librarian/books/import",
+      },
     ],
   },
   {
     label: "Library Services",
+    value: "services",
     icon: "i-lucide-hand-helping",
-    active:
-      isRouteActive("/librarian/visits") ||
-      isRouteActive("/librarian/borrow") ||
-      isRouteActive("/librarian/return") ||
-      isRouteActive("/librarian/fines") ||
-      isRouteActive("/librarian/reservations"),
     children: [
       {
         label: "Library Visits",
@@ -283,13 +274,8 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   },
   {
     label: "Library Users",
+    value: "users",
     icon: "i-lucide-users-round",
-    active:
-      isRouteActive("/librarian/students") ||
-      isRouteActive("/librarian/student-registration-approvals") ||
-      isRouteActive("/librarian/student-self-registration") ||
-      isRouteActive("/librarian/faculty") ||
-      isRouteActive("/librarian/faculty-book-reports"),
     children: [
       {
         label: "Students",
@@ -320,12 +306,8 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   },
   {
     label: "Membership & Cards",
+    value: "memberships",
     icon: "i-lucide-id-card",
-    active:
-      isRouteActive("/librarian/membership-term") ||
-      isRouteActive("/librarian/memberships") ||
-      isRouteActive("/librarian/library-card-designer") ||
-      isRouteActive("/librarian/library-card-print"),
     children: [
       {
         label: "Membership Term",
@@ -346,11 +328,8 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   },
   {
     label: "Reports & Notices",
+    value: "reports",
     icon: "i-lucide-chart-no-axes-combined",
-    active:
-      isRouteActive("/librarian/history") ||
-      isRouteActive("/librarian/reports") ||
-      isRouteActive("/librarian/notifications"),
     children: [
       {
         label: "History",
@@ -374,68 +353,52 @@ const compactNavigationItems = computed<NavigationMenuItem[]>(() => [
   },
 ]);
 
-// Nuxt UI vertical menus use per-item defaultOpen, not a root default-open prop.
-// Opening only the current section keeps the staff navigation easy to scan.
-const expandedNavigationItems = computed<NavigationMenuItem[]>(() =>
-  compactNavigationItems.value.map((item) => ({
-    ...item,
-    defaultOpen: Boolean(item.active && item.children?.length),
-  })),
-);
+const currentNavigationPath = computed(() => route.path.replace(/\/$/, ""));
+
+const navigationItems = computed<NavigationMenuItem[]>(() => {
+  const currentPath = currentNavigationPath.value;
+
+  return navigationSections.value.map((section) => {
+    if (!section.children) return { ...section, exact: true };
+
+    const matchingDestination = section.children
+      .map((item) => String(item.to))
+      .filter((destination) => currentPath === destination || currentPath.startsWith(`${destination}/`))
+      .sort((first, second) => second.length - first.length)[0];
+
+    return {
+      ...section,
+      active: Boolean(matchingDestination),
+      children: section.children.map((child) => ({
+        ...child,
+        exact: true,
+        class: child.to === matchingDestination && child.to !== currentPath
+          ? "sncbt-navigation-current-section"
+          : undefined,
+      })),
+    };
+  });
+});
+
+const openNavigationSections = ref<string[]>([]);
+
+watch(currentNavigationPath, () => {
+  const value = navigationItems.value.find((item) => item.active && item.children)?.value;
+  if (typeof value === "string" && !openNavigationSections.value.includes(value)) {
+    openNavigationSections.value = [...openNavigationSections.value, value];
+  }
+}, { immediate: true });
 
 function getCompactChildItems(item: NavigationMenuItem): DropdownMenuItem[][] {
-  const children = Array.isArray(item.children) ? item.children : [];
-
   return [
-    children.map((child) => ({
-      label: String(child.label || "Open"),
-      icon: typeof child.icon === "string" ? child.icon : undefined,
-      to: child.to,
+    (item.children ?? []).map(({ label, icon, to, exact, class: linkClass }) => ({
+      label,
+      icon: typeof icon === "string" ? icon : undefined,
+      to,
+      exact,
+      class: linkClass,
     })),
   ];
-}
-
-function handleSidebarNavigationClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null;
-  const anchor =
-    target?.closest<HTMLAnchorElement>("a[href]");
-
-  if (!anchor) {
-    return;
-  }
-
-  // Preserve normal browser behavior for opening links
-  // in another tab or window.
-  if (
-    event.defaultPrevented ||
-    event.button !== 0 ||
-    event.ctrlKey ||
-    event.metaKey ||
-    event.shiftKey ||
-    event.altKey ||
-    anchor.target === "_blank"
-  ) {
-    return;
-  }
-
-  const destination = new URL(
-    anchor.href,
-    window.location.origin,
-  );
-
-  if (destination.origin !== window.location.origin) {
-    return;
-  }
-
-  const destinationRoute =
-    `${destination.pathname}${destination.search}${destination.hash}`;
-
-  // Normal navigation is closed by the route watcher after
-  // Nuxt has actually changed the page. Clicking the current
-  // page should still close the mobile sidebar immediately.
-  if (destinationRoute === route.fullPath) {
-    sidebarOpen.value = false;
-  }
 }
 
 const accountMenuItems = computed<DropdownMenuItem[][]>(() => [
@@ -474,6 +437,12 @@ async function submitGlobalSearch() {
   const search = globalSearch.value.trim();
 
   if (!search) {
+    return;
+  }
+
+  if (route.path === "/librarian/books" && route.query.search === search) {
+    collectionSearch.value = search;
+    globalSearch.value = "";
     return;
   }
 
@@ -534,22 +503,15 @@ onMounted(async () => {
     appLogger.warn("Unable to initialize Librarian portal monitoring.", error);
   }
 
-  desktopMediaQuery = window.matchMedia("(min-width: 1024px)");
-  desktopMediaQuery.addEventListener("change", closeMobileSidebarOnDesktop);
 });
 
 onBeforeUnmount(() => {
   notificationCenter.stopPolling();
-
-  desktopMediaQuery?.removeEventListener("change", closeMobileSidebarOnDesktop);
 });
 
 watch(
   () => route.fullPath,
   async () => {
-    // Close the mobile sidebar after navigation.
-    sidebarOpen.value = false;
-
     await nextTick();
     void monitoring.recordPageView(route.path, pageTitle.value);
   },
@@ -574,7 +536,8 @@ watch(
       :min-size="16"
       :max-size="21"
       mode="slideover"
-      :auto-close="true"
+      :auto-close="false"
+      :menu="sidebarMenu"
       :toggle="{
         color: 'neutral',
         variant: 'ghost',
@@ -649,8 +612,8 @@ watch(
         <div class="w-full">
           <UNavigationMenu
             v-if="!collapsed"
-            :key="`librarian-menu:${route.path.split('/').slice(0, 3).join('/')}`"
-            :items="expandedNavigationItems"
+            v-model="openNavigationSections"
+            :items="navigationItems"
             orientation="vertical"
             type="multiple"
             :collapsible="true"
@@ -660,16 +623,16 @@ watch(
             variant="pill"
             class="sncbt-navigation sncbt-librarian-navigation w-full min-w-0"
             aria-label="Librarian portal navigation"
-            @click="handleSidebarNavigationClick"
+            @click="onSidebarLinkClick"
           />
 
-          <div
+          <nav
             v-else
             class="sncbt-navigation sncbt-librarian-compact-nav flex w-full min-w-0 flex-col items-center gap-1.5"
             aria-label="Compact Librarian portal navigation"
           >
             <template
-              v-for="item in compactNavigationItems"
+              v-for="item in navigationItems"
               :key="String(item.label)"
             >
               <UTooltip
@@ -688,7 +651,8 @@ watch(
                   :to="item.to"
                   :icon="item.icon"
                   color="primary"
-                  :variant="item.active ? 'soft' : 'ghost'"
+                  :variant="currentNavigationPath === item.to ? 'soft' : 'ghost'"
+                  exact
                   square
                   class="size-10 rounded-xl"
                   :aria-label="String(item.label)"
@@ -731,7 +695,7 @@ watch(
                 </UTooltip>
               </UDropdownMenu>
             </template>
-          </div>
+          </nav>
         </div>
       </template>
 
@@ -839,7 +803,8 @@ watch(
                 sideOffset: 8,
               }"
             >
-              <UDashboardSidebarToggle
+              <UButton
+                @click="openSidebar"
                 class="lg:hidden"
                 icon="i-lucide-panel-left"
                 color="neutral"
@@ -902,7 +867,7 @@ watch(
             <PortalNotificationTrigger
               to="/librarian/notifications"
               :count="notificationCenter.badgeCount.value"
-              :active="isRouteActive('/librarian/notifications')"
+              :active="currentNavigationPath === '/librarian/notifications'"
             />
 
             <UTooltip
@@ -950,6 +915,7 @@ watch(
         >
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
+            <PortalBreadcrumbs />
             <div
               class="sncbt-portal-view sncbt-librarian-view sncbt-staff-view"
             >

@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import LibraryBookCover from "~/components/shared/LibraryBookCover.vue";
+definePageMeta({
+  layout: "student",
+  middleware: ["student"],
+  title: "Book Details",
+});
+
 const route = useRoute();
 const collection = useStudentBooks();
 const toast = useToast();

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
+import PortalBreadcrumbs from "~/components/shared/PortalBreadcrumbs.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
@@ -14,15 +15,11 @@ const maintenance = useSystemMaintenance();
 const portal = useFacultyPortal();
 const monitoring = usePortalMonitoring();
 
-const sidebarOpen = ref(false);
+const { sidebarOpen, sidebarMenu, openSidebar, onSidebarLinkClick } =
+  usePortalSidebar();
 const sidebarCollapsed = ref(false);
 const logoutOpen = ref(false);
 const loggingOut = ref(false);
-
-function openMobileNavigation() {
-  sidebarCollapsed.value = false;
-  sidebarOpen.value = true;
-}
 
 const faculty = computed(() => portal.dashboard.value.faculty);
 const userName = computed(
@@ -58,7 +55,10 @@ const navigationItems = computed<NavigationMenuItem[][]>(() => [
       label: "Book Collection",
       icon: "i-lucide-book-open",
       to: "/faculty/books",
-      active: active("/faculty/books"),
+      exact: true,
+      class: active("/faculty/books") && !active("/faculty/books", true)
+        ? "sncbt-navigation-current-section"
+        : undefined,
     },
     {
       label: "Borrowed Books",
@@ -188,7 +188,6 @@ onBeforeUnmount(() => {
 watch(
   () => route.fullPath,
   async () => {
-    sidebarOpen.value = false;
     await nextTick();
     void monitoring.recordPageView(route.path, pageTitle.value);
   },
@@ -213,7 +212,8 @@ watch(
       :min-size="17"
       :max-size="22"
       mode="slideover"
-      :auto-close="true"
+      :auto-close="false"
+      :menu="sidebarMenu"
       :toggle="{
         color: 'neutral',
         variant: 'ghost',
@@ -253,6 +253,7 @@ watch(
 
       <template #default="{ collapsed }">
         <UNavigationMenu
+          aria-label="Faculty portal navigation"
           :items="navigationItems"
           orientation="vertical"
           :collapsed="collapsed"
@@ -276,7 +277,7 @@ watch(
             linkLabel: 'text-sm font-medium',
             label: 'px-2 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted',
           }"
-          @click="sidebarOpen = false"
+          @click="onSidebarLinkClick"
         />
       </template>
 
@@ -357,6 +358,7 @@ watch(
         <main id="main-content" tabindex="-1" class="sncbt-mobile-bottom-nav-spacer min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
+            <PortalBreadcrumbs />
             <div class="sncbt-portal-view">
               <AppPageLoadingSkeleton v-if="pageLoading" />
               <slot />
@@ -369,8 +371,8 @@ watch(
     <PortalMobileBottomNav
       :items="mobileNavigationItems"
       :more-active="mobileMoreActive"
-      :more-open="sidebarOpen"
-      @more="openMobileNavigation"
+    :more-open="sidebarOpen"
+      @more="openSidebar"
     />
 
     <AppSignOutModal
