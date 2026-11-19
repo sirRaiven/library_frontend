@@ -2529,6 +2529,7 @@ body {
   .sncbt-signin :where(button, a),
   .sncbt-navigation :where(button, a) { transition: none !important; transform: none !important; }
   .sncbt-route-skeleton :where([class*="animate-pulse"]) { animation: none !important; }
+  .sncbt-data-skeleton :where([class*="animate-pulse"]) { animation: none !important; }
 }
 
 

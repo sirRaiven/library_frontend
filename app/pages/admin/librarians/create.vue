@@ -14,6 +14,7 @@ const auth = useAuth();
 const toast = useToast();
 const saving = ref(false);
 const showPassword = ref(false);
+const initialOptionsPending = ref(true);
 
 const form = reactive<CreateAdminLibrarianInput>({
   employeeNo: "",
@@ -69,6 +70,7 @@ function validate(state: Partial<CreateAdminLibrarianInput>): FormError[] {
 }
 
 async function loadReferenceData() {
+  initialOptionsPending.value = true;
   try {
     await libraryOptions.loadOperational();
     form.positionCode ||= librarianPositionOptions.value[0]?.value ?? "";
@@ -79,6 +81,8 @@ async function loadReferenceData() {
       color: "error",
       icon: "i-lucide-circle-alert",
     });
+  } finally {
+    initialOptionsPending.value = false;
   }
 }
 
@@ -117,7 +121,7 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
     <AdminPageHeader
       eyebrow="Librarians"
       title="Add a Librarian"
-      description="Create one linked Library staff profile and application account. The account is assigned only to the Librarian role and every creation is recorded in the security audit log."
+      description="Add a staff profile and sign-in account for a new Librarian."
       icon="i-lucide-user-plus"
     >
       <template #actions>
@@ -125,7 +129,11 @@ async function submit(event: FormSubmitEvent<CreateAdminLibrarianInput>) {
       </template>
     </AdminPageHeader>
 
-    <UForm :state="form" :validate="validate" class="grid gap-6 xl:grid-cols-[1fr_22rem]" @submit="submit">
+    <AppDataSkeleton v-if="initialOptionsPending" variant="form" :rows="6" label="Loading staff position choices" />
+    <UAlert v-if="!initialOptionsPending && libraryOptions.error.value" color="warning" variant="soft"
+      icon="i-lucide-triangle-alert" title="Staff positions are unavailable"
+      :description="libraryOptions.error.value" />
+    <UForm v-if="!initialOptionsPending" :state="form" :validate="validate" class="grid gap-6 xl:grid-cols-[1fr_22rem]" @submit="submit">
       <div class="space-y-6">
         <UCard>
           <template #header>

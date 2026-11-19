@@ -93,6 +93,7 @@ const form = reactive<BookRegistrationForm>({
 });
 
 const isSubmitting = ref(false);
+const initialOptionsPending = ref(true);
 
 const normalizedClassificationNumber = computed(() =>
   form.classificationNumber.trim().replace(/\s+/g, ""),
@@ -361,7 +362,9 @@ onMounted(async () => {
   try {
     await libraryOptions.loadOperational();
   } catch {
-    // Required selects remain disabled and the retry alert explains the failure.
+    // The existing warning offers a retry and form submission remains guarded.
+  } finally {
+    initialOptionsPending.value = false;
   }
 });
 </script>
@@ -399,7 +402,8 @@ onMounted(async () => {
       :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
     />
 
-    <UForm
+    <AppDataSkeleton v-if="initialOptionsPending" variant="form" :rows="8" label="Loading book categories and shelf locations" />
+    <UForm v-else
         :state="form"
         :validate="validate"
         class="sncbt-specialist-form grid gap-6 2xl:grid-cols-[minmax(0,1fr)_22rem]"

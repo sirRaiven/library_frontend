@@ -145,6 +145,12 @@ onMounted(refresh);
       :description="system.error.value"
     />
 
+    <AppDataSkeleton
+      v-if="system.loading.value && !system.health.value"
+      variant="metrics"
+      label="Checking Library service status"
+    />
+    <template v-if="system.health.value">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UCard>
         <div class="flex items-start justify-between gap-3">
@@ -292,5 +298,6 @@ onMounted(refresh);
         </div>
       </UCard>
     </div>
+    </template>
   </div>
 </template>

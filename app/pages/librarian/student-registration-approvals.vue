@@ -26,6 +26,9 @@ const search = ref("");
 const page = ref(1);
 const pageSize = 20;
 const loading = ref(false);
+const hasLoadedRequests = ref(false);
+const requestLoadError = ref("");
+let latestRequestId = 0;
 const requests = ref<StudentAccessRequest[]>([]);
 const pagination = reactive({ pageCount: 1, total: 0 });
 const summary = reactive({
@@ -218,7 +221,9 @@ function formatDate(value?: string | null) {
 }
 
 async function loadRequests() {
+  const requestId = ++latestRequestId;
   loading.value = true;
+  requestLoadError.value = "";
   try {
     const response = await registration.listRequests({
       type: requestType.value,
@@ -227,7 +232,9 @@ async function loadRequests() {
       page: page.value,
       pageSize,
     });
+    if (requestId !== latestRequestId) return;
     requests.value = response.data;
+    hasLoadedRequests.value = true;
     pagination.pageCount = response.meta.pagination.pageCount;
     pagination.total = response.meta.pagination.total;
     summary.pendingRegistrations = response.meta.summary.pendingRegistrations;
@@ -236,13 +243,15 @@ async function loadRequests() {
     summary.pendingCredentialRequests =
       response.meta.summary.pendingCredentialRequests;
   } catch (error) {
+    if (requestId !== latestRequestId) return;
+    requestLoadError.value = registration.errorMessage(error);
     toast.add({
       title: "Unable to load Student requests",
       description: registration.errorMessage(error),
       color: "error",
     });
   } finally {
-    loading.value = false;
+    if (requestId === latestRequestId) loading.value = false;
   }
 }
 
@@ -509,19 +518,22 @@ async function copyCredentials() {
   toast.add({ title: "Credentials copied", color: "success" });
 }
 
-watch([requestType, requestStatus], () => {
-  page.value = 1;
-  loadRequests();
-});
-watch(page, loadRequests);
+function resetPageAndLoad() {
+  if (page.value !== 1) page.value = 1; // page watcher handles the request
+  else void loadRequests();
+}
+
+watch([requestType, requestStatus], resetPageAndLoad);
+watch(page, () => { void loadRequests(); });
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 watch(search, () => {
   if (searchTimer) clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    page.value = 1;
-    loadRequests();
-  }, 350);
+  searchTimer = setTimeout(resetPageAndLoad, 350);
+});
+onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer);
+  latestRequestId += 1; // Ignore any response that arrives after leaving this page.
 });
 
 onMounted(loadRequests);
@@ -541,27 +553,32 @@ onMounted(loadRequests);
       </template>
     </LibrarianPageHeader>
 
-    <section class="grid grid-cols-2 gap-3 xl:grid-cols-4">
-      <div class="rounded-xl border border-warning/30 bg-warning/5 p-4 sm:p-5">
+    <AppDataSkeleton v-if="!hasLoadedRequests && loading" variant="metrics" label="Loading registration summary and requests" />
+    <UAlert v-if="requestLoadError" color="error" variant="soft"
+      icon="i-lucide-circle-alert" title="Student requests could not be loaded"
+      :description="requestLoadError" :actions="[{ label: 'Retry', onClick: loadRequests }]" />
+    <section v-if="hasLoadedRequests" class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div class="rounded-xl border border-default border-l-2 border-l-warning/70 bg-default p-4 sm:p-5">
         <p class="text-xs font-semibold text-muted sm:text-sm">Pending Registrations</p>
-        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.pendingRegistrations }}</p>
+        <p class="mt-2 text-2xl font-semibold text-highlighted sm:text-3xl">{{ summary.pendingRegistrations }}</p>
       </div>
-      <div class="rounded-xl border border-success/30 bg-success/5 p-4 sm:p-5">
+      <div class="rounded-xl border border-default bg-default p-4 sm:p-5">
         <p class="text-xs font-semibold text-muted sm:text-sm">Approved Registrations</p>
-        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.approvedRegistrations }}</p>
+        <p class="mt-2 text-2xl font-semibold text-highlighted sm:text-3xl">{{ summary.approvedRegistrations }}</p>
       </div>
-      <div class="rounded-xl border border-error/30 bg-error/5 p-4 sm:p-5">
+      <div class="rounded-xl border border-default bg-default p-4 sm:p-5">
         <p class="text-xs font-semibold text-muted sm:text-sm">Rejected Registrations</p>
-        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.rejectedRegistrations }}</p>
+        <p class="mt-2 text-2xl font-semibold text-highlighted sm:text-3xl">{{ summary.rejectedRegistrations }}</p>
       </div>
-      <div class="rounded-xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
+      <div class="rounded-xl border border-default bg-default p-4 sm:p-5">
         <p class="text-xs font-semibold text-muted sm:text-sm">Credential Requests</p>
-        <p class="mt-2 text-2xl font-black text-highlighted sm:text-3xl">{{ summary.pendingCredentialRequests }}</p>
+        <p class="mt-2 text-2xl font-semibold text-highlighted sm:text-3xl">{{ summary.pendingCredentialRequests }}</p>
       </div>
     </section>
 
     <section class="overflow-hidden rounded-xl border border-default bg-default shadow-sm">
-      <div class="border-b border-default p-5 sm:p-6">
+      <div class="border-b border-default p-5 sm:p-6" :aria-busy="loading">
+        <p v-if="loading && hasLoadedRequests" class="mb-3 text-xs text-muted" role="status">Refreshing requests…</p>
         <div class="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-end">
           <div>
             <h2 class="text-lg font-bold text-highlighted">Student Requests</h2>
@@ -573,10 +590,8 @@ onMounted(loadRequests);
         <UInput v-model="search" icon="i-lucide-search" placeholder="Search request number, Student number, name, email, or username" class="mt-4 w-full" />
       </div>
 
-      <div v-if="loading" class="flex min-h-48 items-center justify-center">
-        <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin text-primary" />
-      </div>
-
+      <AppDataSkeleton v-if="loading && !hasLoadedRequests" variant="table" label="Loading registration requests" />
+      <div v-else-if="!hasLoadedRequests" class="p-6 text-sm text-muted" role="status">Requests are not available yet.</div>
       <div v-else-if="!requests.length" class="p-10 text-center text-muted">
         <UIcon name="i-lucide-inbox" class="mx-auto size-12 opacity-50" />
         <p class="mt-3 font-semibold text-highlighted">No matching requests</p>

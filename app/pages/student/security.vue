@@ -28,6 +28,7 @@ const showNewPassword = ref(false);
 const showConfirmation = ref(false);
 const confirmOtherSessions = ref(false);
 const signingOutAfterPassword = ref(false);
+const initialAccountPending = ref(true);
 
 const strapiUrl = String(config.public.strapiUrl).replace(/\/$/, "");
 
@@ -80,6 +81,8 @@ async function refresh() {
       color: "error",
       icon: "i-lucide-circle-alert",
     });
+  } finally {
+    initialAccountPending.value = false;
   }
 }
 
@@ -218,6 +221,11 @@ onMounted(refresh);
       :description="center.error.value"
     />
 
+    <AppDataSkeleton v-if="(initialAccountPending || center.loading.value) && !center.data.value" variant="form" :rows="6" label="Loading your Library account" />
+    <UAlert v-if="!initialAccountPending && !center.loading.value && !center.data.value" color="warning" variant="soft"
+      icon="i-lucide-circle-alert" title="Account information is not available"
+      description="Your details could not be loaded. Use Refresh to try again before updating this account." />
+    <div v-if="center.data.value" class="space-y-5 sm:space-y-6">
     <UCard class="sncbt-account-identity-card" :ui="{ body: 'p-5 sm:p-6' }">
       <div class="relative z-[1] flex flex-col gap-5 lg:flex-row lg:items-center">
         <div class="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-center">
@@ -605,6 +613,7 @@ onMounted(refresh);
           </UCard>
         </template>
       </div>
+    </div>
     </div>
   </div>
 

@@ -564,13 +564,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <div
-        v-if="preparing"
-        class="no-print flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-10 text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
-      >
-        <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin" />
-        Preparing Library Cards
-      </div>
+      <AppDataSkeleton v-if="preparing" class="no-print" variant="preview" :rows="4" label="Preparing Library Cards" />
 
       <div
         v-if="!preparing && students.length === 0"

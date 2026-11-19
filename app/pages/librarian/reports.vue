@@ -1000,7 +1000,9 @@ onMounted(async () => {
     </div>
 
     <section id="report-preview" class="scroll-mt-6">
-      <UCard v-if="activeReport && customizedReport">
+      <AppDataSkeleton v-if="loadingKey !== null && !activeReport" variant="report" :rows="5" label="Generating report preview" />
+      <p v-if="loadingKey !== null && activeReport" class="mb-3 text-xs text-muted" role="status">Generating a new report. The previous result is shown below until it is ready.</p>
+      <UCard v-if="activeReport && customizedReport" :aria-busy="loadingKey !== null">
         <template #header>
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>

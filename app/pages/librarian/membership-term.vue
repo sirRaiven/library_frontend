@@ -18,6 +18,8 @@ const toast = useToast();
 const confirmOpen = ref(false);
 const saving = ref(false);
 const lastResult = ref<MembershipTerm | null>(null);
+const initialTermPending = ref(true);
+const termLoadFailed = ref(false);
 
 const form = reactive<UpdateMembershipTermInput>({
   academicYear: "",
@@ -73,7 +75,9 @@ async function loadTerm() {
   try {
     const term = await termManager.load(true);
     applyTerm(term);
+    termLoadFailed.value = false;
   } catch (error) {
+    termLoadFailed.value = true;
     toast.add({
       title: "Unable to load the membership term",
       description: auth.getErrorMessage(error),
@@ -123,10 +127,14 @@ async function saveTerm() {
 }
 
 onMounted(async () => {
-  await Promise.allSettled([
-    libraryOptions.loadOperational(),
-    loadTerm(),
-  ]);
+  try {
+    await Promise.allSettled([
+      libraryOptions.loadOperational(),
+      loadTerm(),
+    ]);
+  } finally {
+    initialTermPending.value = false;
+  }
 });
 </script>
 
@@ -155,6 +163,12 @@ onMounted(async () => {
         :actions="[{ label: 'Retry', onClick: () => libraryOptions.loadOperational() }]"
       />
 
+      <AppDataSkeleton v-if="initialTermPending && !termManager.loaded.value" variant="metrics" label="Loading current membership term" />
+      <UAlert v-else-if="termLoadFailed && !termManager.loaded.value" color="error" variant="soft"
+        icon="i-lucide-circle-alert" title="Membership term could not be loaded"
+        description="Refresh the membership term before making changes."
+        :actions="[{ label: 'Retry', onClick: loadTerm }]" />
+      <template v-if="termManager.loaded.value">
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <UCard class="sncbt-metric-card block">
           <p class="text-sm text-muted">Term Status</p>
@@ -199,7 +213,7 @@ onMounted(async () => {
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Semester" required description="Semester choices are fixed by the Library academic-term schema.">
+          <UFormField label="Semester" required description="Choose the semester for this membership term.">
             <USelect
               v-model="form.semester"
               :items="libraryOptions.semesters.value"
@@ -294,6 +308,7 @@ onMounted(async () => {
           </div>
         </div>
       </UCard>
+      </template>
     </div>
 
     <UModal v-model:open="confirmOpen" :ui="{ content: 'sm:max-w-lg' }">

@@ -241,16 +241,7 @@ watch(
         :description="renderError"
       />
 
-      <div
-        v-if="isRendering"
-        class="no-print flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-10 text-slate-500"
-      >
-        <UIcon
-          name="i-lucide-loader-circle"
-          class="size-6 animate-spin"
-        />
-        Preparing barcode labels
-      </div>
+      <AppDataSkeleton v-if="isRendering" class="no-print" variant="preview" :rows="3" label="Preparing barcode labels" />
 
       <div
         v-if="

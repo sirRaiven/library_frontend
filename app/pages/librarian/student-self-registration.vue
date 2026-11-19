@@ -12,10 +12,12 @@ const toast = useToast();
 const generatingLink = ref(false);
 const registrationUrl = ref("");
 const qrDataUrl = ref("");
+const qrGenerationError = ref("");
 
 async function generateLink() {
   if (generatingLink.value) return;
   generatingLink.value = true;
+  qrGenerationError.value = "";
 
   try {
     const result = await registration.createAccessLink();
@@ -28,6 +30,7 @@ async function generateLink() {
       errorCorrectionLevel: "M",
     });
   } catch (error) {
+    qrGenerationError.value = registration.errorMessage(error);
     toast.add({
       title: "Unable to create the QR code",
       description: registration.errorMessage(error),
@@ -93,6 +96,8 @@ onMounted(generateLink);
       description="A submitted application stays pending and does not appear in the normal Student list until a Librarian approves it."
     />
 
+    <UAlert v-if="qrGenerationError && qrDataUrl" color="warning" variant="soft" icon="i-lucide-circle-alert"
+      title="Unable to refresh the QR code" description="The previously generated QR code remains available. Try Refresh QR Code again." />
     <section class="overflow-hidden rounded-3xl border border-default bg-default shadow-sm">
       <div class="grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div class="space-y-5">
@@ -171,10 +176,16 @@ onMounted(generateLink);
             >
             <p class="mt-3 text-xs text-muted">Official Student registration QR code</p>
           </div>
-          <div v-else class="text-center text-muted">
-            <UIcon name="i-lucide-loader-circle" class="mx-auto size-12 animate-spin" />
-            <p class="mt-3 text-sm">Creating the QR code…</p>
+          <div v-else-if="generatingLink" class="w-full max-w-xs space-y-4" role="status" aria-label="Generating registration QR code">
+            <USkeleton class="mx-auto size-48 rounded-xl" />
+            <USkeleton class="mx-auto h-4 w-44 rounded" />
           </div>
+          <div v-else-if="qrGenerationError" class="space-y-3 text-center">
+            <UIcon name="i-lucide-circle-alert" class="mx-auto size-9 text-error" />
+            <p class="text-sm text-muted">The QR code could not be created.</p>
+            <UButton label="Try again" icon="i-lucide-refresh-cw" color="neutral" variant="outline" @click="generateLink" />
+          </div>
+          <div v-else class="text-center text-sm text-muted">No QR code is available yet.</div>
         </div>
       </div>
     </section>

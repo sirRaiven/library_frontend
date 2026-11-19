@@ -398,9 +398,7 @@ onMounted(() => {
     </header>
 
     <main class="sncbt-page-shell py-8 lg:py-10">
-      <div v-if="accessLoading" class="flex min-h-80 items-center justify-center">
-        <UIcon name="i-lucide-loader-circle" class="size-10 animate-spin text-primary" />
-      </div>
+      <AppDataSkeleton v-if="accessLoading" variant="form" :rows="8" label="Checking student registration availability" />
 
       <UAlert
         v-else-if="accessError"

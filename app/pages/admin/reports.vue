@@ -352,7 +352,9 @@ onMounted(async () => {
             </div>
           </UCard>
 
-          <UCard v-if="activeReport">
+          <AppDataSkeleton v-if="loading && !activeReport" variant="report" :rows="5" label="Generating Library report" />
+          <p v-if="loading && activeReport" class="text-xs text-muted" role="status">Updating the report. The previous result remains visible until the new one is ready.</p>
+          <UCard v-if="activeReport" :aria-busy="loading">
             <template #header>
               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
