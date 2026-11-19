@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDialogFrame from "~/components/shared/AppDialogFrame.vue";
 import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 import AppRecordCard from "~/components/shared/AppRecordCard.vue";
 import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";

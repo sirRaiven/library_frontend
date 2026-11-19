@@ -11,11 +11,12 @@ const props = withDefaults(
   defineProps<{
     items: PortalMobileNavItem[];
     moreActive?: boolean;
+    moreOpen?: boolean;
     moreLabel?: string;
-    moreControls?: string;
   }>(),
   {
     moreActive: false,
+    moreOpen: false,
     moreLabel: "More",
   },
 );
@@ -57,10 +58,11 @@ const emit = defineEmits<{
         class="sncbt-mobile-bottom-nav__item"
         :class="{ 'sncbt-mobile-bottom-nav__item--active': props.moreActive }"
         aria-haspopup="dialog"
-        :aria-controls="props.moreControls"
+        :aria-expanded="props.moreOpen"
+        :aria-label="props.moreLabel"
         @click="emit('more')"
       >
-        <UIcon name="i-lucide-menu" class="size-5" />
+        <UIcon name="i-lucide-menu" class="size-5" aria-hidden="true" />
         <span class="sncbt-mobile-bottom-nav__label">{{ props.moreLabel }}</span>
       </button>
     </div>

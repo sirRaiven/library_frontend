@@ -178,7 +178,6 @@ onMounted(load);
           :key="card.label"
           :to="card.to"
           class="group rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          :aria-label="`${card.label}: ${card.value}. Open related records`"
         >
           <UCard :ui="{ root: 'h-full ring-1 ring-default shadow-sm transition group-hover:ring-primary/40 group-hover:bg-elevated/30', body: 'p-4 sm:p-5' }">
             <div class="flex items-start justify-between gap-3">

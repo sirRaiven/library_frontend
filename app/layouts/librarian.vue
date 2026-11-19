@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
@@ -825,15 +826,10 @@ watch(
             right: 'gap-0.5 sm:gap-1.5',
           }"
         >
-          <template
-            #toggle="{
-              sidebarCollapsed: dashboardSidebarCollapsed,
-              sidebarOpen: dashboardSidebarOpen,
-            }"
-          >
+          <template #toggle>
             <UTooltip
               :text="
-                dashboardSidebarOpen
+                sidebarOpen
                   ? 'Close navigation menu'
                   : 'Open navigation menu'
               "
@@ -847,21 +843,21 @@ watch(
                 class="lg:hidden"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="dashboardSidebarOpen ? 'soft' : 'ghost'"
+                :variant="sidebarOpen ? 'soft' : 'ghost'"
                 square
-                :aria-expanded="dashboardSidebarOpen"
+                :aria-expanded="sidebarOpen"
                 :aria-label="
-                  dashboardSidebarOpen
+                  sidebarOpen
                     ? 'Close navigation menu'
                     : 'Open navigation menu'
                 "
-                aria-controls="sncbt-librarian-dashboard-sidebar-main-navigation"
+                aria-haspopup="dialog"
               />
             </UTooltip>
 
             <UTooltip
               :text="
-                dashboardSidebarCollapsed
+                sidebarCollapsed
                   ? 'Expand navigation sidebar'
                   : 'Collapse navigation sidebar'
               "
@@ -875,11 +871,11 @@ watch(
                 class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="dashboardSidebarCollapsed ? 'soft' : 'ghost'"
+                :variant="sidebarCollapsed ? 'soft' : 'ghost'"
                 square
-                :aria-expanded="!dashboardSidebarCollapsed"
+                :aria-expanded="!sidebarCollapsed"
                 :aria-label="
-                  dashboardSidebarCollapsed
+                  sidebarCollapsed
                     ? 'Expand navigation sidebar'
                     : 'Collapse navigation sidebar'
                 "
@@ -938,7 +934,7 @@ watch(
                 color="neutral"
                 variant="ghost"
                 square
-                aria-label="Open account menu"
+                :aria-label="`${userInitials} · Librarian account menu`"
               >
                 <UAvatar :alt="userName" :text="userInitials" size="sm" />
               </UButton>
@@ -949,7 +945,7 @@ watch(
 
       <template #body>
         <main
-          id="main-content"
+          id="main-content" tabindex="-1"
           class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors duration-200"
         >
           <div class="sncbt-portal-frame">

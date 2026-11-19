@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import AppFormSection from "~/components/shared/AppFormSection.vue";
 import AppStickyFormActions from "~/components/shared/AppStickyFormActions.vue";
 import type { StudentKnownDevice } from "~/composables/useStudentProfileSecurity";

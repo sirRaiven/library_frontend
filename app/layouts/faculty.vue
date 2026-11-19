@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
@@ -324,16 +325,16 @@ watch(
             right: 'gap-1',
           }"
         >
-          <template #toggle="{ sidebarCollapsed: collapsed }">
-            <UTooltip :text="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
+          <template #toggle>
+            <UTooltip :text="sidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
               <UDashboardSidebarCollapse
                 class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="collapsed ? 'soft' : 'ghost'"
+                :variant="sidebarCollapsed ? 'soft' : 'ghost'"
                 square
-                :aria-expanded="!collapsed"
-                :aria-label="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
+                :aria-expanded="!sidebarCollapsed"
+                :aria-label="sidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
                 aria-controls="sncbt-faculty-dashboard-sidebar-faculty-main-navigation"
               />
             </UTooltip>
@@ -344,7 +345,7 @@ watch(
               <UColorModeButton class="hidden sm:inline-flex" color="neutral" variant="ghost" />
             </UTooltip>
             <UDropdownMenu :items="accountItems" :content="{ align: 'end' }">
-              <UButton color="neutral" variant="ghost" square aria-label="Open faculty account menu">
+              <UButton color="neutral" variant="ghost" square :aria-label="`${initials} · Faculty account menu`">
                 <UAvatar :text="initials" :alt="userName" size="xs" />
               </UButton>
             </UDropdownMenu>
@@ -353,7 +354,7 @@ watch(
       </template>
 
       <template #body>
-        <main id="main-content" class="sncbt-mobile-bottom-nav-spacer min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+        <main id="main-content" tabindex="-1" class="sncbt-mobile-bottom-nav-spacer min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
             <div class="sncbt-portal-view">
@@ -368,7 +369,7 @@ watch(
     <PortalMobileBottomNav
       :items="mobileNavigationItems"
       :more-active="mobileMoreActive"
-      more-controls="sncbt-faculty-dashboard-sidebar-faculty-main-navigation"
+      :more-open="sidebarOpen"
       @more="openMobileNavigation"
     />
 

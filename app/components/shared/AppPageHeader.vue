@@ -16,7 +16,7 @@ withDefaults(
 
 <template>
   <header class="sncbt-page-hero sncbt-page-header">
-    <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
       <div class="min-w-0">
         <div class="flex min-w-0 items-center gap-3">
           <div
@@ -35,7 +35,7 @@ withDefaults(
               {{ eyebrow }}
             </p>
             <h1
-              class="sr-only text-balance text-2xl font-semibold tracking-tight text-highlighted sm:not-sr-only"
+              class="text-balance text-xl font-semibold tracking-tight text-highlighted sm:text-2xl"
               :class="eyebrow ? 'lg:mt-0.5' : ''"
             >
               {{ title }}
@@ -45,7 +45,7 @@ withDefaults(
 
         <p
           v-if="description"
-          class="mt-1.5 hidden max-w-3xl text-sm leading-5 text-muted md:block"
+          class="mt-1.5 max-w-3xl text-sm leading-5 text-muted"
         >
           {{ description }}
         </p>
@@ -53,7 +53,7 @@ withDefaults(
 
       <div
         v-if="$slots.actions"
-        class="sncbt-action-row sncbt-mobile-stack-actions shrink-0"
+        class="sncbt-action-row sncbt-mobile-stack-actions min-w-0 lg:max-w-[60%] lg:justify-end"
       >
         <slot name="actions" />
       </div>

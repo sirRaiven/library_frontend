@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import type {
   LibraryReportBranding,
   LibraryReportDocument,
@@ -36,15 +37,6 @@ const route = useRoute();
 const reportView = computed<"library" | "monitoring">(() =>
   route.query.view === "monitoring" ? "monitoring" : "library",
 );
-
-async function setReportView(view: "library" | "monitoring") {
-  await navigateTo(
-    view === "monitoring"
-      ? { path: "/admin/reports", query: { view: "monitoring" } }
-      : { path: "/admin/reports" },
-    { replace: true },
-  );
-}
 
 const now = new Date();
 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -267,26 +259,28 @@ onMounted(async () => {
       icon="i-lucide-file-chart-column-increasing"
     />
 
-    <div class="inline-flex rounded-xl border border-default bg-elevated/30 p-1" role="tablist" aria-label="Report categories">
+    <nav class="flex flex-wrap gap-1" aria-label="Report categories">
       <UButton
         label="Library Reports"
         icon="i-lucide-library-big"
         :color="reportView === 'library' ? 'primary' : 'neutral'"
         :variant="reportView === 'library' ? 'soft' : 'ghost'"
-        role="tab"
-        :aria-selected="reportView === 'library'"
-        @click="setReportView('library')"
+        :to="{ path: '/admin/reports' }"
+        :active="reportView === 'library'"
+        :aria-current="reportView === 'library' ? 'page' : undefined"
+        replace
       />
       <UButton
         label="Monitoring Reports"
         icon="i-lucide-monitor-dot"
         :color="reportView === 'monitoring' ? 'primary' : 'neutral'"
         :variant="reportView === 'monitoring' ? 'soft' : 'ghost'"
-        role="tab"
-        :aria-selected="reportView === 'monitoring'"
-        @click="setReportView('monitoring')"
+        :to="{ path: '/admin/reports', query: { view: 'monitoring' } }"
+        :active="reportView === 'monitoring'"
+        :aria-current="reportView === 'monitoring' ? 'page' : undefined"
+        replace
       />
-    </div>
+    </nav>
 
     <div v-if="reportView === 'library'" class="space-y-6">
       <UCard>
@@ -389,11 +383,11 @@ onMounted(async () => {
                     <span class="text-xs text-muted">{{ table.rows.length.toLocaleString() }} records</span>
                   </div>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="sncbt-report-table overflow-x-auto" tabindex="0" role="region" :aria-label="table.title">
                   <table class="min-w-full divide-y divide-default text-sm">
                     <thead class="bg-elevated/20">
                       <tr>
-                        <th v-for="column in table.columns" :key="column.key" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-muted">
+                        <th v-for="column in table.columns" :key="column.key" scope="col" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-muted">
                           {{ column.label }}
                         </th>
                       </tr>

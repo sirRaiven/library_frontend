@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
 definePageMeta({
   layout: "admin",

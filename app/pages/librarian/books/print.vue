@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppSkipLink from "~/components/shared/AppSkipLink.vue";
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 
 import { appLogger } from "~/utils/app-logger";
 import type {
@@ -175,6 +177,7 @@ watch(
 </script>
 
 <template>
+  <AppSkipLink class="no-print" />
   <div
     class="sncbt-staff-page sncbt-specialist-page sncbt-staff-print-page min-h-dvh bg-slate-100 text-slate-950"
   >
@@ -230,7 +233,7 @@ watch(
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl p-4 sm:p-6">
+    <main id="main-content" tabindex="-1" class="mx-auto max-w-7xl p-4 sm:p-6">
       <UAlert
         v-if="renderError"
         class="no-print mb-5"

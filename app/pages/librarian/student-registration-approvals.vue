@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import type {
   RegistrationLibraryCardStatus,
@@ -953,7 +954,7 @@ onMounted(loadRequests);
                 </section>
               </aside>
 
-              <main class="min-w-0 space-y-5">
+              <div class="min-w-0 space-y-5">
                 <section class="rounded-2xl border border-default bg-default shadow-sm">
                   <div class="flex items-center gap-3 border-b border-default px-4 py-3 sm:px-5">
                     <div class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -1170,7 +1171,7 @@ onMounted(loadRequests);
                     </div>
                   </div>
                 </section>
-              </main>
+              </div>
             </div>
           </div>
 

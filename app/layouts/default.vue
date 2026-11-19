@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 const { isNavigating: pageLoading } = usePageExperience();
 </script>

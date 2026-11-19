@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
@@ -364,26 +365,28 @@ watch(
             right: 'gap-1',
           }"
         >
-          <template #toggle="{ sidebarCollapsed: collapsed, sidebarOpen: open }">
-            <UTooltip :text="open ? 'Close navigation menu' : 'Open navigation menu'">
+          <template #toggle>
+            <UTooltip :text="sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'">
               <UDashboardSidebarToggle
                 class="lg:hidden"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="open ? 'soft' : 'ghost'"
+                :variant="sidebarOpen ? 'soft' : 'ghost'"
                 square
-                :aria-expanded="open"
-                aria-controls="sncbt-admin-dashboard-sidebar-admin-main-navigation"
+                :aria-expanded="sidebarOpen"
+                :aria-label="sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'"
+                aria-haspopup="dialog"
               />
             </UTooltip>
-            <UTooltip :text="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
+            <UTooltip :text="sidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
               <UDashboardSidebarCollapse
                 class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="collapsed ? 'soft' : 'ghost'"
+                :variant="sidebarCollapsed ? 'soft' : 'ghost'"
                 square
-                :aria-expanded="!collapsed"
+                :aria-expanded="!sidebarCollapsed"
+                :aria-label="sidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
                 aria-controls="sncbt-admin-dashboard-sidebar-admin-main-navigation"
               />
             </UTooltip>
@@ -396,7 +399,7 @@ watch(
               :content="{ align: 'end', sideOffset: 8 }"
               :ui="{ content: 'w-64' }"
             >
-              <UButton color="neutral" variant="ghost" square aria-label="Open administrator account menu">
+              <UButton color="neutral" variant="ghost" square :aria-label="`${userInitials} · Administrator account menu`">
                 <UAvatar :alt="userName" :text="userInitials" size="sm" />
               </UButton>
             </UDropdownMenu>
@@ -405,7 +408,7 @@ watch(
       </template>
 
       <template #body>
-        <main id="main-content" class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+        <main id="main-content" tabindex="-1" class="min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner admin />
             <div class="sncbt-portal-view sncbt-admin-view sncbt-staff-view">

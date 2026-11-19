@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppPageLoadingSkeleton from "~/components/shared/AppPageLoadingSkeleton.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppSignOutModal from "~/components/shared/AppSignOutModal.vue";
 import SystemMaintenanceBanner from "~/components/shared/SystemMaintenanceBanner.vue";
@@ -404,16 +405,16 @@ onBeforeUnmount(() => {
             right: 'gap-1',
           }"
         >
-          <template #toggle="{ sidebarCollapsed: collapsed }">
-            <UTooltip :text="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
+          <template #toggle>
+            <UTooltip :text="sidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'">
               <UDashboardSidebarCollapse
                 class="hidden lg:inline-flex"
                 icon="i-lucide-panel-left"
                 color="neutral"
-                :variant="collapsed ? 'soft' : 'ghost'"
+                :variant="sidebarCollapsed ? 'soft' : 'ghost'"
                 square
-                :aria-expanded="!collapsed"
-                :aria-label="collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
+                :aria-expanded="!sidebarCollapsed"
+                :aria-label="sidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
                 aria-controls="sncbt-student-dashboard-sidebar-student-main-navigation"
               />
             </UTooltip>
@@ -432,7 +433,7 @@ onBeforeUnmount(() => {
               :content="{ align: 'end', sideOffset: 8 }"
               :ui="{ content: 'w-64' }"
             >
-              <UButton color="neutral" variant="ghost" square aria-label="Open Student account menu">
+              <UButton color="neutral" variant="ghost" square :aria-label="`${userInitials} · Student account menu`">
                 <UAvatar :alt="userName" :text="userInitials" size="sm" />
               </UButton>
             </UDropdownMenu>
@@ -441,7 +442,7 @@ onBeforeUnmount(() => {
       </template>
 
       <template #body>
-        <main id="main-content" class="sncbt-mobile-bottom-nav-spacer min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
+        <main id="main-content" tabindex="-1" class="sncbt-mobile-bottom-nav-spacer min-h-[calc(100dvh-var(--ui-header-height))] text-default transition-colors">
           <div class="sncbt-portal-frame">
             <SystemMaintenanceBanner />
             <div class="sncbt-portal-view">
@@ -457,7 +458,7 @@ onBeforeUnmount(() => {
   <PortalMobileBottomNav
     :items="mobileNavigationItems"
     :more-active="mobileMoreActive"
-    more-controls="sncbt-student-dashboard-sidebar-student-main-navigation"
+      :more-open="sidebarOpen"
     @more="openMobileNavigation"
   />
 

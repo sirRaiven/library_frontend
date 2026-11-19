@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppSkipLink from "~/components/shared/AppSkipLink.vue";
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import type { ComponentPublicInstance } from "vue";
 import type { StudentMember } from "~/composables/useLibraryMembers";
 import StudentLibraryCard from "~/components/librarian/StudentLibraryCard.vue";
@@ -333,6 +335,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  <AppSkipLink class="no-print" />
   <div class="print-page sncbt-staff-page sncbt-specialist-page sncbt-staff-print-page min-h-dvh bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
     <header
       class="no-print sncbt-print-toolbar sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/95"
@@ -391,7 +394,7 @@ onMounted(async () => {
       </div>
     </header>
 
-    <main class="sncbt-staff-content mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6">
+    <main id="main-content" tabindex="-1" class="sncbt-staff-content mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6">
       <UAlert
         v-if="preparationError"
         class="no-print"

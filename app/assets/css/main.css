@@ -21,7 +21,9 @@
   --sncbt-brand-700: #047857;
   --sncbt-brand-soft: rgba(5, 150, 105, 0.08);
   --sncbt-brand-border: rgba(5, 150, 105, 0.18);
-  --sncbt-focus: rgba(5, 150, 105, 0.52);
+  --sncbt-focus: #047857;
+  --ui-text-muted: #526075;
+  --ui-text-dimmed: #526075;
 
   /* Surfaces */
   --sncbt-color-canvas: #eef6f2;
@@ -120,10 +122,20 @@
   --sncbt-shadow-overlay: var(--sncbt-elevation-overlay);
 }
 
+:root:not(.dark) {
+  --ui-primary: #047857;
+  --ui-success: #166534;
+  --ui-info: #075985;
+  --ui-warning: #92400e;
+  --ui-error: #b91c1c;
+}
+
 .dark {
   --sncbt-brand-soft: rgba(52, 211, 153, 0.09);
   --sncbt-brand-border: rgba(52, 211, 153, 0.2);
-  --sncbt-focus: rgba(52, 211, 153, 0.58);
+  --sncbt-focus: #6ee7b7;
+  --ui-text-muted: #a3b3c4;
+  --ui-text-dimmed: #a3b3c4;
 
   --sncbt-color-canvas: #020c12;
   --sncbt-color-canvas-subtle: #031118;
@@ -399,7 +411,7 @@
   z-index: 100;
   transform: translateY(-160%);
   border-radius: 0.5rem;
-  background: var(--ui-primary);
+  background: #047857;
   color: white;
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
@@ -410,7 +422,7 @@
 
 .sncbt-skip-link:focus { transform: translateY(0); }
 
-:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--sncbt-focus);
   outline-offset: 2px;
 }
@@ -1716,24 +1728,6 @@ body {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 
-  /* Header actions stay reachable without producing a full screen of buttons. */
-  .sncbt-staff-page .sncbt-page-header .sncbt-action-row {
-    width: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    padding-bottom: 0.125rem;
-    scrollbar-width: none;
-  }
-
-  .sncbt-staff-page .sncbt-page-header .sncbt-action-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .sncbt-staff-page .sncbt-page-header .sncbt-action-row > :where(button, a, div) {
-    flex: 0 0 auto;
-  }
-
   .sncbt-staff-page :where(.sncbt-record-card) {
     border-radius: var(--sncbt-radius-md);
   }
@@ -1805,23 +1799,6 @@ body {
 
   .sncbt-member-page .sncbt-page-header {
     margin-bottom: 0;
-  }
-
-  .sncbt-member-page .sncbt-page-header .sncbt-action-row {
-    width: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    padding-bottom: 0.125rem;
-    scrollbar-width: none;
-  }
-
-  .sncbt-member-page .sncbt-page-header .sncbt-action-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .sncbt-member-page .sncbt-page-header .sncbt-action-row > :where(button, a, div) {
-    flex: 0 0 auto;
   }
 
   .sncbt-member-page .sncbt-metric-card {
@@ -2308,6 +2285,7 @@ body {
 
   /* Scope Nuxt UI surface/text tokens so every nested navigation control,
      section label, account footer and collapsed state remains readable. */
+  --sncbt-focus: #6ee7b7;
   --ui-bg: #041725;
   --ui-bg-muted: #061a29;
   --ui-bg-elevated: #082036;
@@ -2478,7 +2456,7 @@ body {
 }
 .sncbt-portal-view :where(button, a, input, select, textarea, [role="button"]):focus-visible,
 .sncbt-signin :where(button, a, input):focus-visible {
-  outline: 2px solid var(--ui-primary);
+  outline: 2px solid var(--sncbt-focus);
   outline-offset: 2px;
 }
 .sncbt-portal-view :where(button, [role="button"]):disabled,
@@ -2506,8 +2484,6 @@ body {
   background: var(--ui-bg);
   box-shadow: 0 12px 30px -28px rgba(2, 25, 24, 0.35);
 }
-.sncbt-signin-eyebrow { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em; color: #047857; }
-.dark .sncbt-signin-eyebrow { color: #6ee7b7; }
 .sncbt-password-toggle {
   display: inline-flex; align-items: center; justify-content: center;
   width: 2rem; height: 2rem; border-radius: 0.375rem;
@@ -2524,7 +2500,7 @@ body {
 @media (max-width: 1023px) { .sncbt-signin-form-wrap { box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) {
   .sncbt-route-skeleton { animation: none; opacity: 1; }
-  .sncbt-signin-progress span { animation: none; width: 100%; }
+  .sncbt-signin-progress span { animation: none; inset-inline-start: 30%; }
   .sncbt-portal-view :where(button, a, [role="button"]),
   .sncbt-signin :where(button, a),
   .sncbt-navigation :where(button, a) { transition: none !important; transform: none !important; }
@@ -2558,3 +2534,20 @@ body {
 }
 .sncbt-portal-view :where(.sncbt-member-dashboard-hero, .sncbt-account-identity-card)::before,
 .sncbt-portal-view .sncbt-page-hero::after { display: none !important; }
+
+.sncbt-report-table:focus-visible {
+  outline-offset: -2px;
+}
+
+@media (max-width: 767px) {
+  .sncbt-page-header .sncbt-action-row {
+    width: 100%;
+  }
+
+  .sncbt-page-header .sncbt-action-row > :where(button, a) {
+    min-height: var(--sncbt-touch-target);
+    max-width: 100%;
+    white-space: normal;
+    text-align: start;
+  }
+}

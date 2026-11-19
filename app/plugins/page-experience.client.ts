@@ -4,7 +4,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   const router = useRouter();
 
   nuxtApp.hook("page:loading:start", () => {
-    isNavigating.value = true;
+    if (!nuxtApp.isHydrating) isNavigating.value = true;
   });
   nuxtApp.hook("page:loading:end", () => {
     isNavigating.value = false;

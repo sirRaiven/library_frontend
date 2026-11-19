@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import { useAuth } from "~/composables/useAuth";
 

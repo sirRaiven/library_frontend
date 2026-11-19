@@ -16,7 +16,6 @@ definePageMeta({
 });
 
 const route = useRoute();
-const colorMode = useColorMode();
 const auth = useAuth();
 const maintenance = useSystemMaintenance();
 
@@ -153,37 +152,22 @@ onMounted(() => {
             <p class="mt-0.5 text-xs text-muted sm:text-sm">Library Management System</p>
           </div>
         </div>
-        <UButton :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
-          color="neutral" variant="ghost" square size="lg"
-          :aria-label="colorMode.value === 'dark' ? 'Use light theme' : 'Use dark theme'"
-          @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'" />
+        <UColorModeButton color="neutral" variant="ghost" square size="lg" aria-label="Change color theme" />
       </header>
 
-      <main id="main-content" class="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1fr_0.88fr] lg:gap-20 lg:py-16">
-        <section class="sncbt-signin-context hidden lg:block">
-          <p class="sncbt-signin-eyebrow">SNCBT LIBRARY SERVICES</p>
-          <h1 class="mt-4 max-w-md text-4xl font-semibold leading-[1.13] tracking-tight text-highlighted xl:text-5xl">
-            Library services for students, faculty, and staff.
-          </h1>
-          <p class="mt-5 max-w-md text-base leading-7 text-muted">
-            Access the collection, review borrowing records, and manage library transactions according to your account.
+      <main id="main-content" tabindex="-1" class="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1fr_0.88fr] lg:gap-20 lg:py-16">
+        <aside class="sncbt-signin-context hidden lg:block">
+          <p class="max-w-md text-3xl font-semibold leading-tight tracking-tight text-highlighted xl:text-4xl">
+            Library services for students, faculty, and staff
           </p>
-          <div class="mt-10 border-t border-default/80 pt-6">
-            <p class="mb-4 text-sm font-semibold text-highlighted">Available services</p>
-            <div class="grid max-w-md grid-cols-2 gap-x-5 gap-y-4 text-sm text-toned">
-              <div class="flex items-center gap-2.5"><UIcon name="i-lucide-search" class="size-4 shrink-0 text-primary" />Book catalog</div>
-              <div class="flex items-center gap-2.5"><UIcon name="i-lucide-book-open-check" class="size-4 shrink-0 text-primary" />Borrowing records</div>
-              <div class="flex items-center gap-2.5"><UIcon name="i-lucide-calendar-days" class="size-4 shrink-0 text-primary" />Reservations</div>
-              <div class="flex items-center gap-2.5"><UIcon name="i-lucide-id-card" class="size-4 shrink-0 text-primary" />Library membership</div>
-            </div>
-          </div>
-        </section>
+          <p class="mt-4 max-w-md text-base leading-7 text-muted">
+            Browse the catalog, check your loans and reservations, or manage library records using your staff account.
+          </p>
+        </aside>
 
         <section class="sncbt-signin-form-wrap" aria-labelledby="signin-heading">
           <div class="mb-7">
-            <p class="sncbt-signin-eyebrow">ACCOUNT ACCESS</p>
-            <h2 id="signin-heading" class="mt-2 text-3xl font-semibold tracking-tight text-highlighted">Sign in to the Library</h2>
-            <p class="mt-2 text-sm leading-6 text-muted">Use your assigned email or username and password.</p>
+            <h1 id="signin-heading" class="text-3xl font-semibold tracking-tight text-highlighted">Sign in to the Library</h1>
           </div>
 
           <div class="space-y-3">
@@ -203,7 +187,7 @@ onMounted(() => {
             <UFormField name="identifier" label="Email or username">
               <UInput v-model="form.identifier" icon="i-lucide-user-round" color="neutral" variant="outline"
                 placeholder="Enter email or username" autocomplete="username" size="xl"
-                :disabled="isLoggingIn" class="w-full" autofocus
+                :disabled="isLoggingIn" class="w-full"
                 :ui="{ base: 'h-12 rounded-lg' }" />
             </UFormField>
 
@@ -216,7 +200,6 @@ onMounted(() => {
                   <button type="button" class="sncbt-password-toggle"
                     :disabled="isLoggingIn"
                     :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                    :aria-pressed="showPassword"
                     @click="showPassword = !showPassword">
                     <UIcon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-4" />
                   </button>
@@ -224,20 +207,17 @@ onMounted(() => {
               </UInput>
             </UFormField>
 
-            <UAlert v-if="loginError" color="error" variant="soft" icon="i-lucide-circle-alert"
-              title="Unable to sign in" :description="loginError" />
-
-            <div v-if="isLoggingIn" class="space-y-2" role="status" aria-live="polite">
-              <div class="sncbt-signin-progress" aria-hidden="true"><span /></div>
-              <p class="text-xs text-muted">{{ loginStatus }}</p>
-            </div>
-
             <UButton type="submit" color="primary" size="xl" block
               :loading="isLoggingIn" :disabled="isLoggingIn"
               class="sncbt-signin-submit h-12 rounded-lg font-semibold">
               {{ isLoggingIn ? 'Signing in…' : 'Sign in' }}
             </UButton>
           </UForm>
+
+          <div role="status" class="sr-only">{{ loginStatus }}</div>
+          <div v-if="isLoggingIn" class="sncbt-signin-progress mt-3" aria-hidden="true"><span /></div>
+          <UAlert v-if="loginError" class="mt-4" role="alert" color="error" variant="soft"
+            icon="i-lucide-circle-alert" title="Unable to sign in" :description="loginError" />
 
           <div class="mt-7 border-t border-default/80 pt-5">
             <p class="flex items-start gap-2 text-xs leading-5 text-muted">

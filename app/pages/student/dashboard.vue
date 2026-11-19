@@ -591,12 +591,14 @@ onMounted(refresh);
           <dl class="mt-4 divide-y divide-default/80 rounded-xl border border-default/80">
             <div class="flex items-center justify-between gap-4 px-3.5 py-3">
               <dt class="text-xs text-muted">Enrollment</dt>
-              <UBadge
-                :label="dashboard.membership.value.enrollmentVerified ? 'Verified' : 'Pending'"
-                :color="dashboard.membership.value.enrollmentVerified ? 'success' : 'warning'"
-                variant="soft"
-                size="sm"
-              />
+              <dd>
+                <UBadge
+                  :label="dashboard.membership.value.enrollmentVerified ? 'Verified' : 'Pending'"
+                  :color="dashboard.membership.value.enrollmentVerified ? 'success' : 'warning'"
+                  variant="soft"
+                  size="sm"
+                />
+              </dd>
             </div>
             <div class="flex items-center justify-between gap-4 px-3.5 py-3">
               <dt class="text-xs text-muted">Membership valid until</dt>

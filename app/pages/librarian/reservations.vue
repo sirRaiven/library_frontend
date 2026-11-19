@@ -28,11 +28,9 @@ const reservationStatusOptions = [
   "Expired",
 ] as const;
 
-const initialReservationStatus =
-  typeof route.query.status === "string" &&
-  reservationStatusOptions.includes(route.query.status as (typeof reservationStatusOptions)[number])
-    ? route.query.status
-    : "All";
+const initialReservationStatus = reservationStatusOptions.find(
+  (status) => status === route.query.status,
+) ?? "All";
 const initialReservationSearch =
   typeof route.query.search === "string"
     ? route.query.search.trim().slice(0, 120)

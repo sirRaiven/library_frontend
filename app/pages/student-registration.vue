@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import StudentPhotoEditor from "~/components/librarian/StudentPhotoEditor.vue";
@@ -24,7 +25,6 @@ useHead({
   ],
 });
 
-const colorMode = useColorMode();
 const selfRegistration = useStudentSelfRegistration();
 const libraryOptions = useLibraryOptions();
 const toast = useToast();
@@ -380,24 +380,17 @@ onMounted(() => {
           </div>
           <div class="min-w-0">
             <p class="truncate text-sm font-bold text-primary">SNCBT LIBRARY</p>
-            <h1 class="truncate text-base font-bold sm:text-lg">Student Membership Registration</h1>
+            <h1 class="text-balance break-words text-base font-bold sm:text-lg">Student Membership Registration</h1>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <UButton to="/" label="Student Portal" icon="i-lucide-log-in" color="neutral" variant="outline" class="hidden sm:inline-flex" />
-          <UButton
-            :icon="colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
-            color="neutral"
-            variant="ghost"
-            square
-            aria-label="Change color mode"
-            @click="() => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'; }"
-          />
+          <UColorModeButton color="neutral" variant="ghost" square aria-label="Change color theme" />
         </div>
       </div>
     </header>
 
-    <main class="sncbt-page-shell py-8 lg:py-10">
+    <main id="main-content" tabindex="-1" class="sncbt-page-shell py-8 lg:py-10">
       <AppDataSkeleton v-if="accessLoading" variant="form" :rows="8" label="Checking student registration availability" />
 
       <UAlert
@@ -407,14 +400,14 @@ onMounted(() => {
         icon="i-lucide-circle-alert"
         title="Registration page is unavailable"
         :description="accessError"
+        :actions="[{ label: 'Try again', onClick: loadAccess }]"
       />
 
       <template v-else-if="access">
         <section class="sncbt-page-hero mb-7 p-6 sm:p-8">
           <div class="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Student Registration</p>
-              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]">Register your Library membership and Portal account</h2>
+              <h2 class="text-2xl font-semibold tracking-tight text-highlighted sm:text-[1.75rem]">Register your Library membership and Portal account</h2>
               <p class="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 Complete the same essential information collected at the Library counter. Your Student number will be your Portal username. The Librarian must approve the request before you can sign in.
               </p>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 
 import { userFacingErrorMessage } from "~/utils/user-facing-error";
 import type {
@@ -884,7 +885,7 @@ onMounted(async () => {
     </UCard>
 
     <div class="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
-      <main class="space-y-6">
+      <div class="space-y-6">
         <section v-for="group in groupedReports" :key="group.key" class="space-y-3">
           <div class="flex items-start gap-3">
             <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-elevated text-muted">
@@ -929,7 +930,7 @@ onMounted(async () => {
             </UCard>
           </div>
         </section>
-      </main>
+      </div>
 
       <aside class="sncbt-specialist-summary 2xl:sticky 2xl:top-6 2xl:self-start">
         <UCard>
@@ -1105,13 +1106,15 @@ onMounted(async () => {
               <UBadge color="neutral" variant="soft" :label="`${table.rows.length} record${table.rows.length === 1 ? '' : 's'}`" />
             </div>
 
-            <div class="sncbt-specialist-table-region overflow-x-auto rounded-xl border border-default">
+            <div class="sncbt-report-table sncbt-specialist-table-region overflow-x-auto rounded-xl border border-default"
+              tabindex="0" role="region" :aria-label="table.title">
               <table class="min-w-full divide-y divide-default text-sm">
                 <thead class="bg-elevated/70">
                   <tr>
                     <th
                       v-for="column in table.columns"
                       :key="column.key"
+                      scope="col"
                       class="whitespace-nowrap px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted"
                     >
                       {{ column.label }}
