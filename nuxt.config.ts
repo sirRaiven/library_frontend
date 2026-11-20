@@ -138,6 +138,7 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
+    "/librarian/reports": { redirect: { to: "/librarian/dashboard", statusCode: 302 } },
     "/**": {
       headers: securityHeaders,
     },

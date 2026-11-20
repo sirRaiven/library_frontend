@@ -1,5 +1,6 @@
 
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import type {
   LibraryNotification,
   NotificationCategory,
@@ -761,6 +762,16 @@ onBeforeUnmount(() => {
     liveRefreshTimer = null;
   }
 });
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Library Notices",
+  scope: "Includes the notices on this page.",
+  load: () => localLibraryReport(
+    "Library Notices",
+    [{ label: "Date", format: "datetime" }, "Notice", "Category", "Status"],
+    displayedNotifications.value.map(row => [row.occurredAt, row.title, row.category, row.status]),
+  ),
+}];
 </script>
 
 <template>
@@ -769,6 +780,7 @@ onBeforeUnmount(() => {
       class="sncbt-staff-content mx-auto max-w-[1600px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
+        :report-choices="reportChoices"
         eyebrow="Reports & Notices"
         title="Notifications"
         description="Review Library updates and operational reminders. Opening a notification marks it as read while keeping its active or resolved status separate."

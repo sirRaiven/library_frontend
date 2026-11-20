@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import type {
@@ -538,11 +539,27 @@ onBeforeUnmount(() => {
 });
 
 onMounted(loadRequests);
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Registration and Account Requests",
+  scope: "Includes the requests on this page.",
+  load: () => localLibraryReport(
+    "Registration and Account Requests",
+    ["Request Number", "Student Number", "Student", "Request", "Status", { label: "Submitted", format: "datetime" }],
+    requests.value.map(row => [
+      row.requestNo, row.studentNo, row.fullName,
+      row.type === "Registration" ? "Registration" : "Credential Assistance",
+      statusLabel(row.status), row.submittedAt,
+    ]),
+  ),
+}];
 </script>
 
 <template>
   <div class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page space-y-6">
     <LibrarianPageHeader
+        :report-choices="reportChoices"
+        :report-disabled="loading || !hasLoadedRequests || !!requestLoadError"
       eyebrow="Library Users"
       title="Student Registration Approvals"
       description="Review Student membership applications, verify submitted information, and approve eligible accounts before Library access is enabled."

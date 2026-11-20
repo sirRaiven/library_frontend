@@ -702,7 +702,7 @@ const collectionActionItems = computed(() => [
     { label: "Physical Copies", icon: "i-lucide-book-copy", to: "/librarian/books/copies" },
     { label: "Import Excel", icon: "i-lucide-file-up", to: "/librarian/books/import" },
     {
-      label: "Export Excel",
+      label: "Download Inventory Workbook",
       icon: "i-lucide-file-down",
       onSelect() {
         void exportInventory();

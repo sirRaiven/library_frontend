@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import type {
   MembershipTerm,
@@ -137,12 +138,28 @@ onMounted(async () => {
     initialTermPending.value = false;
   }
 });
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Academic Term and Membership Validity",
+  scope: "Includes the saved membership term.",
+  async load() {
+    const term = await termManager.load();
+    return localLibraryReport("Academic Term and Membership Validity", ["Item", "Details"], [
+      ["Academic Year", term.academicYear], ["Semester", term.semester], ["Term Status", term.status],
+      ["Registration", term.registrationOpen ? "Open" : "Closed"],
+      ["Valid From", term.validFrom], ["Valid Until", term.validUntil],
+      ["Enrollment Verification", term.requireEnrollmentVerification ? "Required" : "Optional"],
+    ]);
+  },
+}];
 </script>
 
 <template>
   <UContainer class="sncbt-page-shell sncbt-staff-page space-y-8">
     <div class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12">
       <LibrarianPageHeader
+        :report-choices="reportChoices"
+        :report-disabled="initialTermPending || termLoadFailed"
         eyebrow="Membership & Cards"
         title="Membership Term"
         description="Set the current academic term and membership validity used for registration, renewal, and Library Card access."

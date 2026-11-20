@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 
 import { userFacingErrorMessage } from "~/utils/user-facing-error";
 import {
@@ -1096,6 +1097,20 @@ onBeforeUnmount(() => {
     );
   }
 });
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Library Card Design Summary",
+  scope: "Includes the saved card design.",
+  load: () => {
+    const saved = cardDesign.design.value;
+    return localLibraryReport("Library Card Design Summary", ["Item", "Details"], [
+      ["Design", saved.designName], ["Card Title", saved.cardTitle],
+      ["Institution", saved.institutionName], ["Department", saved.departmentLabel],
+      ["Student Photo", saved.showPhoto ? "Shown" : "Hidden"],
+      ["Barcode", saved.showBarcode ? "Shown" : "Hidden"],
+    ]);
+  },
+}];
 </script>
 
 <template>
@@ -1104,6 +1119,8 @@ onBeforeUnmount(() => {
       class="sncbt-staff-content mx-auto max-w-[1750px] space-y-6 mb-12"
     >
       <LibrarianPageHeader
+        :report-choices="reportChoices"
+        :report-disabled="loading"
         eyebrow="Membership & Cards"
         title="Card Design"
         description="Customize the permanent Student Library Card using a preset or your own layout, then save the design used for future printed cards."

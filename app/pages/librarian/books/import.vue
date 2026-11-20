@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 
 import { userFacingErrorMessage } from "~/utils/user-facing-error";
 import { useAuth } from "~/composables/useAuth";
@@ -323,12 +324,34 @@ async function printImportedBarcodes(): Promise<void> {
 
   await navigateTo("/librarian/books/print");
 }
+
+const reportChoices = computed<LibrarianExportChoice[]>(() => processedRows.value > 0 ? [{
+  label: "Inventory Import Results",
+  scope: "Includes the results of the current import.",
+  load: () => {
+    const result = localLibraryReport("Inventory Import Results", ["Item", "Count"], [
+      ["Rows Processed", processedRows.value],
+      ["Book Titles Created", createdBooks.value],
+      ["Copies Created", importedCopies.value.length],
+      ["Skipped", importSkipped.value.length],
+      ["Rows with Errors", importErrors.value.length],
+    ]);
+    if (importedCopies.value.length) result.tables.push({
+      title: "Imported Copies",
+      columns: ["Accession Number", "Book", "Call Number", "Shelf Location"].map(label => ({ label })),
+      rows: importedCopies.value.map(row => [row.accession_number, row.title, row.call_number, row.shelf_location]),
+    });
+    return result;
+  },
+}] : []);
 </script>
 
 <template>
   <UContainer class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page">
     <div class="sncbt-staff-content w-full space-y-6">
       <LibrarianPageHeader
+        :report-choices="reportChoices"
+        :report-disabled="isImporting"
         eyebrow="Books & Collection"
         title="Import Existing Inventory"
         description="Upload the Library inventory workbook to register book titles, physical copies, accession numbers, and barcode values in batches."

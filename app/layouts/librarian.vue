@@ -187,13 +187,6 @@ function getPageInformation(): {
     };
   }
 
-  if (path.startsWith("/librarian/reports")) {
-    return {
-      title: "Reports",
-      icon: "i-lucide-chart-no-axes-combined",
-    };
-  }
-
   if (path.startsWith("/librarian/notifications")) {
     return {
       title: "Notifications",
@@ -327,19 +320,14 @@ const navigationSections = computed<NavigationMenuItem[]>(() => [
     ],
   },
   {
-    label: "Reports & Notices",
-    value: "reports",
-    icon: "i-lucide-chart-no-axes-combined",
+    label: "History & Notices",
+    value: "activity",
+    icon: "i-lucide-history",
     children: [
       {
         label: "History",
         icon: "i-lucide-history",
         to: "/librarian/history",
-      },
-      {
-        label: "Reports",
-        icon: "i-lucide-chart-no-axes-combined",
-        to: "/librarian/reports",
       },
       {
         label:

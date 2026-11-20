@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import QRCode from "qrcode";
 
 definePageMeta({
@@ -72,11 +73,25 @@ function printQr() {
 }
 
 onMounted(generateLink);
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Registration Summary",
+  scope: "Includes the current registration and approval totals.",
+  async load() {
+    const { meta: { summary } } = await registration.listRequests({ type: "Registration", pageSize: 1 });
+    return localLibraryReport("Registration Summary", ["Status", "Requests"], [
+      ["Pending Verification", summary.pendingRegistrations],
+      ["Approved", summary.approvedRegistrations],
+      ["Rejected", summary.rejectedRegistrations],
+    ]);
+  },
+}];
 </script>
 
 <template>
   <div class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page space-y-6">
     <LibrarianPageHeader
+        :report-choices="reportChoices"
       eyebrow="Student Registration"
       title="Registration QR Code"
       description="Display, download, or print the QR code Students can use to submit their Library membership and Portal account application."

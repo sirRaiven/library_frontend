@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import LibrarianPageHeader from "~/components/librarian/LibrarianPageHeader.vue";
 import AppStatusBadge from "~/components/shared/AppStatusBadge.vue";
 import { yearGradeLabel } from "~/constants/studentPrograms";
@@ -203,6 +204,17 @@ watch(page, () => {
 onMounted(() => {
   void loadRecord();
 });
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Student Library Activity",
+  scope: "Includes this student's activity on the current page.",
+  load: () => localLibraryReport(
+    "Student Library Activity",
+    [{ label: "Date", format: "datetime" }, "Activity", "Book or Entry", "Status"],
+    activities.value.map(row => [row.occurredAt, categoryLabel(row.category), row.book?.title ?? row.title, row.status]),
+    student.value ? `${student.value.fullName} · ${student.value.studentNo}` : undefined,
+  ),
+}];
 </script>
 
 <template>
@@ -215,6 +227,8 @@ onMounted(() => {
         {{ activityAnnouncement }}
       </p>
       <LibrarianPageHeader
+        :report-choices="reportChoices"
+        :report-disabled="loading || !student || !!errorMessage"
         eyebrow="Library Users"
         title="Student Record"
         description="Review one student's Library activity, borrowing and reservation history, and recorded time-ins in one place."

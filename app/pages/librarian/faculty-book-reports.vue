@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import type { FacultyBookReport, FacultyReportStatus } from "~/composables/useFacultyPortal";
 
 definePageMeta({
@@ -209,11 +210,23 @@ onMounted(load);
 onBeforeUnmount(() => {
   if (searchTimer) clearTimeout(searchTimer);
 });
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Faculty Book Status Reports",
+  scope: "Includes the reports on this page.",
+  load: () => localLibraryReport(
+    "Faculty Book Status Reports",
+    [{ label: "Reported", format: "datetime" }, "Faculty Member", "Book", "Book Status", "Review Status"],
+    records.value.map(row => [row.reportedAt, row.faculty?.fullName, row.book?.title, row.usageStatus, row.reportStatus]),
+  ),
+}];
 </script>
 
 <template>
   <div class="sncbt-page-shell sncbt-staff-page sncbt-specialist-page space-y-6">
     <LibrarianPageHeader
+        :report-choices="reportChoices"
+        :report-disabled="loading"
       eyebrow="Faculty Accountability"
       title="Faculty Book Reports"
       description="Review Faculty book condition updates, lost-book reports, and replacement submissions."

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import AppFilterBar from "~/components/shared/AppFilterBar.vue";
 import AppRecordCard from "~/components/shared/AppRecordCard.vue";
 import AppResponsiveDataView from "~/components/shared/AppResponsiveDataView.vue";
@@ -533,12 +534,24 @@ watch(activeView, (value) => { if (value === "calendar") void loadCalendar(); })
 watch(calendarYear, () => { if (activeView.value === "calendar") void loadCalendar(); });
 
 onMounted(() => { void Promise.all([loadFines(), loadCalendar(), librarySettings.load(true)]); });
+
+const calendarReport: LibrarianExportChoice = {
+  label: "No-Fine Calendar",
+  scope: "Includes the calendar entries matching the current calendar filters.",
+  load: () => localLibraryReport(
+    "No-Fine Calendar",
+    ["Event", "Type", { label: "From", format: "date" }, { label: "To", format: "date" }, "Status"],
+    filteredCalendar.value.map(row => [row.title, row.type, row.startDate, row.endDate, row.status]),
+  ),
+};
 </script>
 
 <template>
   <UContainer class="sncbt-page-shell sncbt-staff-page">
     <div class="sncbt-staff-content mx-auto max-w-[1500px] space-y-6 mb-12">
       <LibrarianPageHeader
+        :report-choices="activeView === 'calendar' ? [calendarReport] : []"
+        :report-disabled="activeView === 'calendar' && calendarLoading"
         eyebrow="Fines & Payments"
         :title="activeView === 'calendar' ? 'No-Fine Days' : 'Fines & Cashier Payments'"
         :description="activeView === 'calendar'

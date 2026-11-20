@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import type { FormError, FormSubmitEvent } from "@nuxt/ui";
 import { useAuth } from "~/composables/useAuth";
 
@@ -228,6 +229,7 @@ async function loadBook(): Promise<void> {
     );
 
     const book = response.data;
+    savedBook.value = book;
     const copies = normalizeCopies(book.book_copies);
 
     form.title = book.title ?? "";
@@ -325,12 +327,29 @@ onMounted(async () => {
   }
   await loadBook();
 });
+
+const savedBook = ref<BookRecord | null>(null);
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Saved Book Details",
+  scope: "Includes the book details currently saved in the collection.",
+  load: () => {
+    const saved = savedBook.value;
+    if (!saved) throw new Error("Book record unavailable");
+    return localLibraryReport("Saved Book Details", ["Item", "Details"], [
+      ["Title", saved.title], ["Author", saved.author], ["Category", saved.category],
+      ["ISBN", saved.isbn], ["Publisher", saved.publisher], ["Edition", saved.edition],
+      ["Copyright Year", saved.copyright_year], ["Copies", copyCount.value],
+    ]);
+  },
+}];
 </script>
 
 <template>
   <UContainer class="sncbt-page-shell sncbt-staff-page">
     <div class="mx-auto max-w-5xl space-y-6">
       <LibrarianPageHeader
+        :report-choices="reportChoices"
+        :report-disabled="isLoading || !savedBook"
         eyebrow="Books & Collection"
         title="Edit Book Information"
         description="Update the classification, generated call number, subject, and physical shelf location."

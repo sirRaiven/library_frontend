@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import BarcodeCard from "~/components/librarian/BarcodeCard.vue";
 import { useAuth } from "~/composables/useAuth";
 import { useBarcodePrintQueue } from "~/composables/useBarcodePrintQueue";
@@ -365,6 +366,21 @@ function queueLabels(targetCopies: BookCopy[]): void {
 onMounted(() => {
   void loadBook();
 });
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Book Record and Copies",
+  scope: "Includes this book and the copies matching the current filters.",
+  load: () => {
+    const saved = book.value;
+    if (!saved) throw new Error("Book record unavailable");
+    return localLibraryReport(
+      "Book Record and Copies",
+      ["Accession Number", "Shelf Location", "Status", "Condition"],
+      filteredCopies.value.map(row => [row.accession_number ?? row.control_number, row.shelf_location, row.copy_status, row.condition]),
+      [saved.title, saved.author, saved.call_number].filter(Boolean).join(" · "),
+    );
+  },
+}];
 </script>
 
 <template>
@@ -438,6 +454,7 @@ onMounted(() => {
           </div>
 
           <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <LibrarianReportExport :choices="reportChoices" :disabled="isLoading || !book" />
             <UButton
               to="/librarian/books/register"
               label="Register Another"

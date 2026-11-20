@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 import type { ComponentPublicInstance } from "vue";
@@ -332,6 +333,16 @@ onMounted(async () => {
   syncSelection();
   await prepareCards();
 });
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Library Card Print List",
+  scope: "Includes the cards currently in the print queue.",
+  load: () => localLibraryReport(
+    "Library Card Print List",
+    ["Student Number", "Student", "Library Card Number", "Card Status"],
+    students.value.map(row => [row.studentNo, row.fullName, row.libraryCardNo, row.libraryCardStatus]),
+  ),
+}];
 </script>
 
 <template>
@@ -364,6 +375,7 @@ onMounted(async () => {
         </div>
 
         <div class="sncbt-print-actions flex flex-wrap items-center gap-2">
+          <LibrarianReportExport :choices="reportChoices" :disabled="!students.length" />
           <UButton
             label="Print Cards"
             icon="i-lucide-printer"

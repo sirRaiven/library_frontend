@@ -244,14 +244,6 @@ const stats = computed(() => [
     to: "/librarian/history?category=borrowing&search=Borrowed",
   },
   {
-    label: "Needs Attention",
-    value: needsAttention.value,
-    description: "Overdue, damaged or lost",
-    icon: "i-lucide-triangle-alert",
-    color: "error" as BadgeColor,
-    to: "/librarian/reports",
-  },
-  {
     label: "Visits Today",
     value: dashboard.value.todayVisits,
     description: "Recorded library entries",
@@ -345,6 +337,7 @@ async function refreshDashboard() {
         </div>
 
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
+          <LibrarianReportExport />
           <div class="rounded-xl border border-default/70 bg-default/65 px-3.5 py-2.5 text-xs text-muted">
             <p class="font-semibold text-highlighted">{{ currentDate }}</p>
             <p class="mt-0.5">Updated {{ lastUpdated }}</p>

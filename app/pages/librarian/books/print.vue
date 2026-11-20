@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localLibraryReport, type LibrarianExportChoice } from "~/utils/librarian-export-choices";
 import AppSkipLink from "~/components/shared/AppSkipLink.vue";
 import AppDataSkeleton from "~/components/shared/AppDataSkeleton.vue";
 
@@ -174,6 +175,16 @@ watch(
     await renderBarcodes();
   },
 );
+
+const reportChoices: LibrarianExportChoice[] = [{
+  label: "Barcode Print List",
+  scope: "Includes the labels currently in the print queue.",
+  load: () => localLibraryReport(
+    "Barcode Print List",
+    ["Barcode", "Book", "Author", "Shelf Location"],
+    printItems.value.map(row => [row.controlNumber, row.title, row.author, row.shelfLocation]),
+  ),
+}];
 </script>
 
 <template>
@@ -217,6 +228,7 @@ watch(
         </div>
 
         <div class="sncbt-print-actions flex flex-wrap gap-2">
+          <LibrarianReportExport :choices="reportChoices" :disabled="!printItems.length" />
           <UButton
             label="Print Labels"
             icon="i-lucide-printer"

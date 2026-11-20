@@ -466,6 +466,7 @@ onMounted(() => {
       class="sncbt-staff-content w-full space-y-6 mb-12"
     >
       <LibrarianPageHeader
+        :report-period="{ from: fromDate, to: toDate }"
         eyebrow="Library Services"
         title="Library Visits"
         description="Record Library entry by scanning a Student Library Card or Faculty institutional ID. Each accepted scan creates one visit record."
@@ -473,7 +474,6 @@ onMounted(() => {
       >
         <template #actions>
           <UBadge color="primary" variant="soft" class="self-center">Time-in only</UBadge>
-          <UButton label="Open Visitor Reports" icon="i-lucide-file-chart-column" color="neutral" variant="outline" to="/librarian/reports" />
         </template>
       </LibrarianPageHeader>
 
