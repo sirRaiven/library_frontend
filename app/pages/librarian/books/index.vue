@@ -83,8 +83,8 @@ interface ClassificationRange {
 const auth = useAuth();
 const toast = useToast();
 const printQueue = useBarcodePrintQueue();
-const inventoryExcel = useLibraryInventoryExcel();
 const libraryOptions = useLibraryOptions();
+const inventoryExcel = useLibraryInventoryExcel(libraryOptions);
 
 const route = useRoute();
 const routeSearch = computed(() => typeof route.query.search === "string" ? route.query.search.trim() : "");
@@ -711,13 +711,11 @@ const collectionActionItems = computed(() => [
   ],
 ]);
 
-onMounted(async () => {
-  try {
-    await libraryOptions.loadOperational();
-  } catch {
-    // The catalog still loads; the filter shows a retryable option error.
-  }
-  await loadBooks();
+onMounted(() => {
+  // Results and filter options are independent. Let the collection render first
+  // if the option registry is slower or unavailable.
+  void libraryOptions.loadOperational().catch(() => undefined);
+  void loadBooks();
 });
 
 onBeforeUnmount(() => {

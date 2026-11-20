@@ -1,3 +1,4 @@
+import { loadExcelJs } from "~/utils/load-exceljs";
 
 import type {
   LibraryReportBranding,
@@ -2213,11 +2214,8 @@ async function exportXlsx(
   report: LibraryReportDocument,
   branding: LibraryReportBranding,
 ) {
-  const module: any =
-    await import("exceljs");
-  const ExcelJS =
-    module.default ?? module;
-  const workbook =
+  const ExcelJS = await loadExcelJs();
+  const workbook: InstanceType<typeof ExcelJS.Workbook> & { company?: string } =
     new ExcelJS.Workbook();
 
   workbook.creator =
@@ -2472,7 +2470,7 @@ async function exportXlsx(
 
   rowNumber += 1;
 
-  const informationRows = [
+  const informationRows: Array<[string, string | number]> = [
     [
       "Reporting Period",
       report.periodLabel,

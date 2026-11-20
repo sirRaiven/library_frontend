@@ -303,9 +303,11 @@ export function useFacultyPortal() {
     return true;
   }
 
-  async function loadDashboard() {
-    loading.value = true;
-    error.value = "";
+  async function loadDashboard({ background = false } = {}) {
+    if (!background) {
+      loading.value = true;
+      error.value = "";
+    }
     try {
       const response = await auth.authFetch<{ data: FacultyDashboardData }>(
         "/api/faculty-portal/dashboard",
@@ -324,10 +326,10 @@ export function useFacultyPortal() {
       return dashboard.value;
     } catch (caught) {
       if (await handleUnauthorized(caught)) return null;
-      error.value = auth.getErrorMessage(caught);
+      if (!background) error.value = auth.getErrorMessage(caught);
       throw caught;
     } finally {
-      loading.value = false;
+      if (!background) loading.value = false;
     }
   }
 

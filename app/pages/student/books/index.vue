@@ -137,13 +137,11 @@ watch(page, async (value, previous) => {
   }
 });
 
-onMounted(async () => {
-  try {
-    await libraryOptions.loadOperational();
-  } catch {
-    // Collection remains usable; category filter can be retried separately.
-  }
-  await load();
+onMounted(() => {
+  // Results and filter options are independent. Let the collection render first
+  // if the option registry is slower or unavailable.
+  void libraryOptions.loadOperational().catch(() => undefined);
+  void load();
 });
 </script>
 

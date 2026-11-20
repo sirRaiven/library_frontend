@@ -1,4 +1,5 @@
 import type { Cell, Row } from "exceljs";
+import { loadExcelJs } from "~/utils/load-exceljs";
 
 export const INVENTORY_HEADERS = [
   "Inventory Date",
@@ -280,20 +281,7 @@ function downloadBlob(
   }, 1000);
 }
 
-async function loadExcelJs() {
-  // ExcelJS publishes a browser-only "bare" bundle specifically for clients
-  // that already provide modern platform primitives. Using it avoids pulling
-  // the package's broader browserify/polyfill bundle into Nuxt production,
-  // which has historically caused writeBuffer() to fail only after bundling.
-  const module = await import("exceljs/dist/exceljs.bare.min.js");
-
-  return (
-    module.default ?? module
-  ) as typeof import("exceljs");
-}
-
-export function useLibraryInventoryExcel() {
-  const libraryOptions = useLibraryOptions();
+export function useLibraryInventoryExcel(libraryOptions = useLibraryOptions()) {
   const bookCategoryOptions = computed(() => libraryOptions.bookCategories.value);
   const shelfLocationOptions = computed(() => libraryOptions.shelfLocations.value);
 
@@ -377,6 +365,10 @@ export function useLibraryInventoryExcel() {
     const rows: InventoryImportRow[] = [];
     const issues: InventoryRowIssue[] = [];
     const reservedAccessions = new Map<string, number>();
+    const categories = new Set(bookCategoryOptions.value.map(option => option.value));
+    const shelfLocations = new Set(shelfLocationOptions.value.map(option => option.value));
+    // The formula-only Call Number column does not count as entered data.
+    const userInputHeaders = requiredHeaders.filter(header => header !== "call number");
 
     for (
       let rowNumber = 2;
@@ -390,13 +382,6 @@ export function useLibraryInventoryExcel() {
         return columnNumber ? cellText(row.getCell(columnNumber)) : "";
       };
 
-      // The Call Number column is generated with a formula down to the end of
-      // the template. ExcelJS therefore considers those formula-only rows to
-      // be used rows even when the Librarian has not entered any book data.
-      // Ignore the generated column when deciding whether a row is empty.
-      const userInputHeaders = requiredHeaders.filter(
-        (header) => header !== "call number",
-      );
       const hasUserInput = userInputHeaders.some(
         (header) => String(getValue(header) ?? "").trim() !== "",
       );
@@ -431,12 +416,12 @@ export function useLibraryInventoryExcel() {
         const category = requireRegistryValue(
           getValue("book category"),
           "Book Category",
-          new Set(bookCategoryOptions.value.map(option => option.value)),
+          categories,
         );
         const shelfLocation = requireRegistryValue(
           getValue("shelf location"),
           "Shelf Location",
-          new Set(shelfLocationOptions.value.map(option => option.value)),
+          shelfLocations,
         );
 
         if (accessionNumber) {
@@ -611,7 +596,7 @@ export function useLibraryInventoryExcel() {
         copyright_date: row.copyright_date ?? "",
         publisher: row.publisher,
         edition: row.edition,
-        category: row.category,
+        book_category: row.category,
         shelf_location: row.shelf_location,
         subject: row.subject,
         price: row.price,

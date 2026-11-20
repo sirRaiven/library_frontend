@@ -82,10 +82,18 @@ async function load() {
   }
 }
 
-watch([category, availability, sort], () => {
-  page.value = 1;
+function reloadFirstPage() {
+  if (page.value !== 1) {
+    page.value = 1;
+    return;
+  }
   syncRouteQuery();
   void load();
+}
+
+watch([category, availability, sort], () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  reloadFirstPage();
 });
 watch(page, () => {
   syncRouteQuery();
@@ -93,20 +101,14 @@ watch(page, () => {
 });
 watch(search, () => {
   if (searchTimer) clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    page.value = 1;
-    syncRouteQuery();
-    void load();
-  }, 350);
+  searchTimer = setTimeout(reloadFirstPage, 350);
 });
 
-onMounted(async () => {
-  try {
-    await libraryOptions.loadOperational();
-  } catch {
-    // Collection remains usable; category filter can be retried separately.
-  }
-  await load();
+onMounted(() => {
+  // Results and filter options are independent. Let the collection render first
+  // if the option registry is slower or unavailable.
+  void libraryOptions.loadOperational().catch(() => undefined);
+  void load();
 });
 onBeforeUnmount(() => {
   if (searchTimer) clearTimeout(searchTimer);

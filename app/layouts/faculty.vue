@@ -166,11 +166,10 @@ async function signOut() {
 onMounted(async () => {
   await maintenance.refresh().catch(() => undefined);
   await auth.initialize();
-  // The dashboard page loads its own data. Avoid issuing the same request twice
-  // when the Faculty first signs in. Other Faculty pages still load the small
-  // dashboard summary once so the sidebar can display the account details.
-  if (route.path !== "/faculty/dashboard" && !portal.dashboard.value.faculty) {
-    void portal.loadDashboard().catch(() => undefined);
+  // Dashboard and Profile already load this summary. Elsewhere it supplies the
+  // sidebar account details without touching the active page's loading state.
+  if (!["/faculty/dashboard", "/faculty/profile"].includes(route.path) && !portal.dashboard.value.generatedAt) {
+    void portal.loadDashboard({ background: true }).catch(() => undefined);
   }
 
   try {
@@ -179,10 +178,6 @@ onMounted(async () => {
   } catch (error) {
     appLogger.warn("Unable to initialize Faculty portal monitoring.", error);
   }
-
-});
-
-onBeforeUnmount(() => {
 });
 
 watch(
