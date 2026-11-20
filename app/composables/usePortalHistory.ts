@@ -27,6 +27,8 @@ export interface PortalHistoryEntry {
   id: string;
   category: Exclude<PortalHistoryCategory, "all">;
   occurredAt: string;
+  dueDate?: string | null;
+  borrowingReference?: string | null;
   title: string;
   description: string;
   reference: string | null;

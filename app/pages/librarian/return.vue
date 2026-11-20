@@ -1,12 +1,10 @@
 
 <script setup lang="ts">
 
-import { appLogger } from "~/utils/app-logger";
 import type {
   BatchReturnInputItem,
   MemberReturnLookup,
   ReturnLookup,
-  TodayReturn,
 } from "~/composables/useLibraryCirculation";
 import LiveBarcodeScanner from "~/components/librarian/visits/LiveBarcodeScanner.vue";
 import type { BarcodeScanResult } from "~/composables/useBarcodeScanResult";
@@ -37,6 +35,7 @@ interface ReturnSelection {
   remarks: string;
 }
 
+const workspace = useLibrarianWorkspace();
 const circulation =
   useLibraryCirculation();
 const auth = useAuth();
@@ -52,8 +51,6 @@ const memberReturns =
   );
 const returnItems =
   ref<ReturnSelection[]>([]);
-const todayRecords =
-  ref<TodayReturn[]>([]);
 
 const bulkCondition =
   ref<ReturnCondition>("Good");
@@ -61,7 +58,6 @@ const bulkCondition =
 const isScanning = ref(false);
 const isVerifyingBook = ref(false);
 const isProcessing = ref(false);
-const isLoadingToday = ref(false);
 
 const conditionOptions:
   ReturnCondition[] = [
@@ -141,6 +137,7 @@ function focusMemberScanner() {
   }
 
   nextTick(() => {
+    if (workspace.value !== "work") return;
     document
       .querySelector<HTMLInputElement>(
         "#member-return-scanner",
@@ -155,6 +152,7 @@ function focusBookScanner() {
   }
 
   nextTick(() => {
+    if (workspace.value !== "work") return;
     document
       .querySelector<HTMLInputElement>(
         "#book-return-scanner",
@@ -265,22 +263,6 @@ function buildReturnItems(
         "",
     };
   });
-}
-
-async function loadTodayReturns() {
-  isLoadingToday.value = true;
-
-  try {
-    todayRecords.value =
-      await circulation.todayReturns();
-  } catch (error) {
-    appLogger.warn(
-      "Today's returns could not be loaded.",
-      error,
-    );
-  } finally {
-    isLoadingToday.value = false;
-  }
 }
 
 async function loadMemberReturns(
@@ -692,7 +674,6 @@ async function processSelectedReturns() {
       });
     }
 
-    await loadTodayReturns();
 
     await loadMemberReturns(
       memberReturns.value
@@ -750,27 +731,6 @@ function formatDate(
     );
 }
 
-function formatDateTime(
-  value?: string,
-): string {
-  if (!value) {
-    return "—";
-  }
-
-  return new Intl
-    .DateTimeFormat(
-      "en-PH",
-      {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone: "Asia/Manila",
-      },
-    )
-    .format(
-      new Date(value),
-    );
-}
-
 function formatCurrency(
   value: number,
 ): string {
@@ -787,34 +747,9 @@ function formatCurrency(
     );
 }
 
-function conditionColor(
-  value: string,
-):
-  | "success"
-  | "warning"
-  | "error"
-  | "neutral" {
-  if (value === "Good") {
-    return "success";
-  }
-
-  if (
-    value === "Damaged"
-  ) {
-    return "warning";
-  }
-
-  if (value === "Lost") {
-    return "error";
-  }
-
-  return "neutral";
-}
-
 onMounted(() => {
   focusMemberScanner();
   void librarySettings.load(true);
-  void loadTodayReturns();
 });
 </script>
 
@@ -830,15 +765,11 @@ onMounted(() => {
         icon="i-lucide-book-down"
       >
         <template #actions>
-          <UBadge color="primary" variant="soft" class="self-center">Member-based return</UBadge>
           <UButton to="/librarian/borrow" label="Borrow Books" icon="i-lucide-book-up" color="neutral" variant="outline" />
         </template>
       </LibrarianPageHeader>
-
-      <div
-        class="sncbt-workflow-layout grid gap-6 2xl:grid-cols-[20rem_minmax(0,1fr)]"
-      >
-        <div class="space-y-6">
+      <LibrarianWorkspaceTabs v-model="workspace" work-label="Process Returns" records-label="Return Records">
+        <template #work>
           <UCard class="sncbt-scanner-station">
             <template #header>
               <div
@@ -869,63 +800,59 @@ onMounted(() => {
             </template>
 
             <form
-              class="space-y-4"
+              class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
               @submit.prevent="handleScan"
             >
-              <div
-                class="flex flex-col gap-2 sm:flex-row sm:items-stretch"
+              <UInput
+                id="member-return-scanner"
+                v-model="scannerInput"
+                icon="i-lucide-scan-barcode"
+                placeholder="Scan LC-2026-000001 or Faculty ID"
+                size="xl"
+                color="primary"
+                autocomplete="off"
+                aria-label="Student or faculty barcode"
+                :loading="isScanning"
+                class="w-full min-w-0"
               >
-                <UInput
-                  id="member-return-scanner"
-                  v-model="scannerInput"
-                  icon="i-lucide-scan-barcode"
-                  placeholder="Scan LC-2026-000001 or Faculty ID"
-                  size="xl"
-                  color="primary"
-                  autocomplete="off"
-                  autofocus
-                  :loading="isScanning"
-                  class="min-w-0 flex-1"
-                >
-                  <template #trailing>
-                    <UKbd>Enter</UKbd>
-                  </template>
-                </UInput>
+                <template #trailing>
+                  <UKbd>Enter</UKbd>
+                </template>
+              </UInput>
 
-                <LiveBarcodeScanner
-                  :disabled="
-                    isScanning ||
-                    isVerifyingBook ||
-                    isProcessing
-                  "
-                  :title="
-                    cameraScannerTitle
-                  "
-                  button-label="Use Camera"
-                  :ready-description="
-                    cameraScannerDescription
-                  "
-                  :processing-label="
-                    cameraProcessingLabel
-                  "
-                  :processing-description="
-                    cameraProcessingDescription
-                  "
-                  storage-key="sncbt-returning-camera"
-                  :duplicate-cooldown-ms="0"
-                  :detection-hold-ms="800"
-                  @detected="
-                    handleCameraBarcodeDetected
-                  "
-                />
-              </div>
+              <LiveBarcodeScanner
+                :disabled="
+                  isScanning ||
+                  isVerifyingBook ||
+                  isProcessing
+                "
+                :title="
+                  cameraScannerTitle
+                "
+                button-label="Use Camera"
+                :ready-description="
+                  cameraScannerDescription
+                "
+                :processing-label="
+                  cameraProcessingLabel
+                "
+                :processing-description="
+                  cameraProcessingDescription
+                "
+                storage-key="sncbt-returning-camera"
+                :duplicate-cooldown-ms="0"
+                :detection-hold-ms="800"
+                @detected="
+                  handleCameraBarcodeDetected
+                "
+              />
 
               <UButton
                 type="submit"
                 label="Load Borrowed Books"
                 icon="i-lucide-search"
                 color="primary"
-                block
+                size="xl"
                 :loading="isScanning"
                 :disabled="
                   !scannerInput.trim() ||
@@ -934,1015 +861,785 @@ onMounted(() => {
               />
             </form>
           </UCard>
-
-          <UCard
-            v-if="memberReturns"
-          >
-            <template #header>
-              <div
-                class="flex items-center justify-between gap-3"
-              >
-                <div>
-                  <h2
-                    class="font-semibold text-highlighted"
+          <div class="sncbt-workflow-layout grid items-start gap-4" :class="memberReturns ? 'xl:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]' : ''">
+            <div v-if="memberReturns">
+              <UCard>
+                <template #header>
+                  <div
+                    class="flex items-center justify-between gap-3"
                   >
-                    Borrower
-                  </h2>
-                  <p
-                    class="text-xs text-muted"
-                  >
-                    Verified member record
-                  </p>
-                </div>
+                    <div>
+                      <h2
+                        class="font-semibold text-highlighted"
+                      >
+                        Borrower
+                      </h2>
+                      <p
+                        class="text-xs text-muted"
+                      >
+                        Verified member record
+                      </p>
+                    </div>
 
-                <div class="flex flex-wrap items-center justify-end gap-2">
-                  <UButton
-                    v-if="memberReturns.member.type === 'Student' && memberReturns.member.documentId"
-                    :to="`/librarian/students/${encodeURIComponent(memberReturns.member.documentId)}/record`"
-                    label="Student Record"
-                    icon="i-lucide-notebook-tabs"
-                    color="neutral"
-                    variant="outline"
-                    size="sm"
-                    :aria-label="`View Student Record for ${memberReturns.member.fullName}`"
-                  />
-                  <UBadge
-                    color="success"
-                    variant="soft"
-                  >
-                    {{
-                      memberReturns.member.type
-                    }}
-                  </UBadge>
-                </div>
-              </div>
-            </template>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                      <UButton
+                        v-if="memberReturns.member.type === 'Student' && memberReturns.member.documentId"
+                        :to="`/librarian/students/${encodeURIComponent(memberReturns.member.documentId)}/record`"
+                        label="Student Record"
+                        icon="i-lucide-notebook-tabs"
+                        color="neutral"
+                        variant="outline"
+                        size="sm"
+                        :aria-label="`View Student Record for ${memberReturns.member.fullName}`"
+                      />
+                      <UBadge
+                        color="success"
+                        variant="soft"
+                      >
+                        {{
+                          memberReturns.member.type
+                        }}
+                      </UBadge>
+                    </div>
+                  </div>
+                </template>
 
-            <div
-              class="flex items-start gap-3"
-            >
-              <UAvatar
-                :alt="
-                  memberReturns.member.fullName
-                "
-                :text="
-                  memberReturns.member.fullName
-                    .split(' ')
-                    .map(
-                      (part) =>
-                        part[0],
-                    )
-                    .slice(0, 2)
-                    .join('')
-                "
-                size="lg"
-              />
-
-              <div class="min-w-0">
-                <p
-                  class="font-semibold text-highlighted"
-                >
-                  {{
-                    memberReturns.member.fullName
-                  }}
-                </p>
-
-                <p
-                  class="mt-1 font-mono text-sm text-muted"
-                >
-                  {{
-                    memberReturns.member.identifier
-                  }}
-                </p>
-
-                <p
-                  v-if="
-                    memberReturns.member
-                      .programOrDepartment
-                  "
-                  class="mt-2 text-sm text-muted"
-                >
-                  {{
-                    memberReturns.member
-                      .programOrDepartment
-                  }}
-                </p>
-              </div>
-            </div>
-
-            <div
-              class="mt-4 grid grid-cols-2 gap-3"
-            >
-              <div
-                class="rounded-xl bg-elevated/50 p-3"
-              >
-                <p
-                  class="text-xs text-muted"
-                >
-                  Active books
-                </p>
-                <p
-                  class="mt-1 text-xl font-bold text-highlighted"
-                >
-                  {{
-                    memberReturns.totalActive
-                  }}
-                </p>
-              </div>
-
-              <div
-                class="rounded-xl bg-elevated/50 p-3"
-              >
-                <p
-                  class="text-xs text-muted"
-                >
-                  Overdue
-                </p>
-                <p
-                  class="mt-1 text-xl font-bold"
-                  :class="
-                    memberReturns.overdueCount >
-                    0
-                      ? 'text-error'
-                      : 'text-highlighted'
-                  "
-                >
-                  {{
-                    memberReturns.overdueCount
-                  }}
-                </p>
-              </div>
-            </div>
-
-            <UButton
-              label="Clear Member"
-              icon="i-lucide-rotate-ccw"
-              color="neutral"
-              variant="ghost"
-              block
-              class="mt-4"
-              :disabled="isProcessing"
-              @click="resetWorkflow"
-            />
-          </UCard>
-
-          <UAlert
-            color="info"
-            variant="soft"
-            icon="i-lucide-receipt-text"
-            title="Automatic school-day fine"
-            description="The system calculates ₱10 per chargeable school day after the due date. Saturdays, Sundays, regular holidays, school events, suspensions, and emergency closures are excluded. Payment is verified later using the cashier OR number."
-          />
-        </div>
-
-        <UCard>
-          <template #header>
-            <div
-              class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
-            >
-              <div>
-                <h2
-                  class="font-semibold text-highlighted"
-                >
-                  Active Borrowed Books
-                </h2>
-                <p
-                  class="mt-1 text-sm text-muted"
-                >
-                  A record cannot be marked manually. Scan its physical barcode to change it from Scan Required to Ready to Return.
-                </p>
-              </div>
-
-              <div
-                v-if="
-                  returnItems.length > 0
-                "
-                class="flex flex-wrap items-center gap-2"
-              >
-                <UButton
-                  v-if="
-                    verifiedCount > 0
-                  "
-                  label="Clear Ready Books"
-                  icon="i-lucide-rotate-ccw"
-                  color="neutral"
-                  variant="outline"
-                  size="sm"
-                  @click="
-                    clearVerifiedBooks
-                  "
-                />
-
-                <UBadge
-                  color="success"
-                  variant="soft"
-                  size="lg"
-                >
-                  {{ verifiedCount }}
-                  ready
-                </UBadge>
-
-                <UBadge
-                  v-if="
-                    pendingScanCount > 0
-                  "
-                  color="warning"
-                  variant="soft"
-                  size="lg"
-                >
-                  {{ pendingScanCount }}
-                  awaiting scan
-                </UBadge>
-              </div>
-            </div>
-          </template>
-
-          <div
-            v-if="!memberReturns"
-            class="flex min-h-80 flex-col items-center justify-center rounded-xl border border-dashed border-default bg-elevated/30 p-8 text-center"
-          >
-            <div
-              class="flex size-14 items-center justify-center rounded-2xl bg-muted text-muted"
-            >
-              <UIcon
-                name="i-lucide-users-round"
-                class="size-7"
-              />
-            </div>
-
-            <p
-              class="mt-4 font-semibold text-highlighted"
-            >
-              Waiting for a member barcode
-            </p>
-
-            <p
-              class="mt-1 max-w-lg text-sm text-muted"
-            >
-              Scan the Student Library Card or Faculty ID to retrieve every active Borrow Transaction for that member.
-            </p>
-          </div>
-
-          <div
-            v-else-if="
-              returnItems.length === 0
-            "
-            class="flex min-h-72 flex-col items-center justify-center rounded-xl border border-dashed border-default bg-elevated/30 p-8 text-center"
-          >
-            <div
-              class="flex size-14 items-center justify-center rounded-2xl bg-success/10 text-success"
-            >
-              <UIcon
-                name="i-lucide-circle-check-big"
-                class="size-7"
-              />
-            </div>
-
-            <p
-              class="mt-4 font-semibold text-highlighted"
-            >
-              No active borrowed books
-            </p>
-
-            <p
-              class="mt-1 max-w-lg text-sm text-muted"
-            >
-              All borrowing records for this member are already closed.
-            </p>
-          </div>
-
-          <div
-            v-else
-            class="space-y-4"
-          >
-            <div
-              class="rounded-2xl border border-success/40 bg-success/5 p-4 sm:p-5"
-            >
-              <div
-                class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
-              >
                 <div
                   class="flex items-start gap-3"
                 >
-                  <div
-                    class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success"
-                  >
-                    <UIcon
-                      name="i-lucide-scan-barcode"
-                      class="size-6"
-                    />
-                  </div>
+                  <UAvatar
+                    :alt="
+                      memberReturns.member.fullName
+                    "
+                    :text="
+                      memberReturns.member.fullName
+                        .split(' ')
+                        .map(
+                          (part) =>
+                            part[0],
+                        )
+                        .slice(0, 2)
+                        .join('')
+                    "
+                    size="lg"
+                  />
 
-                  <div>
+                  <div class="min-w-0">
                     <p
                       class="font-semibold text-highlighted"
                     >
-                      Step 2: Verify Physical Books
+                      {{
+                        memberReturns.member.fullName
+                      }}
                     </p>
 
                     <p
-                      class="mt-1 max-w-2xl text-sm leading-relaxed text-muted"
+                      class="mt-1 font-mono text-sm text-muted"
                     >
-                      Scan the control number or accession-number barcode printed on each physical book. Scanning is the only way to mark a book Ready to Return.
+                      {{
+                        memberReturns.member.identifier
+                      }}
+                    </p>
+
+                    <p
+                      v-if="
+                        memberReturns.member
+                          .programOrDepartment
+                      "
+                      class="mt-2 text-sm text-muted"
+                    >
+                      {{
+                        memberReturns.member
+                          .programOrDepartment
+                      }}
                     </p>
                   </div>
                 </div>
 
-                <UBadge
-                  color="success"
-                  variant="soft"
-                  size="lg"
-                  class="self-start"
+                <div
+                  class="mt-4 grid grid-cols-2 gap-3"
                 >
-                  {{ verifiedCount }} /
-                  {{ returnItems.length }}
-                  verified
-                </UBadge>
-              </div>
+                  <div
+                    class="rounded-xl bg-elevated/50 p-3"
+                  >
+                    <p
+                      class="text-xs text-muted"
+                    >
+                      Active books
+                    </p>
+                    <p
+                      class="mt-1 text-xl font-bold text-highlighted"
+                    >
+                      {{
+                        memberReturns.totalActive
+                      }}
+                    </p>
+                  </div>
 
-              <form
-                class="mt-4 flex flex-col gap-3 sm:flex-row"
-                @submit.prevent="
-                  handleBookScan
-                "
-              >
-                <UInput
-                  id="book-return-scanner"
-                  v-model="
-                    bookScannerInput
-                  "
-                  icon="i-lucide-barcode"
-                  placeholder="Scan LIB-2026-0001"
-                  size="xl"
-                  color="primary"
-                  autocomplete="off"
-                  :loading="
-                    isVerifyingBook
-                  "
-                  class="min-w-0 flex-1"
-                >
-                  <template #trailing>
-                    <UKbd>Enter</UKbd>
-                  </template>
-                </UInput>
+                  <div
+                    class="rounded-xl bg-elevated/50 p-3"
+                  >
+                    <p
+                      class="text-xs text-muted"
+                    >
+                      Overdue
+                    </p>
+                    <p
+                      class="mt-1 text-xl font-bold"
+                      :class="
+                        memberReturns.overdueCount >
+                        0
+                          ? 'text-error'
+                          : 'text-highlighted'
+                      "
+                    >
+                      {{
+                        memberReturns.overdueCount
+                      }}
+                    </p>
+                  </div>
+                </div>
 
                 <UButton
-                  type="submit"
-                  label="Verify Book"
-                  icon="i-lucide-shield-check"
-                  color="primary"
-                  size="xl"
-                  :loading="
-                    isVerifyingBook
-                  "
-                  :disabled="
-                    !bookScannerInput.trim() ||
-                    isVerifyingBook
-                  "
-                />
-              </form>
-
-              <p
-                class="mt-3 flex items-center gap-2 text-xs text-muted"
-              >
-                <UIcon
-                  name="i-lucide-camera"
-                  class="size-4 text-success"
-                />
-                An open camera scanner automatically switches to physical-book verification after the member is loaded.
-              </p>
-
-              <UAlert
-                class="mt-4"
-                color="info"
-                variant="soft"
-                icon="i-lucide-shield-check"
-                title="Physical verification required"
-                description="Unscanned books remain active Borrow Transactions and cannot be included in the return request."
-              />
-            </div>
-
-            <div
-              class="rounded-2xl border border-default bg-elevated/30 p-4"
-            >
-              <div
-                class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-              >
-                <UFormField
-                  label="Bulk condition"
-                  description="Applied only to Ready to Return books."
-                >
-                  <USelect
-                    v-model="bulkCondition"
-                    :items="conditionOptions"
-                    icon="i-lucide-shield-check"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UButton
-                  label="Apply"
-                  icon="i-lucide-copy-check"
+                  label="Clear Member"
+                  icon="i-lucide-rotate-ccw"
                   color="neutral"
-                  variant="outline"
-                  class="self-end"
-                  :disabled="
-                    verifiedCount === 0
-                  "
-                  @click="applyBulkValues"
+                  variant="ghost"
+                  block
+                  class="mt-4"
+                  :disabled="isProcessing"
+                  @click="resetWorkflow"
                 />
-              </div>
+              </UCard>
+
             </div>
 
-            <article
-              v-for="item in returnItems"
-              :key="
-                item.borrow
-                  .borrowDocumentId
-              "
-              class="rounded-2xl border p-4 transition"
-              :class="
-                item.verified
-                  ? 'border-success/50 bg-success/5'
-                  : 'border-default bg-elevated/20'
-              "
-            >
+            <UCard>
+              <template #header>
+                <div
+                  class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                >
+                  <div>
+                    <h2
+                      class="font-semibold text-highlighted"
+                    >
+                      Active Borrowed Books
+                    </h2>
+                    <p
+                      class="mt-1 text-sm text-muted"
+                    >
+                      A record cannot be marked manually. Scan its physical barcode to change it from Scan Required to Ready to Return.
+                    </p>
+                  </div>
+
+                  <div
+                    v-if="
+                      returnItems.length > 0
+                    "
+                    class="flex flex-wrap items-center gap-2"
+                  >
+                    <UButton
+                      v-if="
+                        verifiedCount > 0
+                      "
+                      label="Clear Ready Books"
+                      icon="i-lucide-rotate-ccw"
+                      color="neutral"
+                      variant="outline"
+                      size="sm"
+                      @click="
+                        clearVerifiedBooks
+                      "
+                    />
+
+                    <UBadge
+                      color="success"
+                      variant="soft"
+                      size="lg"
+                    >
+                      {{ verifiedCount }}
+                      ready
+                    </UBadge>
+
+                    <UBadge
+                      v-if="
+                        pendingScanCount > 0
+                      "
+                      color="warning"
+                      variant="soft"
+                      size="lg"
+                    >
+                      {{ pendingScanCount }}
+                      awaiting scan
+                    </UBadge>
+                  </div>
+                </div>
+              </template>
+
               <div
-                class="flex items-start gap-4"
+                v-if="!memberReturns"
+                class="flex min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-default bg-elevated/30 p-4 text-center"
               >
                 <div
-                  class="flex size-10 shrink-0 items-center justify-center rounded-xl"
-                  :class="
-                    item.verified
-                      ? 'bg-success/15 text-success'
-                      : 'bg-muted text-muted'
-                  "
-                  :title="
-                    item.verified
-                      ? 'Barcode verified'
-                      : 'Physical barcode scan required'
-                  "
+                  class="flex size-14 items-center justify-center rounded-2xl bg-muted text-muted"
                 >
                   <UIcon
-                    :name="
-                      item.verified
-                        ? 'i-lucide-badge-check'
-                        : 'i-lucide-scan-barcode'
+                    name="i-lucide-users-round"
+                    class="size-7"
+                  />
+                </div>
+
+                <p
+                  class="mt-4 font-semibold text-highlighted"
+                >
+                  Waiting for a member barcode
+                </p>
+
+                <p
+                  class="mt-1 max-w-lg text-sm text-muted"
+                >
+                  Scan the Student Library Card or Faculty ID to retrieve every active Borrow Transaction for that member.
+                </p>
+              </div>
+
+              <div
+                v-else-if="
+                  returnItems.length === 0
+                "
+                class="flex min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-default bg-elevated/30 p-4 text-center"
+              >
+                <div
+                  class="flex size-14 items-center justify-center rounded-2xl bg-success/10 text-success"
+                >
+                  <UIcon
+                    name="i-lucide-circle-check-big"
+                    class="size-7"
+                  />
+                </div>
+
+                <p
+                  class="mt-4 font-semibold text-highlighted"
+                >
+                  No active borrowed books
+                </p>
+
+                <p
+                  class="mt-1 max-w-lg text-sm text-muted"
+                >
+                  All borrowing records for this member are already closed.
+                </p>
+              </div>
+
+              <div
+                v-else
+                class="space-y-4"
+              >
+                <div
+                  class="rounded-2xl border border-success/40 bg-success/5 p-4 sm:p-5"
+                >
+                  <div
+                    class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                  >
+                    <div
+                      class="flex items-start gap-3"
+                    >
+                      <div
+                        class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success"
+                      >
+                        <UIcon
+                          name="i-lucide-scan-barcode"
+                          class="size-6"
+                        />
+                      </div>
+
+                      <div>
+                        <p
+                          class="font-semibold text-highlighted"
+                        >
+                          Step 2: Verify Physical Books
+                        </p>
+
+                        <p
+                          class="mt-1 max-w-2xl text-sm leading-relaxed text-muted"
+                        >
+                          Scan the control number or accession-number barcode printed on each physical book. Scanning is the only way to mark a book Ready to Return.
+                        </p>
+                      </div>
+                    </div>
+
+                    <UBadge
+                      color="success"
+                      variant="soft"
+                      size="lg"
+                      class="self-start"
+                    >
+                      {{ verifiedCount }} /
+                      {{ returnItems.length }}
+                      verified
+                    </UBadge>
+                  </div>
+
+                  <form
+                    class="mt-4 flex flex-col gap-3 sm:flex-row"
+                    @submit.prevent="
+                      handleBookScan
                     "
-                    class="size-5"
+                  >
+                    <UInput
+                      id="book-return-scanner"
+                      v-model="
+                        bookScannerInput
+                      "
+                      icon="i-lucide-barcode"
+                      placeholder="Scan LIB-2026-0001"
+                      size="xl"
+                      color="primary"
+                      autocomplete="off"
+                      :loading="
+                        isVerifyingBook
+                      "
+                      class="min-w-0 flex-1"
+                    >
+                      <template #trailing>
+                        <UKbd>Enter</UKbd>
+                      </template>
+                    </UInput>
+
+                    <UButton
+                      type="submit"
+                      label="Verify Book"
+                      icon="i-lucide-shield-check"
+                      color="primary"
+                      size="xl"
+                      :loading="
+                        isVerifyingBook
+                      "
+                      :disabled="
+                        !bookScannerInput.trim() ||
+                        isVerifyingBook
+                      "
+                    />
+                  </form>
+
+                  <p
+                    class="mt-3 flex items-center gap-2 text-xs text-muted"
+                  >
+                    <UIcon
+                      name="i-lucide-camera"
+                      class="size-4 text-success"
+                    />
+                    An open camera scanner automatically switches to physical-book verification after the member is loaded.
+                  </p>
+
+                  <UAlert
+                    class="mt-4"
+                    color="info"
+                    variant="soft"
+                    icon="i-lucide-shield-check"
+                    title="Physical verification required"
+                    description="Unscanned books remain active Borrow Transactions and cannot be included in the return request."
                   />
                 </div>
 
                 <div
-                  class="min-w-0 flex-1"
+                  class="rounded-2xl border border-default bg-elevated/30 p-4"
                 >
                   <div
-                    class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
+                    class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                   >
-                    <div class="min-w-0">
-                      <p
-                        class="font-semibold text-highlighted"
-                      >
-                        {{
-                          item.borrow.copy
-                            .book.title
-                        }}
-                      </p>
+                    <UFormField
+                      label="Bulk condition"
+                      description="Applied only to Ready to Return books."
+                    >
+                      <USelect
+                        v-model="bulkCondition"
+                        :items="conditionOptions"
+                        icon="i-lucide-shield-check"
+                        class="w-full"
+                      />
+                    </UFormField>
 
-                      <p
-                        class="mt-1 text-sm text-muted"
-                      >
-                        {{
-                          item.borrow.copy
-                            .book.author
-                        }}
-                      </p>
+                    <UButton
+                      label="Apply"
+                      icon="i-lucide-copy-check"
+                      color="neutral"
+                      variant="outline"
+                      class="self-end"
+                      :disabled="
+                        verifiedCount === 0
+                      "
+                      @click="applyBulkValues"
+                    />
+                  </div>
+                </div>
 
-                      <div
-                        class="mt-3 flex flex-wrap gap-2"
-                      >
-                        <UBadge
-                          color="neutral"
-                          variant="soft"
-                        >
-                          {{
-                            item.borrow.copy
-                              .controlNumber ||
-                            item.borrow.copy
-                              .accessionNumber
-                          }}
-                        </UBadge>
-
-                        <UBadge
-                          color="neutral"
-                          variant="soft"
-                        >
-                          {{
-                            item.borrow.borrowNo
-                          }}
-                        </UBadge>
-
-                        <UBadge
-                          v-if="
-                            item.borrow.copy.book
-                              .category
-                          "
-                          color="neutral"
-                          variant="outline"
-                        >
-                          {{
-                            item.borrow.copy.book
-                              .category
-                          }}
-                        </UBadge>
-
-                        <UBadge
-                          :color="
-                            item.borrow.daysOverdue >
-                            0
-                              ? 'error'
-                              : 'success'
-                          "
-                          variant="soft"
-                        >
-                          {{
-                            item.borrow.daysOverdue >
-                            0
-                              ? `${item.borrow.daysOverdue} day(s) overdue`
-                              : 'On time'
-                          }}
-                        </UBadge>
-
-                        <UBadge
-                          :color="
-                            item.verified
-                              ? 'success'
-                              : 'warning'
-                          "
-                          variant="solid"
-                        >
-                          {{
-                            item.verified
-                              ? 'Ready to Return'
-                              : 'Scan Required'
-                          }}
-                        </UBadge>
-                      </div>
-
-                      <div
-                        v-if="
+                <article
+                  v-for="item in returnItems"
+                  :key="
+                    item.borrow
+                      .borrowDocumentId
+                  "
+                  class="rounded-2xl border p-4 transition"
+                  :class="
+                    item.verified
+                      ? 'border-success/50 bg-success/5'
+                      : 'border-default bg-elevated/20'
+                  "
+                >
+                  <div
+                    class="flex items-start gap-4"
+                  >
+                    <div
+                      class="flex size-10 shrink-0 items-center justify-center rounded-xl"
+                      :class="
+                        item.verified
+                          ? 'bg-success/15 text-success'
+                          : 'bg-muted text-muted'
+                      "
+                      :title="
+                        item.verified
+                          ? 'Barcode verified'
+                          : 'Physical barcode scan required'
+                      "
+                    >
+                      <UIcon
+                        :name="
                           item.verified
+                            ? 'i-lucide-badge-check'
+                            : 'i-lucide-scan-barcode'
                         "
-                        class="mt-3 flex flex-wrap items-center gap-2"
-                      >
-                        <span
-                          class="font-mono text-xs text-success"
-                        >
-                          Verified:
-                          {{
-                            item.verifiedBarcode
-                          }}
-                        </span>
-
-                        <UButton
-                          label="Undo Verification"
-                          icon="i-lucide-x"
-                          color="neutral"
-                          variant="ghost"
-                          size="xs"
-                          @click="
-                            removeVerification(
-                              item,
-                            )
-                          "
-                        />
-                      </div>
+                        class="size-5"
+                      />
                     </div>
 
                     <div
-                      class="grid shrink-0 grid-cols-2 gap-x-6 gap-y-2 text-sm"
+                      class="min-w-0 flex-1"
                     >
-                      <div>
-                        <p
-                          class="text-xs text-muted"
+                      <div
+                        class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
+                      >
+                        <div class="min-w-0">
+                          <p
+                            class="font-semibold text-highlighted"
+                          >
+                            {{
+                              item.borrow.copy
+                                .book.title
+                            }}
+                          </p>
+
+                          <p
+                            class="mt-1 text-sm text-muted"
+                          >
+                            {{
+                              item.borrow.copy
+                                .book.author
+                            }}
+                          </p>
+
+                          <div
+                            class="mt-3 flex flex-wrap gap-2"
+                          >
+                            <UBadge
+                              color="neutral"
+                              variant="soft"
+                            >
+                              {{
+                                item.borrow.copy
+                                  .controlNumber ||
+                                item.borrow.copy
+                                  .accessionNumber
+                              }}
+                            </UBadge>
+
+                            <UBadge
+                              color="neutral"
+                              variant="soft"
+                            >
+                              {{
+                                item.borrow.borrowNo
+                              }}
+                            </UBadge>
+
+                            <UBadge
+                              v-if="
+                                item.borrow.copy.book
+                                  .category
+                              "
+                              color="neutral"
+                              variant="outline"
+                            >
+                              {{
+                                item.borrow.copy.book
+                                  .category
+                              }}
+                            </UBadge>
+
+                            <UBadge
+                              :color="
+                                item.borrow.daysOverdue >
+                                0
+                                  ? 'error'
+                                  : 'success'
+                              "
+                              variant="soft"
+                            >
+                              {{
+                                item.borrow.daysOverdue >
+                                0
+                                  ? `${item.borrow.daysOverdue} day(s) overdue`
+                                  : 'On time'
+                              }}
+                            </UBadge>
+
+                            <UBadge
+                              :color="
+                                item.verified
+                                  ? 'success'
+                                  : 'warning'
+                              "
+                              variant="solid"
+                            >
+                              {{
+                                item.verified
+                                  ? 'Ready to Return'
+                                  : 'Scan Required'
+                              }}
+                            </UBadge>
+                          </div>
+
+                          <div
+                            v-if="
+                              item.verified
+                            "
+                            class="mt-3 flex flex-wrap items-center gap-2"
+                          >
+                            <span
+                              class="font-mono text-xs text-success"
+                            >
+                              Verified:
+                              {{
+                                item.verifiedBarcode
+                              }}
+                            </span>
+
+                            <UButton
+                              label="Undo Verification"
+                              icon="i-lucide-x"
+                              color="neutral"
+                              variant="ghost"
+                              size="xs"
+                              @click="
+                                removeVerification(
+                                  item,
+                                )
+                              "
+                            />
+                          </div>
+                        </div>
+
+                        <div
+                          class="grid shrink-0 grid-cols-2 gap-x-6 gap-y-2 text-sm"
                         >
-                          Borrowed
-                        </p>
-                        <p
-                          class="mt-1 font-medium text-highlighted"
-                        >
-                          {{
-                            formatDate(
-                              item.borrow
-                                .borrowDate,
-                            )
-                          }}
-                        </p>
+                          <div>
+                            <p
+                              class="text-xs text-muted"
+                            >
+                              Borrowed
+                            </p>
+                            <p
+                              class="mt-1 font-medium text-highlighted"
+                            >
+                              {{
+                                formatDate(
+                                  item.borrow
+                                    .borrowDate,
+                                )
+                              }}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p
+                              class="text-xs text-muted"
+                            >
+                              Due date
+                            </p>
+                            <p
+                              class="mt-1 font-medium"
+                              :class="
+                                item.borrow
+                                  .daysOverdue > 0
+                                  ? 'text-error'
+                                  : 'text-highlighted'
+                              "
+                            >
+                              {{
+                                formatDate(
+                                  item.borrow
+                                    .dueDate,
+                                )
+                              }}
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
-                      <div>
-                        <p
-                          class="text-xs text-muted"
+                      <div
+                        class="mt-4 grid gap-4 border-t border-default pt-4 md:grid-cols-2"
+                      >
+                        <UFormField
+                          label="Returned condition"
+                          required
                         >
-                          Due date
-                        </p>
-                        <p
-                          class="mt-1 font-medium"
-                          :class="
-                            item.borrow
-                              .daysOverdue > 0
-                              ? 'text-error'
-                              : 'text-highlighted'
-                          "
+                          <USelect
+                            v-model="
+                              item.condition
+                            "
+                            :items="
+                              conditionOptions
+                            "
+                            icon="i-lucide-shield-check"
+                            class="w-full"
+                            :disabled="
+                              !item.verified
+                            "
+                          />
+                        </UFormField>
+
+                        <UFormField
+                          label="Calculated fine"
+                          description="Includes overdue charges and any fee for the selected book condition."
                         >
-                          {{
-                            formatDate(
-                              item.borrow
-                                .dueDate,
-                            )
-                          }}
-                        </p>
+                          <div class="rounded-xl border border-default bg-elevated/50 px-4 py-3">
+                            <p
+                              class="text-lg font-bold text-highlighted"
+                            >
+                              {{
+                                formatCurrency(
+                                  estimatedFine(
+                                    item,
+                                  ),
+                                )
+                              }}
+                            </p>
+                            <p class="mt-1 text-xs text-muted">
+                              {{ item.borrow.fine?.chargeableSchoolDays ?? 0 }} chargeable school day(s)
+                              <span v-if="item.borrow.fine?.excludedWeekendDays"> • {{ item.borrow.fine.excludedWeekendDays }} weekend day(s) excluded</span>
+                              <span v-if="item.borrow.fine?.excludedExceptionDays"> • {{ item.borrow.fine.excludedExceptionDays }} no-fine day(s) excluded</span>
+                            </p>
+                          </div>
+                        </UFormField>
+
+                        <UFormField
+                          label="Return remarks"
+                          hint="Optional"
+                          class="md:col-span-2"
+                        >
+                          <UTextarea
+                            v-model="
+                              item.remarks
+                            "
+                            :rows="2"
+                            autoresize
+                            placeholder="Damage details, payment reference, or other notes"
+                            class="w-full"
+                            :disabled="
+                              !item.verified
+                            "
+                          />
+                        </UFormField>
                       </div>
+
+                      <UAlert
+                        v-if="
+                          item.verified &&
+                          (
+                            item.condition ===
+                              'Damaged' ||
+                            item.condition ===
+                              'Lost'
+                          )
+                        "
+                        class="mt-4"
+                        :color="
+                          item.condition ===
+                            'Lost'
+                            ? 'error'
+                            : 'warning'
+                        "
+                        variant="soft"
+                        icon="i-lucide-triangle-alert"
+                        :title="
+                          item.condition ===
+                            'Lost'
+                            ? 'Copy will be marked Lost'
+                            : 'Copy will be marked Damaged'
+                        "
+                        :description="
+                          item.condition ===
+                            'Lost'
+                            ? 'This physical copy will no longer be available for circulation.'
+                            : 'This physical copy will remain unavailable until its condition is updated.'
+                        "
+                      />
                     </div>
                   </div>
+                </article>
+              </div>
 
-                  <div
-                    class="mt-4 grid gap-4 border-t border-default pt-4 md:grid-cols-2"
+              <template #footer>
+                <div
+                  class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <p
+                    class="text-sm text-muted"
                   >
-                    <UFormField
-                      label="Returned condition"
-                      required
-                    >
-                      <USelect
-                        v-model="
-                          item.condition
-                        "
-                        :items="
-                          conditionOptions
-                        "
-                        icon="i-lucide-shield-check"
-                        class="w-full"
-                        :disabled="
-                          !item.verified
-                        "
-                      />
-                    </UFormField>
+                    {{
+                      verifiedCount === 0
+                        ? 'Scan at least one physical book barcode to continue.'
+                        : `${verifiedCount} ${
+                            verifiedCount === 1
+                              ? 'verified book'
+                              : 'verified books'
+                          } will be returned. Unscanned books remain active.`
+                    }}
+                  </p>
 
-                    <UFormField
-                      label="Calculated fine"
-                      description="Includes overdue charges and any fee for the selected book condition."
-                    >
-                      <div class="rounded-xl border border-default bg-elevated/50 px-4 py-3">
-                        <p
-                          class="text-lg font-bold text-highlighted"
-                        >
-                          {{
-                            formatCurrency(
-                              estimatedFine(
-                                item,
-                              ),
-                            )
-                          }}
-                        </p>
-                        <p class="mt-1 text-xs text-muted">
-                          {{ item.borrow.fine?.chargeableSchoolDays ?? 0 }} chargeable school day(s)
-                          <span v-if="item.borrow.fine?.excludedWeekendDays"> • {{ item.borrow.fine.excludedWeekendDays }} weekend day(s) excluded</span>
-                          <span v-if="item.borrow.fine?.excludedExceptionDays"> • {{ item.borrow.fine.excludedExceptionDays }} no-fine day(s) excluded</span>
-                        </p>
-                      </div>
-                    </UFormField>
-
-                    <UFormField
-                      label="Return remarks"
-                      hint="Optional"
-                      class="md:col-span-2"
-                    >
-                      <UTextarea
-                        v-model="
-                          item.remarks
-                        "
-                        :rows="2"
-                        autoresize
-                        placeholder="Damage details, payment reference, or other notes"
-                        class="w-full"
-                        :disabled="
-                          !item.verified
-                        "
-                      />
-                    </UFormField>
-                  </div>
-
-                  <UAlert
-                    v-if="
-                      item.verified &&
-                      (
-                        item.condition ===
-                          'Damaged' ||
-                        item.condition ===
-                          'Lost'
-                      )
+                  <UButton
+                    :label="
+                      verifiedCount === 0
+                        ? 'Return Verified'
+                        : verifiedCount ===
+                            returnItems.length
+                          ? `Return All Verified (${verifiedCount})`
+                          : `Return Verified (${verifiedCount})`
                     "
-                    class="mt-4"
-                    :color="
-                      item.condition ===
-                        'Lost'
-                        ? 'error'
-                        : 'warning'
-                    "
-                    variant="soft"
-                    icon="i-lucide-triangle-alert"
-                    :title="
-                      item.condition ===
-                        'Lost'
-                        ? 'Copy will be marked Lost'
-                        : 'Copy will be marked Damaged'
-                    "
-                    :description="
-                      item.condition ===
-                        'Lost'
-                        ? 'This physical copy will no longer be available for circulation.'
-                        : 'This physical copy will remain unavailable until its condition is updated.'
+                    icon="i-lucide-check-check"
+                    color="primary"
+                    size="lg"
+                    :loading="isProcessing"
+                    :disabled="!canProcess"
+                    @click="
+                      processSelectedReturns
                     "
                   />
                 </div>
-              </div>
-            </article>
+              </template>
+            </UCard>
           </div>
-
-          <template #footer>
-            <div
-              class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <p
-                class="text-sm text-muted"
-              >
-                {{
-                  verifiedCount === 0
-                    ? 'Scan at least one physical book barcode to continue.'
-                    : `${verifiedCount} ${
-                        verifiedCount === 1
-                          ? 'verified book'
-                          : 'verified books'
-                      } will be returned. Unscanned books remain active.`
-                }}
-              </p>
-
-              <UButton
-                :label="
-                  verifiedCount === 0
-                    ? 'Return Verified'
-                    : verifiedCount ===
-                        returnItems.length
-                      ? `Return All Verified (${verifiedCount})`
-                      : `Return Verified (${verifiedCount})`
-                "
-                icon="i-lucide-check-check"
-                color="primary"
-                size="lg"
-                :loading="isProcessing"
-                :disabled="!canProcess"
-                @click="
-                  processSelectedReturns
-                "
-              />
-            </div>
-          </template>
-        </UCard>
-      </div>
-
-      <UCard>
-        <template #header>
-          <div
-            class="flex items-center justify-between gap-4"
-          >
-            <div>
-              <h2
-                class="font-semibold text-highlighted"
-              >
-                Today's Processed Returns
-              </h2>
-              <p class="text-sm text-muted">
-                Returns recorded during the current day.
-              </p>
-            </div>
-
-            <UButton
-              icon="i-lucide-refresh-cw"
-              color="neutral"
-              variant="ghost"
-              square
-              :loading="isLoadingToday"
-              aria-label="Refresh today's returns"
-              @click="loadTodayReturns"
-            />
-          </div>
+          <details class="text-sm text-muted">
+            <summary class="w-fit cursor-pointer font-medium text-default">How overdue fines are calculated</summary>
+            <p class="mt-2 max-w-2xl">
+              Fines are ₱10 per chargeable school day after the due date. Weekends, regular holidays, school events, suspensions, and emergency closures are excluded. Payment is verified using the cashier OR number.
+            </p>
+          </details>
         </template>
 
-        <div
-          v-if="isLoadingToday"
-          class="space-y-3"
-        >
-          <USkeleton
-            v-for="item in 5"
-            :key="item"
-            class="h-16 w-full"
-          />
-        </div>
-
-        <div
-          v-else-if="
-            todayRecords.length === 0
-          "
-          class="py-12 text-center"
-        >
-          <UIcon
-            name="i-lucide-inbox"
-            class="mx-auto size-9 text-dimmed"
-          />
-
-          <p
-            class="mt-3 font-medium text-highlighted"
-          >
-            No returns processed today
-          </p>
-
-          <p class="mt-1 text-sm text-muted">
-            Completed returns will appear here.
-          </p>
-        </div>
-
-        <div v-else>
-          <div class="grid gap-3 md:hidden" aria-label="Today's processed returns">
-            <article
-              v-for="record in todayRecords"
-              :key="`mobile-${record.documentId}`"
-              class="rounded-xl border border-default bg-default p-4"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="truncate font-semibold text-highlighted">{{ record.title }}</p>
-                  <p class="mt-1 font-mono text-xs text-muted">{{ record.controlNumber || record.accessionNumber || '—' }}</p>
-                </div>
-                <UBadge :color="conditionColor(record.condition)" variant="soft">{{ record.condition }}</UBadge>
-              </div>
-
-              <div class="mt-3 grid gap-1 text-sm">
-                <p class="font-medium text-highlighted">{{ record.memberName }}</p>
-                <p class="text-xs text-muted">{{ record.memberIdentifier }} · {{ record.memberType }}</p>
-                <p class="text-xs text-muted">Return {{ record.returnNo }} · Borrow {{ record.borrowNo || '—' }}</p>
-              </div>
-
-              <div class="mt-3 flex items-end justify-between gap-3 border-t border-default pt-3">
-                <div>
-                  <p class="text-xs text-muted">Fine</p>
-                  <p class="font-semibold text-highlighted">{{ formatCurrency(record.fineAmount) }}</p>
-                </div>
-                <p class="text-right text-xs text-muted">{{ formatDateTime(record.returnDate) }}</p>
-              </div>
-            </article>
-          </div>
-
-          <div class="hidden overflow-x-auto md:block">
-          <table
-            class="w-full min-w-[900px] text-left"
-          >
-            <thead>
-              <tr
-                class="border-b border-default text-xs uppercase tracking-wide text-muted"
-              >
-                <th class="px-3 py-3">
-                  Return
-                </th>
-                <th class="px-3 py-3">
-                  Book
-                </th>
-                <th class="px-3 py-3">
-                  Borrower
-                </th>
-                <th class="px-3 py-3">
-                  Condition
-                </th>
-                <th class="px-3 py-3">
-                  Fine
-                </th>
-                <th
-                  class="px-3 py-3 text-right"
-                >
-                  Processed
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr
-                v-for="
-                  record in todayRecords
-                "
-                :key="
-                  record.documentId
-                "
-                class="border-b border-default/60 last:border-0"
-              >
-                <td class="px-3 py-4">
-                  <p
-                    class="font-mono text-sm font-semibold text-highlighted"
-                  >
-                    {{
-                      record.returnNo
-                    }}
-                  </p>
-
-                  <p
-                    class="mt-1 text-xs text-muted"
-                  >
-                    Borrow no.
-                    {{
-                      record.borrowNo ||
-                      '—'
-                    }}
-                  </p>
-                </td>
-
-                <td class="px-3 py-4">
-                  <p
-                    class="font-medium text-highlighted"
-                  >
-                    {{
-                      record.title
-                    }}
-                  </p>
-
-                  <p
-                    class="mt-1 font-mono text-xs text-muted"
-                  >
-                    {{
-                      record.controlNumber ||
-                      record.accessionNumber ||
-                      '—'
-                    }}
-                  </p>
-                </td>
-
-                <td class="px-3 py-4">
-                  <p
-                    class="font-medium text-highlighted"
-                  >
-                    {{
-                      record.memberName
-                    }}
-                  </p>
-
-                  <p
-                    class="mt-1 text-xs text-muted"
-                  >
-                    {{
-                      record.memberIdentifier
-                    }}
-                    ·
-                    {{
-                      record.memberType
-                    }}
-                  </p>
-                </td>
-
-                <td class="px-3 py-4">
-                  <UBadge
-                    :color="
-                      conditionColor(
-                        record.condition,
-                      )
-                    "
-                    variant="soft"
-                  >
-                    {{
-                      record.condition
-                    }}
-                  </UBadge>
-                </td>
-
-                <td class="px-3 py-4">
-                  {{
-                    formatCurrency(
-                      record.fineAmount,
-                    )
-                  }}
-                </td>
-
-                <td
-                  class="px-3 py-4 text-right text-sm text-muted"
-                >
-                  {{
-                    formatDateTime(
-                      record.returnDate,
-                    )
-                  }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          </div>
-        </div>
-      </UCard>
+        <template #records>
+          <LibrarianCirculationRecords category="return" :active="workspace === 'records'" />
+        </template>
+      </LibrarianWorkspaceTabs>
     </div>
   </UContainer>
 </template>
